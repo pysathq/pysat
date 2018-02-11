@@ -1,0 +1,108 @@
+diff -Naurw solvers/lingeling/Makefile solvers/lgl/Makefile
+--- solvers/lingeling/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/lgl/Makefile	2017-04-11 22:52:11.000000000 +0100
+@@ -0,0 +1,38 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CC       := cc
++CFLAGS   := -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++LFLAGS   := -DNLGLOG -DNDEBUG -DNCHKSOL -DNLGLYALSAT -DNLGLFILES -DNLGLDEMA
++VERSION  := -DVERSION=\"PYSAT\"
++INCLUDES := -I.
++LIBS     := -L.
++SOURCES  := lglib.c lglopts.c druplig.c
++OBJECTS  := $(SOURCES:.c=.o)
++TRGT     := lingeling
++
++# gather compiler options
++CARGS := $(CFLAGS) $(INCLUDES) $(LFLAGS) $(VERSION)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.c
++	$(CC) $(CARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naurw solvers/lingeling/druplig.h solvers/lgl/druplig.h
+--- solvers/lingeling/druplig.h	2018-01-25 14:01:50.000000000 +0000
++++ solvers/lgl/druplig.h	2017-04-11 22:25:51.000000000 +0100
+@@ -10,6 +10,10 @@
+
+ typedef struct Druplig Druplig;
+
++#ifdef __cplusplus
++extern "C" {
++#endif
++
+ /*------------------------------------------------------------------------*/
+
+ typedef void * (*druplig_malloc) (void*mem, size_t);
+@@ -50,4 +54,8 @@
+
+ /*------------------------------------------------------------------------*/
+
++#ifdef __cplusplus
++}
++#endif
++
+ #endif
+diff -Naurw solvers/lingeling/lglib.h solvers/lgl/lglib.h
+--- solvers/lingeling/lglib.h	2016-04-27 21:01:55.000000000 +0100
++++ solvers/lgl/lglib.h	2017-11-28 18:54:50.000000000 +0000
+@@ -20,6 +20,10 @@
+
+ //--------------------------------------------------------------------------
+
++#ifdef __cplusplus
++extern "C" {
++#endif
++
+ LGL * lglinit (void);				// constructor
+ void lglrelease (LGL *);			// destructor
+
+@@ -338,4 +342,8 @@
+ void lglsetmsglock (LGL *, void (*lock)(void*), void (*unlock)(void*), void*);
+ void lglsetime (LGL *, double (*time)(void));
+
++#ifdef __cplusplus
++}
++#endif
++
+ #endif
+diff -Naurw solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
+--- solvers/lingeling/lglopts.h	2016-04-27 21:01:55.000000000 +0100
++++ solvers/lgl/lglopts.h	2017-04-11 22:27:34.000000000 +0100
+@@ -32,8 +32,16 @@
+
+ /*------------------------------------------------------------------------*/
+
++#ifdef __cplusplus
++#extern "C" {
++#endif
++
+ void lglinitopts (struct LGL *, Opts *);
+
++#ifdef __cplusplus
++}
++#endif
++
+ /*------------------------------------------------------------------------*/
+
+ #endif

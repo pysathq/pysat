@@ -1,0 +1,1053 @@
+diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
+--- solvers/minisatgh/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/mgh/Makefile	2018-01-25 18:25:03.000000000 +0000
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := g++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := minisatgh
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
+--- solvers/minisatgh/core/Solver.cc	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/core/Solver.cc	2018-01-25 18:48:00.000000000 +0000
+@@ -20,12 +20,12 @@
+ 
+ #include <math.h>
+ 
+-#include "minisat/mtl/Alg.h"
+-#include "minisat/mtl/Sort.h"
+-#include "minisat/utils/System.h"
+-#include "minisat/core/Solver.h"
++#include "minisatgh/mtl/Alg.h"
++#include "minisatgh/core/Solver.h"
++#include "minisatgh/mtl/Sort.h"
++#include "minisatgh/utils/System.h"
+ 
+-using namespace Minisat;
++using namespace MinisatGH;
+ 
+ //=================================================================================================
+ // Options:
+@@ -127,7 +127,7 @@
+ 
+     watches  .init(mkLit(v, false));
+     watches  .init(mkLit(v, true ));
+-    assigns  .insert(v, l_Undef);
++    assigns  .insert(v, mgh_l_Undef);
+     vardata  .insert(v, mkVarData(CRef_Undef, 0));
+     activity .insert(v, rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+     seen     .insert(v, 0);
+@@ -144,7 +144,7 @@
+ // releases of the same variable).
+ void Solver::releaseVar(Lit l)
+ {
+-    if (value(l) == l_Undef){
++    if (value(l) == mgh_l_Undef){
+         addClause(l);
+         released_vars.push(var(l));
+     }
+@@ -160,9 +160,9 @@
+     sort(ps);
+     Lit p; int i, j;
+     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+-        if (value(ps[i]) == l_True || ps[i] == ~p)
++        if (value(ps[i]) == mgh_l_True || ps[i] == ~p)
+             return true;
+-        else if (value(ps[i]) != l_False && ps[i] != p)
++        else if (value(ps[i]) != mgh_l_False && ps[i] != p)
+             ps[j++] = p = ps[i];
+     ps.shrink(i - j);
+ 
+@@ -221,7 +221,7 @@
+ 
+ bool Solver::satisfied(const Clause& c) const {
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) == l_True)
++        if (value(c[i]) == mgh_l_True)
+             return true;
+     return false; }
+ 
+@@ -232,7 +232,7 @@
+     if (decisionLevel() > level){
+         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
+             Var      x  = var(trail[c]);
+-            assigns [x] = l_Undef;
++            assigns [x] = mgh_l_Undef;
+             if (phase_saving > 1 || (phase_saving == 1 && c > trail_lim.last()))
+                 polarity[x] = sign(trail[c]);
+             insertVarOrder(x); }
+@@ -253,11 +253,11 @@
+     // Random decision:
+     if (drand(random_seed) < random_var_freq && !order_heap.empty()){
+         next = order_heap[irand(random_seed,order_heap.size())];
+-        if (value(next) == l_Undef && decision[next])
++        if (value(next) == mgh_l_Undef && decision[next])
+             rnd_decisions++; }
+ 
+     // Activity based decision:
+-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
++    while (next == var_Undef || value(next) != mgh_l_Undef || !decision[next])
+         if (order_heap.empty()){
+             next = var_Undef;
+             break;
+@@ -267,8 +267,8 @@
+     // Choose polarity based on different polarity modes (global or per-variable):
+     if (next == var_Undef)
+         return lit_Undef;
+-    else if (user_pol[next] != l_Undef)
+-        return mkLit(next, user_pol[next] == l_True);
++    else if (user_pol[next] != mgh_l_Undef)
++        return mkLit(next, user_pol[next] == mgh_l_True);
+     else if (rnd_pol)
+         return mkLit(next, drand(random_seed) < 0.5);
+     else
+@@ -485,7 +485,7 @@
+ 
+ void Solver::uncheckedEnqueue(Lit p, CRef from)
+ {
+-    assert(value(p) == l_Undef);
++    assert(value(p) == mgh_l_Undef);
+     assigns[var(p)] = lbool(!sign(p));
+     vardata[var(p)] = mkVarData(from, decisionLevel());
+     trail.push_(p);
+@@ -517,7 +517,7 @@
+         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
+             // Try to avoid inspecting the clause:
+             Lit blocker = i->blocker;
+-            if (value(blocker) == l_True){
++            if (value(blocker) == mgh_l_True){
+                 *j++ = *i++; continue; }
+ 
+             // Make sure the false literal is data[1]:
+@@ -532,19 +532,19 @@
+             // If 0th watch is true, then clause is already satisfied.
+             Lit     first = c[0];
+             Watcher w     = Watcher(cr, first);
+-            if (first != blocker && value(first) == l_True){
++            if (first != blocker && value(first) == mgh_l_True){
+                 *j++ = w; continue; }
+ 
+             // Look for new watch:
+             for (int k = 2; k < c.size(); k++)
+-                if (value(c[k]) != l_False){
++                if (value(c[k]) != mgh_l_False){
+                     c[1] = c[k]; c[k] = false_lit;
+                     watches[~c[1]].push(w);
+                     goto NextClause; }
+ 
+             // Did not find watch -- clause is unit under assignment:
+             *j++ = w;
+-            if (value(first) == l_False){
++            if (value(first) == mgh_l_False){
+                 confl = cr;
+                 qhead = trail.size();
+                 // Copy the remaining watches:
+@@ -607,9 +607,9 @@
+             removeClause(cs[i]);
+         else{
+             // Trim clause:
+-            assert(value(c[0]) == l_Undef && value(c[1]) == l_Undef);
++            assert(value(c[0]) == mgh_l_Undef && value(c[1]) == mgh_l_Undef);
+             for (int k = 2; k < c.size(); k++)
+-                if (value(c[k]) == l_False){
++                if (value(c[k]) == mgh_l_False){
+                     c[k--] = c[c.size()-1];
+                     c.pop();
+                 }
+@@ -624,7 +624,7 @@
+ {
+     vec<Var> vs;
+     for (Var v = 0; v < nVars(); v++)
+-        if (decision[v] && value(v) == l_Undef)
++        if (decision[v] && value(v) == mgh_l_Undef)
+             vs.push(v);
+     order_heap.build(vs);
+ }
+@@ -712,7 +712,7 @@
+         if (confl != CRef_Undef){
+             // CONFLICT
+             conflicts++; conflictC++;
+-            if (decisionLevel() == 0) return l_False;
++            if (decisionLevel() == 0) return mgh_l_False;
+ 
+             learnt_clause.clear();
+             analyze(confl, learnt_clause, backtrack_level);
+@@ -749,11 +749,11 @@
+                 // Reached bound on number of conflicts:
+                 progress_estimate = progressEstimate();
+                 cancelUntil(0);
+-                return l_Undef; }
++                return mgh_l_Undef; }
+ 
+             // Simplify the set of problem clauses:
+             if (decisionLevel() == 0 && !simplify())
+-                return l_False;
++                return mgh_l_False;
+ 
+             if (learnts.size()-nAssigns() >= max_learnts)
+                 // Reduce the set of learnt clauses:
+@@ -763,12 +763,12 @@
+             while (decisionLevel() < assumptions.size()){
+                 // Perform user provided assumption:
+                 Lit p = assumptions[decisionLevel()];
+-                if (value(p) == l_True){
++                if (value(p) == mgh_l_True){
+                     // Dummy decision level:
+                     newDecisionLevel();
+-                }else if (value(p) == l_False){
++                }else if (value(p) == mgh_l_False){
+                     analyzeFinal(~p, conflict);
+-                    return l_False;
++                    return mgh_l_False;
+                 }else{
+                     next = p;
+                     break;
+@@ -782,7 +782,7 @@
+ 
+                 if (next == lit_Undef)
+                     // Model found:
+-                    return l_True;
++                    return mgh_l_True;
+             }
+ 
+             // Increase decision level and enqueue 'next'
+@@ -840,7 +840,7 @@
+ {
+     model.clear();
+     conflict.clear();
+-    if (!ok) return l_False;
++    if (!ok) return mgh_l_False;
+ 
+     solves++;
+ 
+@@ -850,7 +850,7 @@
+ 
+     learntsize_adjust_confl   = learntsize_adjust_start_confl;
+     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
+-    lbool   status            = l_Undef;
++    lbool   status            = mgh_l_Undef;
+ 
+     if (verbosity >= 1){
+         printf("============================[ Search Statistics ]==============================\n");
+@@ -861,7 +861,7 @@
+ 
+     // Search:
+     int curr_restarts = 0;
+-    while (status == l_Undef){
++    while (status == mgh_l_Undef){
+         double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
+         status = search(rest_base * restart_first);
+         if (!withinBudget()) break;
+@@ -872,11 +872,11 @@
+         printf("===============================================================================\n");
+ 
+ 
+-    if (status == l_True){
++    if (status == mgh_l_True) {
+         // Extend & copy model:
+         model.growTo(nVars());
+         for (int i = 0; i < nVars(); i++) model[i] = value(i);
+-    }else if (status == l_False && conflict.size() == 0)
++    }else if (status == mgh_l_False && conflict.size() == 0)
+         ok = false;
+ 
+     cancelUntil(0);
+@@ -890,10 +890,10 @@
+     for (int i = 0; i < assumps.size(); i++){
+         Lit a = assumps[i];
+ 
+-        if (value(a) == l_False){
++        if (value(a) == mgh_l_False){
+             cancelUntil(0);
+             return false;
+-        }else if (value(a) == l_Undef)
++        }else if (value(a) == mgh_l_Undef)
+             uncheckedEnqueue(a);
+     }
+ 
+@@ -912,7 +912,7 @@
+ 
+ //=================================================================================================
+ // Writing CNF to DIMACS:
+-// 
++//
+ // FIXME: this needs to be rewritten completely.
+ 
+ static Var mapVar(Var x, vec<Var>& map, Var& max)
+@@ -930,7 +930,7 @@
+     if (satisfied(c)) return;
+ 
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) != l_False)
++        if (value(c[i]) != mgh_l_False)
+             fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
+     fprintf(f, "0\n");
+ }
+@@ -966,7 +966,7 @@
+         if (!satisfied(ca[clauses[i]])){
+             Clause& c = ca[clauses[i]];
+             for (int j = 0; j < c.size(); j++)
+-                if (value(c[j]) != l_False)
++                if (value(c[j]) != mgh_l_False)
+                     mapVar(var(c[j]), map, max);
+         }
+ 
+@@ -976,7 +976,7 @@
+     fprintf(f, "p cnf %d %d\n", max, cnt);
+ 
+     for (int i = 0; i < assumps.size(); i++){
+-        assert(value(assumps[i]) != l_False);
++        assert(value(assumps[i]) != mgh_l_False);
+         fprintf(f, "%s%d 0\n", sign(assumps[i]) ? "-" : "", mapVar(var(assumps[i]), map, max)+1);
+     }
+ 
+@@ -992,11 +992,11 @@
+ {
+     double cpu_time = cpuTime();
+     double mem_used = memUsedPeak();
+-    printf("restarts              : %"PRIu64"\n", starts);
+-    printf("conflicts             : %-12"PRIu64"   (%.0f /sec)\n", conflicts   , conflicts   /cpu_time);
+-    printf("decisions             : %-12"PRIu64"   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
+-    printf("propagations          : %-12"PRIu64"   (%.0f /sec)\n", propagations, propagations/cpu_time);
+-    printf("conflict literals     : %-12"PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
++    printf("restarts              : %" PRIu64"\n", starts);
++    printf("conflicts             : %-12" PRIu64"   (%.0f /sec)\n", conflicts   , conflicts   /cpu_time);
++    printf("decisions             : %-12" PRIu64"   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
++    printf("propagations          : %-12" PRIu64"   (%.0f /sec)\n", propagations, propagations/cpu_time);
++    printf("conflict literals     : %-12" PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
+     if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
+     printf("CPU time              : %g s\n", cpu_time);
+ }
+diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
+--- solvers/minisatgh/core/Solver.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/core/Solver.h	2018-01-25 18:44:14.000000000 +0000
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Solver_h
+-#define Minisat_Solver_h
++#ifndef MinisatGH_Solver_h
++#define MinisatGH_Solver_h
+ 
+-#include "minisat/mtl/Vec.h"
+-#include "minisat/mtl/Heap.h"
+-#include "minisat/mtl/Alg.h"
+-#include "minisat/mtl/IntMap.h"
+-#include "minisat/utils/Options.h"
+-#include "minisat/core/SolverTypes.h"
++#include "minisatgh/mtl/Vec.h"
++#include "minisatgh/mtl/Heap.h"
++#include "minisatgh/mtl/Alg.h"
++#include "minisatgh/mtl/IntMap.h"
++#include "minisatgh/utils/Options.h"
++#include "minisatgh/core/SolverTypes.h"
+ 
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Solver -- the main class:
+@@ -44,15 +44,15 @@
+ 
+     // Problem specification:
+     //
+-    Var     newVar    (lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
++    Var     newVar    (lbool upol = mgh_l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+     void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
+ 
+-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
++    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
+-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r, Lit s);             // Add a quaternary clause to the solver. 
++    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
++    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r, Lit s);             // Add a quaternary clause to the solver.
+     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+                                                                 // change the passed vector 'ps'.
+ 
+@@ -86,7 +86,7 @@
+     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+     
+     // Variable mode:
+-    // 
++    //
+     void    setPolarity    (Var v, lbool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+     void    setDecisionVar (Var v, bool b);  // Declare if a variable should be eligible for selection in the decision heuristic.
+ 
+@@ -333,7 +333,7 @@
+         garbageCollect(); }
+ 
+ // NOTE: enqueue does not set the ok flag! (only public methods do)
+-inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
++inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != mgh_l_Undef ? value(p) != mgh_l_False : (uncheckedEnqueue(p, from), true); }
+ inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
+ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
+@@ -342,7 +342,7 @@
+ inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s){ add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); add_tmp.push(s); return addClause_(add_tmp); }
+ 
+ inline bool     Solver::isRemoved       (CRef cr)         const { return ca[cr].mark() == 1; }
+-inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; }
++inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == mgh_l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; }
+ inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+ 
+ inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
+@@ -379,11 +379,11 @@
+ // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
+ // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
+ // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
+-inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
+-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
++inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == mgh_l_True; }
++inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == mgh_l_True; }
++inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == mgh_l_True; }
++inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == mgh_l_True; }
++inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == mgh_l_True; }
+ inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
+ inline bool     Solver::okay          ()      const   { return ok; }
+ 
+diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
+--- solvers/minisatgh/core/SolverTypes.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/core/SolverTypes.h	2018-01-25 18:42:57.000000000 +0000
+@@ -19,19 +19,20 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_SolverTypes_h
+-#define Minisat_SolverTypes_h
++#ifndef MinisatGH_SolverTypes_h
++#define MinisatGH_SolverTypes_h
+ 
++#define MINISAT_CONSTANTS_AS_MACROS
+ #include <assert.h>
+ 
+-#include "minisat/mtl/IntTypes.h"
+-#include "minisat/mtl/Alg.h"
+-#include "minisat/mtl/Vec.h"
+-#include "minisat/mtl/IntMap.h"
+-#include "minisat/mtl/Map.h"
+-#include "minisat/mtl/Alloc.h"
++#include "minisatgh/mtl/IntTypes.h"
++#include "minisatgh/mtl/Alg.h"
++#include "minisatgh/mtl/Vec.h"
++#include "minisatgh/mtl/IntMap.h"
++#include "minisatgh/mtl/Map.h"
++#include "minisatgh/mtl/Alloc.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+@@ -47,12 +48,14 @@
+   const Var var_Undef = -1;
+ #endif
+ 
++struct Lit;
++Lit mkLit(Var var, bool sign = false);
+ 
+ struct Lit {
+     int     x;
+ 
+     // Use this as a constructor:
+-    friend Lit mkLit(Var var, bool sign = false);
++    friend Lit mkLit(Var var, bool sign);
+ 
+     bool operator == (Lit p) const { return x == p.x; }
+     bool operator != (Lit p) const { return x != p.x; }
+@@ -87,7 +90,7 @@
+ // Lifted booleans:
+ //
+ // NOTE: this implementation is optimized for the case when comparisons between values are mostly
+-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
++//       between one variable and one constant. Some care had to be taken to make sure that gcc
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+@@ -121,13 +124,13 @@
+ inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
+ 
+ #if defined(MINISAT_CONSTANTS_AS_MACROS)
+-  #define l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+-  #define l_False (lbool((uint8_t)1))
+-  #define l_Undef (lbool((uint8_t)2))
++  #define mgh_l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
++  #define mgh_l_False (lbool((uint8_t)1))
++  #define mgh_l_Undef (lbool((uint8_t)2))
+ #else
+-  const lbool l_True ((uint8_t)0);
+-  const lbool l_False((uint8_t)1);
+-  const lbool l_Undef((uint8_t)2);
++  const lbool mgh_l_True ((uint8_t)0);
++  const lbool mgh_l_False((uint8_t)1);
++  const lbool mgh_l_Undef((uint8_t)2);
+ #endif
+ 
+ 
+diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
+--- solvers/minisatgh/mtl/Alg.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Alg.h	2018-01-25 18:37:06.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Alg_h
+-#define Minisat_Alg_h
++#ifndef MinisatGH_Alg_h
++#define MinisatGH_Alg_h
+ 
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
+--- solvers/minisatgh/mtl/Alloc.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Alloc.h	2018-01-25 18:41:48.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_Alloc_h
+-#define Minisat_Alloc_h
++#ifndef MinisatGH_Alloc_h
++#define MinisatGH_Alloc_h
+ 
+-#include "minisat/mtl/XAlloc.h"
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/XAlloc.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
+--- solvers/minisatgh/mtl/Heap.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Heap.h	2018-01-25 18:41:33.000000000 +0000
+@@ -18,13 +18,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Heap_h
+-#define Minisat_Heap_h
++#ifndef MinisatGH_Heap_h
++#define MinisatGH_Heap_h
+ 
+-#include "minisat/mtl/Vec.h"
+-#include "minisat/mtl/IntMap.h"
++#include "minisatgh/mtl/Vec.h"
++#include "minisatgh/mtl/IntMap.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
+--- solvers/minisatgh/mtl/IntMap.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/IntMap.h	2018-01-25 18:41:12.000000000 +0000
+@@ -16,12 +16,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_IntMap_h
+-#define Minisat_IntMap_h
++#ifndef MinisatGH_IntMap_h
++#define MinisatGH_IntMap_h
+ 
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+     template<class T> struct MkIndexDefault {
+         typename vec<T>::Size operator()(T t) const { return (typename vec<T>::Size)t; }
+diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
+--- solvers/minisatgh/mtl/IntTypes.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/IntTypes.h	2018-01-25 18:36:28.000000000 +0000
+@@ -17,8 +17,10 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_IntTypes_h
+-#define Minisat_IntTypes_h
++#ifndef MinisatGH_IntTypes_h
++#define MinisatGH_IntTypes_h
++#define __STDC_FORMAT_MACROS
++#define __STDC_LIMIT_MACROS
+ 
+ #ifdef __sun
+     // Not sure if there are newer versions that support C99 headers. The
+diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
+--- solvers/minisatgh/mtl/Map.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Map.h	2018-01-25 18:40:47.000000000 +0000
+@@ -17,13 +17,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Map_h
+-#define Minisat_Map_h
++#ifndef MinisatGH_Map_h
++#define MinisatGH_Map_h
+ 
+-#include "minisat/mtl/IntTypes.h"
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/IntTypes.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
++static inline uint32_t hash(uint32_t x){ return x; }
++static inline uint32_t hash(uint64_t x){ return (uint32_t)x; }
++static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
++static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+@@ -35,10 +39,6 @@
+ template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return hash(*k);  } };
+ template<class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
+ 
+-static inline uint32_t hash(uint32_t x){ return x; }
+-static inline uint32_t hash(uint64_t x){ return (uint32_t)x; }
+-static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
+-static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
+ 
+ 
+ //=================================================================================================
+diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
+--- solvers/minisatgh/mtl/Queue.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Queue.h	2018-01-25 18:36:15.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Queue_h
+-#define Minisat_Queue_h
++#ifndef MinisatGH_Queue_h
++#define MinisatGH_Queue_h
+ 
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ 
+diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
+--- solvers/minisatgh/mtl/Rnd.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Rnd.h	2018-01-25 18:36:10.000000000 +0000
+@@ -16,12 +16,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Rnd_h
+-#define Minisat_Rnd_h
++#ifndef MinisatGH_Rnd_h
++#define MinisatGH_Rnd_h
+ 
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ // Generate a random double:
+ static inline double drand(double& seed)
+diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
+--- solvers/minisatgh/mtl/Sort.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Sort.h	2018-01-25 18:36:04.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Sort_h
+-#define Minisat_Sort_h
++#ifndef MinisatGH_Sort_h
++#define MinisatGH_Sort_h
+ 
+-#include "minisat/mtl/Vec.h"
++#include "minisatgh/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
+--- solvers/minisatgh/mtl/Vec.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/Vec.h	2018-01-25 18:35:58.000000000 +0000
+@@ -18,17 +18,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Vec_h
+-#define Minisat_Vec_h
++#ifndef MinisatGH_Vec_h
++#define MinisatGH_Vec_h
+ 
+ #include <assert.h>
+ #include <limits>
+ #include <new>
+ 
+-#include "minisat/mtl/IntTypes.h"
+-#include "minisat/mtl/XAlloc.h"
++#include "minisatgh/mtl/IntTypes.h"
++#include "minisatgh/mtl/XAlloc.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
+--- solvers/minisatgh/mtl/XAlloc.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/mtl/XAlloc.h	2016-11-27 21:40:40.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_XAlloc_h
+-#define Minisat_XAlloc_h
++#ifndef MinisatGH_XAlloc_h
++#define MinisatGH_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
+--- solvers/minisatgh/utils/Options.cc	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/utils/Options.cc	2018-01-25 18:39:48.000000000 +0000
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "minisat/mtl/Sort.h"
+-#include "minisat/utils/Options.h"
+-#include "minisat/utils/ParseUtils.h"
++#include "minisatgh/mtl/Sort.h"
++#include "minisatgh/utils/Options.h"
++#include "minisatgh/utils/ParseUtils.h"
+ 
+-using namespace Minisat;
++using namespace MinisatGH;
+ 
+-void Minisat::parseOptions(int& argc, char** argv, bool strict)
++void MinisatGH::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -55,9 +55,9 @@
+ }
+ 
+ 
+-void Minisat::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Minisat::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Minisat::printUsageAndExit (int /*argc*/, char** argv, bool verbose)
++void MinisatGH::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void MinisatGH::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void MinisatGH::printUsageAndExit (int /*argc*/, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
+--- solvers/minisatgh/utils/Options.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/utils/Options.h	2018-01-25 18:39:33.000000000 +0000
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Options_h
+-#define Minisat_Options_h
++#ifndef MinisatGH_Options_h
++#define MinisatGH_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "minisat/mtl/IntTypes.h"
+-#include "minisat/mtl/Vec.h"
+-#include "minisat/utils/ParseUtils.h"
++#include "minisatgh/mtl/IntTypes.h"
++#include "minisatgh/mtl/Vec.h"
++#include "minisatgh/utils/ParseUtils.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+@@ -282,15 +282,15 @@
+         if (range.begin == INT64_MIN)
+             fprintf(stderr, "imin");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.begin);
++            fprintf(stderr, "%4" PRIi64, range.begin);
+ 
+         fprintf(stderr, " .. ");
+         if (range.end == INT64_MAX)
+             fprintf(stderr, "imax");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.end);
++            fprintf(stderr, "%4" PRIi64, range.end);
+ 
+-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
++        fprintf(stderr, "] (default: %" PRIi64")\n", value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+@@ -307,7 +307,7 @@
+ {
+     const char* value;
+  public:
+-    StringOption(const char* c, const char* n, const char* d, const char* def = NULL) 
++    StringOption(const char* c, const char* n, const char* d, const char* def = NULL)
+         : Option(n, d, c, "<string>"), value(def) {}
+ 
+     operator      const char*  (void) const     { return value; }
+diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
+--- solvers/minisatgh/utils/ParseUtils.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/utils/ParseUtils.h	2018-01-25 18:38:07.000000000 +0000
+@@ -18,17 +18,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_ParseUtils_h
+-#define Minisat_ParseUtils_h
++#ifndef MinisatGH_ParseUtils_h
++#define MinisatGH_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+ #include <zlib.h>
+ 
+-#include "minisat/mtl/XAlloc.h"
++#include "minisatgh/mtl/XAlloc.h"
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ //-------------------------------------------------------------------------------------------------
+ // A simple buffered character stream class:
+diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
+--- solvers/minisatgh/utils/System.cc	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/utils/System.cc	2018-01-25 18:34:57.000000000 +0000
+@@ -21,13 +21,13 @@
+ #include <signal.h>
+ #include <stdio.h>
+ 
+-#include "minisat/utils/System.h"
++#include "minisatgh/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdlib.h>
+ 
+-using namespace Minisat;
++using namespace MinisatGH;
+ 
+ static inline int memReadStat(int field)
+ {
+@@ -66,36 +66,36 @@
+     return peak_kb;
+ }
+ 
+-double Minisat::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Minisat::memUsedPeak(bool strictlyPeak) { 
+-    double peak = memReadPeak() / (double)1024;
+-    return peak == 0 && !strictlyPeak ? memUsed() : peak; }
++double MinisatGH::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double MinisatGH::memUsedPeak() {
++    double peak = memReadPeak() / 1024;
++    return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__gnu_hurd__)
+ 
+-double Minisat::memUsed() {
++double MinisatGH::memUsed() {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+-double Minisat::memUsedPeak() { return memUsed(); }
++double MinisatGH::memUsedPeak() { return memUsed(); }
+ 
+ 
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Minisat::memUsed() {
++double MinisatGH::memUsed() {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+-double Minisat::memUsedPeak() { return memUsed(); }
++double MinisatGH::memUsedPeak() { return memUsed(); }
+ 
+ #else
+-double Minisat::memUsed()     { return 0; }
+-double Minisat::memUsedPeak() { return 0; }
++double MinisatGH::memUsed()     { return 0; }
++double MinisatGH::memUsedPeak() { return 0; }
+ #endif
+ 
+ 
+-void Minisat::setX86FPUPrecision()
++void MinisatGH::setX86FPUPrecision()
+ {
+ #if defined(__linux__) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE) && defined(_FPU_GETCW)
+     // Only correct FPU precision on Linux architectures that needs and supports it:
+@@ -107,7 +107,7 @@
+ 
+ 
+ #if !defined(_MSC_VER) && !defined(__MINGW32__)
+-void Minisat::limitMemory(uint64_t max_mem_mb)
++void MinisatGH::limitMemory(uint64_t max_mem_mb)
+ {
+ // FIXME: OpenBSD does not support RLIMIT_AS. Not sure how well RLIMIT_DATA works instead.
+ #if defined(__OpenBSD__)
+@@ -131,7 +131,7 @@
+ #endif
+ }
+ #else
+-void Minisat::limitMemory(uint64_t /*max_mem_mb*/)
++void MinisatGH::limitMemory(uint64_t /*max_mem_mb*/)
+ {
+     printf("WARNING! Memory limit not supported on this architecture.\n");
+ }
+@@ -139,7 +139,7 @@
+ 
+ 
+ #if !defined(_MSC_VER) && !defined(__MINGW32__)
+-void Minisat::limitTime(uint32_t max_cpu_time)
++void MinisatGH::limitTime(uint32_t max_cpu_time)
+ {
+     if (max_cpu_time != 0){
+         rlimit rl;
+@@ -152,14 +152,14 @@
+     }
+ }
+ #else
+-void Minisat::limitTime(uint32_t /*max_cpu_time*/)
++void MinisatGH::limitTime(uint32_t /*max_cpu_time*/)
+ {
+     printf("WARNING! CPU-time limit not supported on this architecture.\n");
+ }
+ #endif
+ 
+ 
+-void Minisat::sigTerm(void handler(int))
++void MinisatGH::sigTerm(void handler(int))
+ {
+     signal(SIGINT, handler);
+     signal(SIGTERM,handler);
+diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
+--- solvers/minisatgh/utils/System.h	2018-01-25 18:31:18.000000000 +0000
++++ solvers/mgh/utils/System.h	2018-01-25 18:34:48.000000000 +0000
+@@ -18,23 +18,23 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_System_h
+-#define Minisat_System_h
++#ifndef MinisatGH_System_h
++#define MinisatGH_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "minisat/mtl/IntTypes.h"
++#include "minisatgh/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Minisat {
++namespace MinisatGH {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ 
+ extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
+-extern double memUsedPeak(bool strictlyPeak = false); // Peak-memory in mega bytes (returns 0 for unsupported architectures).
++extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
+ 
+ extern void   setX86FPUPrecision(); // Make sure double's are represented with the same precision
+                                     // in memory and registers.
+@@ -55,14 +55,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Minisat::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double MinisatGH::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Minisat::cpuTime(void) {
++static inline double MinisatGH::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }

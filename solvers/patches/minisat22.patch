@@ -1,0 +1,671 @@
+diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
+--- solvers/minisat22/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/m22/Makefile	2018-01-25 18:04:34.000000000 +0000
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := g++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := minisat22
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
+--- solvers/minisat22/core/Solver.cc	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/core/Solver.cc	2018-01-25 18:08:17.000000000 +0000
+@@ -20,10 +20,10 @@
+ 
+ #include <math.h>
+ 
+-#include "mtl/Sort.h"
+-#include "core/Solver.h"
++#include "minisat22/mtl/Sort.h"
++#include "minisat22/core/Solver.h"
+ 
+-using namespace Minisat;
++using namespace Minisat22;
+ 
+ //=================================================================================================
+ // Options:
+@@ -209,7 +209,7 @@
+         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
+             Var      x  = var(trail[c]);
+             assigns [x] = l_Undef;
+-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
++            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
+                 polarity[x] = sign(trail[c]);
+             insertVarOrder(x); }
+         qhead = trail_lim[level];
+@@ -657,7 +657,7 @@
+ 
+         }else{
+             // NO CONFLICT
+-            if (nof_conflicts >= 0 && conflictC >= nof_conflicts || !withinBudget()){
++            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()){
+                 // Reached bound on number of conflicts:
+                 progress_estimate = progressEstimate();
+                 cancelUntil(0);
+@@ -794,7 +794,7 @@
+ 
+ //=================================================================================================
+ // Writing CNF to DIMACS:
+-// 
++//
+ // FIXME: this needs to be rewritten completely.
+ 
+ static Var mapVar(Var x, vec<Var>& map, Var& max)
+diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
+--- solvers/minisat22/core/Solver.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/core/Solver.h	2018-01-25 18:05:42.000000000 +0000
+@@ -18,17 +18,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Solver_h
+-#define Minisat_Solver_h
++#ifndef Minisat22_Solver_h
++#define Minisat22_Solver_h
+ 
+-#include "mtl/Vec.h"
+-#include "mtl/Heap.h"
+-#include "mtl/Alg.h"
+-#include "utils/Options.h"
+-#include "core/SolverTypes.h"
++#include "minisat22/mtl/Vec.h"
++#include "minisat22/mtl/Heap.h"
++#include "minisat22/mtl/Alg.h"
++#include "minisat22/utils/Options.h"
++#include "minisat22/core/SolverTypes.h"
+ 
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Solver -- the main class:
+@@ -45,11 +45,11 @@
+     //
+     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+ 
+-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
++    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
+-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
++    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
++    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+                                                                 // change the passed vector 'ps'.
+ 
+@@ -75,7 +75,7 @@
+     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+     
+     // Variable mode:
+-    // 
++    //
+     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
+ 
+diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
+--- solvers/minisat22/core/SolverTypes.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/core/SolverTypes.h	2018-01-25 18:06:30.000000000 +0000
+@@ -19,18 +19,18 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_SolverTypes_h
+-#define Minisat_SolverTypes_h
++#ifndef Minisat22_SolverTypes_h
++#define Minisat22_SolverTypes_h
+ 
+ #include <assert.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Vec.h"
+-#include "mtl/Map.h"
+-#include "mtl/Alloc.h"
++#include "minisat22/mtl/IntTypes.h"
++#include "minisat22/mtl/Alg.h"
++#include "minisat22/mtl/Vec.h"
++#include "minisat22/mtl/Map.h"
++#include "minisat22/mtl/Alloc.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+@@ -42,12 +42,14 @@
+ typedef int Var;
+ #define var_Undef (-1)
+ 
++struct Lit;
++Lit mkLit(Var var, bool sign = false);
+ 
+ struct Lit {
+     int     x;
+ 
+     // Use this as a constructor:
+-    friend Lit mkLit(Var var, bool sign = false);
++    friend Lit mkLit(Var var, bool sign);
+ 
+     bool operator == (Lit p) const { return x == p.x; }
+     bool operator != (Lit p) const { return x != p.x; }
+@@ -77,7 +79,7 @@
+ // Lifted booleans:
+ //
+ // NOTE: this implementation is optimized for the case when comparisons between values are mostly
+-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
++//       between one variable and one constant. Some care had to be taken to make sure that gcc
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+@@ -240,7 +242,7 @@
+         cr = to.alloc(c, c.learnt());
+         c.relocate(cr);
+         
+-        // Copy extra data-fields: 
++        // Copy extra data-fields:
+         // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
+         to[cr].mark(c.mark());
+         if (to[cr].learnt())         to[cr].activity() = c.activity();
+diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
+--- solvers/minisat22/mtl/Alg.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Alg.h	2018-01-25 17:53:05.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Alg_h
+-#define Minisat_Alg_h
++#ifndef Minisat22_Alg_h
++#define Minisat22_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
+--- solvers/minisat22/mtl/Alloc.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Alloc.h	2018-01-25 17:52:50.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_Alloc_h
+-#define Minisat_Alloc_h
++#ifndef Minisat22_Alloc_h
++#define Minisat22_Alloc_h
+ 
+-#include "mtl/XAlloc.h"
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/XAlloc.h"
++#include "minisat22/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
+--- solvers/minisat22/mtl/Heap.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Heap.h	2018-01-25 17:52:30.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Heap_h
+-#define Minisat_Heap_h
++#ifndef Minisat22_Heap_h
++#define Minisat22_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
+--- solvers/minisat22/mtl/IntTypes.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/IntTypes.h	2018-01-25 17:52:20.000000000 +0000
+@@ -17,8 +17,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_IntTypes_h
+-#define Minisat_IntTypes_h
++#ifndef Minisat22_IntTypes_h
++#define Minisat22_IntTypes_h
+ 
+ #ifdef __sun
+     // Not sure if there are newer versions that support C99 headers. The
+@@ -30,7 +30,13 @@
+ 
+ #else
+ 
++#   define __STDC_LIMIT_MACROS
++#   define __STDC_CONSTANT_MACROS
++#   undef _STDINT_H_
++#   undef _STDINT_H
++#   undef _GCC_WRAP_STDINT_H
+ #   include <stdint.h>
++#   define __STDC_FORMAT_MACROS
+ #   include <inttypes.h>
+ 
+ #endif
+diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
+--- solvers/minisat22/mtl/Map.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Map.h	2018-01-25 17:52:13.000000000 +0000
+@@ -17,28 +17,28 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Map_h
+-#define Minisat_Map_h
++#ifndef Minisat22_Map_h
++#define Minisat22_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/IntTypes.h"
++#include "minisat22/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+ //
+ 
+-template<class K> struct Hash  { uint32_t operator()(const K& k)               const { return hash(k);  } };
+-template<class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
++template <class K> struct Hash  { uint32_t operator()(const K& k)               const { return uhash(k);  } };
++template <class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
+ 
+-template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return hash(*k);  } };
+-template<class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
++template <class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return uhash(*k);  } };
++template <class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
+ 
+-static inline uint32_t hash(uint32_t x){ return x; }
+-static inline uint32_t hash(uint64_t x){ return (uint32_t)x; }
+-static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
+-static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
++static inline uint32_t uhash(uint32_t x){ return x; }
++static inline uint32_t uhash(uint64_t x){ return (uint32_t)x; }
++static inline uint32_t uhash(int32_t x) { return (uint32_t)x; }
++static inline uint32_t uhash(int64_t x) { return (uint32_t)x; }
+ 
+ 
+ //=================================================================================================
+diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
+--- solvers/minisat22/mtl/Queue.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Queue.h	2018-01-25 17:51:58.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Queue_h
+-#define Minisat_Queue_h
++#ifndef Minisat22_Queue_h
++#define Minisat22_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ 
+diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
+--- solvers/minisat22/mtl/Sort.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Sort.h	2018-01-25 17:51:49.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Sort_h
+-#define Minisat_Sort_h
++#ifndef Minisat22_Sort_h
++#define Minisat22_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "minisat22/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
+--- solvers/minisat22/mtl/Vec.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/Vec.h	2018-01-25 17:51:39.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Vec_h
+-#define Minisat_Vec_h
++#ifndef Minisat22_Vec_h
++#define Minisat22_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "minisat22/mtl/IntTypes.h"
++#include "minisat22/mtl/XAlloc.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+@@ -96,7 +96,7 @@
+ void vec<T>::capacity(int min_cap) {
+     if (cap >= min_cap) return;
+     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+-    if (add > INT_MAX - cap || ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM)
++    if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
+         throw OutOfMemoryException();
+  }
+ 
+diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
+--- solvers/minisat22/mtl/XAlloc.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/mtl/XAlloc.h	2018-01-25 17:51:22.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_XAlloc_h
+-#define Minisat_XAlloc_h
++#ifndef Minisat22_XAlloc_h
++#define Minisat22_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
+--- solvers/minisat22/utils/Options.cc	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/utils/Options.cc	2018-01-25 17:51:10.000000000 +0000
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "mtl/Sort.h"
+-#include "utils/Options.h"
+-#include "utils/ParseUtils.h"
++#include "minisat22/mtl/Sort.h"
++#include "minisat22/utils/Options.h"
++#include "minisat22/utils/ParseUtils.h"
+ 
+-using namespace Minisat;
++using namespace Minisat22;
+ 
+-void Minisat::parseOptions(int& argc, char** argv, bool strict)
++void Minisat22::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -42,11 +42,12 @@
+                 // fprintf(stderr, "checking %d: %s against flag <%s> (%s)\n", i, argv[i], Option::getOptionList()[k]->name, parsed_ok ? "ok" : "skip");
+             }
+ 
+-            if (!parsed_ok)
++            if (!parsed_ok) {
+                 if (strict && match(argv[i], "-"))
+                     fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i], Option::getHelpPrefixString()), exit(1);
+                 else
+                     argv[j++] = argv[i];
++            }
+         }
+     }
+ 
+@@ -54,9 +55,9 @@
+ }
+ 
+ 
+-void Minisat::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Minisat::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Minisat::printUsageAndExit (int argc, char** argv, bool verbose)
++void Minisat22::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void Minisat22::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void Minisat22::printUsageAndExit (int argc, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
+--- solvers/minisat22/utils/Options.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/utils/Options.h	2018-01-25 17:50:49.000000000 +0000
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Options_h
+-#define Minisat_Options_h
++#ifndef Minisat22_Options_h
++#define Minisat22_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "minisat22/mtl/IntTypes.h"
++#include "minisat22/mtl/Vec.h"
++#include "minisat22/utils/ParseUtils.h"
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+@@ -60,7 +60,7 @@
+     struct OptionLt {
+         bool operator()(const Option* x, const Option* y) {
+             int test1 = strcmp(x->category, y->category);
+-            return test1 < 0 || test1 == 0 && strcmp(x->type_name, y->type_name) < 0;
++            return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
+         }
+     };
+ 
+@@ -282,15 +282,15 @@
+         if (range.begin == INT64_MIN)
+             fprintf(stderr, "imin");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.begin);
++            fprintf(stderr, "%4" PRIi64, range.begin);
+ 
+         fprintf(stderr, " .. ");
+         if (range.end == INT64_MAX)
+             fprintf(stderr, "imax");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.end);
++            fprintf(stderr, "%4" PRIi64, range.end);
+ 
+-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
++        fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
+--- solvers/minisat22/utils/ParseUtils.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/utils/ParseUtils.h	2018-01-25 17:50:31.000000000 +0000
+@@ -18,15 +18,15 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_ParseUtils_h
+-#define Minisat_ParseUtils_h
++#ifndef Minisat22_ParseUtils_h
++#define Minisat22_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+ #include <zlib.h>
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ //-------------------------------------------------------------------------------------------------
+ // A simple buffered character stream class:
+diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
+--- solvers/minisat22/utils/System.cc	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/utils/System.cc	2018-01-25 17:50:24.000000000 +0000
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "minisat22/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace Minisat;
++using namespace Minisat22;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,29 +67,35 @@
+     return peak_kb;
+ }
+ 
+-double Minisat::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Minisat::memUsedPeak() { 
++double Minisat22::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double Minisat22::memUsedPeak() { 
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double Minisat::memUsed(void) {
++double Minisat22::memUsed(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+-double MiniSat::memUsedPeak(void) { return memUsed(); }
++double Minisat22::memUsedPeak(void) { return memUsed(); }
+ 
+ 
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Minisat::memUsed(void) {
++double Minisat22::memUsed(void) {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+ 
++
++double Minisat22::memUsedPeak(void) { return memUsed(); }
++
+ #else
+-double Minisat::memUsed() { 
++double Minisat22::memUsed() { 
+     return 0; }
++
++double Minisat22::memUsedPeak(void) { return memUsed(); }
++
+ #endif
+diff -Naur solvers/minisat22/utils/System.h solvers/m22/utils/System.h
+--- solvers/minisat22/utils/System.h	2010-07-10 17:07:36.000000000 +0100
++++ solvers/m22/utils/System.h	2018-01-25 17:50:10.000000000 +0000
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_System_h
+-#define Minisat_System_h
++#ifndef Minisat22_System_h
++#define Minisat22_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
++#include "minisat22/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Minisat {
++namespace Minisat22 {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
+@@ -43,14 +43,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Minisat::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double Minisat22::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Minisat::cpuTime(void) {
++static inline double Minisat22::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }

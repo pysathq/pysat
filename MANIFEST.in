@@ -1,0 +1,6 @@
+include README.rst
+include LICENSE.txt
+include MANIFEST.in
+recursive-include cardenc *.hh
+include solvers/prepare.py
+recursive-include solvers *.patch

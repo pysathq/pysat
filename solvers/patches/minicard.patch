@@ -1,0 +1,1067 @@
+diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
+--- solvers/minicard/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/mc/Makefile	2018-01-25 17:28:48.000000000 +0000
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := minicard
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
+--- solvers/minicard/core/Solver.cc	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/core/Solver.cc	2018-01-25 17:22:44.000000000 +0000
+@@ -27,10 +27,10 @@
+ 
+ #include <math.h>
+ 
+-#include "mtl/Sort.h"
+-#include "minicard/Solver.h"
++#include "minicard/mtl/Sort.h"
++#include "minicard/core/Solver.h"
+ 
+-using namespace Minisat;
++using namespace Minicard;
+ 
+ //=================================================================================================
+ // Options:
+@@ -73,7 +73,7 @@
+   , restart_first    (opt_restart_first)
+   , restart_inc      (opt_restart_inc)
+   , detect_clause    (opt_detect_clause)
+-  
++
+     // Parameters (the rest):
+     //
+   , learntsize_factor((double)1/(double)3), learntsize_inc(1.1)
+@@ -211,7 +211,6 @@
+         return ok = false;
+     }
+ 
+-
+     if (detect_clause) {
+         // Check if constraint is actually a clause
+         // and add it as a clause for efficiency
+@@ -222,7 +221,7 @@
+             return addClause_(ps);
+         }
+     }
+-    
++
+     // Propagate negation of remaining literals if already at bound
+     if (k == 0) {
+         for (i = 0; i < ps.size(); i++) {
+@@ -244,7 +243,6 @@
+     return true;
+ }
+ 
+-
+ void Solver::attachClause(CRef cr) {
+     const Clause& c = ca[cr];
+     if (c.is_atmost()) {
+@@ -261,17 +259,17 @@
+         watches[~c[0]].push(Watcher(cr, c[1]));
+         watches[~c[1]].push(Watcher(cr, c[0]));
+         if (c.learnt()) learnts_literals += c.size();
+-        else            clauses_literals += c.size(); 
++        else            clauses_literals += c.size();
+     }
+-
+ }
++
+ void Solver::detachClause(CRef cr, bool strict) {
+     const Clause& c = ca[cr];
+     // We shouldn't need to remove an atmost.
+     assert(!c.is_atmost());
+-    
++
+     assert(c.size() > 1);
+-    
++
+     if (strict){
+         remove(watches[~c[0]], Watcher(cr, c[1]));
+         remove(watches[~c[1]], Watcher(cr, c[0]));
+@@ -282,7 +280,8 @@
+     }
+ 
+     if (c.learnt()) learnts_literals -= c.size();
+-    else            clauses_literals -= c.size(); }
++    else            clauses_literals -= c.size();
++}
+ 
+ void Solver::detachAtMost(CRef cr) {
+     const Clause& c = ca[cr];
+@@ -290,7 +289,8 @@
+         remove(watches[c[i]], Watcher(cr, c[i]));
+     }
+ 
+-    clauses_literals -= c.size(); }
++    clauses_literals -= c.size();
++}
+ 
+ 
+ void Solver::removeClause(CRef cr) {
+@@ -343,7 +343,7 @@
+         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
+             Var      x  = var(trail[c]);
+             assigns [x] = l_Undef;
+-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
++            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
+                 polarity[x] = sign(trail[c]);
+             insertVarOrder(x); }
+         qhead = trail_lim[level];
+@@ -381,25 +381,25 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Analyze conflict and produce a reason clause.
+-|  
++|
+ |    Pre-conditions:
+ |      * 'out_learnt' is assumed to be cleared.
+ |      * Current decision level must be greater than root level.
+-|  
++|
+ |    Post-conditions:
+ |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+-|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the 
++|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ |        rest of literals. There may be others from the same level though.
+-|  
++|
+ |________________________________________________________________________________________________@*/
+ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
+ {
+     int pathC = 0;
+     Lit p     = lit_Undef;
+-    
++
+     // Generate conflict clause:
+     //
+     out_learnt.push();      // (leave room for the asserting literal)
+@@ -414,7 +414,7 @@
+                 if (value(c[j]) != l_True) continue;
+ 
+                 Lit q = ~c[j];
+-                
++
+                 if (!seen[var(q)] && level(var(q)) > 0){
+                     varBumpActivity(var(q));
+                     seen[var(q)] = 1;
+@@ -428,7 +428,7 @@
+         else {
+             if (c.learnt())
+                 claBumpActivity(c);
+-            
++
+             for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
+                 Lit q = c[j];
+ 
+@@ -453,9 +453,9 @@
+     }while (pathC > 0);
+     out_learnt[0] = ~p;
+ 
+-    // Simplify conflict clause: 
++    // Simplify conflict clause:
+     //                 does adding atmosts into the conflict affect the simplifying?
+-    // 
++    //
+     int i, j;
+     out_learnt.copyTo(analyze_toclear);
+     if (ccmin_mode == 2){
+@@ -466,7 +466,7 @@
+         for (i = j = 1; i < out_learnt.size(); i++)
+             if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
+                 out_learnt[j++] = out_learnt[i];
+-        
++
+     }else if (ccmin_mode == 1){
+         for (i = j = 1; i < out_learnt.size(); i++){
+             Var x = var(out_learnt[i]);
+@@ -476,7 +476,7 @@
+             else{
+                 Clause& c = ca[reason(var(out_learnt[i]))];
+                 assert(!c.is_atmost());
+-                
++
+                 for (int k = 1; k < c.size(); k++)
+                     if (!seen[var(c[k])] && level(var(c[k])) > 0){
+                         out_learnt[j++] = out_learnt[i];
+@@ -567,7 +567,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyzeFinal : (p : Lit)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+@@ -693,11 +693,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  propagate : [void]  ->  [Clause*]
+-|  
++|
+ |  Description:
+ |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ |    otherwise CRef_Undef.
+-|  
++|
+ |    Post-conditions:
+ |      * the propagation queue is empty, even if there was a conflict.
+ |________________________________________________________________________________________________@*/
+@@ -731,7 +731,7 @@
+ 
+                 if (newWatch == lit_Undef) {
+                     // No new watch found, so we have reached the bound.
+-                    // Enqueue the negation of each remaining literal
++                    // Enque the negation of each remaining literal
+                     for (int k = 0 ; k < c.atmost_watches() ; k++) {
+                         if (c[k] != p && value(c[k]) != l_False && (k==0 || c[k] != c[k-1])) {
+                             assert(value(c[k]) == l_Undef);
+@@ -810,16 +810,16 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  reduceDB : ()  ->  [void]
+-|  
++|
+ |  Description:
+ |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+ |________________________________________________________________________________________________@*/
+-struct reduceDB_lt { 
++struct reduceDB_lt {
+     ClauseAllocator& ca;
+     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
+-    bool operator () (CRef x, CRef y) { 
+-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
++    bool operator () (CRef x, CRef y) {
++        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
+ };
+ void Solver::reduceDB()
+ {
+@@ -832,7 +832,7 @@
+     for (i = j = 0; i < learnts.size(); i++){
+         Clause& c = ca[learnts[i]];
+         assert(!c.is_atmost());
+-        
++
+         if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
+             removeClause(learnts[i]);
+         else
+@@ -870,7 +870,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  simplify : [void]  ->  [bool]
+-|  
++|
+ |  Description:
+ |    Simplify the clause database according to the current top-level assigment. Currently, the only
+ |    thing done here is the removal of satisfied clauses, but more things can be put here.
+@@ -902,11 +902,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
+-|  
++|
+ |  Description:
+-|    Search for a model the specified number of conflicts. 
++|    Search for a model the specified number of conflicts.
+ |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
+-|  
++|
+ |  Output:
+ |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+ |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+@@ -950,15 +950,15 @@
+                 max_learnts             *= learntsize_inc;
+ 
+                 if (verbosity >= 1)
+-                    printf("c | %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
+-                           (int)conflicts, 
+-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
++                    printf("c | %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
++                           (int)conflicts,
++                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+                            (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+             }
+ 
+         }else{
+             // NO CONFLICT
+-            if (nof_conflicts >= 0 && conflictC >= nof_conflicts || !withinBudget()){
++            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()){
+                 // Reached bound on number of conflicts:
+                 progress_estimate = progressEstimate();
+                 cancelUntil(0);
+@@ -1123,7 +1123,7 @@
+ 
+ //=================================================================================================
+ // Writing CNF to DIMACS:
+-// 
++//
+ // FIXME: this needs to be rewritten completely.
+ 
+ static Var mapVar(Var x, vec<Var>& map, Var& max)
+@@ -1172,7 +1172,7 @@
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]]))
+             cnt++;
+-        
++
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]])){
+             Clause& c = ca[clauses[i]];
+@@ -1242,11 +1242,11 @@
+ {
+     // Initialize the next region to a size corresponding to the estimated utilization degree. This
+     // is not precise but should avoid some unnecessary reallocations for the new region:
+-    ClauseAllocator to(ca.size() - ca.wasted()); 
++    ClauseAllocator to(ca.size() - ca.wasted());
+ 
+     relocAll(to);
+     if (verbosity >= 2)
+-        printf("c |  Garbage collection:   %12d bytes => %12d bytes             |\n", 
++        printf("c |  Garbage collection:   %12d bytes => %12d bytes             |\n",
+                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+     to.moveTo(ca);
+ }
+diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
+--- solvers/minicard/core/Solver.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/core/Solver.h	2018-01-25 17:22:39.000000000 +0000
+@@ -25,18 +25,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Solver_h
+-#define Minisat_Solver_h
++#ifndef Minicard_Solver_h
++#define Minicard_Solver_h
+ 
+-#include "mtl/Vec.h"
+-#include "mtl/Heap.h"
+-#include "mtl/Alg.h"
+-#include "utils/Options.h"
+-#include "minicard/SolverTypes.h"
++#include "minicard/mtl/Vec.h"
++#include "minicard/mtl/Heap.h"
++#include "minicard/mtl/Alg.h"
++#include "minicard/utils/Options.h"
++#include "minicard/core/SolverTypes.h"
+ 
+ #include <vector>
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Solver -- the main class:
+@@ -53,17 +53,17 @@
+     //
+     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+ 
+-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
++    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
+-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
++    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
++    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+                                                                 // change the passed vector 'ps'.
+-    
+-    bool    addAtMost (const vec<Lit>& ps, int k);         // Add an AtMost cardinality constraint: SUM(ps) <= k
+-    bool    addAtMost_(      vec<Lit>& ps, int k);         // Add an AtMost cardinality constraint to the solver without making superflous internal copy.
+-                                                           // Will change the passed vector 'ps'.
++
++    bool    addAtMost (const vec<Lit>& ps, int k);              // Add an AtMost cardinality constraint: SUM(ps) <= k
++    bool    addAtMost_(      vec<Lit>& ps, int k);              // Add an AtMost cardinality constraint to the solver without making superflous internal copy.
++                                                                // Will change the passed vector 'ps'.
+ 
+     // Solving:
+     //
+@@ -88,9 +88,9 @@
+     void    toDimacs     (const char* file, Lit p);
+     void    toDimacs     (const char* file, Lit p, Lit q);
+     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+-    
++
+     // Variable mode:
+-    // 
++    //
+     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
+ 
+@@ -144,7 +144,7 @@
+     double    restart_inc;        // The factor with which the restart limit is multiplied in each restart.                    (default 1.5)
+ 
+     bool      detect_clause;      // The parser will detect when constraints are actually clauses
+-    
++
+     double    learntsize_factor;  // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)
+     double    learntsize_inc;     // The limit for learnt clauses is multiplied with this factor each restart.                 (default 1.1)
+ 
+@@ -157,7 +157,7 @@
+     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+ 
+ protected:
+-    
++
+     // Helper structures:
+     //
+     struct VarData { CRef reason; int level; };
+@@ -349,8 +349,8 @@
+ inline int      Solver::nVars         ()      const   { return vardata.size(); }
+ inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+ inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
+-inline void     Solver::setDecisionVar(Var v, bool b) 
+-{ 
++inline void     Solver::setDecisionVar(Var v, bool b)
++{
+     if      ( b && !decision[v]) dec_vars++;
+     else if (!b &&  decision[v]) dec_vars--;
+ 
+diff -Naur solvers/minicard/core/SolverTypes.h solvers/mc/core/SolverTypes.h
+--- solvers/minicard/core/SolverTypes.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/core/SolverTypes.h	2018-01-25 17:22:14.000000000 +0000
+@@ -26,19 +26,19 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_SolverTypes_h
+-#define Minisat_SolverTypes_h
++#ifndef Minicard_SolverTypes_h
++#define Minicard_SolverTypes_h
+ 
+ #include <assert.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Vec.h"
+-#include "mtl/Map.h"
+-#include "mtl/Alloc.h"
++#include "minicard/mtl/IntTypes.h"
++#include "minicard/mtl/Alg.h"
++#include "minicard/mtl/Vec.h"
++#include "minicard/mtl/Map.h"
++#include "minicard/mtl/Alloc.h"
++
++namespace Minicard {
+ 
+-namespace Minisat {
+-    
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+ 
+@@ -70,9 +70,9 @@
+ inline  int  var       (Lit p)              { return p.x >> 1; }
+ 
+ // Mapping Literals to and from compact integers suitable for array indexing:
+-inline  int  toInt     (Var v)              { return v; } 
+-inline  int  toInt     (Lit p)              { return p.x; } 
+-inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; } 
++inline  int  toInt     (Var v)              { return v; }
++inline  int  toInt     (Lit p)              { return p.x; }
++inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
+ 
+ //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
+ //const Lit lit_Error = mkLit(var_Undef, true );  // }
+@@ -85,7 +85,7 @@
+ // Lifted booleans:
+ //
+ // NOTE: this implementation is optimized for the case when comparisons between values are mostly
+-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
++//       between one variable and one constant. Some care had to be taken to make sure that gcc
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+@@ -106,7 +106,7 @@
+     bool  operator != (lbool b) const { return !(*this == b); }
+     lbool operator ^  (bool  b) const { return lbool((uint8_t)(value^(uint8_t)b)); }
+ 
+-    lbool operator && (lbool b) const { 
++    lbool operator && (lbool b) const {
+         uint8_t sel = (this->value << 1) | (b.value << 3);
+         uint8_t v   = (0xF7F755F4 >> sel) & 3;
+         return lbool(v); }
+@@ -150,15 +150,15 @@
+         header.is_atmost = atmost;
+         header.size      = ps.size();
+ 
+-        for (int i = 0; i < ps.size(); i++) 
++        for (int i = 0; i < ps.size(); i++)
+             data[i].lit = ps[i];
+ 
+         if (header.has_extra){
+             if (header.learnt)
+-                data[header.size].act = 0; 
++                data[header.size].act = 0;
+             else if (header.is_atmost)
+                 data[header.size].atmost_watches = -1;
+-            else 
++            else
+                 calcAbstraction(); }
+     }
+ 
+@@ -251,13 +251,13 @@
+     void reloc(CRef& cr, ClauseAllocator& to)
+     {
+         Clause& c = operator[](cr);
+-        
++
+         if (c.reloced()) { cr = c.relocation(); return; }
+-        
++
+         cr = to.alloc(c, c.learnt(), c.is_atmost());
+         c.relocate(cr);
+-        
+-        // Copy extra data-fields: 
++
++        // Copy extra data-fields:
+         // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
+         to[cr].mark(c.mark());
+         if (to[cr].learnt())         to[cr].activity() = c.activity();
+@@ -280,7 +280,7 @@
+ 
+  public:
+     OccLists(const Deleted& d) : deleted(d) {}
+-    
++
+     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
+     // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+@@ -339,13 +339,13 @@
+ 
+     typedef Map<CRef, T, CRefHash> HashTable;
+     HashTable map;
+-        
++
+  public:
+     // Size-operations:
+     void     clear       ()                           { map.clear(); }
+     int      size        ()                const      { return map.elems(); }
+ 
+-    
++
+     // Insert/Remove/Test mapping:
+     void     insert      (CRef cr, const T& t){ map.insert(cr, t); }
+     void     growTo      (CRef cr, const T& t){ map.insert(cr, t); } // NOTE: for compatibility
+@@ -372,11 +372,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  subsumes : (other : const Clause&)  ->  Lit
+-|  
++|
+ |  Description:
+ |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+ |       by subsumption resolution.
+-|  
++|
+ |    Result:
+ |       lit_Error  - No subsumption or simplification
+ |       lit_Undef  - Clause subsumes 'other'
+diff -Naur solvers/minicard/mtl/Alg.h solvers/mc/mtl/Alg.h
+--- solvers/minicard/mtl/Alg.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Alg.h	2018-01-25 17:23:49.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Alg_h
+-#define Minisat_Alg_h
++#ifndef Minicard_Alg_h
++#define Minicard_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "minicard/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur solvers/minicard/mtl/Alloc.h solvers/mc/mtl/Alloc.h
+--- solvers/minicard/mtl/Alloc.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Alloc.h	2018-01-25 17:23:45.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_Alloc_h
+-#define Minisat_Alloc_h
++#ifndef Minicard_Alloc_h
++#define Minicard_Alloc_h
+ 
+-#include "mtl/XAlloc.h"
+-#include "mtl/Vec.h"
++#include "minicard/mtl/XAlloc.h"
++#include "minicard/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+diff -Naur solvers/minicard/mtl/Heap.h solvers/mc/mtl/Heap.h
+--- solvers/minicard/mtl/Heap.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Heap.h	2018-01-25 17:23:37.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Heap_h
+-#define Minisat_Heap_h
++#ifndef Minicard_Heap_h
++#define Minicard_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "minicard/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+diff -Naur solvers/minicard/mtl/IntTypes.h solvers/mc/mtl/IntTypes.h
+--- solvers/minicard/mtl/IntTypes.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/IntTypes.h	2018-01-25 17:23:34.000000000 +0000
+@@ -17,8 +17,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_IntTypes_h
+-#define Minisat_IntTypes_h
++#ifndef Minicard_IntTypes_h
++#define Minicard_IntTypes_h
+ 
+ #ifdef __sun
+     // Not sure if there are newer versions that support C99 headers. The
+@@ -30,7 +30,13 @@
+ 
+ #else
+ 
++#   define __STDC_LIMIT_MACROS
++#   define __STDC_CONSTANT_MACROS
++#   undef _STDINT_H_
++#   undef _STDINT_H
++#   undef _GCC_WRAP_STDINT_H
+ #   include <stdint.h>
++#   define __STDC_FORMAT_MACROS
+ #   include <inttypes.h>
+ 
+ #endif
+diff -Naur solvers/minicard/mtl/Map.h solvers/mc/mtl/Map.h
+--- solvers/minicard/mtl/Map.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Map.h	2018-01-25 17:23:29.000000000 +0000
+@@ -17,28 +17,28 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Map_h
+-#define Minisat_Map_h
++#ifndef Minicard_Map_h
++#define Minicard_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "minicard/mtl/IntTypes.h"
++#include "minicard/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+ //
+ 
+-template<class K> struct Hash  { uint32_t operator()(const K& k)               const { return hash(k);  } };
+-template<class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
++template <class K> struct Hash  { uint32_t operator()(const K& k)               const { return uhash(k);  } };
++template <class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
+ 
+-template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return hash(*k);  } };
+-template<class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
++template <class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return uhash(*k);  } };
++template <class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
+ 
+-static inline uint32_t hash(uint32_t x){ return x; }
+-static inline uint32_t hash(uint64_t x){ return (uint32_t)x; }
+-static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
+-static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
++static inline uint32_t uhash(uint32_t x){ return x; }
++static inline uint32_t uhash(uint64_t x){ return (uint32_t)x; }
++static inline uint32_t uhash(int32_t x) { return (uint32_t)x; }
++static inline uint32_t uhash(int64_t x) { return (uint32_t)x; }
+ 
+ 
+ //=================================================================================================
+diff -Naur solvers/minicard/mtl/Queue.h solvers/mc/mtl/Queue.h
+--- solvers/minicard/mtl/Queue.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Queue.h	2018-01-25 17:23:23.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Queue_h
+-#define Minisat_Queue_h
++#ifndef Minicard_Queue_h
++#define Minicard_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "minicard/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ 
+diff -Naur solvers/minicard/mtl/Sort.h solvers/mc/mtl/Sort.h
+--- solvers/minicard/mtl/Sort.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Sort.h	2018-01-25 17:23:18.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Sort_h
+-#define Minisat_Sort_h
++#ifndef Minicard_Sort_h
++#define Minicard_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "minicard/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur solvers/minicard/mtl/Vec.h solvers/mc/mtl/Vec.h
+--- solvers/minicard/mtl/Vec.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/Vec.h	2018-01-25 17:23:12.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Vec_h
+-#define Minisat_Vec_h
++#ifndef Minicard_Vec_h
++#define Minicard_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "minicard/mtl/IntTypes.h"
++#include "minicard/mtl/XAlloc.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+@@ -96,7 +96,7 @@
+ void vec<T>::capacity(int min_cap) {
+     if (cap >= min_cap) return;
+     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+-    if (add > INT_MAX - cap || ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM)
++    if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
+         throw OutOfMemoryException();
+  }
+ 
+diff -Naur solvers/minicard/mtl/XAlloc.h solvers/mc/mtl/XAlloc.h
+--- solvers/minicard/mtl/XAlloc.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/mtl/XAlloc.h	2017-03-15 15:31:07.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_XAlloc_h
+-#define Minisat_XAlloc_h
++#ifndef Minicard_XAlloc_h
++#define Minicard_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur solvers/minicard/utils/Options.cc solvers/mc/utils/Options.cc
+--- solvers/minicard/utils/Options.cc	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/utils/Options.cc	2018-01-25 17:25:39.000000000 +0000
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "mtl/Sort.h"
+-#include "utils/Options.h"
+-#include "utils/ParseUtils.h"
++#include "minicard/mtl/Sort.h"
++#include "minicard/utils/Options.h"
++#include "minicard/utils/ParseUtils.h"
+ 
+-using namespace Minisat;
++using namespace Minicard;
+ 
+-void Minisat::parseOptions(int& argc, char** argv, bool strict)
++void Minicard::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -42,11 +42,12 @@
+                 // fprintf(stderr, "checking %d: %s against flag <%s> (%s)\n", i, argv[i], Option::getOptionList()[k]->name, parsed_ok ? "ok" : "skip");
+             }
+ 
+-            if (!parsed_ok)
++            if (!parsed_ok) {
+                 if (strict && match(argv[i], "-"))
+                     fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i], Option::getHelpPrefixString()), exit(1);
+                 else
+                     argv[j++] = argv[i];
++            }
+         }
+     }
+ 
+@@ -54,9 +55,9 @@
+ }
+ 
+ 
+-void Minisat::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Minisat::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Minisat::printUsageAndExit (int argc, char** argv, bool verbose)
++void Minicard::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void Minicard::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void Minicard::printUsageAndExit (int argc, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur solvers/minicard/utils/Options.h solvers/mc/utils/Options.h
+--- solvers/minicard/utils/Options.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/utils/Options.h	2018-01-25 17:25:27.000000000 +0000
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Options_h
+-#define Minisat_Options_h
++#ifndef Minicard_Options_h
++#define Minicard_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "minicard/mtl/IntTypes.h"
++#include "minicard/mtl/Vec.h"
++#include "minicard/utils/ParseUtils.h"
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+@@ -60,7 +60,7 @@
+     struct OptionLt {
+         bool operator()(const Option* x, const Option* y) {
+             int test1 = strcmp(x->category, y->category);
+-            return test1 < 0 || test1 == 0 && strcmp(x->type_name, y->type_name) < 0;
++            return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
+         }
+     };
+ 
+@@ -282,15 +282,15 @@
+         if (range.begin == INT64_MIN)
+             fprintf(stderr, "imin");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.begin);
++            fprintf(stderr, "%4" PRIi64, range.begin);
+ 
+         fprintf(stderr, " .. ");
+         if (range.end == INT64_MAX)
+             fprintf(stderr, "imax");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.end);
++            fprintf(stderr, "%4" PRIi64, range.end);
+ 
+-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
++        fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+diff -Naur solvers/minicard/utils/ParseUtils.h solvers/mc/utils/ParseUtils.h
+--- solvers/minicard/utils/ParseUtils.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/utils/ParseUtils.h	2018-01-25 17:25:11.000000000 +0000
+@@ -18,15 +18,15 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_ParseUtils_h
+-#define Minisat_ParseUtils_h
++#ifndef Minicard_ParseUtils_h
++#define Minicard_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+ #include <zlib.h>
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ //-------------------------------------------------------------------------------------------------
+ // A simple buffered character stream class:
+diff -Naur solvers/minicard/utils/System.cc solvers/mc/utils/System.cc
+--- solvers/minicard/utils/System.cc	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/utils/System.cc	2018-01-25 17:25:07.000000000 +0000
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "minicard/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace Minisat;
++using namespace Minicard;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,31 +67,35 @@
+     return peak_kb;
+ }
+ 
+-double Minisat::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Minisat::memUsedPeak() { 
++double Minicard::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double Minicard::memUsedPeak() { 
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double Minisat::memUsed(void) {
++double Minicard::memUsed(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+-double MiniSat::memUsedPeak(void) { return memUsed(); }
++double Minicard::memUsedPeak(void) { return memUsed(); }
+ 
+ 
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Minisat::memUsed(void) {
++double Minicard::memUsed(void) {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+-double Minisat::memUsedPeak(void) { return memUsed(); }
++
++
++double Minicard::memUsedPeak(void) { return memUsed(); }
+ 
+ #else
+-double Minisat::memUsed() { 
++double Minicard::memUsed() { 
+     return 0; }
+-double Minisat::memUsedPeak(void) { return memUsed(); }
++
++double Minicard::memUsedPeak(void) { return memUsed(); }
++
+ #endif
+diff -Naur solvers/minicard/utils/System.h solvers/mc/utils/System.h
+--- solvers/minicard/utils/System.h	2018-01-25 17:30:29.000000000 +0000
++++ solvers/mc/utils/System.h	2018-01-25 17:24:59.000000000 +0000
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_System_h
+-#define Minisat_System_h
++#ifndef Minicard_System_h
++#define Minicard_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
++#include "minicard/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Minisat {
++namespace Minicard {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
+@@ -43,14 +43,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Minisat::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double Minicard::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Minisat::cpuTime(void) {
++static inline double Minicard::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
