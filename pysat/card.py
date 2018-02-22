@@ -57,9 +57,11 @@ class CardEnc(object):
         if not top_id:
             top_id = max(map(lambda x: abs(x), lits))
 
+        # we are going to return this formula
+        ret = CNFPlus()
+
         # Minicard's native representation is handled separately
         if encoding == 9:
-            ret = CNFPlus()
             ret.atmosts, ret.nv = [(lits, bound)], top_id
             return ret
 
@@ -72,11 +74,9 @@ class CardEnc(object):
         def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
 
         if res:
-            ret = CNFPlus()
             ret.clauses, ret.nv = res
-            return ret
-        else:
-            return None
+
+        return ret
 
     @classmethod
     def atleast(cls, lits, bound=1, top_id=None, encoding=EncType.seqcounter):
@@ -89,9 +89,11 @@ class CardEnc(object):
         if not top_id:
             top_id = max(map(lambda x: abs(x), lits))
 
+        # we are going to return this formula
+        ret = CNFPlus()
+
         # Minicard's native representation is handled separately
         if encoding == 9:
-            ret = CNFPlus()
             ret.atmosts, ret.nv = [([-l for l in lits], len(lits) - bound)], top_id
             return ret
 
@@ -104,11 +106,9 @@ class CardEnc(object):
         def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
 
         if res:
-            ret = CNFPlus()
             ret.clauses, ret.nv = res
-            return ret
-        else:
-            return None
+
+        return ret
 
     @classmethod
     def equals(cls, lits, bound=1, top_id=None, encoding=EncType.seqcounter):
