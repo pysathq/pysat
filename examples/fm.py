@@ -297,7 +297,7 @@ def usage():
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
     print('        -c, --cardenc    Cardinality encoding to use:')
-    print('                         Available values: bw, cardn, kmtot, ladder, mtot, pw, seqc, sortn, tot (default = pw)')
+    print('                         Available values: bw, cardn, kmtot, ladder, mtot, pw, seqc, sortn, tot (default = seqc)')
     print('        -h, --help')
     print('        -s, --solver     SAT solver to use')
     print('                         Available values: g3, lgl, m22, mc, mgh (default = m22)')
