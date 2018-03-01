@@ -31,8 +31,8 @@ Cardinality encodings supported are implemented in C++ and include:
 -  totalizer [2]_
 -  modulo totalizer [5]_
 
-.. [1] Roberto Asín, Robert Nieuwenhuis, Albert Oliveras,
-   Enric Rodríguez-Carbonell. *Cardinality Networks and Their Applications*.
+.. [1] Roberto Asin, Robert Nieuwenhuis, Albert Oliveras,
+   Enric Rodriguez-Carbonell. *Cardinality Networks and Their Applications*.
    SAT 2009. pp. 167-180
 
 .. [2] Olivier Bailleux, Yacine Boufkhad. *Efficient CNF Encoding of Boolean
@@ -43,7 +43,7 @@ Cardinality encodings supported are implemented in C++ and include:
 
 .. [4] Ian P. Gent, Peter Nightingale. *A New Encoding of Alldifferent Into
    SAT*. In International workshop on modelling and reformulating constraint
-   satisfaction problems 2004. pp. 95–110
+   satisfaction problems 2004. pp. 95-110
 
 .. [5] Toru Ogawa, Yangyang Liu, Ryuzo Hasegawa, Miyuki Koshimura,
    Hiroshi Fujita. *Modulo Based CNF Encoding of Cardinality Constraints and
@@ -157,7 +157,7 @@ or (if you choose a directory to install PySAT into)
 
     python setup.py install --prefix=<where-to-install>
 
-Both options (i.e. via ``pip`` or ``setup.py``) are supposed to download
+Both options (i.e. via ``pip`` or ``setup.py``) are supposed to download
 and compile all the supported SAT solvers as well as prepare the
 installation of PySAT.
 
