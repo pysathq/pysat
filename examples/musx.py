@@ -88,7 +88,7 @@ class MUSX(object):
             self._compute(approx)
 
             # return an MUS
-            return map(lambda x: self.vmap[x] + 1, approx)
+            return list(map(lambda x: self.vmap[x] + 1, approx))
 
     def _compute(self, approx):
         """

@@ -62,7 +62,7 @@ class FM(object):
         self.cost = 0
 
         # initialize SAT oracle with hard clauses only
-	self.init(with_soft=False)
+        self.init(with_soft=False)
 
     def __enter__(self):
         """
@@ -165,7 +165,7 @@ class FM(object):
 
         # extracting the core
         self.core = [self.vmap[sel] for sel in self.oracle.get_core()]
-        minw = min(map(lambda i: self.wght[i], self.core))
+        minw = min(list(map(lambda i: self.wght[i], self.core)))
 
         # updating the cost
         self.cost += minw

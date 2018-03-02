@@ -93,7 +93,7 @@ class LBX(object):
             self._filter_satisfied(update_setd=True)
             self._compute()
 
-            self.solution = map(lambda i: i + 1, filter(lambda i: not self.satc[i], range(len(self.soft))))
+            self.solution = list(map(lambda i: i + 1, filter(lambda i: not self.satc[i], range(len(self.soft)))))
 
         return self.solution
 
