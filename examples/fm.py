@@ -10,13 +10,14 @@
 
 #
 #==============================================================================
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import getopt
 import gzip
 import os
 from pysat.formula import CNF, WCNF
 from pysat.card import CardEnc, EncType
 from pysat.solvers import Solver
+from six.moves import range
 import sys
 
 
@@ -121,7 +122,7 @@ class FM(object):
             self.scpy = [True for cl in self.soft]
 
             # adding soft clauses to oracle
-            for i in xrange(len(self.soft)):
+            for i in range(len(self.soft)):
                 self.topv += 1
 
                 self.soft[i].append(-self.topv)
@@ -165,7 +166,7 @@ class FM(object):
 
         # extracting the core
         self.core = [self.vmap[sel] for sel in self.oracle.get_core()]
-        minw = min(list(map(lambda i: self.wght[i], self.core)))
+        minw = min(map(lambda i: self.wght[i], self.core))
 
         # updating the cost
         self.cost += minw
@@ -311,10 +312,10 @@ if __name__ == '__main__':
 
     if files:
         if files[0].endswith('.gz'):
-            fp = gzip.open(files[0], 'rb')
+            fp = gzip.open(files[0], 'rt')
             ftype = 'WCNF' if files[0].endswith('.wcnf.gz') else 'CNF'
         else:
-            fp = open(files[0], 'rb')
+            fp = open(files[0], 'r')
             ftype = 'WCNF' if files[0].endswith('.wcnf') else 'CNF'
 
         if ftype == 'WCNF':
