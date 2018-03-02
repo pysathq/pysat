@@ -417,7 +417,7 @@ class CNFPlus(object):
                         self.nv = max([abs(l) for l in lits] + [self.nv])
 
                         if items[-2][0] == '>':
-                            lits = map(lambda l: -l, lits)
+                            lits = list(map(lambda l: -l, lits))
                             rhs = len(lits) - rhs
 
                         self.atmosts.append([lits, rhs])
@@ -553,7 +553,7 @@ class WCNFPlus(object):
                         self.nv = max([abs(l) for l in lits] + [self.nv])
 
                         if items[-2][0] == '>':
-                            lits = map(lambda l: -l, lits)
+                            lits = list(map(lambda l: -l, lits))
                             rhs = len(lits) - rhs
 
                         self.atms.append([lits, rhs])
