@@ -670,7 +670,7 @@ class Lingeling(object):
 
                 if self.use_timer:
                     self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_tim
+                    self.accu_time += self.call_time
 
                 model = self.get_model()
 
@@ -904,7 +904,7 @@ class Minicard(object):
 
                 if self.use_timer:
                     self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_tim
+                    self.accu_time += self.call_time
 
                 model = self.get_model()
 
@@ -1155,7 +1155,7 @@ class Minisat22(object):
 
                 if self.use_timer:
                     self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_tim
+                    self.accu_time += self.call_time
 
                 model = self.get_model()
 
@@ -1399,7 +1399,7 @@ class MinisatGH(object):
 
                 if self.use_timer:
                     self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_tim
+                    self.accu_time += self.call_time
 
                 model = self.get_model()
 

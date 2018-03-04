@@ -10,7 +10,7 @@
 
 #
 #==============================================================================
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 import getopt
 import gzip
 import os
