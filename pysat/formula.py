@@ -11,7 +11,9 @@
 #
 #==============================================================================
 from __future__ import print_function
+import collections
 import copy
+import itertools
 import os
 import sys
 
@@ -19,6 +21,69 @@ try:  # for Python2
     from cStringIO import StringIO
 except ImportError:  # for Python3
     from io import StringIO
+
+
+#
+#==============================================================================
+class IDPool(object):
+    """
+        A simple manager of variable IDs.
+    """
+
+    def __init__(self, start_from=1):
+        """
+            Constructor.
+        """
+
+        self.restart(start_from=start_from)
+
+    def restart(self, start_from=1):
+        """
+            Restart the manager from scratch.
+        """
+
+        # initial ID
+        self.start_from = start_from
+
+        # this is how we get the current ID
+        self.counter = itertools.count(start=self.start_from)
+
+        # main dictionary storing the mapping from objects to variable IDs
+        self.obj2id = collections.defaultdict(lambda: next(self.counter))
+
+        # mapping back from variable IDs to objects
+        # (if for whatever reason necessary)
+        self.id2obj = {}
+
+    def id(self, obj):
+        """
+            Return an integer variable ID for a given object, which
+            can be a a variable name. Assign a new ID if necessary.
+        """
+
+        vid = self.obj2id[obj]
+
+        if vid not in self.id2obj:
+            self.id2obj[vid] = obj
+
+        return vid
+
+    def obj(self, vid):
+        """
+            Given a variable ID, get the corresponding object.
+        """
+
+        if vid in self.id2obj:
+            return self.id2obj[vid]
+
+        return None
+
+    def top(self):
+        """
+            Return current top variable ID.
+        """
+
+        return len(self.obj2id) + self.start_from - 1
 
 
 #
