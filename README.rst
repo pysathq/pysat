@@ -15,6 +15,7 @@ with the (potentially multiple) use of a SAT oracle.
 Currently, the following SAT solvers are supported:
 
 -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
+-  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
 -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
 -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
@@ -94,7 +95,7 @@ solver given an unsatisfiable set of clauses:
     [-3, 1]
 
 Finally, the following example gives an idea of how one can extract a
-*proof* (supported by Glucose3 and Lingeling only):
+*proof* (supported by Glucose3, Glucose4, and Lingeling only):
 
 .. code:: python
 
