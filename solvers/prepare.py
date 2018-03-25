@@ -28,6 +28,7 @@ except ImportError:  # Python 3
 #==============================================================================
 sources = {
     'glucose30': ('http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz', 'solvers/glucose30.tar.gz'),
+    'glucose41': ('http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-syrup-4.1.tgz', 'solvers/glucose41.tar.gz'),
     'lingeling': ('http://fmv.jku.at/lingeling/lingeling-bbc-9230380-160707-druplig-009.tar.gz', 'solvers/lingeling.tar.gz'),
     'minicard': ('https://github.com/liffiton/minicard/archive/v1.2.tar.gz', 'solvers/minicard.tar.gz'),
     'minisat22': ('http://minisat.se/downloads/minisat-2.2.0.tar.gz', 'solvers/minisat22.tar.gz'),
@@ -38,6 +39,7 @@ sources = {
 #==============================================================================
 to_extract = {
     'glucose30': [],
+    'glucose41': [],
     'lingeling': ['druplig-009.zip', 'lingeling-bbc-9230380-160707.tar.gz'],
     'minicard': [],
     'minisat22': [],
@@ -48,6 +50,7 @@ to_extract = {
 #==============================================================================
 to_move = {
     'glucose30': [],
+    'glucose41': [],
     'lingeling': [
         ('druplig-009/druplig.c', 'druplig.c'),
         ('druplig-009/druplig.h', 'druplig.h'),
@@ -80,6 +83,53 @@ to_remove = {
         'mtl/config.mk',
         'mtl/template.mk',
         'simp',
+        'utils/Makefile'
+    ],
+    'glucose41': [
+        '._Changelog',
+        '._LICENCE',
+        '._README',
+        '._core',
+        '._mtl',
+        '._parallel',
+        '._simp',
+        '._utils',
+        'Changelog',
+        'core/._BoundedQueue.h',
+        'core/._Constants.h',
+        'core/._Dimacs.h',
+        'core/._Makefile',
+        'core/._Solver.cc',
+        'core/._Solver.h',
+        'core/._SolverStats.h',
+        'core/._SolverTypes.h',
+        'core/Dimacs.h',
+        'core/Makefile',
+        'LICENCE',
+        'README',
+        'mtl/._Alg.h',
+        'mtl/._Alloc.h',
+        'mtl/._Clone.h',
+        'mtl/._Heap.h',
+        'mtl/._IntTypes.h',
+        'mtl/._Map.h',
+        'mtl/._Queue.h',
+        'mtl/._Sort.h',
+        'mtl/._Vec.h',
+        'mtl/._VecThreads.h',
+        'mtl/._XAlloc.h',
+        'mtl/._config.mk',
+        'mtl/._template.mk',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'simp',
+        'parallel',
+        'utils/._Makefile',
+        'utils/._Options.cc',
+        'utils/._Options.h',
+        'utils/._ParseUtils.h',
+        'utils/._System.cc',
+        'utils/._System.h',
         'utils/Makefile'
     ],
     'lingeling': [
@@ -202,7 +252,13 @@ def extract_archive(archive, solver, put_inside = False):
 
         tfile = tarfile.open(archive, 'r:gz')
         tfile.extractall(root)
-        directory = tfile.getnames()[0]
+
+        # normally, directory should be the first name
+        # but glucose4.1 has some garbage in the archive
+        for name in tfile.getnames():
+            if not name.startswith('./.'):
+                directory = name
+                break
     elif archive.endswith('.zip'):
         if os.path.exists(archive[:-4]):
             shutil.rmtree(archive[:-4])

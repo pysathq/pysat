@@ -26,7 +26,8 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 # solvers to install
 #==============================================================================
-to_install = ['glucose30', 'lingeling', 'minicard', 'minisat22', 'minisatgh']
+to_install = ['glucose30', 'glucose41', 'lingeling', 'minicard', 'minisat22',
+        'minisatgh']
 
 
 # we need to redefine the build command to

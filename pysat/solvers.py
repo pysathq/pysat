@@ -57,8 +57,10 @@ class Solver(object):
         """
 
         if not self.solver:
-            if name in ('g3', 'glucose3'):
+            if name in ('g3', 'g30','glucose3', 'glucose30'):
                 self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
+            elif name in ('g4', 'g41','glucose4', 'glucose41'):
+                self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
             elif name in ('lgl', 'lingeling'):
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
             elif name in ('mc', 'mcard', 'minicard'):
@@ -450,6 +452,267 @@ class Glucose3(object):
 
         if self.glucose:
             res = pysolvers.glucose3_add_cl(self.glucose, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by Glucose.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by Glucose.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.glucose:
+            res = None
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+            if not no_return:
+                return res
+
+
+#
+#==============================================================================
+class Glucose4(object):
+    """
+        Glucose 4.1 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        self.glucose = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, incr, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.glucose = None
+
+    def new(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        assert not incr or not with_proof, 'Incremental mode and proof tracing cannot be set together.'
+
+        if not self.glucose:
+            self.glucose = pysolvers.glucose41_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if incr:
+                pysolvers.glucose41_setincr(self.glucose)
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.glucose41_tracepr(self.glucose, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_del(self.glucose)
+            self.glucose = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.glucose:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.glucose41_solve(self.glucose, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[]):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.glucose:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.glucose41_solve_lim(self.glucose, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_cbudget(self.glucose)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_pbudget(self.glucose)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.glucose:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.glucose and self.status == True:
+            return pysolvers.glucose41_model(self.glucose)
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.glucose and self.status == False:
+            return pysolvers.glucose41_core(self.glucose)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.glucose and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip() for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.glucose:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.glucose:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.glucose:
+            return pysolvers.glucose41_nof_vars(self.glucose)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.glucose:
+            return pysolvers.glucose41_nof_cls(self.glucose)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.glucose:
+            done = False
+            while not done:
+                if self.use_timer:
+                    start_time = time.clock()
+
+                self.status = pysolvers.glucose41_solve(self.glucose, assumptions)
+
+                if self.use_timer:
+                    self.call_time = time.clock() - start_time
+                    self.accu_time += self.call_time
+
+                model = self.get_model()
+
+                if model:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.glucose:
+            res = pysolvers.glucose41_add_cl(self.glucose, clause)
 
             if res == False:
                 self.status = False

@@ -17,6 +17,10 @@
 #include "glucose30/core/Solver.h"
 #endif
 
+#ifdef WITH_GLUCOSE41
+#include "glucose41/core/Solver.h"
+#endif
+
 #ifdef WITH_LINGELING
 #include "lingeling/lglib.h"
 #endif
@@ -75,6 +79,21 @@ extern "C" {
 	static PyObject *py_glucose3_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_glucose3_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_del       (PyObject *, PyObject *);
+#endif
+#ifdef WITH_GLUCOSE41
+	static PyObject *py_glucose41_new       (PyObject *, PyObject *);
+	static PyObject *py_glucose41_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_glucose41_solve     (PyObject *, PyObject *);
+	static PyObject *py_glucose41_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_glucose41_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_setincr   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_core      (PyObject *, PyObject *);
+	static PyObject *py_glucose41_model     (PyObject *, PyObject *);
+	static PyObject *py_glucose41_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_glucose41_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_del       (PyObject *, PyObject *);
 #endif
 #ifdef WITH_LINGELING
 	static PyObject *py_lingeling_new       (PyObject *, PyObject *);
@@ -146,6 +165,21 @@ static PyMethodDef module_methods[] = {
         { "glucose3_nof_vars",  py_glucose3_nof_vars,  METH_VARARGS,   nvars_docstring },
         { "glucose3_nof_cls",   py_glucose3_nof_cls,   METH_VARARGS,    ncls_docstring },
 	{ "glucose3_del",       py_glucose3_del,       METH_VARARGS,     del_docstring },
+#endif
+#ifdef WITH_GLUCOSE41
+	{ "glucose41_new",       py_glucose41_new,       METH_VARARGS,     new_docstring },
+        { "glucose41_add_cl",    py_glucose41_add_cl,    METH_VARARGS,   addcl_docstring },
+        { "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,   solve_docstring },
+        { "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,     lim_docstring },
+        { "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS, cbudget_docstring },
+        { "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS, pbudget_docstring },
+        { "glucose41_setincr",   py_glucose41_setincr,   METH_VARARGS, setincr_docstring },
+        { "glucose41_tracepr",   py_glucose41_tracepr,   METH_VARARGS, tracepr_docstring },
+        { "glucose41_core",      py_glucose41_core,      METH_VARARGS,    core_docstring },
+        { "glucose41_model",     py_glucose41_model,     METH_VARARGS,   model_docstring },
+        { "glucose41_nof_vars",  py_glucose41_nof_vars,  METH_VARARGS,   nvars_docstring },
+        { "glucose41_nof_cls",   py_glucose41_nof_cls,   METH_VARARGS,    ncls_docstring },
+	{ "glucose41_del",       py_glucose41_del,       METH_VARARGS,     del_docstring },
 #endif
 #ifdef WITH_LINGELING
 	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,     new_docstring },
@@ -686,6 +720,378 @@ static PyObject *py_glucose3_del(PyObject *self, PyObject *args)
 	return ret;
 }
 #endif  // WITH_GLUCOSE30
+
+// API for Glucose 4.1
+//=============================================================================
+#ifdef WITH_GLUCOSE41
+static PyObject *py_glucose41_new(PyObject *self, PyObject *args)
+{
+	Glucose41::Solver *s = new Glucose41::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void glucose41_declare_vars(Glucose41::Solver *s, const int max_id)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(c_obj);
+	Glucose41::vec<Glucose41::Lit> cl((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(c_obj, i);
+		int l = pyint_to_cint(l_obj);
+		cl[i] = (l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		glucose41_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_solve(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Glucose41::vec<Glucose41::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		glucose41_declare_vars(s, max_var);
+
+	if (sigsetjmp(env, 0) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	bool res = s->solve(a);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Glucose41::vec<Glucose41::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		glucose41_declare_vars(s, max_var);
+
+	if (sigsetjmp(env, 0) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Glucose41::lbool res = s->solveLimited(a);
+
+	PyObject *ret;
+	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
+		ret = PyBool_FromLong((long)!(Glucose41::toInt(res)));
+	else
+		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->setConfBudget(budget);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->setPropBudget(budget);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_setincr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->setIncrementalMode();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->certifiedOutput = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->certifiedOutput = fdopen(fd, "w+");
+	if (s->certifiedOutput == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->certifiedOutput);
+	Py_INCREF(p_obj);
+#endif
+
+	s->certifiedUNSAT  = true;
+	s->certifiedPyFile = (void *)p_obj;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	Glucose41::vec<Glucose41::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = Glucose41::var((*c)[i]) * (Glucose41::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	PyObject *ret = Py_None;
+
+	if (c->size())
+		ret = Py_BuildValue("O", core);
+
+	Py_DECREF(core);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	Glucose41::vec<Glucose41::lbool> *m = &(s->model);  // minisat's model
+	Glucose41::lbool True = Glucose41::lbool((uint8_t)0);  // l_True fails to work
+
+	PyObject *model = PyList_New(m->size() - 1);
+	for (int i = 1; i < m->size(); ++i) {
+		int l = i * ((*m)[i] == True ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(model, i - 1, lit);
+	}
+
+	PyObject *ret = Py_None;
+
+	if (m->size())
+		ret = Py_BuildValue("O", model);
+
+	Py_DECREF(model);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->certifiedUNSAT == true)
+		PyFile_DecUseCount((PyFileObject *)(s->certifiedPyFile));
+#else
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->certifiedUNSAT == true)
+		Py_DECREF((PyObject *)s->certifiedPyFile);
+#endif
+
+	delete s;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+#endif  // WITH_GLUCOSE41
 
 // API for Lingeling
 //=============================================================================
