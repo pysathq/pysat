@@ -10,7 +10,7 @@
 
 #
 #==============================================================================
-from pysat.formula import CNFPlus
+from pysat.formula import CNF, CNFPlus
 import pycard
 import signal
 
@@ -129,4 +129,189 @@ class CardEnc(object):
 #
 #==============================================================================
 class ITotalizer(object):
-    pass
+    """
+        Iterative totalizer.
+    """
+
+    def __init__(self, lits=[], ubound=1, top_id=None):
+        """
+            Constructor.
+        """
+
+        # internal totalizer object
+        self.tobj = None
+
+        # its characteristics
+        self.lits = []
+        self.ubound = None
+        self.top_id = None
+
+        # encoding result
+        self.cnf = CNF()  # CNF formula encoding the totalizer object
+        self.rhs = []     # upper bounds on the number of literals (rhs)
+
+        # this newly created totalizer object is not yet merged in any other
+        self._merged = False
+
+        if lits:
+            self.new(lits=lits, ubound=ubound, top_id=top_id)
+
+    def new(self, lits=[], ubound=1, top_id=None):
+        """
+            Create a new totalizer object.
+        """
+
+        self.lits = lits
+        self.ubound = ubound
+        self.top_id = max(map(lambda x: abs(x), self.lits) + [top_id])
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # creating the object
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_new(self.lits,
+                self.ubound, self.top_id)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses = clauses
+        self.cnf.nv = self.top_id
+
+        # for convenience, keeping the number of clauses
+        self.nof_new = len(clauses)
+
+    def delete(self):
+        """
+            Destroy a totalizer object.
+        """
+
+        if self.tobj:
+            if not self._merged:
+                pycard.itot_del(self.tobj)
+
+                # otherwise, this totalizer object is merged into a larger one
+                # therefore, this memory should be freed in its destructor
+
+            self.tobj = None
+
+        self.lits = []
+        self.ubound = None
+        self.top_id = None
+
+        self.cnf = CNF()
+        self.rhs = []
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def increase(self, ubound=1, top_id=None):
+        """
+            Increase a possible upper bound (right-hand side) in an existing
+            totalizer object.
+        """
+
+        # do nothing if the bound is set incorrectly
+        if ubound <= self.ubound or self.ubound >= self.lits:
+            return
+        else:
+            self.ubound = ubound
+
+        self.top_id = max(self.top_id, top_id)
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # updating the object and adding more variables and clauses
+        clauses, self.rhs, self.top_id = pycard.itot_inc(self.tobj,
+                self.ubound, self.top_id)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses.extend(clauses)
+        self.cnf.nv = self.top_id
+
+        # keeping the number of newly added clauses
+        self.nof_new = len(clauses)
+
+    def extend(self, lits=[], ubound=None, top_id=None):
+        """
+            Add more input literals to an existing totalizer object.
+        """
+
+        # preparing a new list of distinct input literals
+        lits = list(set(lits).difference(set(self.lits)))
+
+        if not lits:
+            # nothing to merge with -> just increase the bound
+            if ubound:
+                self.increase(ubound=ubound, top_id=top_id)
+
+            return
+
+        self.top_id = max(self.top_id, top_id)
+        self.ubound = max(self.ubound, ubound)
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # updating the object and adding more variables and clauses
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_ext(self.tobj,
+                lits, self.ubound, self.top_id)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses.extend(clauses)
+        self.cnf.nv = self.top_id
+        self.lits.extend(lits)
+
+        # for convenience, keeping the number of new clauses
+        self.nof_new = len(clauses)
+
+    def merge_with(self, another, ubound=None, top_id=None):
+        """
+            Merge with another totalizer tree.
+        """
+
+        self.top_id = max(self.top_id, top_id, another.top_id)
+        self.ubound = max(self.ubound, ubound, another.ubound)
+
+        # extending the list of input literals
+        self.lits.extend(another.lits)
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # updating the object and adding more variables and clauses
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_mrg(self.tobj,
+                another.tobj, self.ubound, self.top_id)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses.extend(another.cnf.clauses)
+        self.cnf.clauses.extend(clauses)
+        self.cnf.nv = self.top_id
+
+        # for convenience, keeping the number of new clauses
+        self.nof_new = len(another.cnf.clauses) + len(clauses)
+
+        # memory deallocation should not be done for the merged tree
+        another._merged = True

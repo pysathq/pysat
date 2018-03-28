@@ -309,7 +309,7 @@ PyMODINIT_FUNC PyInit_pysolvers(void)
 //=============================================================================
 static int pyint_to_cint(PyObject *i_obj)
 {
-	return PyInt_AsLong (i_obj);
+	return PyInt_AsLong(i_obj);
 }
 
 // PyInt_fromLong()

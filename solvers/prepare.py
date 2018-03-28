@@ -208,6 +208,11 @@ def download_archive(url, save_to):
         Downloads an archive and saves locally (taken from PySMT).
     """
 
+    # not downloading the file again if it exists
+    if os.path.exists(save_to):
+        print('not downloading {0} since it exists locally'.format(save_to))
+        return
+
     # first attempt to get a response
     response = urlopen(url)
 
