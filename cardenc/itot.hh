@@ -125,8 +125,9 @@ void itot_increase_ua(
 
 	// i, j > 0
 	for (unsigned i = 1; i <= maxi; ++i) {
-		unsigned minj = std::min(rhs - i, (unsigned)bv.size());
-		for (unsigned j = last - i + 1; j <= minj; ++j)
+		unsigned maxj = std::min(rhs - i, (unsigned)bv.size());
+		unsigned minj = std::max((int)last - (int)i + 1, 1);
+		for (unsigned j = minj; j <= maxj; ++j)
 			dest.create_ternary_clause(-av[i - 1], -bv[j - 1], ov[i + j - 1]);
 	}
 }
