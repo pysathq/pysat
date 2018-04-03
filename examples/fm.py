@@ -58,6 +58,7 @@ class FM(object):
         self.topv = self.orig_nv = formula.nv
         self.hard = formula.hard
         self.soft = formula.soft
+        self.atm1 = []
         self.wght = formula.wght
         self.cenc = enc
         self.cost = 0
@@ -85,6 +86,10 @@ class FM(object):
         """
 
         self.oracle = Solver(name=self.solver, bootstrap_with=self.hard, use_timer=True)
+
+        # self.atm1 is not empty only in case of minicard
+        for am in self.atm1:
+            self.oracle.add_atmost(*am)
 
         if with_soft:
             for cl, cpy in zip(self.soft, self.scpy):
@@ -224,6 +229,11 @@ class FM(object):
             for cl in am1.clauses:
                 self.hard.append(cl)
 
+            # only if minicard
+            # (for other solvers am1.atmosts should be empty)
+            for am in am1.atmosts:
+                self.atm1.append(am)
+
             self.topv = am1.nv
 
         elif len(self.core) == 1:  # unit core => simply negate the clause
@@ -244,6 +254,7 @@ class FM(object):
             Report the total SAT solving time.
         """
 
+        self.time += self.oracle.time_accum()  # include time of the last SAT call
         return self.time
 
 

@@ -217,19 +217,27 @@ class ITotalizer(object):
 
         self.delete()
 
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.delete()
+
     def increase(self, ubound=1, top_id=None):
         """
             Increase a possible upper bound (right-hand side) in an existing
             totalizer object.
         """
 
+        self.top_id = max(self.top_id, top_id)
+
         # do nothing if the bound is set incorrectly
-        if ubound <= self.ubound or self.ubound >= self.lits:
+        if ubound <= self.ubound or self.ubound >= len(self.lits):
+            self.nof_new = 0
             return
         else:
             self.ubound = ubound
-
-        self.top_id = max(self.top_id, top_id)
 
         # saving default SIGINT handler
         def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
