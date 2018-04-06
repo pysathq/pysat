@@ -35,14 +35,17 @@ class RC2(object):
         MaxSAT algorithm based on relaxable cardinality constraints (RC2/OLL).
     """
 
-    def __init__(self, formula, solver='m22', incr=False, verbose=0):
+    def __init__(self, formula, solver='m22', exhaust=False,
+            incr=False, trim=0, verbose=0):
         """
             Constructor.
         """
 
-        # saving verbosity level
+        # saving verbosity level and other options
         self.verbose = verbose
+        self.exhaust = exhaust
         self.solver = solver
+        self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
         self.sels, self.vmap = [], {}
@@ -103,6 +106,10 @@ class RC2(object):
 
         self.sels_set = set(self.sels)
 
+        if self.verbose:
+            print('c formula: {0} vars, {1} hard, {2} soft'.format(formula.nv,
+                len(formula.hard), len(formula.soft)))
+
     def delete(self):
         """
             Explicit destructor.
@@ -112,14 +119,16 @@ class RC2(object):
             self.oracle.delete()
             self.oracle = None
 
-            for t in six.itervalues(self.tobj):
-                t.delete()
+            if self.solver != 'mc':  # for minicard, there is nothing to free
+                for t in six.itervalues(self.tobj):
+                    t.delete()
 
     def compute(self):
         """
             Compute and return a solution.
         """
 
+        # main solving loop
         while not self.oracle.solve(assumptions=self.sels + self.sums):
             self.get_core()
 
@@ -149,6 +158,11 @@ class RC2(object):
 
         # extracting the core
         self.core = self.oracle.get_core()
+
+        # try to reduce the core by trimming
+        self.trim_core()
+
+        # core weight
         self.minw = min(map(lambda l: self.wght[l], self.core))
 
         # dividing the core into two parts
@@ -174,9 +188,22 @@ class RC2(object):
             # process previously introducded sums in the core
             self.process_sums()
 
-            # create a new cardunality constraint
             if len(self.rels) > 1:
-                self.create_sum()
+                # create a new cardunality constraint
+                t = self.create_sum()
+
+                # apply core exhaustion if required
+                b = self.exhaust_core(t) if self.exhaust else 1
+
+                if b:
+                    # save the info about this sum and
+                    # add its assumption literal
+                    self.set_bound(t, b)
+                else:
+                    # impossible to satisfy any of these clauses
+                    # they must become hard
+                    for relv in self.rels:
+                        self.oracle.add_clause([relv])
         else:
             # unit cores are treated differently
             # (their negation is added to the hard part)
@@ -185,6 +212,54 @@ class RC2(object):
 
         # remove unnecessary assumptions
         self.filter_assumps()
+
+    def trim_core(self):
+        """
+            Trim unsatisfiable core at most a given number of times.
+        """
+
+        for i in range(self.trim):
+            # call solver with core assumption only
+            # it must return 'unsatisfiable'
+            self.oracle.solve(assumptions=self.core)
+
+            # extract a new core
+            new_core = self.oracle.get_core()
+
+            if len(new_core) == len(self.core):
+                # stop if new core is not better than the previous one
+                break
+
+            # otherwise, update core
+            self.core = new_core
+
+    def exhaust_core(self, tobj):
+        """
+            Exhaust core by increasing its bound as much as possible.
+        """
+
+        # the first case is simpler
+        if self.oracle.solve(assumptions=[-tobj.rhs[1]]):
+            return 1
+        else:
+            self.cost += self.minw
+
+        for i in range(2, len(self.rels)):
+            # saving the previous bound
+            self.tobj[-tobj.rhs[i - 1]] = tobj
+            self.bnds[-tobj.rhs[i - 1]] = i - 1
+
+            # increasing the bound
+            self.update_sum(-tobj.rhs[i - 1])
+
+            if self.oracle.solve(assumptions=[-tobj.rhs[i]]):
+                # the bound should be equal to i
+                return i
+
+            # the cost should increase further
+            self.cost += self.minw
+
+        return None
 
     def process_sels(self):
         """
@@ -239,10 +314,7 @@ class RC2(object):
                     self.wght[lnew] = 0
 
                 if lnew not in self.wght:
-                    self.sums.append(lnew)
-                    self.wght[lnew] = self.minw
-                    self.tobj[lnew] = t
-                    self.bnds[lnew] = b
+                    self.set_bound(t, b)
                 else:
                     self.wght[lnew] += self.minw
 
@@ -252,25 +324,39 @@ class RC2(object):
     def create_sum(self):
         """
             Create a totalizer object encoding a new cardinality constraint.
+            For Minicard, native atmost1 constraints is used instead.
         """
 
-        # new totalizer sum
-        t = ITotalizer(lits=self.rels, top_id=self.topv)
+        if self.solver != 'mc':  # standard totalizer-based encoding
+            # new totalizer sum
+            t = ITotalizer(lits=self.rels, top_id=self.topv)
 
-        # updating top variable id
-        self.topv = t.top_id
+            # updating top variable id
+            self.topv = t.top_id
 
-        # adding a new assumption to force the sum to be at most 1
-        self.sums.append(-t.rhs[1])
+            # adding its clauses to oracle
+            for cl in t.cnf.clauses:
+                self.oracle.add_clause(cl)
+        else:
+            # for minicard, use native cardinality constraints instead of the
+            # standard totalizer, i.e. create a new (empty) totalizer sum and
+            # fill it with the necessary data supported by minicard
+            t = ITotalizer()
+            t.lits = self.rels
 
-        # saving the totalizer object in a mapping and its weight
-        self.tobj[-t.rhs[1]] = t
-        self.bnds[-t.rhs[1]] = 1
-        self.wght[-t.rhs[1]] = self.minw
+            self.topv += 1  # a new variable will represent the bound
 
-        # adding its clauses to oracle
-        for cl in t.cnf.clauses:
-            self.oracle.add_clause(cl)
+            # proper initial bound
+            t.rhs = [None] * (len(t.lits))
+            t.rhs[1] = self.topv
+
+            # new atmost1 constraint instrumented with
+            # an implication and represented natively
+            rhs = len(t.lits)
+            am1 = [[-self.topv] * (rhs - 1) + t.lits, rhs]
+
+            # add constraint to the solver
+            self.oracle.add_atmost(*am1)
 
         return t
 
@@ -285,18 +371,45 @@ class RC2(object):
         # increment the current bound
         b = self.bnds[assump] + 1
 
-        # increasing its bound
-        t.increase(ubound=b, top_id=self.topv)
+        if self.solver != 'mc':  # the case of standard totalizer encoding
+            # increasing its bound
+            t.increase(ubound=b, top_id=self.topv)
 
-        # updating top variable id
-        self.topv = t.top_id
+            # updating top variable id
+            self.topv = t.top_id
 
-        # adding its clauses to oracle
-        if t.nof_new:
-            for cl in t.cnf.clauses[-t.nof_new:]:
-                self.oracle.add_clause(cl)
+            # adding its clauses to oracle
+            if t.nof_new:
+                for cl in t.cnf.clauses[-t.nof_new:]:
+                    self.oracle.add_clause(cl)
+        else:  # the case of cardinality constraints represented natively
+            # right-hand side is always equal to the number of input literals
+            rhs = len(t.lits)
+
+            if b < rhs:
+                # creating an additional bound
+                if not t.rhs[b]:
+                    self.topv += 1
+                    t.rhs[b] = self.topv
+
+                # a new at-most-b constraint
+                amb = [[-t.rhs[b]] * (rhs - b) + t.lits, rhs]
+                self.oracle.add_atmost(*amb)
 
         return t, b
+
+    def set_bound(self, tobj, rhs):
+        """
+            Set a bound for a given totalizer object.
+        """
+
+        # saving the sum and its weight in a mapping
+        self.tobj[-tobj.rhs[rhs]] = tobj
+        self.bnds[-tobj.rhs[rhs]] = rhs
+        self.wght[-tobj.rhs[rhs]] = self.minw
+
+        # adding a new assumption to force the sum to be at most rhs
+        self.sums.append(-tobj.rhs[rhs])
 
     def filter_assumps(self):
         """
@@ -327,15 +440,17 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'his:v',
-                ['help', 'incr', 'solver=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'his:t:vx',
+                ['exhaust', 'help', 'incr', 'solver=', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
         sys.exit(1)
 
+    exhaust = False
     incr = False
     solver = 'm22'
+    trim = 0
     verbose = 0
 
     for opt, arg in opts:
@@ -346,12 +461,16 @@ def parse_options():
             incr = True
         elif opt in ('-s', '--solver'):
             solver = str(arg)
+        elif opt in ('-t', '--trim'):
+            trim = int(arg)
         elif opt in ('-v', '--verbose'):
             verbose += 1
+        elif opt in ('-x', '--exhaust'):
+            exhaust = True
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return incr, solver, verbose, args
+    return exhaust, incr, solver, trim, verbose, args
 
 
 #==============================================================================
@@ -362,17 +481,20 @@ def usage():
 
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
-    print('        -h, --help')
-    print('        -i, --incr       Use SAT solver incrementally (only for g3 and g4)')
-    print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, g4, lgl, m22, mgh (default = m22)')
-    print('        -v, --verbose    Be verbose')
+    print('        -h, --help               Show this message')
+    print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
+    print('        -s, --solver=<string>    SAT solver to use')
+    print('                                 Available values: g3, g4, lgl, mc, m22, mgh (default = m22)')
+    print('        -t, --trim=<int>         SAT solver to use')
+    print('                                 Available values: [0 .. INT_MAX] (default = 0)')
+    print('        -v, --verbose            Be verbose')
+    print('        -x, --exhaust            Exhaust new unsatisfiable cores')
 
 
 #
 #==============================================================================
 if __name__ == '__main__':
-    incr, solver, verbose, files = parse_options()
+    exhaust, incr, solver, trim, verbose, files = parse_options()
 
     if files:
         if files[0].endswith('.gz'):
@@ -389,7 +511,9 @@ if __name__ == '__main__':
 
         fp.close()
 
-        with RC2(formula, solver=solver, incr=incr, verbose=verbose) as rc2:
+        with RC2(formula, solver=solver, exhaust=exhaust, incr=incr, trim=trim,
+                verbose=verbose) as rc2:
             rc2.compute()
 
-            print('c oracle time: {0:.4f}'.format(rc2.oracle_time()))
+            if verbose:
+                print('c oracle time: {0:.4f}'.format(rc2.oracle_time()))
