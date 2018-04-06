@@ -21,6 +21,18 @@ import time
 class NoSuchSolverError(Exception):
     pass
 
+
+#
+#==============================================================================
+SolverNames = {
+        'g3': ('g3', 'g30', 'glucose3', 'glucose30'),
+        'g4': ('g4', 'g41', 'glucose4', 'glucose41'),
+        'lgl': ('lgl', 'lingeling'),
+        'mc': ('mc', 'mcard', 'minicard'),
+        'm22': ('m22', 'msat22', 'minisat22'),
+        'mgh': ('mgh', 'msat-gh', 'minisat-gh')
+        }
+
 #
 #==============================================================================
 class Solver(object):
@@ -57,17 +69,17 @@ class Solver(object):
         """
 
         if not self.solver:
-            if name in ('g3', 'g30','glucose3', 'glucose30'):
+            if name in SolverNames['g3']:
                 self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
-            elif name in ('g4', 'g41','glucose4', 'glucose41'):
+            elif name in SolverNames['g4']:
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
-            elif name in ('lgl', 'lingeling'):
+            elif name in SolverNames['lgl']:
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
-            elif name in ('mc', 'mcard', 'minicard'):
+            elif name in SolverNames['mc']:
                 self.solver = Minicard(bootstrap_with, use_timer)
-            elif name in ('m22', 'msat22', 'minisat22'):
+            elif name in SolverNames['m22']:
                 self.solver = Minisat22(bootstrap_with, use_timer)
-            elif name in ('mgh', 'msat-gh', 'minisat-gh'):
+            elif name in SolverNames['mgh']:
                 self.solver = MinisatGH(bootstrap_with, use_timer)
             else:
                 raise(NoSuchSolverError(name))
@@ -748,10 +760,14 @@ class Lingeling(object):
         Lingeling SAT solver.
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False, with_proof=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
         """
             Basic constructor.
         """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Lingeling.')
 
         self.lingeling = None
         self.status = None

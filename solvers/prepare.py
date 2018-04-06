@@ -27,12 +27,32 @@ except ImportError:  # Python 3
 #
 #==============================================================================
 sources = {
-    'glucose30': ('http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz', 'solvers/glucose30.tar.gz'),
-    'glucose41': ('http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-syrup-4.1.tgz', 'solvers/glucose41.tar.gz'),
-    'lingeling': ('http://fmv.jku.at/lingeling/lingeling-bbc-9230380-160707-druplig-009.tar.gz', 'solvers/lingeling.tar.gz'),
-    'minicard': ('https://github.com/liffiton/minicard/archive/v1.2.tar.gz', 'solvers/minicard.tar.gz'),
-    'minisat22': ('http://minisat.se/downloads/minisat-2.2.0.tar.gz', 'solvers/minisat22.tar.gz'),
-    'minisatgh': ('https://github.com/niklasso/minisat/archive/master.zip', 'solvers/minisatgh.zip')
+    'glucose30': (
+        'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz',
+        'solvers/glucose30.tar.gz'
+    ),
+    'glucose41': (
+        'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-syrup-4.1.tgz',
+        'solvers/glucose41.tar.gz'
+    ),
+    'lingeling': (
+        'http://fmv.jku.at/lingeling/lingeling-bbc-9230380-160707-druplig-009.tar.gz',
+        'solvers/lingeling.tar.gz'
+    ),
+    'minicard': (
+        'https://github.com/liffiton/minicard/archive/v1.2.tar.gz',
+        'https://core.di.fc.ul.pt/~aign/storage/mirror/minicard-v1.2.tar.gz',
+        'solvers/minicard.tar.gz'
+    ),
+    'minisat22': (
+        'http://minisat.se/downloads/minisat-2.2.0.tar.gz',
+        'solvers/minisat22.tar.gz'
+    ),
+    'minisatgh': (
+        'https://github.com/niklasso/minisat/archive/master.zip',
+        'https://core.di.fc.ul.pt/~aign/storage/mirror/minisatgh-master.zip',
+        'solvers/minisatgh.zip'
+    )
 }
 
 #
@@ -194,8 +214,8 @@ def do(to_install):
     for solver in to_install:
         print('preparing {0}'.format(solver))
 
-        download_archive(*sources[solver])
-        extract_archive(sources[solver][1], solver)
+        download_archive(sources[solver])
+        extract_archive(sources[solver][-1], solver)
         adapt_files(solver)
         patch_solver(solver)
         compile_solver(solver)
@@ -203,40 +223,51 @@ def do(to_install):
 
 #
 #==============================================================================
-def download_archive(url, save_to):
+def download_archive(sources):
     """
         Downloads an archive and saves locally (taken from PySMT).
     """
+
+    # last element is expected to be the local archive name
+    save_to = sources[-1]
 
     # not downloading the file again if it exists
     if os.path.exists(save_to):
         print('not downloading {0} since it exists locally'.format(save_to))
         return
 
-    # first attempt to get a response
-    response = urlopen(url)
+    # try all possible sources one by one
+    for url in sources[:-1]:
+        # make five attempts per source
+        for i in range(5):
+            # first attempt to get a response
+            response = urlopen(url)
 
-    # handling redirections
-    u = urlopen(response.geturl())
+            # handling redirections
+            u = urlopen(response.geturl())
 
-    meta = u.info()
-    if meta.get('Content-Length') and len(meta.get('Content-Length')) > 0:
-        filesz = int(meta.get('Content-Length'))
-        if os.path.exists(save_to) and os.path.getsize(save_to) == filesz:
-            print('not downloading {0} since it exists locally'.format(save_to))
-            return
+            meta = u.info()
+            if meta.get('Content-Length') and len(meta.get('Content-Length')) > 0:
+                filesz = int(meta.get('Content-Length'))
+                if os.path.exists(save_to) and os.path.getsize(save_to) == filesz:
+                    print('not downloading {0} since it exists locally'.format(save_to))
+                    return
 
-        print('downloading: {0} ({1} bytes)...'.format(save_to, filesz), end=' ')
-        with open(save_to, 'wb') as fp:
-            block_sz = 8192
-            count = 0
-            while True:
-                buff = u.read(block_sz)
-                if not buff:
-                    break
-                fp.write(buff)
+                print('downloading: {0} ({1} bytes)...'.format(save_to, filesz), end=' ')
+                with open(save_to, 'wb') as fp:
+                    block_sz = 8192
+                    while True:
+                        buff = u.read(block_sz)
+                        if not buff:
+                            break
+                        fp.write(buff)
 
-            print('done')
+                print('done')
+                break
+        else:
+            continue
+
+        break  # successfully got the file
     else:
         assert 0, 'something went wrong -- cannot download {0}'.format(save_to)
 
