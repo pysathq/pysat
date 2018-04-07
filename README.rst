@@ -12,7 +12,8 @@ With PySAT it should be easy for you to implement a MaxSAT solver, an
 MUS/MCS extractor/enumerator, or any tool solving an application problem
 with the (potentially multiple) use of a SAT oracle.
 
-Currently, the following SAT solvers are supported:
+Currently, the following SAT solvers are supported (currently, for
+Minisat-based solvers only *core* versions are integrated):
 
 -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
@@ -23,14 +24,15 @@ Currently, the following SAT solvers are supported:
 
 Cardinality encodings supported are implemented in C++ and include:
 
--  pairwise [6]_
--  bitwise [6]_
--  sequential counters [7]_
+-  pairwise [7]_
+-  bitwise [7]_
+-  sequential counters [8]_
 -  sorting networks [3]_
 -  cardinality networks [1]_
 -  ladder [4]_
 -  totalizer [2]_
--  modulo totalizer [5]_
+-  modulo totalizer [6]_
+-  iterative totalizer [5]_
 
 .. [1] Roberto Asin, Robert Nieuwenhuis, Albert Oliveras,
    Enric Rodriguez-Carbonell. *Cardinality Networks and Their Applications*.
@@ -46,14 +48,17 @@ Cardinality encodings supported are implemented in C++ and include:
    SAT*. In International workshop on modelling and reformulating constraint
    satisfaction problems 2004. pp. 95-110
 
-.. [5] Toru Ogawa, Yangyang Liu, Ryuzo Hasegawa, Miyuki Koshimura,
+.. [5] Ruben Martins, Saurabh Joshi, Vasco M. Manquinho, Inês Lynce.
+   *Incremental Cardinality Constraints for MaxSAT*. CP 2014. pp. 531-548
+
+.. [6] Toru Ogawa, Yangyang Liu, Ryuzo Hasegawa, Miyuki Koshimura,
    Hiroshi Fujita. *Modulo Based CNF Encoding of Cardinality Constraints and
    Its Application to MaxSAT Solvers*. ICTAI 2013. pp. 9-17
 
-.. [6] Steven David Prestwich. *CNF Encodings*. Handbook of Satisfiability.
+.. [7] Steven David Prestwich. *CNF Encodings*. Handbook of Satisfiability.
    2009. pp. 75-97
 
-.. [7] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
+.. [8] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
    Cardinality Constraints*. CP 2005. pp. 827-831
 
 Usage
@@ -117,22 +122,22 @@ Finally, the following example gives an idea of how one can extract a
 PySAT usage is detailed in the `provided examples <examples>`__. For
 instance, one can see there simple PySAT-based implementations of
 
--  Fu&Malik algorithm for MaxSAT [8]_
--  CLD-like algorithm for MCS extraction and enumeration [10]_
--  LBX-like algorithm for MCS extraction and enumeration [11]_
--  Deletion-based MUS extraction [9]_
+-  Fu&Malik algorithm for MaxSAT [9]_
+-  CLD-like algorithm for MCS extraction and enumeration [11]_
+-  LBX-like algorithm for MCS extraction and enumeration [12]_
+-  Deletion-based MUS extraction [10]_
 
-.. [8] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
+.. [9] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
    SAT 2006. pp. 252-265
 
-.. [9] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
+.. [10] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
    Applications*. ISMVL 2010. pp. 9-14
 
-.. [10] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
+.. [11] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
    Anton Belov. *On Computing Minimal Correction Subsets*. IJCAI 2013. pp.
    615-622
 
-.. [11] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
+.. [12] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
 Installation
