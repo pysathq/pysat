@@ -122,6 +122,7 @@ class CardEnc(object):
         # merging together AtLeast and AtMost constraints
         res1.nv = res2.nv
         res1.clauses.extend(res2.clauses)
+        res1.atmosts.extend(res2.atmosts)
 
         return res1
 

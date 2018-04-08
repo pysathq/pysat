@@ -519,7 +519,8 @@ class CNFPlus(object):
                 print(c, file=file_pointer)
 
         ftype = 'cnf+' if self.atmosts else 'cnf'
-        print('p', ftype, self.nv, len(self.clauses), file=file_pointer)
+        print('p', ftype, self.nv, len(self.clauses) + len(self.atmosts),
+                file=file_pointer)
 
         for cl in self.clauses:
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
@@ -657,7 +658,8 @@ class WCNFPlus(object):
                 print(c, file=file_pointer)
 
         ftype = 'wcnf+' if self.atms else 'wcnf'
-        print('p', ftype, self.nv, len(self.hard) + len(self.soft), self.topw, file=file_pointer)
+        print('p', ftype, self.nv, len(self.hard) + len(self.soft) + len(self.atms),
+                self.topw, file=file_pointer)
 
         # soft clauses are dumped first because
         # some tools (e.g. LBX) cannot count them properly
