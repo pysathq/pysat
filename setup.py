@@ -29,6 +29,10 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 to_install = ['glucose30', 'glucose41', 'lingeling', 'minicard', 'minisat22',
         'minisatgh']
 
+# example scripts to install as standalone executables
+#==============================================================================
+scripts = ['fm', 'genhard', 'lbx', 'mcsls', 'musx', 'rc2']
+
 
 # we need to redefine the build command to
 # be able to download and compile solvers
@@ -75,7 +79,8 @@ pysolvers_ext = Extension('pysolvers',
 # finally, calling standard distutils.core.setup()
 #==============================================================================
 setup(name='python-sat',
-    packages=['pysat'],
+    packages=['pysat', 'pysat.examples'],
+    package_dir={'pysat.examples': 'examples'},
     version=__version__,
     description='A Python library for prototyping with SAT oracles',
     long_description=open(os.path.join(ROOT, 'README.rst')).read(),
@@ -85,6 +90,7 @@ setup(name='python-sat',
     author_email='aignatiev@ciencias.ulisboa.pt, jpms@ciencias.ulisboa.pt, ajmorgado@ciencias.ulisboa.pt',
     url='https://github.com/alexeyignatiev/pysat',
     ext_modules=[pycard_ext, pysolvers_ext],
+    scripts=['examples/{0}.py'.format(s) for s in scripts],
     cmdclass={'build': build},
     install_requires=['six']
 )

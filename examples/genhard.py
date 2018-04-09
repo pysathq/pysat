@@ -22,10 +22,13 @@ import sys
 
 #
 #==============================================================================
-def generate_php(cnf, size, kval, verb):
+def generate_php(size, kval=1, verb=False):
     """
         Generates PHP formula for (kval * size) pigeons and (size - 1) holes.
     """
+
+    # result formula
+    cnf = CNF()
 
     vpool = IDPool(start_from=1)
     var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
@@ -49,13 +52,18 @@ def generate_php(cnf, size, kval, verb):
             for j in range(1, size):
                 cnf.comments.append('c (pigeon, hole) pair: ({0}, {1}); bool var: {2}'.format(i, j, var(i, j)))
 
+    return cnf
+
 
 #
 #==============================================================================
-def generate_gt(cnf, size, verb):
+def generate_gt(size, verb=False):
     """
         Generates GT principle formula for a given size.
     """
+
+    # result formula
+    cnf = CNF()
 
     vpool = IDPool(start_from=1)
     var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
@@ -84,13 +92,18 @@ def generate_gt(cnf, size, verb):
                 if i != j:
                     cnf.comments.append('c orig pair: {0}; bool var: {1}'.format((i, j), var(i, j)))
 
+    return cnf
+
 
 #
 #==============================================================================
-def generate_parity(cnf, size):
+def generate_parity(size, verb=False):
     """
         Generate parity principle formula for a given size.
     """
+
+    # result formula
+    cnf = CNF()
 
     vpool = IDPool(start_from=1)
     var = lambda i, j: vpool.id('v_{0}_{1}'.format(min(i, j), max(i, j)))
@@ -110,6 +123,8 @@ def generate_parity(cnf, size):
         for i in range(1, 2 * size + 2):
             for j in range(i + 1, 2 * size + 2):
                 cnf.comments.append('c edge: {0}; bool var: {1}'.format((i, j), var(i, j)))
+
+    return cnf
 
 
 #
@@ -179,16 +194,13 @@ if __name__ == '__main__':
     # parse command-line options
     ftype, kval, size, verb = parse_options()
 
-    # where the formula will be stored
-    cnf = CNF()
-
     # generate formula
     if ftype == 'php':
-        generate_php(cnf, size, kval, verb)
+        cnf = generate_php(size, kval=kval, verb=verb)
     elif ftype == 'gt':  # gt
-        generate_gt(cnf, size, verb)
+        cnf = generate_gt(size, verb=verb)
     else:  # parity
-        generate_parity(cnf, size)
+        cnf = generate_parity(size, verb=verb)
 
     # print formula in DIMACS to stdout
     cnf.to_fp(sys.stdout)

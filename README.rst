@@ -123,6 +123,7 @@ PySAT usage is detailed in the `provided examples <examples>`__. For
 instance, one can see there simple PySAT-based implementations of
 
 -  Fu&Malik algorithm for MaxSAT [9]_
+-  RC2/OLLITI algorithm for MaxSAT [13]_
 -  CLD-like algorithm for MCS extraction and enumeration [11]_
 -  LBX-like algorithm for MCS extraction and enumeration [12]_
 -  Deletion-based MUS extraction [10]_
@@ -139,6 +140,29 @@ instance, one can see there simple PySAT-based implementations of
 
 .. [12] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
+
+.. [13] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
+   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573. CP 2014.
+   pp. 564-573
+
+The examples can also be accessed as a subpackage of PySAT:
+
+.. code:: python
+
+    >>> from pysat.formula import CNF
+    >>> from pysat.examples.lbx import LBX
+    >>>
+    >>> formula = CNF(from_file='input.cnf')
+    >>> mcsls = LBX(formula)
+    >>>
+    >>> for mcs in mcsls.enumerate():
+    ...     print mcs
+
+Alternatively, they can be used as standalone executables, e.g. like this:
+
+::
+
+   lbx.py -e all -d -s g4 -v another-input.wcnf
 
 Installation
 ------------
