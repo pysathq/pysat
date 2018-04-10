@@ -356,7 +356,7 @@ class Glucose3(object):
         """
 
         if self.glucose:
-            pysolvers.glucose3_cbudget(self.glucose)
+            pysolvers.glucose3_cbudget(self.glucose, budget)
 
     def prop_budget(self, budget):
         """
@@ -364,7 +364,7 @@ class Glucose3(object):
         """
 
         if self.glucose:
-            pysolvers.glucose3_pbudget(self.glucose)
+            pysolvers.glucose3_pbudget(self.glucose, budget)
 
     def get_status(self):
         """
@@ -617,7 +617,7 @@ class Glucose4(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_cbudget(self.glucose)
+            pysolvers.glucose41_cbudget(self.glucose, budget)
 
     def prop_budget(self, budget):
         """
@@ -625,7 +625,7 @@ class Glucose4(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_pbudget(self.glucose)
+            pysolvers.glucose41_pbudget(self.glucose, budget)
 
     def get_status(self):
         """
@@ -1094,7 +1094,7 @@ class Minicard(object):
         """
 
         if self.minicard:
-            pysolvers.minicard_cbudget(self.minicard)
+            pysolvers.minicard_cbudget(self.minicard, budget)
 
     def prop_budget(self, budget):
         """
@@ -1102,7 +1102,7 @@ class Minicard(object):
         """
 
         if self.minicard:
-            pysolvers.minicard_pbudget(self.minicard)
+            pysolvers.minicard_pbudget(self.minicard, budget)
 
     def get_status(self):
         """
@@ -1345,7 +1345,7 @@ class Minisat22(object):
         """
 
         if self.minisat:
-            pysolvers.minisat22_cbudget(self.minisat)
+            pysolvers.minisat22_cbudget(self.minisat, budget)
 
     def prop_budget(self, budget):
         """
@@ -1353,7 +1353,7 @@ class Minisat22(object):
         """
 
         if self.minisat:
-            pysolvers.minisat22_pbudget(self.minisat)
+            pysolvers.minisat22_pbudget(self.minisat, budget)
 
     def get_status(self):
         """
@@ -1589,7 +1589,7 @@ class MinisatGH(object):
         """
 
         if self.minisat:
-            pysolvers.minisatgh_cbudget(self.minisat)
+            pysolvers.minisatgh_cbudget(self.minisat, budget)
 
     def prop_budget(self, budget):
         """
@@ -1597,7 +1597,7 @@ class MinisatGH(object):
         """
 
         if self.minisat:
-            pysolvers.minisatgh_pbudget(self.minisat)
+            pysolvers.minisatgh_pbudget(self.minisat, budget)
 
     def get_status(self):
         """

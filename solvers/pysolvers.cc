@@ -504,7 +504,7 @@ static PyObject *py_glucose3_cbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -523,7 +523,7 @@ static PyObject *py_glucose3_pbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -876,7 +876,7 @@ static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -895,7 +895,7 @@ static PyObject *py_glucose41_pbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -1419,7 +1419,7 @@ static PyObject *py_minicard_add_am(PyObject *self, PyObject *args)
 	PyObject *c_obj;
 	int64_t rhs;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &c_obj, &rhs))
+	if (!PyArg_ParseTuple(args, "OOl", &s_obj, &c_obj, &rhs))
 		return NULL;
 
 	// get pointer to solver
@@ -1543,7 +1543,7 @@ static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -1562,7 +1562,7 @@ static PyObject *py_minicard_pbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -1845,7 +1845,7 @@ static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -1864,7 +1864,7 @@ static PyObject *py_minisat22_pbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -2147,7 +2147,7 @@ static PyObject *py_minisatgh_cbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
@@ -2166,7 +2166,7 @@ static PyObject *py_minisatgh_pbudget(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	int64_t budget;
 
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &budget))
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
 		return NULL;
 
 	// get pointer to solver
