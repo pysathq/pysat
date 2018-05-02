@@ -22,109 +22,123 @@ import sys
 
 #
 #==============================================================================
-def generate_php(size, kval=1, verb=False):
+class PHP(CNF, object):
     """
-        Generates PHP formula for (kval * size) pigeons and (size - 1) holes.
+        Pigeonhole principle formula for (kval * nof_holes + 1) pigeons
+        and nof_holes holes.
     """
 
-    # result formula
-    cnf = CNF()
+    def __init__(self, nof_holes, kval=1, topv=0, verb=False):
+        """
+            Constructor.
+        """
 
-    vpool = IDPool(start_from=1)
-    var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
+        # initializing CNF's internal parameters
+        super(PHP, self).__init__()
 
-    # placing all pigeons into holes
-    for i in range(1, kval * (size - 1) + 2):
-        cnf.append([var(i, j) for j in range(1, size)])
+        # initializing the pool of variable ids
+        vpool = IDPool(start_from=topv + 1)
+        var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
 
-    # there cannot be more than 1 pigeon in 1 hole
-    pigeons = range(1, kval * (size - 1) + 2)
-    for j in range(1, size):
-        for comb in itertools.combinations(pigeons, kval + 1):
-            cnf.append([-var(i, j) for i in comb])
+        # placing all pigeons into holes
+        for i in range(1, kval * nof_holes + 2):
+            self.append([var(i, j) for j in range(1, nof_holes + 1)])
 
-    if verb:
-        head = 'c {0}PHP formula for'.format('' if kval == 1 else str(kval) + '-')
-        head += ' {0} pigeons and {1} holes'.format(kval * (size - 1) + 1, size - 1)
-        cnf.comments.append(head)
+        # there cannot be more than k pigeons in a hole
+        pigeons = range(1, kval * nof_holes + 2)
+        for j in range(1, nof_holes + 1):
+            for comb in itertools.combinations(pigeons, kval + 1):
+                self.append([-var(i, j) for i in comb])
 
-        for i in range(1, kval * (size - 1) + 2):
-            for j in range(1, size):
-                cnf.comments.append('c (pigeon, hole) pair: ({0}, {1}); bool var: {2}'.format(i, j, var(i, j)))
+        if verb:
+            head = 'c {0}PHP formula for'.format('' if kval == 1 else str(kval) + '-')
+            head += ' {0} pigeons and {1} holes'.format(kval * nof_holes + 1, nof_holes)
+            self.comments.append(head)
 
-    return cnf
+            for i in range(1, kval * nof_holes + 2):
+                for j in range(1, nof_holes + 1):
+                    self.comments.append('c (pigeon, hole) pair: ({0}, {1}); bool var: {2}'.format(i, j, var(i, j)))
 
 
 #
 #==============================================================================
-def generate_gt(size, verb=False):
+class GT(CNF, object):
     """
-        Generates GT principle formula for a given size.
+        GT (greater than) principle formula
+        for a set of elements of a given size.
     """
 
-    # result formula
-    cnf = CNF()
+    def __init__(self, size, topv=0, verb=False):
+        """
+            Constructor.
+        """
 
-    vpool = IDPool(start_from=1)
-    var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
+        # initializing CNF's internal parameters
+        super(GT, self).__init__()
 
-    # anti-symmetric relation clauses
-    for i in range(1, size):
-        for j in range(i + 1, size + 1):
-            cnf.append([-var(i, j), -var(j, i)])
+        # initializing the pool of variable ids
+        vpool = IDPool(start_from=topv + 1)
+        var = lambda i, j: vpool.id('v_{0}_{1}'.format(i, j))
 
-    # transitive relation clauses
-    for i in range(1, size + 1):
-        for j in range(1, size + 1):
-            if j != i:
-                for k in range(1, size + 1):
-                    if k != i and k != j:
-                        cnf.append([-var(i, j), -var(j, k), var(i, k)])
+        # anti-symmetric relation clauses
+        for i in range(1, size):
+            for j in range(i + 1, size + 1):
+                self.append([-var(i, j), -var(j, i)])
 
-    # successor clauses
-    for j in range(1, size + 1):
-        cnf.append([var(k, j) for k in range(1, size + 1) if k != j])
-
-    if verb:
-        cnf.comments.append('c GT formula for {0} elements'.format(size))
+        # transitive relation clauses
         for i in range(1, size + 1):
             for j in range(1, size + 1):
-                if i != j:
-                    cnf.comments.append('c orig pair: {0}; bool var: {1}'.format((i, j), var(i, j)))
+                if j != i:
+                    for k in range(1, size + 1):
+                        if k != i and k != j:
+                            self.append([-var(i, j), -var(j, k), var(i, k)])
 
-    return cnf
+        # successor clauses
+        for j in range(1, size + 1):
+            self.append([var(k, j) for k in range(1, size + 1) if k != j])
+
+        if verb:
+            self.comments.append('c GT formula for {0} elements'.format(size))
+            for i in range(1, size + 1):
+                for j in range(1, size + 1):
+                    if i != j:
+                        self.comments.append('c orig pair: {0}; bool var: {1}'.format((i, j), var(i, j)))
 
 
 #
 #==============================================================================
-def generate_parity(size, verb=False):
+class Parity(CNF, object):
     """
-        Generate parity principle formula for a given size.
+        Parity principle formula.
     """
 
-    # result formula
-    cnf = CNF()
+    def __init__(self, size, topv=0, verb=False):
+        """
+            Constructor.
+        """
 
-    vpool = IDPool(start_from=1)
-    var = lambda i, j: vpool.id('v_{0}_{1}'.format(min(i, j), max(i, j)))
+        # initializing CNF's internal parameters
+        super(Parity, self).__init__()
 
-    for i in range(1, 2 * size + 2):
-        cnf.append([var(i, j) for j in range(1, 2 * size + 2) if j != i])
+        # initializing the pool of variable ids
+        vpool = IDPool(start_from=topv + 1)
+        var = lambda i, j: vpool.id('v_{0}_{1}'.format(min(i, j), max(i, j)))
 
-    for j in range(1, 2 * size + 2):
-        for i, k in itertools.combinations(range(1, 2 * size + 2), 2):
-            if i == j or k == j:
-                continue
-
-            cnf.append([-var(i, j), -var(k, j)])
-
-    if verb:
-        cnf.comments.append('c Parity formula for m == {0} ({1} vertices)'.format(size, 2 * size + 1))
         for i in range(1, 2 * size + 2):
-            for j in range(i + 1, 2 * size + 2):
-                cnf.comments.append('c edge: {0}; bool var: {1}'.format((i, j), var(i, j)))
+            self.append([var(i, j) for j in range(1, 2 * size + 2) if j != i])
 
-    return cnf
+        for j in range(1, 2 * size + 2):
+            for i, k in itertools.combinations(range(1, 2 * size + 2), 2):
+                if i == j or k == j:
+                    continue
+
+                self.append([-var(i, j), -var(k, j)])
+
+        if verb:
+            self.comments.append('c Parity formula for m == {0} ({1} vertices)'.format(size, 2 * size + 1))
+            for i in range(1, 2 * size + 2):
+                for j in range(i + 1, 2 * size + 2):
+                    self.comments.append('c edge: {0}; bool var: {1}'.format((i, j), var(i, j)))
 
 
 #
@@ -196,11 +210,11 @@ if __name__ == '__main__':
 
     # generate formula
     if ftype == 'php':
-        cnf = generate_php(size, kval=kval, verb=verb)
+        cnf = PHP(size, kval=kval, verb=verb)
     elif ftype == 'gt':  # gt
-        cnf = generate_gt(size, verb=verb)
+        cnf = GT(size, verb=verb)
     else:  # parity
-        cnf = generate_parity(size, verb=verb)
+        cnf = Parity(size, verb=verb)
 
     # print formula in DIMACS to stdout
     cnf.to_fp(sys.stdout)

@@ -164,7 +164,7 @@ class ITotalizer(object):
 
         self.lits = lits
         self.ubound = ubound
-        self.top_id = max(map(lambda x: abs(x), self.lits) + [top_id])
+        self.top_id = max(map(lambda x: abs(x), self.lits + [top_id]))
 
         # saving default SIGINT handler
         def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)

@@ -60,7 +60,7 @@ static char    ncls_docstring[] = "Get number of clauses used by the solver.";
 static char     del_docstring[] = "Delete a previously created solver object.";
 
 static PyObject *SATError;
-static sigjmp_buf env;
+static jmp_buf env;
 
 // function declaration for functions available in module
 //=============================================================================
@@ -241,7 +241,7 @@ extern "C" {
 //=============================================================================
 static void sigint_handler(int signum)
 {
-	siglongjmp(env, -1);
+	longjmp(env, -1);
 }
 
 #if PY_MAJOR_VERSION >= 3
@@ -439,7 +439,7 @@ static PyObject *py_glucose3_solve(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose3_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -481,7 +481,7 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose3_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -811,7 +811,7 @@ static PyObject *py_glucose41_solve(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose41_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -853,7 +853,7 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose41_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -1206,7 +1206,7 @@ static PyObject *py_lingeling_solve(PyObject *self, PyObject *args)
 		lglassume(s, l);
 	}
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -1478,7 +1478,7 @@ static PyObject *py_minicard_solve(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minicard_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -1520,7 +1520,7 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minicard_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -1780,7 +1780,7 @@ static PyObject *py_minisat22_solve(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisat22_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -1822,7 +1822,7 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisat22_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -2082,7 +2082,7 @@ static PyObject *py_minisatgh_solve(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisatgh_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -2124,7 +2124,7 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisatgh_declare_vars(s, max_var);
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(SATError, "Caught keyboard interrupt");
 		return NULL;
 	}

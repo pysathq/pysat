@@ -35,7 +35,7 @@ static char itot_mrg_docstring[] = "Merge two totalizer objects into one.";
 static char itot_del_docstring[] = "Delete an iterative totalizer object";
 
 static PyObject *CardError;
-static sigjmp_buf env;
+static jmp_buf env;
 
 // function declaration for functions available in module
 //=============================================================================
@@ -69,7 +69,7 @@ extern "C" {
 //=============================================================================
 static void sigint_handler(int signum)
 {
-	siglongjmp(env, -1);
+	longjmp(env, -1);
 }
 
 #if PY_MAJOR_VERSION >= 3  // for Python3
@@ -191,7 +191,7 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &enc))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -245,7 +245,7 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &enc))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -298,7 +298,7 @@ static PyObject *py_itot_new(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oii", &lhs_obj, &rhs, &top))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -357,7 +357,7 @@ static PyObject *py_itot_inc(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oii", &t_obj, &rhs, &top))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -410,7 +410,7 @@ static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OOii", &t_obj, &lhs_obj, &rhs, &top))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
@@ -473,7 +473,7 @@ static PyObject *py_itot_mrg(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OOii", &t1_obj, &t2_obj, &rhs, &top))
 		return NULL;
 
-	if (sigsetjmp(env, 0) != 0) {
+	if (setjmp(env) != 0) {
 		PyErr_SetString(CardError, "Caught keyboard interrupt");
 		return NULL;
 	}
