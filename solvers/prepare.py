@@ -41,7 +41,7 @@ sources = {
     ),
     'minicard': (
         'https://github.com/liffiton/minicard/archive/v1.2.tar.gz',
-        'https://core.di.fc.ul.pt/~aign/storage/mirror/minicard-v1.2.tar.gz',
+        'http://reason.di.fc.ul.pt/~aign/storage/mirror/minicard-v1.2.tar.gz',
         'solvers/minicard.tar.gz'
     ),
     'minisat22': (
@@ -50,7 +50,7 @@ sources = {
     ),
     'minisatgh': (
         'https://github.com/niklasso/minisat/archive/master.zip',
-        'https://core.di.fc.ul.pt/~aign/storage/mirror/minisatgh-master.zip',
+        'http://reason.di.fc.ul.pt/~aign/storage/mirror/minisatgh-master.zip',
         'solvers/minisatgh.zip'
     )
 }
