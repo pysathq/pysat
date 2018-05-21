@@ -1,6 +1,6 @@
 diff -Naur solvers/glucose41/Makefile solvers/g41/Makefile
 --- solvers/glucose41/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/g41/Makefile	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/Makefile	2018-05-21 10:14:01.000000000 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -43,7 +43,7 @@ diff -Naur solvers/glucose41/Makefile solvers/g41/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/glucose41/core/BoundedQueue.h solvers/g41/core/BoundedQueue.h
 --- solvers/glucose41/core/BoundedQueue.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/core/BoundedQueue.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/core/BoundedQueue.h	2018-05-21 10:14:01.000000000 +0100
 @@ -48,14 +48,14 @@
   **************************************************************************************************/
  
@@ -65,7 +65,7 @@ diff -Naur solvers/glucose41/core/BoundedQueue.h solvers/g41/core/BoundedQueue.h
  class bqueue {
 diff -Naur solvers/glucose41/core/Solver.cc solvers/g41/core/Solver.cc
 --- solvers/glucose41/core/Solver.cc	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/core/Solver.cc	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/core/Solver.cc	2018-05-21 10:14:01.000000000 +0100
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -738,7 +738,7 @@ diff -Naur solvers/glucose41/core/Solver.cc solvers/g41/core/Solver.cc
  
 diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
 --- solvers/glucose41/core/Solver.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/core/Solver.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/core/Solver.h	2018-05-21 10:25:08.000000000 +0100
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -837,7 +837,15 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      virtual bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
                                                                  // change the passed vector 'ps'.
      // Solving:
-@@ -143,14 +143,14 @@
+@@ -134,6 +134,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop); // compute a list of propagated literals given a set of assumptions
+ 
+        // Convenience versions of 'toDimacs()':
+     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+@@ -143,14 +144,14 @@
      void    toDimacs     (const char* file, Lit p);
      void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
@@ -855,7 +863,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
      void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -198,7 +198,7 @@
+@@ -198,7 +199,7 @@
      int       verbosity;
      int       verbEveryConflicts;
      int       showModel;
@@ -864,7 +872,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      // Constants For restarts
      double    K;
      double    R;
-@@ -228,13 +228,14 @@
+@@ -228,13 +229,14 @@
      bool      rnd_init_act;       // Initialize variable activities with a small random value.
      bool      randomizeFirstDescent; // the first decisions (until first cnflict) are made randomly
                                       // Useful for syrup!
@@ -880,7 +888,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      bool                certifiedUNSAT;
      bool                vbyte;
  
-@@ -242,15 +243,15 @@
+@@ -242,15 +244,15 @@
      void write_lit (int n);
  
  
@@ -900,7 +908,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      // Overide in ParallelSolver
      virtual void parallelImportClauseDuringConflictAnalysis(Clause &c,CRef confl);
      virtual bool parallelImportClauses(); // true if the empty clause was received
-@@ -259,13 +260,13 @@
+@@ -259,13 +261,13 @@
      virtual void parallelExportClauseDuringSearch(Clause &c);
      virtual bool parallelJobIsFinished();
      virtual bool panicModeIsEnabled();
@@ -919,7 +927,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      // Important stats completely related to search. Keep here
      uint64_t solves,starts,decisions,propagations,conflicts,conflictsRestarts;
  
-@@ -334,6 +335,7 @@
+@@ -334,6 +336,7 @@
      vec<CRef>           unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
  
      vec<lbool>          assigns;          // The current assignments.
@@ -927,7 +935,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      vec<char>           polarity;         // The preferred polarity of each variable.
      vec<char>           forceUNSAT;
      void                bumpForceUNSAT(Lit q); // Handles the forces
-@@ -351,15 +353,15 @@
+@@ -351,15 +354,15 @@
      double              progress_estimate;// Set by 'search()'.
      bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
      vec<unsigned int>   permDiff;           // permDiff[var] contains the current conflict number... Used to count the number of  LBD
@@ -946,7 +954,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      // Used for restart strategies
      bqueue<unsigned int> trailQueue,lbdQueue; // Bounded queues for restarts.
      float sumLBD; // used to compute the global average of LBD. Restarts...
-@@ -447,7 +449,7 @@
+@@ -447,7 +450,7 @@
      int      level            (Var x) const;
      double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
      bool     withinBudget     ()      const;
@@ -955,7 +963,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
  
      // Static helpers:
      //
-@@ -501,19 +503,19 @@
+@@ -501,19 +504,19 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -983,7 +991,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
   }
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
-@@ -527,12 +529,12 @@
+@@ -527,12 +530,12 @@
  inline int      Solver::nClauses      ()      const   { return clauses.size(); }
  inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
  inline int      Solver::nVars         ()      const   { return vardata.size(); }
@@ -999,7 +1007,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
      if      ( b && !decision[v]) stats[dec_vars]++;
      else if (!b &&  decision[v]) stats[dec_vars]--;
  
-@@ -552,11 +554,11 @@
+@@ -552,11 +555,11 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -1016,7 +1024,43 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
-@@ -573,7 +575,7 @@
+@@ -565,7 +568,35 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+ 
++//=================================================================================================
++// Propagate and check:
++inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    int level  = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
++        newDecisionLevel();
++        uncheckedEnqueue(assumps[i]);
++        confl = propagate();
++    }
+ 
++    // copying the result
++    prop.clear();
++    for (int c = trail_lim[level]; c < trail.size(); ++c)
++        prop.push(trail[c]);
++
++    // if there is a conflict, pushing
++    // the conflicting literal as well
++    if (confl != CRef_Undef)
++        prop.push(ca[confl][0]);
++
++    // backtracking
++    cancelUntil(level);
++
++    return confl == CRef_Undef;
++}
+ 
+ //=================================================================================================
+ // Debug etc:
+@@ -573,7 +604,7 @@
  
  inline void Solver::printLit(Lit l)
  {
@@ -1025,7 +1069,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
  }
  
  
-@@ -639,7 +641,7 @@
+@@ -639,7 +670,7 @@
          return ca[x].activity() < ca[y].activity();
          //return x->size() < y->size();
  
@@ -1036,7 +1080,7 @@ diff -Naur solvers/glucose41/core/Solver.h solvers/g41/core/Solver.h
  
 diff -Naur solvers/glucose41/core/SolverStats.h solvers/g41/core/SolverStats.h
 --- solvers/glucose41/core/SolverStats.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/core/SolverStats.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/core/SolverStats.h	2018-05-21 10:14:01.000000000 +0100
 @@ -47,12 +47,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -1063,7 +1107,7 @@ diff -Naur solvers/glucose41/core/SolverStats.h solvers/g41/core/SolverStats.h
  
 diff -Naur solvers/glucose41/core/SolverTypes.h solvers/g41/core/SolverTypes.h
 --- solvers/glucose41/core/SolverTypes.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/core/SolverTypes.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/core/SolverTypes.h	2018-05-21 10:14:01.000000000 +0100
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -1292,7 +1336,7 @@ diff -Naur solvers/glucose41/core/SolverTypes.h solvers/g41/core/SolverTypes.h
  #endif
 diff -Naur solvers/glucose41/mtl/Alg.h solvers/g41/mtl/Alg.h
 --- solvers/glucose41/mtl/Alg.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Alg.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Alg.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1312,7 +1356,7 @@ diff -Naur solvers/glucose41/mtl/Alg.h solvers/g41/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur solvers/glucose41/mtl/Alloc.h solvers/g41/mtl/Alloc.h
 --- solvers/glucose41/mtl/Alloc.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Alloc.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Alloc.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1334,7 +1378,7 @@ diff -Naur solvers/glucose41/mtl/Alloc.h solvers/g41/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur solvers/glucose41/mtl/Clone.h solvers/g41/mtl/Clone.h
 --- solvers/glucose41/mtl/Clone.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Clone.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Clone.h	2018-05-21 10:14:01.000000000 +0100
 @@ -1,8 +1,8 @@
 -#ifndef Glucose_Clone_h
 -#define Glucose_Clone_h
@@ -1349,7 +1393,7 @@ diff -Naur solvers/glucose41/mtl/Clone.h solvers/g41/mtl/Clone.h
          public:
 diff -Naur solvers/glucose41/mtl/Heap.h solvers/g41/mtl/Heap.h
 --- solvers/glucose41/mtl/Heap.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Heap.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Heap.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1369,7 +1413,7 @@ diff -Naur solvers/glucose41/mtl/Heap.h solvers/g41/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/glucose41/mtl/IntTypes.h solvers/g41/mtl/IntTypes.h
 --- solvers/glucose41/mtl/IntTypes.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/IntTypes.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/IntTypes.h	2018-05-21 10:14:01.000000000 +0100
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1383,7 +1427,7 @@ diff -Naur solvers/glucose41/mtl/IntTypes.h solvers/g41/mtl/IntTypes.h
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/glucose41/mtl/Map.h solvers/g41/mtl/Map.h
 --- solvers/glucose41/mtl/Map.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Map.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Map.h	2018-05-21 10:14:01.000000000 +0100
 @@ -17,15 +17,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1407,7 +1451,7 @@ diff -Naur solvers/glucose41/mtl/Map.h solvers/g41/mtl/Map.h
  // Default hash/equals functions
 diff -Naur solvers/glucose41/mtl/Queue.h solvers/g41/mtl/Queue.h
 --- solvers/glucose41/mtl/Queue.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Queue.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Queue.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1427,7 +1471,7 @@ diff -Naur solvers/glucose41/mtl/Queue.h solvers/g41/mtl/Queue.h
  
 diff -Naur solvers/glucose41/mtl/Sort.h solvers/g41/mtl/Sort.h
 --- solvers/glucose41/mtl/Sort.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Sort.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Sort.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1451,7 +1495,7 @@ diff -Naur solvers/glucose41/mtl/Sort.h solvers/g41/mtl/Sort.h
  struct LessThan_default {
 diff -Naur solvers/glucose41/mtl/Vec.h solvers/g41/mtl/Vec.h
 --- solvers/glucose41/mtl/Vec.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/Vec.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/Vec.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1522,7 +1566,7 @@ diff -Naur solvers/glucose41/mtl/Vec.h solvers/g41/mtl/Vec.h
  
 diff -Naur solvers/glucose41/mtl/VecThreads.h solvers/g41/mtl/VecThreads.h
 --- solvers/glucose41/mtl/VecThreads.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/VecThreads.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/VecThreads.h	2018-05-21 10:14:01.000000000 +0100
 @@ -1,5 +1,5 @@
  /*******************************************************************************************[VecThreads.h]
 - * Threads safe  version used in Glucose-Syrup, 2015, Gilles Audemard, Laurent Simon
@@ -1556,7 +1600,7 @@ diff -Naur solvers/glucose41/mtl/VecThreads.h solvers/g41/mtl/VecThreads.h
  // Automatically resizable arrays
 diff -Naur solvers/glucose41/mtl/XAlloc.h solvers/g41/mtl/XAlloc.h
 --- solvers/glucose41/mtl/XAlloc.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/mtl/XAlloc.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/mtl/XAlloc.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -1577,7 +1621,7 @@ diff -Naur solvers/glucose41/mtl/XAlloc.h solvers/g41/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/glucose41/utils/Options.cc solvers/g41/utils/Options.cc
 --- solvers/glucose41/utils/Options.cc	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/utils/Options.cc	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/utils/Options.cc	2018-05-21 10:14:01.000000000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1634,7 +1678,7 @@ diff -Naur solvers/glucose41/utils/Options.cc solvers/g41/utils/Options.cc
      if (usage != NULL)
 diff -Naur solvers/glucose41/utils/Options.h solvers/g41/utils/Options.h
 --- solvers/glucose41/utils/Options.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/utils/Options.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/utils/Options.h	2018-05-21 10:14:01.000000000 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1821,7 +1865,7 @@ diff -Naur solvers/glucose41/utils/Options.h solvers/g41/utils/Options.h
  
 diff -Naur solvers/glucose41/utils/ParseUtils.h solvers/g41/utils/ParseUtils.h
 --- solvers/glucose41/utils/ParseUtils.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/utils/ParseUtils.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/utils/ParseUtils.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1844,7 +1888,7 @@ diff -Naur solvers/glucose41/utils/ParseUtils.h solvers/g41/utils/ParseUtils.h
  // A simple buffered character stream class:
 diff -Naur solvers/glucose41/utils/System.cc solvers/g41/utils/System.cc
 --- solvers/glucose41/utils/System.cc	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/utils/System.cc	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/utils/System.cc	2018-05-21 10:14:01.000000000 +0100
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1897,7 +1941,7 @@ diff -Naur solvers/glucose41/utils/System.cc solvers/g41/utils/System.cc
  #endif
 diff -Naur solvers/glucose41/utils/System.h solvers/g41/utils/System.h
 --- solvers/glucose41/utils/System.h	2016-12-08 12:48:26.000000000 +0000
-+++ solvers/g41/utils/System.h	2018-04-03 09:33:08.000000000 +0100
++++ solvers/g41/utils/System.h	2018-05-21 10:14:01.000000000 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

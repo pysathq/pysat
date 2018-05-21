@@ -1,6 +1,6 @@
 diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
 --- solvers/minisatgh/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/mgh/Makefile	2018-01-25 18:25:03.000000000 +0000
++++ solvers/mgh/Makefile	2018-05-21 10:14:08.000000000 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -42,8 +42,8 @@ diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
---- solvers/minisatgh/core/Solver.cc	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/core/Solver.cc	2018-01-25 18:48:00.000000000 +0000
+--- solvers/minisatgh/core/Solver.cc	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/core/Solver.cc	2018-05-21 10:14:08.000000000 +0100
 @@ -20,12 +20,12 @@
  
  #include <math.h>
@@ -353,8 +353,8 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
      printf("CPU time              : %g s\n", cpu_time);
  }
 diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
---- solvers/minisatgh/core/Solver.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/core/Solver.h	2018-01-25 18:44:14.000000000 +0000
+--- solvers/minisatgh/core/Solver.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/core/Solver.h	2018-05-21 10:29:05.000000000 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -405,16 +405,27 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
      bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
                                                                  // change the passed vector 'ps'.
  
-@@ -86,7 +86,7 @@
+@@ -66,6 +66,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop); // compute a list of propagated literals given a set of assumptions
+ 
+     bool    implies      (const vec<Lit>& assumps, vec<Lit>& out);
+ 
+@@ -84,9 +85,9 @@
+     void    toDimacs     (const char* file, Lit p);
+     void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
-     
+-    
++
      // Variable mode:
 -    // 
 +    //
      void    setPolarity    (Var v, lbool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
      void    setDecisionVar (Var v, bool b);  // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -333,7 +333,7 @@
+@@ -333,7 +334,7 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -423,7 +434,7 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
  inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
-@@ -342,7 +342,7 @@
+@@ -342,7 +343,7 @@
  inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s){ add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); add_tmp.push(s); return addClause_(add_tmp); }
  
  inline bool     Solver::isRemoved       (CRef cr)         const { return ca[cr].mark() == 1; }
@@ -432,7 +443,18 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
  inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
-@@ -379,11 +379,11 @@
+@@ -358,8 +359,8 @@
+ // TODO: nFreeVars() is not quite correct, try to calculate right instead of adapting it like below:
+ inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+ inline void     Solver::setPolarity   (Var v, lbool b){ user_pol[v] = b; }
+-inline void     Solver::setDecisionVar(Var v, bool b) 
+-{ 
++inline void     Solver::setDecisionVar(Var v, bool b)
++{
+     if      ( b && !decision[v]) dec_vars++;
+     else if (!b &&  decision[v]) dec_vars--;
+ 
+@@ -379,18 +380,18 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -449,9 +471,53 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
+ inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
+ inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
+ inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }
+-inline TrailIterator  Solver::trailEnd    () const { 
++inline TrailIterator  Solver::trailEnd    () const {
+     return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
+ 
+ inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
+@@ -398,6 +399,35 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+ 
++//=================================================================================================
++// Propagate and check:
++inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    int level  = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
++        newDecisionLevel();
++        uncheckedEnqueue(assumps[i]);
++        confl = propagate();
++    }
++
++    // copying the result
++    prop.clear();
++    for (int c = trail_lim[level]; c < trail.size(); ++c)
++        prop.push(trail[c]);
++
++    // if there is a conflict, pushing
++    // the conflicting literal as well
++    if (confl != CRef_Undef)
++        prop.push(ca[confl][0]);
++
++    // backtracking
++    cancelUntil(level);
++
++    return confl == CRef_Undef;
++}
+ 
+ //=================================================================================================
+ // Debug etc:
 diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
---- solvers/minisatgh/core/SolverTypes.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/core/SolverTypes.h	2018-01-25 18:42:57.000000000 +0000
+--- solvers/minisatgh/core/SolverTypes.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/core/SolverTypes.h	2018-05-21 10:14:08.000000000 +0100
 @@ -19,19 +19,20 @@
  **************************************************************************************************/
  
@@ -528,8 +594,8 @@ diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
  
  
 diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
---- solvers/minisatgh/mtl/Alg.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Alg.h	2018-01-25 18:37:06.000000000 +0000
+--- solvers/minisatgh/mtl/Alg.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Alg.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -548,8 +614,8 @@ diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
---- solvers/minisatgh/mtl/Alloc.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Alloc.h	2018-01-25 18:41:48.000000000 +0000
+--- solvers/minisatgh/mtl/Alloc.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Alloc.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -570,8 +636,8 @@ diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
  //=================================================================================================
  // Simple Region-based memory allocator:
 diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
---- solvers/minisatgh/mtl/Heap.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Heap.h	2018-01-25 18:41:33.000000000 +0000
+--- solvers/minisatgh/mtl/Heap.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Heap.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -592,8 +658,8 @@ diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
---- solvers/minisatgh/mtl/IntMap.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/IntMap.h	2018-01-25 18:41:12.000000000 +0000
+--- solvers/minisatgh/mtl/IntMap.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/IntMap.h	2018-05-21 10:14:08.000000000 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -612,8 +678,8 @@ diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
      template<class T> struct MkIndexDefault {
          typename vec<T>::Size operator()(T t) const { return (typename vec<T>::Size)t; }
 diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
---- solvers/minisatgh/mtl/IntTypes.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/IntTypes.h	2018-01-25 18:36:28.000000000 +0000
+--- solvers/minisatgh/mtl/IntTypes.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/IntTypes.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,8 +17,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -628,8 +694,8 @@ diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
---- solvers/minisatgh/mtl/Map.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Map.h	2018-01-25 18:40:47.000000000 +0000
+--- solvers/minisatgh/mtl/Map.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Map.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,13 +17,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -665,8 +731,8 @@ diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
  
  //=================================================================================================
 diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
---- solvers/minisatgh/mtl/Queue.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Queue.h	2018-01-25 18:36:15.000000000 +0000
+--- solvers/minisatgh/mtl/Queue.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Queue.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -685,8 +751,8 @@ diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
---- solvers/minisatgh/mtl/Rnd.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Rnd.h	2018-01-25 18:36:10.000000000 +0000
+--- solvers/minisatgh/mtl/Rnd.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Rnd.h	2018-05-21 10:14:08.000000000 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -705,8 +771,8 @@ diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
  // Generate a random double:
  static inline double drand(double& seed)
 diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
---- solvers/minisatgh/mtl/Sort.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Sort.h	2018-01-25 18:36:04.000000000 +0000
+--- solvers/minisatgh/mtl/Sort.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Sort.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -729,8 +795,8 @@ diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
---- solvers/minisatgh/mtl/Vec.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/Vec.h	2018-01-25 18:35:58.000000000 +0000
+--- solvers/minisatgh/mtl/Vec.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/Vec.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -755,8 +821,8 @@ diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
  //=================================================================================================
  // Automatically resizable arrays
 diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
---- solvers/minisatgh/mtl/XAlloc.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/mtl/XAlloc.h	2016-11-27 21:40:40.000000000 +0000
+--- solvers/minisatgh/mtl/XAlloc.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/mtl/XAlloc.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -775,8 +841,8 @@ diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
---- solvers/minisatgh/utils/Options.cc	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/utils/Options.cc	2018-01-25 18:39:48.000000000 +0000
+--- solvers/minisatgh/utils/Options.cc	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/utils/Options.cc	2018-05-21 10:14:08.000000000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -810,8 +876,8 @@ diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
---- solvers/minisatgh/utils/Options.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/utils/Options.h	2018-01-25 18:39:33.000000000 +0000
+--- solvers/minisatgh/utils/Options.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/utils/Options.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -867,8 +933,8 @@ diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
  
      operator      const char*  (void) const     { return value; }
 diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
---- solvers/minisatgh/utils/ParseUtils.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/utils/ParseUtils.h	2018-01-25 18:38:07.000000000 +0000
+--- solvers/minisatgh/utils/ParseUtils.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/utils/ParseUtils.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -892,8 +958,8 @@ diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
  //-------------------------------------------------------------------------------------------------
  // A simple buffered character stream class:
 diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
---- solvers/minisatgh/utils/System.cc	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/utils/System.cc	2018-01-25 18:34:57.000000000 +0000
+--- solvers/minisatgh/utils/System.cc	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/utils/System.cc	2018-05-21 10:14:08.000000000 +0100
 @@ -21,13 +21,13 @@
  #include <signal.h>
  #include <stdio.h>
@@ -1003,8 +1069,8 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
      signal(SIGINT, handler);
      signal(SIGTERM,handler);
 diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
---- solvers/minisatgh/utils/System.h	2018-01-25 18:31:18.000000000 +0000
-+++ solvers/mgh/utils/System.h	2018-01-25 18:34:48.000000000 +0000
+--- solvers/minisatgh/utils/System.h	2018-05-21 10:15:47.000000000 +0100
++++ solvers/mgh/utils/System.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,23 +18,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

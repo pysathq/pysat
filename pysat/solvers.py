@@ -126,6 +126,15 @@ class Solver(object):
         if self.solver:
             self.solver.prop_budget(budget)
 
+    def propagate(self, assumptions=[]):
+        """
+            Assume a given set of assumption literals and get a list of
+            propagated ones.
+        """
+
+        if self.solver:
+            return self.solver.propagate(assumptions)
+
     def get_status(self):
         """
             Returns solver's status.
@@ -365,6 +374,29 @@ class Glucose3(object):
 
         if self.glucose:
             pysolvers.glucose3_pbudget(self.glucose, budget)
+
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.glucose:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.glucose3_propagate(self.glucose, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return props if props != None else []
 
     def get_status(self):
         """
@@ -627,6 +659,29 @@ class Glucose4(object):
         if self.glucose:
             pysolvers.glucose41_pbudget(self.glucose, budget)
 
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.glucose:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.glucose41_propagate(self.glucose, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return props if props != None else []
+
     def get_status(self):
         """
             Returns solver's status.
@@ -868,6 +923,13 @@ class Lingeling(object):
 
         raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
 
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        raise NotImplementedError('Simple literal propagation is not yet implemented for Lingeling.')
+
     def get_status(self):
         """
             Returns solver's status.
@@ -1103,6 +1165,29 @@ class Minicard(object):
 
         if self.minicard:
             pysolvers.minicard_pbudget(self.minicard, budget)
+
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.minicard:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.minicard_propagate(self.minicard, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return props if props != None else []
 
     def get_status(self):
         """
@@ -1355,6 +1440,29 @@ class Minisat22(object):
         if self.minisat:
             pysolvers.minisat22_pbudget(self.minisat, budget)
 
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.minisat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.minisat22_propagate(self.minisat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return props if props != None else []
+
     def get_status(self):
         """
             Returns solver's status.
@@ -1598,6 +1706,29 @@ class MinisatGH(object):
 
         if self.minisat:
             pysolvers.minisatgh_pbudget(self.minisat, budget)
+
+    def propagate(self, assumptions=[]):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.minisat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return props if props != None else []
 
     def get_status(self):
         """

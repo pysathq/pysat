@@ -49,6 +49,7 @@ static char   addam_docstring[] = "Add an atmost constraint to formula "
 				  "(for Minicard only).";
 static char   solve_docstring[] = "Solve a given CNF instance.";
 static char     lim_docstring[] = "Solve a given CNF instance within a budget.";
+static char    prop_docstring[] = "Propagate a given set of literals.";
 static char cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char pbudget_docstring[] = "Set limit on the number of propagations.";
 static char setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
@@ -70,6 +71,7 @@ extern "C" {
 	static PyObject *py_glucose3_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_glucose3_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose3_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_glucose3_propagate (PyObject *, PyObject *);
 	static PyObject *py_glucose3_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_setincr   (PyObject *, PyObject *);
@@ -85,6 +87,7 @@ extern "C" {
 	static PyObject *py_glucose41_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_glucose41_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose41_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_glucose41_propagate (PyObject *, PyObject *);
 	static PyObject *py_glucose41_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_setincr   (PyObject *, PyObject *);
@@ -112,6 +115,7 @@ extern "C" {
 	static PyObject *py_minicard_add_am    (PyObject *, PyObject *);
 	static PyObject *py_minicard_solve     (PyObject *, PyObject *);
 	static PyObject *py_minicard_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_minicard_propagate (PyObject *, PyObject *);
 	static PyObject *py_minicard_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_core      (PyObject *, PyObject *);
@@ -125,6 +129,7 @@ extern "C" {
 	static PyObject *py_minisat22_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_minisat22_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisat22_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_minisat22_propagate (PyObject *, PyObject *);
 	static PyObject *py_minisat22_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_core      (PyObject *, PyObject *);
@@ -138,6 +143,7 @@ extern "C" {
 	static PyObject *py_minisatgh_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_propagate (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_core      (PyObject *, PyObject *);
@@ -156,6 +162,7 @@ static PyMethodDef module_methods[] = {
         { "glucose3_add_cl",    py_glucose3_add_cl,    METH_VARARGS,   addcl_docstring },
         { "glucose3_solve",     py_glucose3_solve,     METH_VARARGS,   solve_docstring },
         { "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,     lim_docstring },
+        { "glucose3_propagate", py_glucose3_propagate, METH_VARARGS,    prop_docstring },
         { "glucose3_cbudget",   py_glucose3_cbudget,   METH_VARARGS, cbudget_docstring },
         { "glucose3_pbudget",   py_glucose3_pbudget,   METH_VARARGS, pbudget_docstring },
         { "glucose3_setincr",   py_glucose3_setincr,   METH_VARARGS, setincr_docstring },
@@ -171,6 +178,7 @@ static PyMethodDef module_methods[] = {
         { "glucose41_add_cl",    py_glucose41_add_cl,    METH_VARARGS,   addcl_docstring },
         { "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,   solve_docstring },
         { "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,     lim_docstring },
+        { "glucose41_propagate", py_glucose41_propagate, METH_VARARGS,    prop_docstring },
         { "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS, cbudget_docstring },
         { "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS, pbudget_docstring },
         { "glucose41_setincr",   py_glucose41_setincr,   METH_VARARGS, setincr_docstring },
@@ -197,6 +205,7 @@ static PyMethodDef module_methods[] = {
         { "minicard_add_cl",    py_minicard_add_cl,    METH_VARARGS,   addcl_docstring },
         { "minicard_solve",     py_minicard_solve,     METH_VARARGS,   solve_docstring },
         { "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,     lim_docstring },
+        { "minicard_propagate", py_minicard_propagate, METH_VARARGS,    prop_docstring },
         { "minicard_cbudget",   py_minicard_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minicard_pbudget",   py_minicard_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minicard_core",      py_minicard_core,      METH_VARARGS,    core_docstring },
@@ -211,6 +220,7 @@ static PyMethodDef module_methods[] = {
         { "minisat22_add_cl",    py_minisat22_add_cl,    METH_VARARGS,   addcl_docstring },
         { "minisat22_solve",     py_minisat22_solve,     METH_VARARGS,   solve_docstring },
         { "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,     lim_docstring },
+        { "minisat22_propagate", py_minisat22_propagate, METH_VARARGS,    prop_docstring },
         { "minisat22_cbudget",   py_minisat22_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minisat22_pbudget",   py_minisat22_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minisat22_core",      py_minisat22_core,      METH_VARARGS,    core_docstring },
@@ -224,6 +234,7 @@ static PyMethodDef module_methods[] = {
         { "minisatgh_add_cl",    py_minisatgh_add_cl,    METH_VARARGS,   addcl_docstring },
         { "minisatgh_solve",     py_minisatgh_solve,     METH_VARARGS,   solve_docstring },
         { "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,     lim_docstring },
+        { "minisatgh_propagate", py_minisatgh_propagate, METH_VARARGS,    prop_docstring },
         { "minisatgh_cbudget",   py_minisatgh_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minisatgh_pbudget",   py_minisatgh_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minisatgh_core",      py_minisatgh_core,      METH_VARARGS,    core_docstring },
@@ -493,6 +504,62 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 		ret = PyBool_FromLong((long)!(Glucose30::toInt(res)));
 	else
 		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Glucose30::vec<Glucose30::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Glucose30::mkLit(l, false) : Glucose30::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		glucose3_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Glucose30::vec<Glucose30::Lit> p;
+	bool res = s->prop_check(a, p);
+
+	PyObject *ret = Py_None;
+
+	if (p.size()) {
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Glucose30::var(p[i]) * (Glucose30::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
+
+		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
+	}
 
 	return ret;
 }
@@ -865,6 +932,62 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 		ret = PyBool_FromLong((long)!(Glucose41::toInt(res)));
 	else
 		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Glucose41::vec<Glucose41::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		glucose41_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Glucose41::vec<Glucose41::Lit> p;
+	bool res = s->prop_check(a, p);
+
+	PyObject *ret = Py_None;
+
+	if (p.size()) {
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Glucose41::var(p[i]) * (Glucose41::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
+
+		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
+	}
 
 	return ret;
 }
@@ -1538,6 +1661,62 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Minicard::vec<Minicard::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Minicard::mkLit(l, false) : Minicard::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		minicard_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Minicard::vec<Minicard::Lit> p;
+	bool res = s->prop_check(a, p);
+
+	PyObject *ret = Py_None;
+
+	if (p.size()) {
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Minicard::var(p[i]) * (Minicard::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
+
+		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
+	}
+
+	return ret;
+}
+
+//
+//=============================================================================
 static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -1840,6 +2019,62 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	Minisat22::vec<Minisat22::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? Minisat22::mkLit(l, false) : Minisat22::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		minisat22_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Minisat22::vec<Minisat22::Lit> p;
+	bool res = s->prop_check(a, p);
+
+	PyObject *ret = Py_None;
+
+	if (p.size()) {
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Minisat22::var(p[i]) * (Minisat22::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
+
+		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
+	}
+
+	return ret;
+}
+
+//
+//=============================================================================
 static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2136,6 +2371,62 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 		ret = PyBool_FromLong((long)!(MinisatGH::toInt(res)));
 	else
 		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(a_obj);
+	MinisatGH::vec<MinisatGH::Lit> a((int)size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(a_obj, i);
+		int l = pyint_to_cint(l_obj);
+		a[i] = (l > 0) ? MinisatGH::mkLit(l, false) : MinisatGH::mkLit(-l, true);
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	if (max_var > 0)
+		minisatgh_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	MinisatGH::vec<MinisatGH::Lit> p;
+	bool res = s->prop_check(a, p);
+
+	PyObject *ret = Py_None;
+
+	if (p.size()) {
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MinisatGH::var(p[i]) * (MinisatGH::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
+
+		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
+	}
 
 	return ret;
 }

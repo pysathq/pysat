@@ -1,6 +1,6 @@
 diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
 --- solvers/minisat22/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/m22/Makefile	2018-01-25 18:04:34.000000000 +0000
++++ solvers/m22/Makefile	2018-05-21 10:14:07.000000000 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -43,7 +43,7 @@ diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
 --- solvers/minisat22/core/Solver.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.cc	2018-01-25 18:08:17.000000000 +0000
++++ solvers/m22/core/Solver.cc	2018-05-21 10:14:07.000000000 +0100
 @@ -20,10 +20,10 @@
  
  #include <math.h>
@@ -87,7 +87,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  static Var mapVar(Var x, vec<Var>& map, Var& max)
 diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
 --- solvers/minisat22/core/Solver.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.h	2018-01-25 18:05:42.000000000 +0000
++++ solvers/m22/core/Solver.h	2018-05-21 10:27:22.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -130,18 +130,76 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
      bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
                                                                  // change the passed vector 'ps'.
  
-@@ -75,7 +75,7 @@
+@@ -63,6 +63,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop); // compute a list of propagated literals given a set of assumptions
+ 
+     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+     void    toDimacs     (const char *file, const vec<Lit>& assumps);
+@@ -73,9 +74,9 @@
+     void    toDimacs     (const char* file, Lit p);
+     void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
-     
+-    
++
      // Variable mode:
 -    // 
 +    //
      void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
      void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
  
+@@ -328,8 +329,8 @@
+ inline int      Solver::nVars         ()      const   { return vardata.size(); }
+ inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+ inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
+-inline void     Solver::setDecisionVar(Var v, bool b) 
+-{ 
++inline void     Solver::setDecisionVar(Var v, bool b)
++{
+     if      ( b && !decision[v]) dec_vars++;
+     else if (!b &&  decision[v]) dec_vars--;
+ 
+@@ -362,6 +363,35 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+ 
++//=================================================================================================
++// Propagate and check:
++inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    int level  = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
++        newDecisionLevel();
++        uncheckedEnqueue(assumps[i]);
++        confl = propagate();
++    }
++
++    // copying the result
++    prop.clear();
++    for (int c = trail_lim[level]; c < trail.size(); ++c)
++        prop.push(trail[c]);
++
++    // if there is a conflict, pushing
++    // the conflicting literal as well
++    if (confl != CRef_Undef)
++        prop.push(ca[confl][0]);
++
++    // backtracking
++    cancelUntil(level);
++
++    return confl == CRef_Undef;
++}
+ 
+ //=================================================================================================
+ // Debug etc:
 diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
 --- solvers/minisat22/core/SolverTypes.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/SolverTypes.h	2018-01-25 18:06:30.000000000 +0000
++++ solvers/m22/core/SolverTypes.h	2018-05-21 10:14:07.000000000 +0100
 @@ -19,18 +19,18 @@
  **************************************************************************************************/
  
@@ -205,7 +263,7 @@ diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
          if (to[cr].learnt())         to[cr].activity() = c.activity();
 diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
 --- solvers/minisat22/mtl/Alg.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Alg.h	2018-01-25 17:53:05.000000000 +0000
++++ solvers/m22/mtl/Alg.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -225,7 +283,7 @@ diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
 --- solvers/minisat22/mtl/Alloc.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Alloc.h	2018-01-25 17:52:50.000000000 +0000
++++ solvers/m22/mtl/Alloc.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -247,7 +305,7 @@ diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
 --- solvers/minisat22/mtl/Heap.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Heap.h	2018-01-25 17:52:30.000000000 +0000
++++ solvers/m22/mtl/Heap.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -267,7 +325,7 @@ diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
 --- solvers/minisat22/mtl/IntTypes.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/IntTypes.h	2018-01-25 17:52:20.000000000 +0000
++++ solvers/m22/mtl/IntTypes.h	2018-05-21 10:14:07.000000000 +0100
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -295,7 +353,7 @@ diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
  #endif
 diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
 --- solvers/minisat22/mtl/Map.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Map.h	2018-01-25 17:52:13.000000000 +0000
++++ solvers/m22/mtl/Map.h	2018-05-21 10:14:07.000000000 +0100
 @@ -17,28 +17,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -340,7 +398,7 @@ diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
  //=================================================================================================
 diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
 --- solvers/minisat22/mtl/Queue.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Queue.h	2018-01-25 17:51:58.000000000 +0000
++++ solvers/m22/mtl/Queue.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -360,7 +418,7 @@ diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
  
 diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
 --- solvers/minisat22/mtl/Sort.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Sort.h	2018-01-25 17:51:49.000000000 +0000
++++ solvers/m22/mtl/Sort.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -384,7 +442,7 @@ diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
  struct LessThan_default {
 diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
 --- solvers/minisat22/mtl/Vec.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Vec.h	2018-01-25 17:51:39.000000000 +0000
++++ solvers/m22/mtl/Vec.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -418,7 +476,7 @@ diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
  
 diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
 --- solvers/minisat22/mtl/XAlloc.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/XAlloc.h	2018-01-25 17:51:22.000000000 +0000
++++ solvers/m22/mtl/XAlloc.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -438,7 +496,7 @@ diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
 --- solvers/minisat22/utils/Options.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/Options.cc	2018-01-25 17:51:10.000000000 +0000
++++ solvers/m22/utils/Options.cc	2018-05-21 10:14:07.000000000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -487,7 +545,7 @@ diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
      if (usage != NULL)
 diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
 --- solvers/minisat22/utils/Options.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/Options.h	2018-01-25 17:50:49.000000000 +0000
++++ solvers/m22/utils/Options.h	2018-05-21 10:14:07.000000000 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -544,7 +602,7 @@ diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
              fprintf(stderr, "\n");
 diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
 --- solvers/minisat22/utils/ParseUtils.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/ParseUtils.h	2018-01-25 17:50:31.000000000 +0000
++++ solvers/m22/utils/ParseUtils.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -566,7 +624,7 @@ diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
  // A simple buffered character stream class:
 diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
 --- solvers/minisat22/utils/System.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/System.cc	2018-01-25 17:50:24.000000000 +0000
++++ solvers/m22/utils/System.cc	2018-05-21 10:14:07.000000000 +0100
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -628,7 +686,7 @@ diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
  #endif
 diff -Naur solvers/minisat22/utils/System.h solvers/m22/utils/System.h
 --- solvers/minisat22/utils/System.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/System.h	2018-01-25 17:50:10.000000000 +0000
++++ solvers/m22/utils/System.h	2018-05-21 10:14:07.000000000 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
