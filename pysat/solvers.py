@@ -396,7 +396,7 @@ class Glucose3(object):
                 self.call_time = time.clock() - start_time
                 self.accu_time += self.call_time
 
-            return st, props if props != None else []
+            return bool(st), props if props != None else []
 
     def get_status(self):
         """
@@ -680,7 +680,7 @@ class Glucose4(object):
                 self.call_time = time.clock() - start_time
                 self.accu_time += self.call_time
 
-            return st, props if props != None else []
+            return bool(st), props if props != None else []
 
     def get_status(self):
         """
@@ -1187,7 +1187,7 @@ class Minicard(object):
                 self.call_time = time.clock() - start_time
                 self.accu_time += self.call_time
 
-            return st, props if props != None else []
+            return bool(st), props if props != None else []
 
     def get_status(self):
         """
@@ -1461,7 +1461,7 @@ class Minisat22(object):
                 self.call_time = time.clock() - start_time
                 self.accu_time += self.call_time
 
-            return st, props if props != None else []
+            return bool(st), props if props != None else []
 
     def get_status(self):
         """
@@ -1728,7 +1728,7 @@ class MinisatGH(object):
                 self.call_time = time.clock() - start_time
                 self.accu_time += self.call_time
 
-            return st, props if props != None else []
+            return bool(st), props if props != None else []
 
     def get_status(self):
         """

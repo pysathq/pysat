@@ -42,8 +42,8 @@ diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
---- solvers/minisatgh/core/Solver.cc	2018-05-21 10:15:47.000000000 +0100
-+++ solvers/mgh/core/Solver.cc	2018-05-21 10:14:08.000000000 +0100
+--- solvers/minisatgh/core/Solver.cc	2018-05-22 06:32:16.000000000 +0100
++++ solvers/mgh/core/Solver.cc	2018-05-22 06:31:09.000000000 +0100
 @@ -20,12 +20,12 @@
  
  #include <math.h>
@@ -92,7 +92,24 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
              ps[j++] = p = ps[i];
      ps.shrink(i - j);
  
-@@ -221,7 +221,7 @@
+@@ -194,7 +194,7 @@
+ void Solver::detachClause(CRef cr, bool strict){
+     const Clause& c = ca[cr];
+     assert(c.size() > 1);
+-    
++
+     // Strict or lazy detaching:
+     if (strict){
+         remove(watches[~c[0]], Watcher(cr, c[1]));
+@@ -214,14 +214,14 @@
+     detachClause(cr);
+     // Don't leave pointers to free'd memory!
+     if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
+-    c.mark(1); 
++    c.mark(1);
+     ca.free(cr);
+ }
+ 
  
  bool Solver::satisfied(const Clause& c) const {
      for (int i = 0; i < c.size(); i++)
@@ -135,7 +152,91 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
      else if (rnd_pol)
          return mkLit(next, drand(random_seed) < 0.5);
      else
-@@ -485,7 +485,7 @@
+@@ -279,19 +279,19 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Analyze conflict and produce a reason clause.
+-|  
++|
+ |    Pre-conditions:
+ |      * 'out_learnt' is assumed to be cleared.
+ |      * Current decision level must be greater than root level.
+-|  
++|
+ |    Post-conditions:
+ |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+-|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the 
++|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ |        rest of literals. There may be others from the same level though.
+-|  
++|
+ |________________________________________________________________________________________________@*/
+ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
+ {
+@@ -322,7 +322,7 @@
+                     out_learnt.push(q);
+             }
+         }
+-        
++
+         // Select next clause to look at:
+         while (!seen[var(trail[index--])]);
+         p     = trail[index+1];
+@@ -341,7 +341,7 @@
+         for (i = j = 1; i < out_learnt.size(); i++)
+             if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i]))
+                 out_learnt[j++] = out_learnt[i];
+-        
++
+     }else if (ccmin_mode == 1){
+         for (i = j = 1; i < out_learnt.size(); i++){
+             Var x = var(out_learnt[i]);
+@@ -399,11 +399,11 @@
+         if (i < (uint32_t)c->size()){
+             // Checking 'p'-parents 'l':
+             Lit l = (*c)[i];
+-            
++
+             // Variable at level 0 or previously removable:
+             if (level(var(l)) == 0 || seen[var(l)] == seen_source || seen[var(l)] == seen_removable){
+                 continue; }
+-            
++
+             // Check variable can not be removed for some local reason:
+             if (reason(var(l)) == CRef_Undef || seen[var(l)] == seen_failed){
+                 stack.push(ShrinkStackElem(0, p));
+@@ -412,7 +412,7 @@
+                         seen[var(stack[i].l)] = seen_failed;
+                         analyze_toclear.push(stack[i].l);
+                     }
+-                    
++
+                 return false;
+             }
+ 
+@@ -430,7 +430,7 @@
+ 
+             // Terminate with success if stack is empty:
+             if (stack.size() == 0) break;
+-            
++
+             // Continue with top element on stack:
+             i  = stack.last().i;
+             p  = stack.last().l;
+@@ -447,7 +447,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyzeFinal : (p : Lit)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+@@ -485,21 +485,64 @@
  
  void Solver::uncheckedEnqueue(Lit p, CRef from)
  {
@@ -144,7 +245,66 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
      assigns[var(p)] = lbool(!sign(p));
      vardata[var(p)] = mkVarData(from, decisionLevel());
      trail.push_(p);
-@@ -517,7 +517,7 @@
+ }
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == mgh_l_False)
++            st = false;
++        else if (value(p) != mgh_l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    return st && confl == CRef_Undef;
++}
++
+ 
+ /*_________________________________________________________________________________________________
+ |
+ |  propagate : [void]  ->  [Clause*]
+-|  
++|
+ |  Description:
+ |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ |    otherwise CRef_Undef.
+-|  
++|
+ |    Post-conditions:
+ |      * the propagation queue is empty, even if there was a conflict.
+ |________________________________________________________________________________________________@*/
+@@ -517,7 +560,7 @@
          for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
              // Try to avoid inspecting the clause:
              Lit blocker = i->blocker;
@@ -153,7 +313,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
                  *j++ = *i++; continue; }
  
              // Make sure the false literal is data[1]:
-@@ -532,19 +532,19 @@
+@@ -532,19 +575,19 @@
              // If 0th watch is true, then clause is already satisfied.
              Lit     first = c[0];
              Watcher w     = Watcher(cr, first);
@@ -176,7 +336,28 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -607,9 +607,9 @@
+@@ -567,16 +610,16 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  reduceDB : ()  ->  [void]
+-|  
++|
+ |  Description:
+ |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+ |________________________________________________________________________________________________@*/
+-struct reduceDB_lt { 
++struct reduceDB_lt {
+     ClauseAllocator& ca;
+     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
+-    bool operator () (CRef x, CRef y) { 
+-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
++    bool operator () (CRef x, CRef y) {
++        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
+ };
+ void Solver::reduceDB()
+ {
+@@ -607,9 +650,9 @@
              removeClause(cs[i]);
          else{
              // Trim clause:
@@ -188,7 +369,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
                      c[k--] = c[c.size()-1];
                      c.pop();
                  }
-@@ -624,7 +624,7 @@
+@@ -624,7 +667,7 @@
  {
      vec<Var> vs;
      for (Var v = 0; v < nVars(); v++)
@@ -197,7 +378,31 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
              vs.push(v);
      order_heap.build(vs);
  }
-@@ -712,7 +712,7 @@
+@@ -633,7 +676,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  simplify : [void]  ->  [bool]
+-|  
++|
+ |  Description:
+ |    Simplify the clause database according to the current top-level assigment. Currently, the only
+ |    thing done here is the removal of satisfied clauses, but more things can be put here.
+@@ -689,11 +732,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
+-|  
++|
+ |  Description:
+-|    Search for a model the specified number of conflicts. 
++|    Search for a model the specified number of conflicts.
+ |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
+-|  
++|
+ |  Output:
+ |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+ |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+@@ -712,7 +755,7 @@
          if (confl != CRef_Undef){
              // CONFLICT
              conflicts++; conflictC++;
@@ -206,7 +411,20 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
  
              learnt_clause.clear();
              analyze(confl, learnt_clause, backtrack_level);
-@@ -749,11 +749,11 @@
+@@ -737,9 +780,9 @@
+                 max_learnts             *= learntsize_inc;
+ 
+                 if (verbosity >= 1)
+-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
+-                           (int)conflicts, 
+-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
++                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
++                           (int)conflicts,
++                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+                            (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+             }
+ 
+@@ -749,11 +792,11 @@
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
@@ -220,7 +438,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
  
              if (learnts.size()-nAssigns() >= max_learnts)
                  // Reduce the set of learnt clauses:
-@@ -763,12 +763,12 @@
+@@ -763,12 +806,12 @@
              while (decisionLevel() < assumptions.size()){
                  // Perform user provided assumption:
                  Lit p = assumptions[decisionLevel()];
@@ -236,7 +454,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
                  }else{
                      next = p;
                      break;
-@@ -782,7 +782,7 @@
+@@ -782,7 +825,7 @@
  
                  if (next == lit_Undef)
                      // Model found:
@@ -245,7 +463,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
              }
  
              // Increase decision level and enqueue 'next'
-@@ -840,7 +840,7 @@
+@@ -840,7 +883,7 @@
  {
      model.clear();
      conflict.clear();
@@ -254,7 +472,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
  
      solves++;
  
-@@ -850,7 +850,7 @@
+@@ -850,7 +893,7 @@
  
      learntsize_adjust_confl   = learntsize_adjust_start_confl;
      learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
@@ -263,7 +481,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
  
      if (verbosity >= 1){
          printf("============================[ Search Statistics ]==============================\n");
-@@ -861,7 +861,7 @@
+@@ -861,7 +904,7 @@
  
      // Search:
      int curr_restarts = 0;
@@ -272,7 +490,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
          double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
          status = search(rest_base * restart_first);
          if (!withinBudget()) break;
-@@ -872,11 +872,11 @@
+@@ -872,11 +915,11 @@
          printf("===============================================================================\n");
  
  
@@ -286,7 +504,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
          ok = false;
  
      cancelUntil(0);
-@@ -890,10 +890,10 @@
+@@ -890,10 +933,10 @@
      for (int i = 0; i < assumps.size(); i++){
          Lit a = assumps[i];
  
@@ -299,7 +517,15 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
              uncheckedEnqueue(a);
      }
  
-@@ -912,7 +912,7 @@
+@@ -905,14 +948,14 @@
+             out.push(trail[j]);
+     }else
+         ret = false;
+-    
++
+     cancelUntil(0);
+     return ret;
+ }
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -308,7 +534,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -930,7 +930,7 @@
+@@ -930,7 +973,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -317,7 +543,13 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -966,7 +966,7 @@
+@@ -961,12 +1004,12 @@
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]]))
+             cnt++;
+-        
++
+     for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
              for (int j = 0; j < c.size(); j++)
@@ -326,7 +558,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -976,7 +976,7 @@
+@@ -976,7 +1019,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumps.size(); i++){
@@ -335,7 +567,7 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumps[i]) ? "-" : "", mapVar(var(assumps[i]), map, max)+1);
      }
  
-@@ -992,11 +992,11 @@
+@@ -992,11 +1035,11 @@
  {
      double cpu_time = cpuTime();
      double mem_used = memUsedPeak();
@@ -352,9 +584,23 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
      if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
      printf("CPU time              : %g s\n", cpu_time);
  }
+@@ -1056,11 +1099,11 @@
+ {
+     // Initialize the next region to a size corresponding to the estimated utilization degree. This
+     // is not precise but should avoid some unnecessary reallocations for the new region:
+-    ClauseAllocator to(ca.size() - ca.wasted()); 
++    ClauseAllocator to(ca.size() - ca.wasted());
+ 
+     relocAll(to);
+     if (verbosity >= 2)
+-        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", 
++        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
+                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+     to.moveTo(ca);
+ }
 diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
---- solvers/minisatgh/core/Solver.h	2018-05-21 10:15:47.000000000 +0100
-+++ solvers/mgh/core/Solver.h	2018-05-21 10:29:05.000000000 +0100
+--- solvers/minisatgh/core/Solver.h	2018-05-22 06:32:16.000000000 +0100
++++ solvers/mgh/core/Solver.h	2018-05-22 06:31:45.000000000 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -479,44 +725,8 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
      return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
  
  inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
-@@ -398,6 +399,35 @@
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
- 
-+//=================================================================================================
-+// Propagate and check:
-+inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
-+{
-+    int level  = decisionLevel();
-+    CRef confl = CRef_Undef;
-+
-+    // propagate each assumption at a new decision level
-+    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
-+        newDecisionLevel();
-+        uncheckedEnqueue(assumps[i]);
-+        confl = propagate();
-+    }
-+
-+    // copying the result
-+    prop.clear();
-+    for (int c = trail_lim[level]; c < trail.size(); ++c)
-+        prop.push(trail[c]);
-+
-+    // if there is a conflict, pushing
-+    // the conflicting literal as well
-+    if (confl != CRef_Undef)
-+        prop.push(ca[confl][0]);
-+
-+    // backtracking
-+    cancelUntil(level);
-+
-+    return confl == CRef_Undef;
-+}
- 
- //=================================================================================================
- // Debug etc:
 diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
---- solvers/minisatgh/core/SolverTypes.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/core/SolverTypes.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/core/SolverTypes.h	2018-05-21 10:14:08.000000000 +0100
 @@ -19,19 +19,20 @@
  **************************************************************************************************/
@@ -594,7 +804,7 @@ diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
  
  
 diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
---- solvers/minisatgh/mtl/Alg.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Alg.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Alg.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -614,7 +824,7 @@ diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
---- solvers/minisatgh/mtl/Alloc.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Alloc.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Alloc.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -636,7 +846,7 @@ diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
  //=================================================================================================
  // Simple Region-based memory allocator:
 diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
---- solvers/minisatgh/mtl/Heap.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Heap.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Heap.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -658,7 +868,7 @@ diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
---- solvers/minisatgh/mtl/IntMap.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/IntMap.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/IntMap.h	2018-05-21 10:14:08.000000000 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -678,7 +888,7 @@ diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
      template<class T> struct MkIndexDefault {
          typename vec<T>::Size operator()(T t) const { return (typename vec<T>::Size)t; }
 diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
---- solvers/minisatgh/mtl/IntTypes.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/IntTypes.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/IntTypes.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,8 +17,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -694,7 +904,7 @@ diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
---- solvers/minisatgh/mtl/Map.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Map.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Map.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,13 +17,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -731,7 +941,7 @@ diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
  
  //=================================================================================================
 diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
---- solvers/minisatgh/mtl/Queue.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Queue.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Queue.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -751,7 +961,7 @@ diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
---- solvers/minisatgh/mtl/Rnd.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Rnd.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Rnd.h	2018-05-21 10:14:08.000000000 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -771,7 +981,7 @@ diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
  // Generate a random double:
  static inline double drand(double& seed)
 diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
---- solvers/minisatgh/mtl/Sort.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Sort.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Sort.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -795,7 +1005,7 @@ diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
---- solvers/minisatgh/mtl/Vec.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/Vec.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/Vec.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -821,7 +1031,7 @@ diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
  //=================================================================================================
  // Automatically resizable arrays
 diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
---- solvers/minisatgh/mtl/XAlloc.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/mtl/XAlloc.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/mtl/XAlloc.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -841,7 +1051,7 @@ diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
---- solvers/minisatgh/utils/Options.cc	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/utils/Options.cc	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/utils/Options.cc	2018-05-21 10:14:08.000000000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -876,7 +1086,7 @@ diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
---- solvers/minisatgh/utils/Options.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/utils/Options.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/utils/Options.h	2018-05-21 10:14:08.000000000 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -933,7 +1143,7 @@ diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
  
      operator      const char*  (void) const     { return value; }
 diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
---- solvers/minisatgh/utils/ParseUtils.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/utils/ParseUtils.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/utils/ParseUtils.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -958,7 +1168,7 @@ diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
  //-------------------------------------------------------------------------------------------------
  // A simple buffered character stream class:
 diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
---- solvers/minisatgh/utils/System.cc	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/utils/System.cc	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/utils/System.cc	2018-05-21 10:14:08.000000000 +0100
 @@ -21,13 +21,13 @@
  #include <signal.h>
@@ -1069,7 +1279,7 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
      signal(SIGINT, handler);
      signal(SIGTERM,handler);
 diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
---- solvers/minisatgh/utils/System.h	2018-05-21 10:15:47.000000000 +0100
+--- solvers/minisatgh/utils/System.h	2018-05-22 06:32:16.000000000 +0100
 +++ solvers/mgh/utils/System.h	2018-05-21 10:14:08.000000000 +0100
 @@ -18,23 +18,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

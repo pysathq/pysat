@@ -547,19 +547,15 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	Glucose30::vec<Glucose30::Lit> p;
 	bool res = s->prop_check(a, p);
 
-	PyObject *ret = Py_None;
-
-	if (p.size()) {
-		PyObject *propagated = PyList_New(p.size());
-		for (int i = 0; i < p.size(); ++i) {
-			int l = Glucose30::var(p[i]) * (Glucose30::sign(p[i]) ? -1 : 1);
-			PyObject *lit = pyint_from_cint(l);
-			PyList_SetItem(propagated, i, lit);
-		}
-
-		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-		Py_DECREF(propagated);
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Glucose30::var(p[i]) * (Glucose30::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
 	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
 
 	return ret;
 }
@@ -975,19 +971,15 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 	Glucose41::vec<Glucose41::Lit> p;
 	bool res = s->prop_check(a, p);
 
-	PyObject *ret = Py_None;
-
-	if (p.size()) {
-		PyObject *propagated = PyList_New(p.size());
-		for (int i = 0; i < p.size(); ++i) {
-			int l = Glucose41::var(p[i]) * (Glucose41::sign(p[i]) ? -1 : 1);
-			PyObject *lit = pyint_from_cint(l);
-			PyList_SetItem(propagated, i, lit);
-		}
-
-		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-		Py_DECREF(propagated);
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Glucose41::var(p[i]) * (Glucose41::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
 	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
 
 	return ret;
 }
@@ -1698,19 +1690,15 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 	Minicard::vec<Minicard::Lit> p;
 	bool res = s->prop_check(a, p);
 
-	PyObject *ret = Py_None;
-
-	if (p.size()) {
-		PyObject *propagated = PyList_New(p.size());
-		for (int i = 0; i < p.size(); ++i) {
-			int l = Minicard::var(p[i]) * (Minicard::sign(p[i]) ? -1 : 1);
-			PyObject *lit = pyint_from_cint(l);
-			PyList_SetItem(propagated, i, lit);
-		}
-
-		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-		Py_DECREF(propagated);
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Minicard::var(p[i]) * (Minicard::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
 	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
 
 	return ret;
 }
@@ -2056,19 +2044,15 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 	Minisat22::vec<Minisat22::Lit> p;
 	bool res = s->prop_check(a, p);
 
-	PyObject *ret = Py_None;
-
-	if (p.size()) {
-		PyObject *propagated = PyList_New(p.size());
-		for (int i = 0; i < p.size(); ++i) {
-			int l = Minisat22::var(p[i]) * (Minisat22::sign(p[i]) ? -1 : 1);
-			PyObject *lit = pyint_from_cint(l);
-			PyList_SetItem(propagated, i, lit);
-		}
-
-		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-		Py_DECREF(propagated);
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Minisat22::var(p[i]) * (Minisat22::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
 	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
 
 	return ret;
 }
@@ -2414,19 +2398,15 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	MinisatGH::vec<MinisatGH::Lit> p;
 	bool res = s->prop_check(a, p);
 
-	PyObject *ret = Py_None;
-
-	if (p.size()) {
-		PyObject *propagated = PyList_New(p.size());
-		for (int i = 0; i < p.size(); ++i) {
-			int l = MinisatGH::var(p[i]) * (MinisatGH::sign(p[i]) ? -1 : 1);
-			PyObject *lit = pyint_from_cint(l);
-			PyList_SetItem(propagated, i, lit);
-		}
-
-		ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-		Py_DECREF(propagated);
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = MinisatGH::var(p[i]) * (MinisatGH::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
 	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
 
 	return ret;
 }

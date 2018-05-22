@@ -43,7 +43,7 @@ diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
 --- solvers/minisat22/core/Solver.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.cc	2018-05-21 10:14:07.000000000 +0100
++++ solvers/m22/core/Solver.cc	2018-05-22 06:27:49.000000000 +0100
 @@ -20,10 +20,10 @@
  
  #include <math.h>
@@ -58,6 +58,24 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  
  //=================================================================================================
  // Options:
+@@ -171,7 +171,7 @@
+ void Solver::detachClause(CRef cr, bool strict) {
+     const Clause& c = ca[cr];
+     assert(c.size() > 1);
+-    
++
+     if (strict){
+         remove(watches[~c[0]], Watcher(cr, c[1]));
+         remove(watches[~c[1]], Watcher(cr, c[0]));
+@@ -190,7 +190,7 @@
+     detachClause(cr);
+     // Don't leave pointers to free'd memory!
+     if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
+-    c.mark(1); 
++    c.mark(1);
+     ca.free(cr);
+ }
+ 
 @@ -209,7 +209,7 @@
          for (int c = trail.size()-1; c >= trail_lim[level]; c--){
              Var      x  = var(trail[c]);
@@ -67,7 +85,176 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
                  polarity[x] = sign(trail[c]);
              insertVarOrder(x); }
          qhead = trail_lim[level];
-@@ -657,7 +657,7 @@
+@@ -247,19 +247,19 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Analyze conflict and produce a reason clause.
+-|  
++|
+ |    Pre-conditions:
+ |      * 'out_learnt' is assumed to be cleared.
+ |      * Current decision level must be greater than root level.
+-|  
++|
+ |    Post-conditions:
+ |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+-|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the 
++|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ |        rest of literals. There may be others from the same level though.
+-|  
++|
+ |________________________________________________________________________________________________@*/
+ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
+ {
+@@ -290,7 +290,7 @@
+                     out_learnt.push(q);
+             }
+         }
+-        
++
+         // Select next clause to look at:
+         while (!seen[var(trail[index--])]);
+         p     = trail[index+1];
+@@ -313,7 +313,7 @@
+         for (i = j = 1; i < out_learnt.size(); i++)
+             if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
+                 out_learnt[j++] = out_learnt[i];
+-        
++
+     }else if (ccmin_mode == 1){
+         for (i = j = 1; i < out_learnt.size(); i++){
+             Var x = var(out_learnt[i]);
+@@ -390,7 +390,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyzeFinal : (p : Lit)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+@@ -434,15 +434,58 @@
+     trail.push_(p);
+ }
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == l_False)
++            st = false;
++        else if (value(p) != l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    return st && confl == CRef_Undef;
++}
++
+ 
+ /*_________________________________________________________________________________________________
+ |
+ |  propagate : [void]  ->  [Clause*]
+-|  
++|
+ |  Description:
+ |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ |    otherwise CRef_Undef.
+-|  
++|
+ |    Post-conditions:
+ |      * the propagation queue is empty, even if there was a conflict.
+ |________________________________________________________________________________________________@*/
+@@ -511,16 +554,16 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  reduceDB : ()  ->  [void]
+-|  
++|
+ |  Description:
+ |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+ |________________________________________________________________________________________________@*/
+-struct reduceDB_lt { 
++struct reduceDB_lt {
+     ClauseAllocator& ca;
+     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
+-    bool operator () (CRef x, CRef y) { 
+-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
++    bool operator () (CRef x, CRef y) {
++        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
+ };
+ void Solver::reduceDB()
+ {
+@@ -569,7 +612,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  simplify : [void]  ->  [bool]
+-|  
++|
+ |  Description:
+ |    Simplify the clause database according to the current top-level assigment. Currently, the only
+ |    thing done here is the removal of satisfied clauses, but more things can be put here.
+@@ -601,11 +644,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
+-|  
++|
+ |  Description:
+-|    Search for a model the specified number of conflicts. 
++|    Search for a model the specified number of conflicts.
+ |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
+-|  
++|
+ |  Output:
+ |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+ |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+@@ -649,15 +692,15 @@
+                 max_learnts             *= learntsize_inc;
+ 
+                 if (verbosity >= 1)
+-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
+-                           (int)conflicts, 
+-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
++                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
++                           (int)conflicts,
++                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+                            (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+             }
  
          }else{
              // NO CONFLICT
@@ -76,7 +263,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
-@@ -794,7 +794,7 @@
+@@ -794,7 +837,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -85,9 +272,32 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
+@@ -843,7 +886,7 @@
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]]))
+             cnt++;
+-        
++
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]])){
+             Clause& c = ca[clauses[i]];
+@@ -913,11 +956,11 @@
+ {
+     // Initialize the next region to a size corresponding to the estimated utilization degree. This
+     // is not precise but should avoid some unnecessary reallocations for the new region:
+-    ClauseAllocator to(ca.size() - ca.wasted()); 
++    ClauseAllocator to(ca.size() - ca.wasted());
+ 
+     relocAll(to);
+     if (verbosity >= 2)
+-        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", 
++        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
+                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+     to.moveTo(ca);
+ }
 diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
 --- solvers/minisat22/core/Solver.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.h	2018-05-21 10:27:22.000000000 +0100
++++ solvers/m22/core/Solver.h	2018-05-22 06:29:13.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -161,42 +371,6 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -362,6 +363,35 @@
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
- 
-+//=================================================================================================
-+// Propagate and check:
-+inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
-+{
-+    int level  = decisionLevel();
-+    CRef confl = CRef_Undef;
-+
-+    // propagate each assumption at a new decision level
-+    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
-+        newDecisionLevel();
-+        uncheckedEnqueue(assumps[i]);
-+        confl = propagate();
-+    }
-+
-+    // copying the result
-+    prop.clear();
-+    for (int c = trail_lim[level]; c < trail.size(); ++c)
-+        prop.push(trail[c]);
-+
-+    // if there is a conflict, pushing
-+    // the conflicting literal as well
-+    if (confl != CRef_Undef)
-+        prop.push(ca[confl][0]);
-+
-+    // backtracking
-+    cancelUntil(level);
-+
-+    return confl == CRef_Undef;
-+}
- 
- //=================================================================================================
- // Debug etc:
 diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
 --- solvers/minisat22/core/SolverTypes.h	2010-07-10 17:07:36.000000000 +0100
 +++ solvers/m22/core/SolverTypes.h	2018-05-21 10:14:07.000000000 +0100

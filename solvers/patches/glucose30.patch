@@ -148,7 +148,7 @@ diff -Naur solvers/glucose30/core/BoundedQueue.h solvers/g30/core/BoundedQueue.h
      void clear(bool dealloc = false)   { elems.clear(dealloc); first = 0; maxsize=0; queuesize=0;sumofqueue=0;}
 diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
 --- solvers/glucose30/core/Solver.cc	2013-11-11 20:21:02.000000000 +0000
-+++ solvers/g30/core/Solver.cc	2018-05-19 21:48:05.000000000 +0100
++++ solvers/g30/core/Solver.cc	2018-05-22 06:23:02.000000000 +0100
 @@ -2,7 +2,7 @@
   Glucose -- Copyright (c) 2013, Gilles Audemard, Laurent Simon
  				CRIL - Univ. Artois, France
@@ -567,7 +567,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  
              seen[x] = 0;
          }
-@@ -760,7 +765,7 @@
+@@ -760,21 +765,66 @@
  
  void Solver::uncheckedEnqueue(Lit p, CRef from)
  {
@@ -576,7 +576,54 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
      assigns[var(p)] = lbool(!sign(p));
      vardata[var(p)] = mkVarData(from, decisionLevel());
      trail.push_(p);
-@@ -770,11 +775,11 @@
+ }
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == g3l_False)
++            st = false;
++        else if (value(p) != g3l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        // here we may choose a wrong literal
++        // in Glucose if the clause is binary!
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    return st && confl == CRef_Undef;
++}
++
+ 
  /*_________________________________________________________________________________________________
  |
  |  propagate : [void]  ->  [Clause*]
@@ -590,7 +637,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -790,29 +795,29 @@
+@@ -790,29 +840,29 @@
          Watcher        *i, *j, *end;
          num_props++;
  
@@ -630,7 +677,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
                  *j++ = *i++; continue; }
  
              // Make sure the false literal is data[1]:
-@@ -827,23 +832,23 @@
+@@ -827,23 +877,23 @@
              // If 0th watch is true, then clause is already satisfied.
              Lit     first = c[0];
              Watcher w     = Watcher(cr, first);
@@ -660,7 +707,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  		      break;
  		    }
  		  }
-@@ -856,8 +861,8 @@
+@@ -856,8 +906,8 @@
  		goto NextClause; }
  	    } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
  	      for (int k = 2; k < c.size(); k++) {
@@ -671,7 +718,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  		  c[1] = c[k]; c[k] = false_lit;
  		  watches[~c[1]].push(w);
  		  goto NextClause; }
-@@ -866,7 +871,7 @@
+@@ -866,7 +916,7 @@
  
              // Did not find watch -- clause is unit under assignment:
              *j++ = w;
@@ -680,7 +727,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -874,8 +879,8 @@
+@@ -874,8 +924,8 @@
                      *j++ = *i++;
              }else {
                  uncheckedEnqueue(first, cr);
@@ -691,7 +738,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  	    }
          NextClause:;
          }
-@@ -883,7 +888,7 @@
+@@ -883,7 +933,7 @@
      }
      propagations += num_props;
      simpDB_props -= num_props;
@@ -700,7 +747,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
      return confl;
  }
  
-@@ -891,48 +896,48 @@
+@@ -891,48 +941,48 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -765,7 +812,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
    // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
    // Keep clauses which seem to be usefull (their lbd was reduce during this sequence)
  
-@@ -957,13 +962,13 @@
+@@ -957,13 +1007,13 @@
  
  void Solver::removeSatisfied(vec<CRef>& cs)
  {
@@ -781,7 +828,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
              removeClause(cs[i]);
          else
              cs[j++] = cs[i];
-@@ -976,7 +981,7 @@
+@@ -976,7 +1026,7 @@
  {
      vec<Var> vs;
      for (Var v = 0; v < nVars(); v++)
@@ -790,7 +837,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
              vs.push(v);
      order_heap.build(vs);
  }
-@@ -985,7 +990,7 @@
+@@ -985,7 +1035,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -799,7 +846,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -1017,15 +1022,15 @@
+@@ -1017,15 +1067,15 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -821,7 +868,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  |________________________________________________________________________________________________@*/
  lbool Solver::search(int nof_conflicts)
  {
-@@ -1045,16 +1050,16 @@
+@@ -1045,16 +1095,16 @@
              var_decay += 0.01;
  
  	  if (verbosity >= 1 && conflicts%verbEveryConflicts==0){
@@ -844,7 +891,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  	  trailQueue.push(trail.size());
  	  // BLOCK RESTART (CP 2012 paper)
  	  if( conflictsRestarts>LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid()  && trail.size()>R*trailQueue.getavg()) {
-@@ -1069,13 +1074,13 @@
+@@ -1069,13 +1119,13 @@
  
  	    lbdQueue.push(nblevels);
  	    sumLBD += nblevels;
@@ -860,7 +907,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
                              (-2 * sign(learnt_clause[i]) + 1) );
                fprintf(certifiedOutput, "0\n");
              }
-@@ -1084,7 +1089,7 @@
+@@ -1084,7 +1134,7 @@
  	      uncheckedEnqueue(learnt_clause[0]);nbUn++;
              }else{
                  CRef cr = ca.alloc(learnt_clause, true);
@@ -869,7 +916,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  		ca[cr].setSizeWithoutSelectors(szWoutSelectors);
  		if(nblevels<=2) nbDL2++; // stats
  		if(ca[cr].size()==2) nbBin++; // stats
-@@ -1097,9 +1102,9 @@
+@@ -1097,9 +1147,9 @@
              varDecayActivity();
              claDecayActivity();
  
@@ -881,7 +928,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  	  if (
  	      ( lbdQueue.isvalid() && ((lbdQueue.getavg()*K) > (sumLBD / conflictsRestarts)))) {
  	    lbdQueue.fastclear();
-@@ -1109,33 +1114,33 @@
+@@ -1109,33 +1159,33 @@
  	      bt = (decisionLevel()<assumptions.size()) ? decisionLevel() : assumptions.size();
  	    }
  	    cancelUntil(bt);
@@ -923,7 +970,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
                  }else{
                      next = p;
                      break;
-@@ -1148,9 +1153,9 @@
+@@ -1148,9 +1198,9 @@
                  next = pickBranchLit();
  
                  if (next == lit_Undef){
@@ -935,7 +982,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  		}
              }
  
-@@ -1179,24 +1184,66 @@
+@@ -1179,24 +1229,66 @@
  void Solver::printIncrementalStats() {
  
    printf("c---------- Glucose Stats -------------------------\n");
@@ -977,12 +1024,12 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
 +    }
 +    else {
 +        int max_i = 0;
-+
+ 
 +        for (int i = 1; i < block_cl.size(); i++) {
 +            if (level(var(block_cl[i])) > level(var(block_cl[max_i])))
 +                max_i = i;
 +        }
- 
++
 +        // Swap-in this literal at index 1:
 +        Lit p           = block_cl[max_i];
 +        block_cl[max_i] = block_cl[0];
@@ -1013,7 +1060,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  
  // NOTE: assumptions passed in member-variable 'assumptions'.
  lbool Solver::solve_()
-@@ -1208,29 +1255,31 @@
+@@ -1208,29 +1300,31 @@
    }
      model.clear();
      conflict.clear();
@@ -1053,7 +1100,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  
        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              | Progress |\n");
        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |          |\n");
-@@ -1239,7 +1288,7 @@
+@@ -1239,7 +1333,7 @@
  
      // Search:
      int curr_restarts = 0;
@@ -1062,7 +1109,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
        status = search(0); // the parameter is useless in glucose, kept to allow modifications
  
          if (!withinBudget()) break;
-@@ -1251,30 +1300,34 @@
+@@ -1251,30 +1345,34 @@
  
  
      if (certifiedUNSAT){ // Want certified output
@@ -1110,7 +1157,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
        totalTime4Unsat +=(finalTime-curTime);
      }
  
-@@ -1284,7 +1337,7 @@
+@@ -1284,7 +1382,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -1119,7 +1166,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -1302,7 +1355,7 @@
+@@ -1302,7 +1400,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -1128,7 +1175,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -1333,12 +1386,12 @@
+@@ -1333,12 +1431,12 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -1143,7 +1190,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -1348,7 +1401,7 @@
+@@ -1348,7 +1446,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++){
@@ -1152,7 +1199,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max)+1);
      }
  
-@@ -1407,11 +1460,11 @@
+@@ -1407,11 +1505,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
@@ -1168,7 +1215,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  }
 diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
 --- solvers/glucose30/core/Solver.h	2013-11-11 20:21:02.000000000 +0000
-+++ solvers/g30/core/Solver.h	2018-05-21 10:22:18.000000000 +0100
++++ solvers/g30/core/Solver.h	2018-05-22 06:30:17.000000000 +0100
 @@ -2,7 +2,7 @@
   Glucose -- Copyright (c) 2009, Gilles Audemard, Laurent Simon
  				CRIL - Univ. Artois, France
@@ -1339,7 +1386,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -425,27 +432,56 @@
+@@ -425,13 +432,14 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -1359,43 +1406,8 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
  
  inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
- inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+@@ -445,7 +453,7 @@
  
-+//=================================================================================================
-+// Propagate and check:
-+inline bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
-+{
-+    int level  = decisionLevel();
-+    CRef confl = CRef_Undef;
-+
-+    // propagate each assumption at a new decision level
-+    for (int i = 0; confl == CRef_Undef && i < assumps.size(); ++i) {
-+        newDecisionLevel();
-+        uncheckedEnqueue(assumps[i]);
-+        confl = propagate();
-+    }
-+
-+    // copying the result
-+    prop.clear();
-+    for (int c = trail_lim[level]; c < trail.size(); ++c)
-+        prop.push(trail[c]);
-+
-+    // if there is a conflict, pushing
-+    // the conflicting literal as well
-+    if (confl != CRef_Undef)
-+        prop.push(ca[confl][0]);
-+
-+    // backtracking
-+    cancelUntil(level);
-+
-+    return confl == CRef_Undef;
-+}
- 
- //=================================================================================================
- // Debug etc:
- 
--
  inline void Solver::printLit(Lit l)
  {
 -    printf("%s%d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
