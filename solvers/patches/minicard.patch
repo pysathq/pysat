@@ -43,7 +43,7 @@ diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
 --- solvers/minicard/core/Solver.cc	2017-04-06 15:30:14.000000000 +0100
-+++ solvers/mc/core/Solver.cc	2018-05-22 06:28:33.000000000 +0100
++++ solvers/mc/core/Solver.cc	2018-05-23 14:42:39.000000000 +0100
 @@ -27,10 +27,10 @@
  
  #include <math.h>
@@ -241,13 +241,13 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Description:
  |    Specialized analysis procedure to express the final conflict in terms of assumptions.
  |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-@@ -690,14 +690,57 @@
+@@ -690,14 +690,64 @@
      }
  }
  
 +//=================================================================================================
 +// Propagate and check:
-+bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
 +{
 +    prop.clear();
 +
@@ -257,6 +257,10 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
 +    bool    st = true;
 +    int  level = decisionLevel();
 +    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
 +
 +    // propagate each assumption at a new decision level
 +    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
@@ -285,6 +289,9 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
 +        cancelUntil(level);
 +    }
 +
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
 +    return st && confl == CRef_Undef;
 +}
 +
@@ -301,7 +308,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -731,7 +774,7 @@
+@@ -731,7 +781,7 @@
  
                  if (newWatch == lit_Undef) {
                      // No new watch found, so we have reached the bound.
@@ -310,7 +317,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                      for (int k = 0 ; k < c.atmost_watches() ; k++) {
                          if (c[k] != p && value(c[k]) != l_False && (k==0 || c[k] != c[k-1])) {
                              assert(value(c[k]) == l_Undef);
-@@ -810,16 +853,16 @@
+@@ -810,16 +860,16 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -331,7 +338,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  };
  void Solver::reduceDB()
  {
-@@ -832,7 +875,7 @@
+@@ -832,7 +882,7 @@
      for (i = j = 0; i < learnts.size(); i++){
          Clause& c = ca[learnts[i]];
          assert(!c.is_atmost());
@@ -340,7 +347,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
          if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
              removeClause(learnts[i]);
          else
-@@ -870,7 +913,7 @@
+@@ -870,7 +920,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -349,7 +356,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -902,11 +945,11 @@
+@@ -902,11 +952,11 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -364,7 +371,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Output:
  |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
  |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-@@ -950,15 +993,15 @@
+@@ -950,15 +1000,15 @@
                  max_learnts             *= learntsize_inc;
  
                  if (verbosity >= 1)
@@ -384,7 +391,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
-@@ -1123,7 +1166,7 @@
+@@ -1123,7 +1173,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -393,7 +400,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -1172,7 +1215,7 @@
+@@ -1172,7 +1222,7 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -402,7 +409,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
-@@ -1242,11 +1285,11 @@
+@@ -1242,11 +1292,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
@@ -418,7 +425,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  }
 diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
 --- solvers/minicard/core/Solver.h	2017-04-06 15:30:14.000000000 +0100
-+++ solvers/mc/core/Solver.h	2018-05-22 06:29:40.000000000 +0100
++++ solvers/mc/core/Solver.h	2018-05-23 14:42:01.000000000 +0100
 @@ -25,18 +25,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -476,7 +483,7 @@ diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
      bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
      bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
      bool    okay         () const;                  // FALSE means solver is in a conflicting state
-+    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop); // compute a list of propagated literals given a set of assumptions
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
  
      // Adopted from newer version of Minisat
      bool    implies      (const vec<Lit>& assumps, vec<Lit>& out, bool all);

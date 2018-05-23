@@ -516,8 +516,9 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
+	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -545,7 +546,7 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	}
 
 	Glucose30::vec<Glucose30::Lit> p;
-	bool res = s->prop_check(a, p);
+	bool res = s->prop_check(a, p, save_phases);
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -940,8 +941,9 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
+	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -969,7 +971,7 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 	}
 
 	Glucose41::vec<Glucose41::Lit> p;
-	bool res = s->prop_check(a, p);
+	bool res = s->prop_check(a, p, save_phases);
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -1659,8 +1661,9 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
+	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -1688,7 +1691,7 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 	}
 
 	Minicard::vec<Minicard::Lit> p;
-	bool res = s->prop_check(a, p);
+	bool res = s->prop_check(a, p, save_phases);
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -2013,8 +2016,9 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
+	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -2042,7 +2046,7 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 	}
 
 	Minisat22::vec<Minisat22::Lit> p;
-	bool res = s->prop_check(a, p);
+	bool res = s->prop_check(a, p, save_phases);
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -2367,8 +2371,9 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
+	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -2396,7 +2401,7 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	}
 
 	MinisatGH::vec<MinisatGH::Lit> p;
-	bool res = s->prop_check(a, p);
+	bool res = s->prop_check(a, p, save_phases);
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {

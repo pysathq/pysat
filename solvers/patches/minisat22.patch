@@ -43,7 +43,7 @@ diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
 --- solvers/minisat22/core/Solver.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.cc	2018-05-22 06:27:49.000000000 +0100
++++ solvers/m22/core/Solver.cc	2018-05-23 14:38:47.000000000 +0100
 @@ -20,10 +20,10 @@
  
  #include <math.h>
@@ -137,13 +137,13 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  |  Description:
  |    Specialized analysis procedure to express the final conflict in terms of assumptions.
  |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-@@ -434,15 +434,58 @@
+@@ -434,15 +434,65 @@
      trail.push_(p);
  }
  
 +//=================================================================================================
 +// Propagate and check:
-+bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop)
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
 +{
 +    prop.clear();
 +
@@ -153,6 +153,10 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
 +    bool    st = true;
 +    int  level = decisionLevel();
 +    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
 +
 +    // propagate each assumption at a new decision level
 +    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
@@ -181,6 +185,9 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
 +        cancelUntil(level);
 +    }
 +
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
 +    return st && confl == CRef_Undef;
 +}
 +
@@ -198,7 +205,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -511,16 +554,16 @@
+@@ -511,16 +561,16 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -219,7 +226,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  };
  void Solver::reduceDB()
  {
-@@ -569,7 +612,7 @@
+@@ -569,7 +619,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -228,7 +235,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -601,11 +644,11 @@
+@@ -601,11 +651,11 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -243,7 +250,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  |  Output:
  |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
  |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-@@ -649,15 +692,15 @@
+@@ -649,15 +699,15 @@
                  max_learnts             *= learntsize_inc;
  
                  if (verbosity >= 1)
@@ -263,7 +270,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
-@@ -794,7 +837,7 @@
+@@ -794,7 +844,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -272,7 +279,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -843,7 +886,7 @@
+@@ -843,7 +893,7 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -281,7 +288,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
-@@ -913,11 +956,11 @@
+@@ -913,11 +963,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
@@ -297,7 +304,7 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
  }
 diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
 --- solvers/minisat22/core/Solver.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.h	2018-05-22 06:29:13.000000000 +0100
++++ solvers/m22/core/Solver.h	2018-05-23 14:38:11.000000000 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -344,7 +351,7 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
      bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
      bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
      bool    okay         () const;                  // FALSE means solver is in a conflicting state
-+    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop); // compute a list of propagated literals given a set of assumptions
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
  
      void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
      void    toDimacs     (const char *file, const vec<Lit>& assumps);
