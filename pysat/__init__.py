@@ -15,7 +15,7 @@ VERSION = (0, 1, 3, "dev", 8)
 
 # PEP440 Format
 #==============================================================================
-__version__ = "%d.%d.%d%s%d" % VERSION if len(VERSION) == 5 else \
+__version__ = "%d.%d.%d.%s%d" % VERSION if len(VERSION) == 5 else \
               "%d.%d.%d" % VERSION
 
 

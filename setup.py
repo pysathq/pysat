@@ -24,6 +24,21 @@ from pysat import __version__
 #==============================================================================
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
+LONG_DESCRIPTION = """
+A Python library providing a simple interface to a number of
+state-of-art Boolean satisfiability (SAT) solvers and a few types of
+cardinality encodings. The purpose of PySAT is to enable researchers
+working on SAT and its applications and generalizations to easily
+prototype with SAT oracles in Python while exploiting incrementally the
+power of the original low-level implementations of modern SAT solvers.
+
+With PySAT it should be easy for you to implement a MaxSAT solver, an
+MUS/MCS extractor/enumerator, or any tool solving an application problem
+with the (potentially multiple) use of a SAT oracle.
+
+Details can be found at `https://pysat.github.io <https://pysat.github.io>`__.
+"""
+
 # solvers to install
 #==============================================================================
 to_install = ['glucose30', 'glucose41', 'lingeling', 'minicard', 'minisat22',
@@ -83,12 +98,12 @@ setup(name='python-sat',
     package_dir={'pysat.examples': 'examples'},
     version=__version__,
     description='A Python library for prototyping with SAT oracles',
-    long_description=open(os.path.join(ROOT, 'README.rst')).read(),
+    long_description=LONG_DESCRIPTION,
     long_description_content_type='text/x-rst; charset=UTF-8',
     license='MIT',
     author='Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado',
     author_email='aignatiev@ciencias.ulisboa.pt, jpms@ciencias.ulisboa.pt, ajmorgado@ciencias.ulisboa.pt',
-    url='https://github.com/alexeyignatiev/pysat',
+    url='https://github.com/pysathq/pysat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in scripts],
     cmdclass={'build': build},
