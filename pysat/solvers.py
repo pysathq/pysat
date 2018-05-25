@@ -126,7 +126,7 @@ class Solver(object):
         if self.solver:
             self.solver.prop_budget(budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Assume a given set of assumption literals and get a list of
             propagated ones.
@@ -375,7 +375,7 @@ class Glucose3(object):
         if self.glucose:
             pysolvers.glucose3_pbudget(self.glucose, budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -387,7 +387,7 @@ class Glucose3(object):
             # saving default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, int(phase_saving))
+            st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, phase_saving)
 
             # recovering default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
@@ -659,7 +659,7 @@ class Glucose4(object):
         if self.glucose:
             pysolvers.glucose41_pbudget(self.glucose, budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -671,7 +671,7 @@ class Glucose4(object):
             # saving default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, int(phase_saving))
+            st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, phase_saving)
 
             # recovering default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
@@ -923,7 +923,7 @@ class Lingeling(object):
 
         raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -1166,7 +1166,7 @@ class Minicard(object):
         if self.minicard:
             pysolvers.minicard_pbudget(self.minicard, budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -1178,7 +1178,7 @@ class Minicard(object):
             # saving default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minicard_propagate(self.minicard, assumptions, int(phase_saving))
+            st, props = pysolvers.minicard_propagate(self.minicard, assumptions, phase_saving)
 
             # recovering default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
@@ -1440,7 +1440,7 @@ class Minisat22(object):
         if self.minisat:
             pysolvers.minisat22_pbudget(self.minisat, budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -1452,7 +1452,7 @@ class Minisat22(object):
             # saving default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, int(phase_saving))
+            st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, phase_saving)
 
             # recovering default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
@@ -1707,7 +1707,7 @@ class MinisatGH(object):
         if self.minisat:
             pysolvers.minisatgh_pbudget(self.minisat, budget)
 
-    def propagate(self, assumptions=[], phase_saving=False):
+    def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
         """
@@ -1719,7 +1719,7 @@ class MinisatGH(object):
             # saving default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, int(phase_saving))
+            st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, phase_saving)
 
             # recovering default SIGINT handler
             def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)

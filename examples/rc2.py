@@ -16,6 +16,7 @@
 #
 #==============================================================================
 from __future__ import print_function
+import collections
 import getopt
 import gzip
 import itertools
@@ -35,7 +36,7 @@ class RC2(object):
         MaxSAT algorithm based on relaxable cardinality constraints (RC2/OLL).
     """
 
-    def __init__(self, formula, solver='m22', exhaust=False,
+    def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
             incr=False, trim=0, verbose=0):
         """
             Constructor.
@@ -45,6 +46,7 @@ class RC2(object):
         self.verbose = verbose
         self.exhaust = exhaust
         self.solver = solver
+        self.adapt = adapt
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
@@ -128,14 +130,37 @@ class RC2(object):
             Compute and return a solution.
         """
 
+        # simply apply MaxSAT only once
+        res = self.compute_()
+
+        if res:
+            print('s OPTIMUM FOUND')
+            print('o {0}'.format(self.cost))
+
+            if self.verbose > 1:
+                model = self.oracle.get_model()
+                model = filter(lambda l: abs(l) <= self.orig_nv, model)
+                print('v', ' '.join([str(l) for l in model]))
+        else:
+            print('s UNSATISFIABLE')
+
+    def compute_(self):
+        """
+            Compute a MaxSAT solution with RC2.
+        """
+
+        # trying to adapt (simplify) the formula
+        # by detecting and using atmost1 constraints
+        if self.adapt:
+            self.adapt_am1(formula)
+
         # main solving loop
         while not self.oracle.solve(assumptions=self.sels + self.sums):
             self.get_core()
 
             if not self.core:
                 # core is empty, i.e. hard part is unsatisfiable
-                print('s UNSATISFIABLE')
-                return
+                return False
 
             self.process_core()
 
@@ -143,13 +168,7 @@ class RC2(object):
                 print('c cost: {0}; core sz: {1}; soft sz: {2}'.format(self.cost,
                     len(self.core), len(self.sels) + len(self.sums)))
 
-        print('s OPTIMUM FOUND')
-        print('o {0}'.format(self.cost))
-
-        if self.verbose > 1:
-            model = self.oracle.get_model()
-            model = filter(lambda l: abs(l) <= self.orig_nv, model)
-            print('v', ' '.join([str(l) for l in model]), '0')
+        return True
 
     def get_core(self):
         """
@@ -159,16 +178,17 @@ class RC2(object):
         # extracting the core
         self.core = self.oracle.get_core()
 
-        # try to reduce the core by trimming
-        self.trim_core()
+        if self.core:
+            # try to reduce the core by trimming
+            self.trim_core()
 
-        # core weight
-        self.minw = min(map(lambda l: self.wght[l], self.core))
+            # core weight
+            self.minw = min(map(lambda l: self.wght[l], self.core))
 
-        # dividing the core into two parts
-        iter1, iter2 = itertools.tee(self.core)
-        self.core_sels = list(l for l in iter1 if l in self.sels_set)
-        self.core_sums = list(l for l in iter2 if l not in self.sels_set)
+            # dividing the core into two parts
+            iter1, iter2 = itertools.tee(self.core)
+            self.core_sels = list(l for l in iter1 if l in self.sels_set)
+            self.core_sums = list(l for l in iter2 if l not in self.sels_set)
 
     def process_core(self):
         """
@@ -211,6 +231,116 @@ class RC2(object):
             self.garbage.add(self.core_sels[0])
 
         # remove unnecessary assumptions
+        self.filter_assumps()
+
+    def adapt_am1(self, formula):
+        """
+            Try to detect atmost1 constraints involving soft literals.
+        """
+
+        # literal connections
+        conns = collections.defaultdict(lambda: set([]))
+        confl = []
+
+        # prepare connections
+        for l1 in self.sels:
+            st, props = self.oracle.propagate(assumptions=[l1], phase_saving=2)
+            if st:
+                for l2 in props:
+                    if -l2 in self.sels_set:
+                        conns[l1].add(-l2)
+                        conns[-l2].add(l1)
+            else:
+                # propagating this literal results in a conflict
+                confl.append(l1)
+
+        if confl:  # filtering out unnecessary connections
+            ccopy = {}
+            confl = set(confl)
+
+            for l in conns:
+                if l not in confl:
+                    cc = conns[l].difference(confl)
+                    if cc:
+                        ccopy[l] = cc
+
+            conns = ccopy
+            confl = list(confl)
+
+            # processing unit size cores
+            for l in confl:
+                self.core, self.minw = [l], self.wght[l]
+                self.core_sels, self.core_sums = [l], []
+                self.process_core()
+
+            if self.verbose:
+                print('c unit cores found: {0}; cost: {1}'.format(len(confl),
+                    self.cost))
+
+        nof_am1 = 0
+        len_am1 = []
+        lits = set(conns.keys())
+        while lits:
+            am1 = [min(lits, key=lambda l: len(conns[l]))]
+
+            for l in sorted(conns[am1[0]], key=lambda l: len(conns[l])):
+                if l in lits:
+                    for l_added in am1[1:]:
+                        if l_added not in conns[l]:
+                            break
+                    else:
+                        am1.append(l)
+
+            # updating remaining lits and connections
+            lits.difference_update(set(am1))
+            for l in conns:
+                conns[l] = conns[l].difference(set(am1))
+
+            if len(am1) > 1:
+                # treat the new atmost1 relation
+                self.process_am1(am1)
+                nof_am1 += 1
+                len_am1.append(len(am1))
+
+        # updating the set of selectors
+        self.sels_set = set(self.sels)
+
+        if self.verbose and nof_am1:
+            print('c am1s found: {0}; avgsz: {1:.1f}; cost: {2}'.format(nof_am1,
+                sum(len_am1) / float(nof_am1), self.cost))
+
+    def process_am1(self, am1):
+        """
+            Process an atmost1 relation detected (treat as a core).
+        """
+
+        # computing am1's weight
+        self.minw = min(map(lambda l: self.wght[l], am1))
+
+        # pretending am1 to be a core, and the bound is its size - 1
+        self.core_sels, b = am1, len(am1) - 1
+
+        # incrementing the cost
+        self.cost += b * self.minw
+
+        # assumptions to remove
+        self.garbage = set()
+
+        # splitting and relaxing if needed
+        self.process_sels()
+
+        # new selector
+        self.topv += 1
+        selv = self.topv
+
+        self.oracle.add_clause([-l for l in self.rels] + [-selv])
+
+        # integrating the new selector
+        self.sels.append(selv)
+        self.wght[selv] = self.minw
+        self.vmap[selv] = len(self.wght) - 1
+
+        # removing unnecessary assumptions
         self.filter_assumps()
 
     def trim_core(self):
@@ -321,15 +451,15 @@ class RC2(object):
             # put this assumption to relaxation vars
             self.rels.append(-l)
 
-    def create_sum(self):
+    def create_sum(self, bound=1):
         """
             Create a totalizer object encoding a new cardinality constraint.
-            For Minicard, native atmost1 constraints is used instead.
+            For Minicard, native atmostb constraints is used instead.
         """
 
         if self.solver != 'mc':  # standard totalizer-based encoding
             # new totalizer sum
-            t = ITotalizer(lits=self.rels, top_id=self.topv)
+            t = ITotalizer(lits=self.rels, ubound=bound, top_id=self.topv)
 
             # updating top variable id
             self.topv = t.top_id
@@ -348,15 +478,15 @@ class RC2(object):
 
             # proper initial bound
             t.rhs = [None] * (len(t.lits))
-            t.rhs[1] = self.topv
+            t.rhs[bound] = self.topv
 
-            # new atmost1 constraint instrumented with
+            # new atmostb constraint instrumented with
             # an implication and represented natively
             rhs = len(t.lits)
-            am1 = [[-self.topv] * (rhs - 1) + t.lits, rhs]
+            amb = [[-self.topv] * (rhs - bound) + t.lits, rhs]
 
             # add constraint to the solver
-            self.oracle.add_atmost(*am1)
+            self.oracle.add_atmost(*amb)
 
         return t
 
@@ -416,8 +546,8 @@ class RC2(object):
             Filter out both unnecessary selectors and sums.
         """
 
-        self.sels = filter(lambda x: x not in self.garbage, self.sels)
-        self.sums = filter(lambda x: x not in self.garbage, self.sums)
+        self.sels = list(filter(lambda x: x not in self.garbage, self.sels))
+        self.sums = list(filter(lambda x: x not in self.garbage, self.sums))
 
         self.bnds = {l: b for l, b in six.iteritems(self.bnds) if l not in self.garbage}
         self.wght = {l: w for l, w in six.iteritems(self.wght) if l not in self.garbage}
@@ -434,31 +564,322 @@ class RC2(object):
 
 #
 #==============================================================================
+class RC2Stratified(RC2, object):
+    """
+        Stratified version of RC2 exploiting Boolean lexicographic optimization
+        and stratification.
+    """
+
+    def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
+            incr=False, trim=0, verbose=0):
+        """
+            Constructor.
+        """
+
+        # calling the constructor for the basic version
+        super(RC2Stratified, self).__init__(formula, solver=solver,
+                adapt=adapt, exhaust=exhaust, incr=incr, trim=trim,
+                verbose=verbose)
+
+        self.levl = 0   # initial optimization level
+        self.blop = []  # a list of blo levels
+
+        # backing up selectors
+        self.bckp, self.bckp_set = self.sels, self.sels_set
+        self.sels = []
+
+        # initialize Boolean lexicographic optimization
+        if sum(self.wght.values()) > len(self.bckp):
+            self.init_wstr()
+
+    def init_wstr(self):
+        """
+            Compute and initialize optimization levels for BLO.
+        """
+
+        # a mapping for stratified problem solving,
+        # i.e. from a weight to a list of selectors
+        self.wstr = collections.defaultdict(lambda: [])
+
+        for s, w in six.iteritems(self.wght):
+            self.wstr[w].append(s)
+
+        # sorted list of distinct weight levels
+        self.blop = sorted([w for w in self.wstr], reverse=True)
+
+        # diversity parameter for stratification
+        self.sdiv = len(self.blop) / 2.0
+
+    def compute(self):
+        """
+            Exploit Boolean lexicographic optimization when solving.
+        """
+
+        done = 0  # levels done
+
+        # first attempt to get an optimization level
+        self.next_level()
+
+        while self.levl != None and done < len(self.blop):
+            # add more clauses
+            done = self.activate_clauses(done)
+
+            if self.verbose:
+                print('c wght str:', self.blop[self.levl])
+
+            # call RC2
+            if self.compute_() == False:
+                print('s UNSATISFIABLE')
+                return
+
+            # updating the list of distinct weight levels
+            self.blop = sorted([w for w in self.wstr], reverse=True)
+
+            if done < len(self.blop):
+                if self.verbose:
+                    print('c curr opt:', self.cost)
+
+                # done with this level
+                self.finish_level()
+
+                self.levl += 1
+
+                # get another level
+                self.next_level()
+
+                if self.verbose:
+                    print('c')
+
+        print('s OPTIMUM FOUND')
+        print('o {0}'.format(self.cost))
+
+        if self.verbose > 1:
+            model = self.oracle.get_model()
+            model = filter(lambda l: abs(l) <= self.orig_nv, model)
+            print('v', ' '.join([str(l) for l in model]))
+
+    def next_level(self):
+        """
+            Get next weight to use in BLO.
+        """
+
+        if self.levl >= len(self.blop):
+            self.levl = None
+
+        while self.levl < len(self.blop) - 1:
+            # number of selectors with weight less than current weight
+            numc = sum([len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+
+            # sum of their weights
+            sumw = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+
+            # partial BLO
+            if self.blop[self.levl] > sumw and sumw != 0:
+                break
+
+            # stratification
+            if numc / float(len(self.blop) - self.levl - 1) > self.sdiv:
+                break
+
+            self.levl += 1
+
+    def activate_clauses(self, beg):
+        """
+            Add more soft clauses to the problem.
+        """
+
+        end = min(self.levl + 1, len(self.blop))
+
+        for l in range(beg, end):
+            for sel in self.wstr[self.blop[l]]:
+                if sel in self.bckp_set:
+                    self.sels.append(sel)
+                else:
+                    self.sums.append(sel)
+
+        # updating set of selectors
+        self.sels_set = set(self.sels)
+
+        return end
+
+    def finish_level(self):
+        """
+            Postprocess the current optimization level: harden clauses
+            depending on their remaining weights.
+        """
+
+        # assumptions to remove
+        self.garbage = set()
+
+        # sum of weights of the remaining levels
+        sumw = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+
+        # trying to harden selectors and sums
+        for s in self.sels + self.sums:
+            if self.wght[s] > sumw:
+                self.oracle.add_clause([s])
+                self.garbage.add(s)
+
+        if self.verbose:
+            print('c hardened:', len(self.garbage))
+
+        # remove unnecessary assumptions
+        self.filter_assumps()
+
+    def process_am1(self, am1):
+        """
+            Process an atmost1 relation detected (treat as a core).
+        """
+
+        # computing am1's weight
+        self.minw = min(map(lambda l: self.wght[l], am1))
+
+        # pretending am1 to be a core, and the bound is its size - 1
+        self.core_sels, b = am1, len(am1) - 1
+
+        # incrementing the cost
+        self.cost += b * self.minw
+
+        # assumptions to remove
+        self.garbage = set()
+
+        # splitting and relaxing if needed
+        self.process_sels()
+
+        # new selector
+        self.topv += 1
+        selv = self.topv
+
+        self.oracle.add_clause([-l for l in self.rels] + [-selv])
+
+        # integrating the new selector
+        self.sels.append(selv)
+        self.wght[selv] = self.minw
+        self.vmap[selv] = len(self.wght) - 1
+
+        # do not forget this newly selector!
+        self.bckp_set.add(selv)
+
+        # removing unnecessary assumptions
+        self.filter_assumps()
+
+    def process_sels(self):
+        """
+            Process soft clause selectors participating in a new core.
+        """
+
+        # new relaxation variables
+        self.rels = []
+
+        # selectors that should be deactivated (but not removed completely)
+        to_deactivate = set([])
+
+        for l in self.core_sels:
+            if self.wght[l] == self.minw:
+                # marking variable as being a part of the core
+                # so that next time it is not used as an assump
+                self.garbage.add(l)
+
+                # reuse assumption variable as relaxation
+                self.rels.append(-l)
+            else:
+                # do not remove this variable from assumps
+                # since it has a remaining non-zero weight
+                self.wght[l] -= self.minw
+
+                # deactivate this assumption and put at a lower level
+                if self.wght[l] < self.blop[self.levl]:
+                    self.wstr[self.wght[l]].append(l)
+                    to_deactivate.add(l)
+
+                # it is an unrelaxed soft clause,
+                # a new relaxed copy of which we add to the solver
+                self.topv += 1
+                self.oracle.add_clause([l, self.topv])
+                self.rels.append(self.topv)
+
+        # deactivating unnecessary selectors
+        self.sels = list(filter(lambda x: x not in to_deactivate, self.sels))
+
+    def process_sums(self):
+        """
+            Process cardinality sums participating in a new core.
+        """
+
+        # sums that should be deactivated (but not removed completely)
+        to_deactivate = set([])
+
+        for l in self.core_sums:
+            if self.wght[l] == self.minw:
+                # marking variable as being a part of the core
+                # so that next time it is not used as an assump
+                self.garbage.add(l)
+            else:
+                # do not remove this variable from assumps
+                # since it has a remaining non-zero weight
+                self.wght[l] -= self.minw
+
+                # deactivate this assumption and put at a lower level
+                if self.wght[l] < self.blop[self.levl]:
+                    self.wstr[self.wght[l]].append(l)
+                    to_deactivate.add(l)
+
+            # increase bound for the sum
+            t, b = self.update_sum(l)
+
+            # updating bounds and weights
+            if b < len(t.rhs):
+                lnew = -t.rhs[b]
+                if lnew in self.garbage:
+                    self.garbage.remove(lnew)
+                    self.wght[lnew] = 0
+
+                if lnew not in self.wght:
+                    self.set_bound(t, b)
+                else:
+                    self.wght[lnew] += self.minw
+
+            # put this assumption to relaxation vars
+            self.rels.append(-l)
+
+        # deactivating unnecessary sums
+        self.sums = list(filter(lambda x: x not in to_deactivate, self.sums))
+
+
+#
+#==============================================================================
 def parse_options():
     """
         Parses command-line option
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'his:t:vx',
-                ['exhaust', 'help', 'incr', 'solver=', 'trim=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'ahils:t:vx',
+                ['adapt', 'exhaust', 'help', 'incr', 'blo', 'solver=', 'trim=',
+                    'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
         sys.exit(1)
 
+    adapt = False
     exhaust = False
     incr = False
-    solver = 'm22'
+    blo = False
+    solver = 'g3'
     trim = 0
     verbose = 0
 
     for opt, arg in opts:
-        if opt in ('-h', '--help'):
+        if opt in ('-a', '--adapt'):
+            adapt = True
+        elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
         elif opt in ('-i', '--incr'):
             incr = True
+        elif opt in ('-l', '--blo'):
+            blo = True
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-t', '--trim'):
@@ -470,7 +891,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return exhaust, incr, solver, trim, verbose, args
+    return adapt, blo, exhaust, incr, solver, trim, verbose, args
 
 
 #==============================================================================
@@ -481,11 +902,13 @@ def usage():
 
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
+    print('        -a, --adapt              Try to adapt (simplify) input formula')
     print('        -h, --help               Show this message')
     print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
+    print('        -l, --blo                Use BLO and stratification')
     print('        -s, --solver=<string>    SAT solver to use')
-    print('                                 Available values: g3, g4, lgl, mc, m22, mgh (default = m22)')
-    print('        -t, --trim=<int>         SAT solver to use')
+    print('                                 Available values: g3, g4, lgl, mc, m22, mgh (default = g3)')
+    print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
     print('                                 Available values: [0 .. INT_MAX] (default = 0)')
     print('        -v, --verbose            Be verbose')
     print('        -x, --exhaust            Exhaust new unsatisfiable cores')
@@ -494,7 +917,7 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    exhaust, incr, solver, trim, verbose, files = parse_options()
+    adapt, blo, exhaust, incr, solver, trim, verbose, files = parse_options()
 
     if files:
         if files[0].endswith('.gz'):
@@ -511,8 +934,14 @@ if __name__ == '__main__':
 
         fp.close()
 
-        with RC2(formula, solver=solver, exhaust=exhaust, incr=incr, trim=trim,
-                verbose=verbose) as rc2:
+        # choose which version to run
+        if blo and formula.wght and sum(formula.wght) > len(formula.wght):
+            MXS = RC2Stratified
+        else:
+            MXS = RC2
+
+        with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
+                incr=incr, trim=trim, verbose=verbose) as rc2:
             rc2.compute()
 
             if verbose:
