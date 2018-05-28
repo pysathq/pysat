@@ -574,7 +574,10 @@ static PyObject *py_glucose3_cbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
 
-	s->setConfBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -593,7 +596,10 @@ static PyObject *py_glucose3_pbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
 
-	s->setPropBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -999,7 +1005,10 @@ static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
 
-	s->setConfBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -1018,7 +1027,10 @@ static PyObject *py_glucose41_pbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
 
-	s->setPropBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -1719,7 +1731,10 @@ static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
 
-	s->setConfBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -1738,7 +1753,10 @@ static PyObject *py_minicard_pbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
 
-	s->setPropBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -2074,7 +2092,10 @@ static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
 
-	s->setConfBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -2093,7 +2114,10 @@ static PyObject *py_minisat22_pbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
 
-	s->setPropBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -2373,7 +2397,7 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	PyObject *a_obj;  // assumptions
 	int save_phases;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj, &save_phases))
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
 		return NULL;
 
 	// get pointer to solver
@@ -2429,7 +2453,10 @@ static PyObject *py_minisatgh_cbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
 
-	s->setConfBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
@@ -2448,7 +2475,10 @@ static PyObject *py_minisatgh_pbudget(PyObject *self, PyObject *args)
 	// get pointer to solver
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
 
-	s->setPropBudget(budget);
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;

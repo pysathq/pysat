@@ -37,7 +37,7 @@ class RC2(object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            incr=False, trim=0, verbose=0):
+            incr=False, minz=False, trim=0, verbose=0):
         """
             Constructor.
         """
@@ -47,6 +47,7 @@ class RC2(object):
         self.exhaust = exhaust
         self.solver = solver
         self.adapt = adapt
+        self.minz = minz
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
@@ -181,6 +182,9 @@ class RC2(object):
         if self.core:
             # try to reduce the core by trimming
             self.trim_core()
+
+            # and by heuristic minimization
+            self.minimize_core()
 
             # core weight
             self.minw = min(map(lambda l: self.wght[l], self.core))
@@ -362,6 +366,25 @@ class RC2(object):
 
             # otherwise, update core
             self.core = new_core
+
+    def minimize_core(self):
+        """
+            Try to minimize a core and compute an approximation of an MUS.
+            Simple deletion-based MUS extraction.
+        """
+
+        if self.minz and len(self.core) > 1:
+            self.core = sorted(self.core, key=lambda l: self.wght[l])
+            self.oracle.conf_budget(1000)
+
+            i = 0
+            while i < len(self.core):
+                to_test = self.core[:i] + self.core[(i + 1):]
+
+                if self.oracle.solve_limited(assumptions=to_test) == False:
+                    self.core = to_test
+                else:
+                    i += 1
 
     def exhaust_core(self, tobj):
         """
@@ -571,14 +594,14 @@ class RC2Stratified(RC2, object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            incr=False, trim=0, verbose=0):
+            incr=False, minz=False, trim=0, verbose=0):
         """
             Constructor.
         """
 
         # calling the constructor for the basic version
         super(RC2Stratified, self).__init__(formula, solver=solver,
-                adapt=adapt, exhaust=exhaust, incr=incr, trim=trim,
+                adapt=adapt, exhaust=exhaust, incr=incr, minz=minz, trim=trim,
                 verbose=verbose)
 
         self.levl = 0   # initial optimization level
@@ -854,9 +877,9 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ahils:t:vx',
-                ['adapt', 'exhaust', 'help', 'incr', 'blo', 'solver=', 'trim=',
-                    'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'ahilms:t:vx',
+                ['adapt', 'exhaust', 'help', 'incr', 'blo', 'minimize',
+                    'solver=', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -866,6 +889,7 @@ def parse_options():
     exhaust = False
     incr = False
     blo = False
+    minz = False
     solver = 'g3'
     trim = 0
     verbose = 0
@@ -880,6 +904,8 @@ def parse_options():
             incr = True
         elif opt in ('-l', '--blo'):
             blo = True
+        elif opt in ('-m', '--minimize'):
+            minz = True
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-t', '--trim'):
@@ -891,7 +917,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, blo, exhaust, incr, solver, trim, verbose, args
+    return adapt, blo, exhaust, incr, minz, solver, trim, verbose, args
 
 
 #==============================================================================
@@ -906,6 +932,7 @@ def usage():
     print('        -h, --help               Show this message')
     print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
     print('        -l, --blo                Use BLO and stratification')
+    print('        -m, --minimize           Use a heuristic unsatisfiable core minimizer')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: g3, g4, lgl, mc, m22, mgh (default = g3)')
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
@@ -917,7 +944,7 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, exhaust, incr, solver, trim, verbose, files = parse_options()
+    adapt, blo, exhaust, incr, minz, solver, trim, verbose, files = parse_options()
 
     if files:
         if files[0].endswith('.gz'):
@@ -941,7 +968,7 @@ if __name__ == '__main__':
             MXS = RC2
 
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
-                incr=incr, trim=trim, verbose=verbose) as rc2:
+                incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
             rc2.compute()
 
             if verbose:
