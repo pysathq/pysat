@@ -3,7 +3,7 @@
 ##
 ## rc2.py
 ##
-##      Python-based implementation of the OLLITI algorithm described in:
+##      Python-based implementation of the OLLITI/RC2 algorithm described in:
 ##      1. A. Morgado, J. Marques-Silva. CP 2014
 ##      2. A. Morgado, A. Ignatiev, J. Marques-Silva. JSAT 2015
 ##      This implementation roughly follows the one of MSCG15.
@@ -63,6 +63,12 @@ class RC2(object):
 
         # initialize SAT oracle with hard clauses only
         self.init(formula, incr=incr)
+
+        # core minimization is going to be extremely expensive
+        # for large plain formulas, and so we turn it off here
+        wght = self.wght.values()
+        if not formula.hard and len(self.sels) > 100000 and min(wght) == max(wght):
+            self.minz = False
 
     def __enter__(self):
         """
@@ -877,8 +883,8 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ahilms:t:vx',
-                ['adapt', 'exhaust', 'help', 'incr', 'blo', 'minimize',
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:hilms:t:vx',
+                ['adapt', 'comp=','exhaust', 'help', 'incr', 'blo', 'minimize',
                     'solver=', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
@@ -887,6 +893,7 @@ def parse_options():
 
     adapt = False
     exhaust = False
+    cmode = None
     incr = False
     blo = False
     minz = False
@@ -897,6 +904,8 @@ def parse_options():
     for opt, arg in opts:
         if opt in ('-a', '--adapt'):
             adapt = True
+        elif opt in ('-c', '--comp'):
+            cmode = str(arg)
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
@@ -917,7 +926,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, blo, exhaust, incr, minz, solver, trim, verbose, args
+    return adapt, blo, cmode, exhaust, incr, minz, solver, trim, verbose, args
 
 
 #==============================================================================
@@ -929,6 +938,8 @@ def usage():
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
     print('        -a, --adapt              Try to adapt (simplify) input formula')
+    print('        -c, --comp=<string>      Enable one of the MSE18 configurations')
+    print('                                 Available values: a, b, none (default = none)')
     print('        -h, --help               Show this message')
     print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
     print('        -l, --blo                Use BLO and stratification')
@@ -944,9 +955,10 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, exhaust, incr, minz, solver, trim, verbose, files = parse_options()
+    adapt, blo, cmode, exhaust, incr, minz, solver, trim, verbose, files = parse_options()
 
     if files:
+        # parsing the input formula
         if files[0].endswith('.gz'):
             fp = gzip.open(files[0], 'rt')
             ftype = 'WCNF' if files[0].endswith('.wcnf.gz') else 'CNF'
@@ -961,12 +973,28 @@ if __name__ == '__main__':
 
         fp.close()
 
-        # choose which version to run
-        if blo and formula.wght and sum(formula.wght) > len(formula.wght):
+        # enabling the competition mode
+        if cmode:
+            assert cmode in ('a', 'b'), 'Wrong MSE18 mode chosen: {0}'.format(cmode)
+            adapt, blo, exhaust, solver, verbose = True, True, True, 'g3', 2
+
+            if cmode == 'a':
+                trim = 5 if max(formula.wght) > min(formula.wght) else 0
+                minz = False
+            else:
+                trim, minz = 0, True
+
+            # trying to use unbuffered standard output
+            if sys.version_info.major == 2:
+                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+        # deciding whether or not to stratify
+        if blo and max(formula.wght) > min(formula.wght):
             MXS = RC2Stratified
         else:
             MXS = RC2
 
+        # starting the solver
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
                 incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
             rc2.compute()

@@ -151,6 +151,9 @@ class ITotalizer(object):
         self.cnf = CNF()  # CNF formula encoding the totalizer object
         self.rhs = []     # upper bounds on the number of literals (rhs)
 
+        # number of new clauses
+        self.nof_new = 0
+
         # this newly created totalizer object is not yet merged in any other
         self._merged = False
 
@@ -164,7 +167,7 @@ class ITotalizer(object):
 
         self.lits = lits
         self.ubound = ubound
-        self.top_id = max(map(lambda x: abs(x), self.lits + [top_id]))
+        self.top_id = max(map(lambda x: abs(x), self.lits + [top_id if top_id != None else 0]))
 
         # saving default SIGINT handler
         def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -203,6 +206,8 @@ class ITotalizer(object):
 
         self.cnf = CNF()
         self.rhs = []
+
+        self.nof_new = 0
 
     def __enter__(self):
         """
