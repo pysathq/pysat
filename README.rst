@@ -123,7 +123,7 @@ PySAT usage is detailed in the `provided examples <examples>`__. For
 instance, one can see there simple PySAT-based implementations of
 
 -  Fu&Malik algorithm for MaxSAT [9]_
--  RC2/OLLITI algorithm for MaxSAT [13]_
+-  RC2/OLLITI algorithm for MaxSAT [13]_ [14]_
 -  CLD-like algorithm for MCS extraction and enumeration [11]_
 -  LBX-like algorithm for MCS extraction and enumeration [12]_
 -  Deletion-based MUS extraction [10]_
@@ -142,8 +142,11 @@ instance, one can see there simple PySAT-based implementations of
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
 .. [13] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
-   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573. CP 2014.
-   pp. 564-573
+   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573.
+
+.. [14] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
+   Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
+   pp. 129-134.
 
 The examples can also be accessed as a subpackage of PySAT:
 
