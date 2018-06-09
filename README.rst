@@ -1,18 +1,30 @@
-PySAT: simple SAT-based prototyping in Python
-=============================================
+PySAT: SAT technology in Python
+===============================
 
-A Python library providing a simple interface to a number of
-state-of-art Boolean satisfiability (SAT) solvers and a few types of
-cardinality encodings. The purpose of PySAT is to enable researchers
-working on SAT and its applications and generalizations to easily
-prototype with SAT oracles in Python while exploiting incrementally the
+PySAT is a Python (2.7, 3.4+) toolkit, which aims at providing a simple and
+unified interface to a number of state-of-art `Boolean satisfiability (SAT)
+<https://en.wikipedia.org/wiki/Boolean_satisfiability_problem>`__ solvers as
+well as to a variety of cardinality encodings. The purpose of PySAT is to
+enable researchers working on SAT and its applications and generalizations to
+easily prototype with SAT oracles in Python while exploiting incrementally the
 power of the original low-level implementations of modern SAT solvers.
 
-With PySAT it should be easy for you to implement a MaxSAT solver, an
-MUS/MCS extractor/enumerator, or any tool solving an application problem
-with the (potentially multiple) use of a SAT oracle.
+PySAT can be helpful when solving problems in :math:`\mathbb{NP}` but also
+`beyond <http://beyondnp.org/>`__ :math:`\mathbb{NP}`. For instance, PySAT is
+handy when one needs to quickly implement a MaxSAT solver, an MUS/MCS extractor
+or enumerator, an abstraction-based QBF solver, or any other kind of tool
+solving an application problem with the (potentially *multiple* and/or
+*incremental*) use of a SAT oracle.
 
-Currently, the following SAT solvers are supported (currently, for
+Features
+--------
+
+PySAT integrates a number of widely used state-of-the-art SAT solvers. All the
+provided solvers are the original low-level implementations installed along
+with PySAT. Note that the solvers' source code *is not* a part of the project's
+source tree and is downloaded and patched at every PySAT installation.
+
+Currently, the following SAT solvers are supported (at this point, for
 Minisat-based solvers only *core* versions are integrated):
 
 -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
@@ -22,7 +34,9 @@ Minisat-based solvers only *core* versions are integrated):
 -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
 -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)
 
-Cardinality encodings supported are implemented in C++ and include:
+In order to make SAT-based prototyping easier, PySAT integrates a variety of
+cardinality encodings. All of them are implemented from scratch in C++. The
+list of cardinality encodings included is the following:
 
 -  pairwise [7]_
 -  bitwise [7]_
@@ -119,8 +133,9 @@ Finally, the following example gives an idea of how one can extract a
     ...
     ['2 0', '1 0', '0']
 
-PySAT usage is detailed in the `provided examples <examples>`__. For
-instance, one can see there simple PySAT-based implementations of
+PySAT usage is detailed in the `provided examples
+<https://github.com/pysathq/pysat/tree/master/examples>`__. For instance, one
+can find simple PySAT-based implementations of
 
 -  Fu&Malik algorithm for MaxSAT [9]_
 -  RC2/OLLITI algorithm for MaxSAT [13]_ [14]_
@@ -148,7 +163,8 @@ instance, one can see there simple PySAT-based implementations of
    Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
    pp. 129-134.
 
-The examples can also be accessed as a subpackage of PySAT:
+The examples are installed with PySAT as a subpackage and, thus, they can be
+accessed internally in Python:
 
 .. code:: python
 
@@ -165,37 +181,77 @@ Alternatively, they can be used as standalone executables, e.g. like this:
 
 ::
 
-   lbx.py -e all -d -s g4 -v another-input.wcnf
+   $ lbx.py -e all -d -s g4 -v another-input.wcnf
 
 Installation
 ------------
 
-The simplest way to get and start using PySAT is to install the latest
-stable release of PySAT from PyPI:
+There are several ways to install PySAT. The simplest way to get and start
+using it is to install the latest stable release of the toolkit from `PyPI
+<https://pypi.org/>`__:
 
 ::
 
-    pip install python-sat
+    $ pip install python-sat
 
-Alternatively, you can clone this repository and do the following with
-your local copy:
-
-::
-
-    python setup.py install
-
-or (if you choose a directory to install PySAT into)
+Once installed from PyPI, the toolkit at a later stage can be updated in the
+following way:
 
 ::
 
-    python setup.py install --prefix=<where-to-install>
+    $ pip install -U python-sat
+
+Alternatively, one can clone `the repository
+<https://github.com/pysathq/pysat>`__ and execute the following command in the
+local copy:
+
+::
+
+    $ python setup.py install
+
+This will install the toolkit into the system's Python path. If another
+destination directory is preferred, it can be set by
+
+::
+
+    $ python setup.py install --prefix=<where-to-install>
 
 Both options (i.e. via ``pip`` or ``setup.py``) are supposed to download
 and compile all the supported SAT solvers as well as prepare the
 installation of PySAT.
 
+To-Do
+-----
+
+PySAT toolkit is a work in progress. Although it can already be helpful in many
+practical settings (and it **was** successfully applied by its authors for a
+number of times), it would be great if some of the following additional
+features were implemented:
+
+-  more SAT solvers to support (e.g. `CryptoMiniSat
+   <https://github.com/msoos/cryptominisat/>`__, `RISS
+   <http://tools.computational-logic.org/content/riss.php>`__ among many
+   others)
+
+-  pseudo-Boolean constraint encodings
+
+-  formula *(pre-)processing*
+
+-  lower level access to some of the solvers' internal parameters
+   (e.g. *variable polarities*, *activities*, etc.)
+
+-  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
+   [15]_ them internally)
+
+All of these will require a significant effort to be made. Therefore, we would
+like to encourage the SAT community to contribute and make PySAT a tool for an
+easy and comfortable day-to-day use. :)
+
+.. [15] G. S. Tseitin. *On the complexity of derivations in the propositional
+   calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
+   115–125, 1968
+
 License
 -------
 
-This project is licensed under the MIT License - see the
-`LICENSE <LICENSE.txt>`__ file for details.
+PySAT is licensed under `MIT <LICENSE.txt>`__.
