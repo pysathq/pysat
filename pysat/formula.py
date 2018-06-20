@@ -1359,9 +1359,8 @@ class WCNFPlus(WCNF, object):
         Each AtLeastK constraint is translated into an AtMostK constraint in
         the standard way: :math:`\sum_{i=1}^{n}{x_i}\geq k \leftrightarrow
         \sum_{i=1}^{n}{\\neg{x_i}}\leq (n-k)`. Internally, AtMostK constraints
-        are stored in variable ``atmosts``, each being a pair ``(lits, k)``,
-        where ``lits`` is a list of literals in the sum and ``k`` is the upper
-        bound.
+        are stored in variable ``atms``, each being a pair ``(lits, k)``, where
+        ``lits`` is a list of literals in the sum and ``k`` is the upper bound.
 
         Example:
 
