@@ -61,31 +61,31 @@ PySAT usage is detailed in the `provided examples
 <https://github.com/pysathq/pysat/tree/master/examples>`__. For instance, one
 can find simple PySAT-based implementations of
 
--  Fu&Malik algorithm for MaxSAT [9]_
--  RC2/OLLITI algorithm for MaxSAT [13]_ [14]_
--  CLD-like algorithm for MCS extraction and enumeration [11]_
--  LBX-like algorithm for MCS extraction and enumeration [12]_
--  Deletion-based MUS extraction [10]_
+-  Fu&Malik algorithm for MaxSAT [10]_
+-  RC2/OLLITI algorithm for MaxSAT [14]_ [15]_
+-  CLD-like algorithm for MCS extraction and enumeration [12]_
+-  LBX-like algorithm for MCS extraction and enumeration [13]_
+-  Deletion-based MUS extraction [11]_
 
-.. [9] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
+.. [10] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
    SAT 2006. pp. 252-265
 
-.. [10] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
+.. [11] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
    Applications*. ISMVL 2010. pp. 9-14
 
-.. [11] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
+.. [12] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
    Anton Belov. *On Computing Minimal Correction Subsets*. IJCAI 2013. pp.
    615-622
 
-.. [12] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
+.. [13] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
-.. [13] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
-   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573.
+.. [14] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
+   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573
 
-.. [14] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
+.. [15] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
    Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
-   pp. 129-134.
+   pp. 129-134
 
 The examples are installed with PySAT as a subpackage and, thus, they can be
 accessed internally in Python:

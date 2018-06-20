@@ -15,6 +15,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
 import pysat
 
 
@@ -31,7 +32,8 @@ release = pysat.__version__
 
 # variables to be accessed from html
 html_context = {
-    "release": release
+    'release': release,
+    'webpage':  'https://pysathq.github.io'
 }
 
 # -- General configuration ---------------------------------------------------
@@ -45,9 +47,8 @@ html_context = {
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages'
+    'sphinx.ext.autosummary',
+    'sphinx.ext.mathjax'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -97,6 +98,9 @@ html_theme_options = {
     'sidebar_width': '152px'
 }
 
+# Autodoc settings
+autodoc_default_flags = ['members', 'special-members']
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -112,8 +116,8 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 html_sidebars = {
-    '**': ['about.html', 'sidebar_version.html', 'navigation.html',
-        'sidebar_docs.html', 'sidebar_contact.html']
+    '**': ['about.html', 'sidebar_version.html', 'sidebar_webpage.html',
+        'sidebar_contact.html']
 }
 
 

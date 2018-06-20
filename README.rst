@@ -38,41 +38,45 @@ In order to make SAT-based prototyping easier, PySAT integrates a variety of
 cardinality encodings. All of them are implemented from scratch in C++. The
 list of cardinality encodings included is the following:
 
--  pairwise [7]_
--  bitwise [7]_
--  sequential counters [8]_
--  sorting networks [3]_
--  cardinality networks [1]_
--  ladder [4]_
--  totalizer [2]_
--  modulo totalizer [6]_
--  iterative totalizer [5]_
+-  pairwise [8]_
+-  bitwise [8]_
+-  sequential counters [9]_
+-  sorting networks [4]_
+-  cardinality networks [2]_
+-  ladder [1]_ [5]_
+-  totalizer [3]_
+-  modulo totalizer [7]_
+-  iterative totalizer [6]_
 
-.. [1] Roberto Asin, Robert Nieuwenhuis, Albert Oliveras,
+.. [1] Carlos Ansótegui, Felip Manyà. *Mapping Problems with Finite-Domain
+   Variables to Problems with Boolean Variables*. SAT (Selected Papers) 2004.
+   pp. 1-15
+
+.. [2] Roberto Asin, Robert Nieuwenhuis, Albert Oliveras,
    Enric Rodriguez-Carbonell. *Cardinality Networks and Their Applications*.
    SAT 2009. pp. 167-180
 
-.. [2] Olivier Bailleux, Yacine Boufkhad. *Efficient CNF Encoding of Boolean
+.. [3] Olivier Bailleux, Yacine Boufkhad. *Efficient CNF Encoding of Boolean
    Cardinality Constraints*. CP 2003. pp. 108-122
 
-.. [3] Kenneth E. Batcher. *Sorting Networks and Their Applications*.
+.. [4] Kenneth E. Batcher. *Sorting Networks and Their Applications*.
    AFIPS Spring Joint Computing Conference 1968. pp. 307-314
 
-.. [4] Ian P. Gent, Peter Nightingale. *A New Encoding of Alldifferent Into
+.. [5] Ian P. Gent, Peter Nightingale. *A New Encoding of Alldifferent Into
    SAT*. In International workshop on modelling and reformulating constraint
    satisfaction problems 2004. pp. 95-110
 
-.. [5] Ruben Martins, Saurabh Joshi, Vasco M. Manquinho, Inês Lynce.
+.. [6] Ruben Martins, Saurabh Joshi, Vasco M. Manquinho, Inês Lynce.
    *Incremental Cardinality Constraints for MaxSAT*. CP 2014. pp. 531-548
 
-.. [6] Toru Ogawa, Yangyang Liu, Ryuzo Hasegawa, Miyuki Koshimura,
+.. [7] Toru Ogawa, Yangyang Liu, Ryuzo Hasegawa, Miyuki Koshimura,
    Hiroshi Fujita. *Modulo Based CNF Encoding of Cardinality Constraints and
    Its Application to MaxSAT Solvers*. ICTAI 2013. pp. 9-17
 
-.. [7] Steven David Prestwich. *CNF Encodings*. Handbook of Satisfiability.
+.. [8] Steven David Prestwich. *CNF Encodings*. Handbook of Satisfiability.
    2009. pp. 75-97
 
-.. [8] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
+.. [9] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
    Cardinality Constraints*. CP 2005. pp. 827-831
 
 Usage
@@ -137,31 +141,31 @@ PySAT usage is detailed in the `provided examples
 <https://github.com/pysathq/pysat/tree/master/examples>`__. For instance, one
 can find simple PySAT-based implementations of
 
--  Fu&Malik algorithm for MaxSAT [9]_
--  RC2/OLLITI algorithm for MaxSAT [13]_ [14]_
--  CLD-like algorithm for MCS extraction and enumeration [11]_
--  LBX-like algorithm for MCS extraction and enumeration [12]_
--  Deletion-based MUS extraction [10]_
+-  Fu&Malik algorithm for MaxSAT [10]_
+-  RC2/OLLITI algorithm for MaxSAT [14]_ [15]_
+-  CLD-like algorithm for MCS extraction and enumeration [12]_
+-  LBX-like algorithm for MCS extraction and enumeration [13]_
+-  Deletion-based MUS extraction [11]_
 
-.. [9] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
+.. [10] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
    SAT 2006. pp. 252-265
 
-.. [10] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
+.. [11] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
    Applications*. ISMVL 2010. pp. 9-14
 
-.. [11] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
+.. [12] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
    Anton Belov. *On Computing Minimal Correction Subsets*. IJCAI 2013. pp.
    615-622
 
-.. [12] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
+.. [13] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
-.. [13] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
-   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573.
+.. [14] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
+   MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573
 
-.. [14] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
+.. [15] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
    Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
-   pp. 129-134.
+   pp. 129-134
 
 The examples are installed with PySAT as a subpackage and, thus, they can be
 accessed internally in Python:
@@ -241,13 +245,13 @@ features were implemented:
    (e.g. *variable polarities*, *activities*, etc.)
 
 -  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
-   [15]_ them internally)
+   [16]_ them internally)
 
 All of these will require a significant effort to be made. Therefore, we would
 like to encourage the SAT community to contribute and make PySAT a tool for an
 easy and comfortable day-to-day use. :)
 
-.. [15] G. S. Tseitin. *On the complexity of derivations in the propositional
+.. [16] G. S. Tseitin. *On the complexity of derivations in the propositional
    calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
    115–125, 1968
 

@@ -9,12 +9,13 @@ enable researchers working on SAT and its applications and generalizations to
 easily prototype with SAT oracles in Python while exploiting incrementally the
 power of the original low-level implementations of modern SAT solvers.
 
-PySAT can be helpful when solving problems in :math:`\mathbb{NP}` but also
-`beyond <http://beyondnp.org/>`__ :math:`\mathbb{NP}`. For instance, PySAT is
-handy when one needs to quickly implement a MaxSAT solver, an MUS/MCS extractor
-or enumerator, an abstraction-based QBF solver, or any other kind of tool
-solving an application problem with the (potentially *multiple* and/or
-*incremental*) use of a SAT oracle.
+PySAT can be helpful when solving problems in `NP
+<https://en.wikipedia.org/wiki/NP_(complexity)>`__ but also `beyond NP
+<http://beyondnp.org/>`__. For instance, PySAT is handy when one needs to
+quickly implement a MaxSAT solver, an MUS/MCS extractor or enumerator, an
+abstraction-based QBF solver, or any other kind of tool solving an application
+problem with the (potentially *multiple* and/or *incremental*) use of a SAT
+oracle.
 
 PySAT is licensed under `MIT
 <https://raw.githubusercontent.com/pysathq/pysat/master/LICENSE.txt>`__.
