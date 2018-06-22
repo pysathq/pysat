@@ -26,8 +26,8 @@
 
     This module provides access to various *cardinality constraint* [1]_
     encodings to formulas in conjunctive normal form (CNF). These include
-    pairwise [2]_, bitwise [2]_, ladder [3]_ [4]_, sequential counters [5]_,
-    sorting [6]_ and cardinality networks [7]_, totalizer [8]_, modulo
+    pairwise [2]_, bitwise [2]_, ladder/regular [3]_ [4]_, sequential counters
+    [5]_, sorting [6]_ and cardinality networks [7]_, totalizer [8]_, modulo
     totalizer [9]_, and modulo totalizer for :math:`k`-cardinality [10]_, as
     well as a *native* cardinality constraint representation supported by the
     `MiniCard solver <https://github.com/liffiton/minicard>`__.
@@ -38,13 +38,13 @@
     .. [2] Steven David Prestwich. *CNF Encodings*. Handbook of Satisfiability.
         2009. pp. 75-97
 
-    .. [3] Ian P. Gent, Peter Nightingale. *A New Encoding of Alldifferent Into
-        SAT*. In International workshop on modelling and reformulating
-        constraint satisfaction problems 2004. pp. 95-110
-
-    .. [4] Carlos Ansótegui, Felip Manyà. *Mapping Problems with Finite-Domain
+    .. [3] Carlos Ansótegui, Felip Manyà. *Mapping Problems with Finite-Domain
         Variables to Problems with Boolean Variables*. SAT (Selected Papers)
         2004. pp. 1-15
+
+    .. [4] Ian P. Gent, Peter Nightingale. *A New Encoding of Alldifferent Into
+        SAT*. In International workshop on modelling and reformulating
+        constraint satisfaction problems 2004. pp. 95-110
 
     .. [5] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
         Cardinality Constraints*. CP 2005. pp. 827-831

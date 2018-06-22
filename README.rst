@@ -43,7 +43,7 @@ list of cardinality encodings included is the following:
 -  sequential counters [9]_
 -  sorting networks [4]_
 -  cardinality networks [2]_
--  ladder [1]_ [5]_
+-  ladder/regular [1]_ [5]_
 -  totalizer [3]_
 -  modulo totalizer [7]_
 -  iterative totalizer [6]_
