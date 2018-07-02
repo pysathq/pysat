@@ -19,4 +19,3 @@ publication, please, acknowledge that fact by citing PySAT:
       url       = {https://doi.org/10.1007/978-3-319-94144-8_26},
       doi       = {10.1007/978-3-319-94144-8_26}
     }
-
