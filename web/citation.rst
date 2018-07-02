@@ -11,10 +11,12 @@ publication, please, acknowledge that fact by citing PySAT:
       author    = {Alexey Ignatiev and
                    Antonio Morgado and
                    Joao Marques{-}Silva},
-      title     = {{PySAT:} A {Python} Toolkit For Prototyping
-                   With {SAT} Oracles},
+      title     = {{PySAT:} {A} {Python} Toolkit for Prototyping
+                   with {SAT} Oracles},
       booktitle = {SAT},
+      pages     = {428--437},
       year      = {2018},
-      note      = {To appear}
+      url       = {https://doi.org/10.1007/978-3-319-94144-8_26},
+      doi       = {10.1007/978-3-319-94144-8_26}
     }
 
