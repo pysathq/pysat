@@ -115,7 +115,7 @@ class RC2(object):
 
         self.sels_set = set(self.sels)
 
-        if self.verbose:
+        if self.verbose > 1:
             print('c formula: {0} vars, {1} hard, {2} soft'.format(formula.nv,
                 len(formula.hard), len(formula.soft)))
 
@@ -141,15 +141,26 @@ class RC2(object):
         res = self.compute_()
 
         if res:
-            print('s OPTIMUM FOUND')
-            print('o {0}'.format(self.cost))
+            # extracting a model
+            self.model = self.oracle.get_model()
+            self.model = filter(lambda l: abs(l) <= self.orig_nv, self.model)
 
-            if self.verbose > 1:
-                model = self.oracle.get_model()
-                model = filter(lambda l: abs(l) <= self.orig_nv, model)
-                print('v', ' '.join([str(l) for l in model]))
-        else:
-            print('s UNSATISFIABLE')
+            return self.model
+
+    def enumerate(self):
+        """
+            Enumerate MaxSAT solutions (from best to worst).
+        """
+
+        done = False
+        while not done:
+            model = self.compute()
+
+            if model != None:
+                self.oracle.add_clause([-l for l in model])
+                yield model
+            else:
+                done = True
 
     def compute_(self):
         """
@@ -159,7 +170,7 @@ class RC2(object):
         # trying to adapt (simplify) the formula
         # by detecting and using atmost1 constraints
         if self.adapt:
-            self.adapt_am1(formula)
+            self.adapt_am1()
 
         # main solving loop
         while not self.oracle.solve(assumptions=self.sels + self.sums):
@@ -171,7 +182,7 @@ class RC2(object):
 
             self.process_core()
 
-            if self.verbose:
+            if self.verbose > 1:
                 print('c cost: {0}; core sz: {1}; soft sz: {2}'.format(self.cost,
                     len(self.core), len(self.sels) + len(self.sums)))
 
@@ -243,7 +254,7 @@ class RC2(object):
         # remove unnecessary assumptions
         self.filter_assumps()
 
-    def adapt_am1(self, formula):
+    def adapt_am1(self):
         """
             Try to detect atmost1 constraints involving soft literals.
         """
@@ -283,7 +294,7 @@ class RC2(object):
                 self.core_sels, self.core_sums = [l], []
                 self.process_core()
 
-            if self.verbose:
+            if self.verbose > 1:
                 print('c unit cores found: {0}; cost: {1}'.format(len(confl),
                     self.cost))
 
@@ -315,7 +326,7 @@ class RC2(object):
         # updating the set of selectors
         self.sels_set = set(self.sels)
 
-        if self.verbose and nof_am1:
+        if self.verbose > 1 and nof_am1:
             print('c am1s found: {0}; avgsz: {1:.1f}; cost: {2}'.format(nof_am1,
                 sum(len_am1) / float(nof_am1), self.cost))
 
@@ -653,19 +664,18 @@ class RC2Stratified(RC2, object):
             # add more clauses
             done = self.activate_clauses(done)
 
-            if self.verbose:
+            if self.verbose > 1:
                 print('c wght str:', self.blop[self.levl])
 
             # call RC2
             if self.compute_() == False:
-                print('s UNSATISFIABLE')
                 return
 
             # updating the list of distinct weight levels
             self.blop = sorted([w for w in self.wstr], reverse=True)
 
             if done < len(self.blop):
-                if self.verbose:
+                if self.verbose > 1:
                     print('c curr opt:', self.cost)
 
                 # done with this level
@@ -676,16 +686,14 @@ class RC2Stratified(RC2, object):
                 # get another level
                 self.next_level()
 
-                if self.verbose:
+                if self.verbose > 1:
                     print('c')
 
-        print('s OPTIMUM FOUND')
-        print('o {0}'.format(self.cost))
+        # extracting a model
+        self.model = self.oracle.get_model()
+        self.model = filter(lambda l: abs(l) <= self.orig_nv, self.model)
 
-        if self.verbose > 1:
-            model = self.oracle.get_model()
-            model = filter(lambda l: abs(l) <= self.orig_nv, model)
-            print('v', ' '.join([str(l) for l in model]))
+        return self.model
 
     def next_level(self):
         """
@@ -749,7 +757,7 @@ class RC2Stratified(RC2, object):
                 self.oracle.add_clause([s])
                 self.garbage.add(s)
 
-        if self.verbose:
+        if self.verbose > 1:
             print('c hardened:', len(self.garbage))
 
         # remove unnecessary assumptions
@@ -883,9 +891,9 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ac:hilms:t:vx',
-                ['adapt', 'comp=','exhaust', 'help', 'incr', 'blo', 'minimize',
-                    'solver=', 'trim=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:e:hilms:t:vx',
+                ['adapt', 'comp=', 'enum=', 'exhaust', 'help', 'incr', 'blo',
+                    'minimize', 'solver=', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -894,18 +902,25 @@ def parse_options():
     adapt = False
     exhaust = False
     cmode = None
+    to_enum = 1
     incr = False
     blo = False
     minz = False
     solver = 'g3'
     trim = 0
-    verbose = 0
+    verbose = 1
 
     for opt, arg in opts:
         if opt in ('-a', '--adapt'):
             adapt = True
         elif opt in ('-c', '--comp'):
             cmode = str(arg)
+        elif opt in ('-e', '--enum'):
+            to_enum = str(arg)
+            if to_enum != 'all':
+                to_enum = int(to_enum)
+            else:
+                to_enum = 0
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
@@ -926,7 +941,8 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, blo, cmode, exhaust, incr, minz, solver, trim, verbose, args
+    return adapt, blo, cmode, to_enum, exhaust, incr, minz, solver, trim, \
+            verbose, args
 
 
 #==============================================================================
@@ -940,6 +956,8 @@ def usage():
     print('        -a, --adapt              Try to adapt (simplify) input formula')
     print('        -c, --comp=<string>      Enable one of the MSE18 configurations')
     print('                                 Available values: a, b, none (default = none)')
+    print('        -e, --enum=<int>         Number of MaxSAT models to compute')
+    print('                                 Available values: [1 .. INT_MAX], all (default = 1)')
     print('        -h, --help               Show this message')
     print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
     print('        -l, --blo                Use BLO and stratification')
@@ -955,7 +973,8 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, cmode, exhaust, incr, minz, solver, trim, verbose, files = parse_options()
+    adapt, blo, cmode, to_enum, exhaust, incr, minz, solver, trim, verbose, \
+            files = parse_options()
 
     if files:
         # parsing the input formula
@@ -976,7 +995,7 @@ if __name__ == '__main__':
         # enabling the competition mode
         if cmode:
             assert cmode in ('a', 'b'), 'Wrong MSE18 mode chosen: {0}'.format(cmode)
-            adapt, blo, exhaust, solver, verbose = True, True, True, 'g3', 2
+            adapt, blo, exhaust, solver, verbose = True, True, True, 'g3', 3
 
             if cmode == 'a':
                 trim = 5 if max(formula.wght) > min(formula.wght) else 0
@@ -990,6 +1009,7 @@ if __name__ == '__main__':
 
         # deciding whether or not to stratify
         if blo and max(formula.wght) > min(formula.wght):
+            assert to_enum == 1, 'Stratified solving is incompatible with model enumeration'
             MXS = RC2Stratified
         else:
             MXS = RC2
@@ -997,7 +1017,27 @@ if __name__ == '__main__':
         # starting the solver
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
                 incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
-            rc2.compute()
+
+            optimum_found = False
+            for i, model in enumerate(rc2.enumerate(), 1):
+                optimum_found = True
+
+                if verbose:
+                    if i == 1:
+                        print('s OPTIMUM FOUND')
+                        print('o {0}'.format(rc2.cost))
+
+                    if verbose > 2:
+                        print('v', ' '.join([str(l) for l in model]))
+
+                if i == to_enum:
+                    break
 
             if verbose:
-                print('c oracle time: {0:.4f}'.format(rc2.oracle_time()))
+                if not optimum_found:
+                    print('s UNSATISFIABLE')
+                elif to_enum != 1:
+                    print('c models found:', i)
+
+                if verbose > 1:
+                    print('c oracle time: {0:.4f}'.format(rc2.oracle_time()))

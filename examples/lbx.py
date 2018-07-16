@@ -124,7 +124,8 @@ class LBX(object):
         """
 
         for l in cl:
-            if model[abs(l) - 1] == l:
+            if len(model) < abs(l) or model[abs(l) - 1] == l:
+                # either literal is unassigned or satisfied by the model
                 return True
 
         return False

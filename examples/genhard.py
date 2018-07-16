@@ -15,6 +15,7 @@ import collections
 import getopt
 import itertools
 import os
+from pysat.card import *
 from pysat.formula import IDPool, CNF
 from six.moves import range
 import sys
@@ -103,6 +104,76 @@ class GT(CNF, object):
                 for j in range(1, size + 1):
                     if i != j:
                         self.comments.append('c orig pair: {0}; bool var: {1}'.format((i, j), var(i, j)))
+
+
+#
+#==============================================================================
+class CB(CNF, object):
+    """
+        Mutilated chessboard principle for the chessboard of 2size x 2size.
+    """
+
+    def __init__(self, size, exhaustive=False, topv=0, verb=False):
+        """
+            Constructor.
+        """
+
+        # initializing CNF's internal parameters
+        super(CB, self).__init__()
+
+        # cell number
+        cell = lambda i, j: (i - 1) * 2 * size + j
+
+        # initializing the pool of variable ids
+        vpool = IDPool(start_from=topv + 1)
+        var = lambda c1, c2: vpool.id('edge: ({0}, {1})'.format(min(c1, c2), max(c1, c2)))
+
+        for i in range(1, 2 * size + 1):
+            for j in range(1, 2 * size + 1):
+                adj = []
+
+                # current cell
+                c = cell(i, j)
+
+                # removing first and last cells (they are white)
+                if c in (1, 4 * size * size):
+                    continue
+
+                # each cell has 2 <= k <= 4 adjacents
+                if i > 1 and cell(i - 1, j) != 1:
+                    adj.append(var(c, cell(i - 1, j)))
+
+                if j > 1 and cell(i, j - 1) != 1:
+                    adj.append(var(c, cell(i, j - 1)))
+
+                if i < 2 * size and cell(i + 1, j) != 4 * size * size:
+                    adj.append(var(c, cell(i + 1, j)))
+
+                if j < 2 * size and cell(i, j + 1) != 4 * size * size:
+                    adj.append(var(c, cell(i, j + 1)))
+
+                if not adj:  # when n == 1, no clauses will be added
+                    continue
+
+                # adding equals1 constraint for black and white cells
+                if exhaustive:
+                    cnf = CardEnc.equals(lits=adj, bound=1, encoding=EncType.pairwise)
+                    self.extend(cnf.clauses)
+                else:
+                    # atmost1 constraint for white cells
+                    if i % 2 and c % 2 or i % 2 == 0 and c % 2 == 0:
+                        am1 = CardEnc.atmost(lits=adj, bound=1, encoding=EncType.pairwise)
+                        self.extend(am1.clauses)
+                    else:  # atleast1 constrant for black cells
+                        self.append(adj)
+
+        if verb:
+            head = 'c CB formula for the chessboard of size {0}x{0}'.format(2 * size)
+            head += '\nc The encoding is {0}exhaustive'.format('' if exhaustive else 'not ')
+            self.comments.append(head)
+
+            for v in range(1, vpool.top + 1):
+                self.comments.append('c {0}; bool var: {1}'.format(vpool.obj(v), v))
 
 
 #
@@ -199,7 +270,7 @@ def usage():
     print('                               Available values: [0 .. INT_MAX] (default = 8)')
     print('        -h, --help')
     print('        -t, --type=<string>    Formula type')
-    print('                               Available values: gt, php, parity (default = php)')
+    print('                               Available values: cb, gt, php, parity (default = php)')
     print('        -v, --verb             Be verbose (show comments)')
 
 #
@@ -213,6 +284,8 @@ if __name__ == '__main__':
         cnf = PHP(size, kval=kval, verb=verb)
     elif ftype == 'gt':  # gt
         cnf = GT(size, verb=verb)
+    elif ftype == 'cb':  # cb
+        cnf = CB(size, exhaustive=kval, verb=verb)
     else:  # parity
         cnf = Parity(size, verb=verb)
 

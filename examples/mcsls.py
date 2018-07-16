@@ -127,7 +127,7 @@ class MCSls(object):
 
         for cl in self.soft:
             sel = cl[0]
-            if model[sel - 1] > 0:
+            if len(model) < sel or model[sel - 1] > 0:
                 # soft clauses contain positive literals
                 # so if var is true then the clause is satisfied
                 self.ss_assumps.append(sel)
