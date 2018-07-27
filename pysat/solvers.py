@@ -532,9 +532,19 @@ class Solver(object):
 
     def set_phases(self, literals=[]):
         """
+
             The method takes a list of literals as an argument and sets
             *phases* (or MiniSat-like *polarities*) of the corresponding
-            variables respecting the literals.
+            variables respecting the literals. For example, if a given list of
+            literals is ``[1, -513]``, the solver will try to set variable
+            :math:`x_1` to true while setting :math:`x_{513}` to false.
+
+            **Note** that once these preferences are specified,
+            :class:`MinisatGH` and :class:`Lingeling` will always respect them
+            when branching on these variables. However, solvers
+            :class:`Glucose3`, :class:`Glucose4`, :class:`Minisat22`, and
+            :class:`Minicard` can redefine the preferences in any of the
+            following SAT calls due to the phase saving heuristic.
 
             :param literals: a list of literals.
             :type literals: list(int)
