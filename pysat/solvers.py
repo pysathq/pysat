@@ -75,6 +75,7 @@
     -  adding individual clauses and formulas to solver objects
     -  making SAT calls with or without assumptions
     -  propagating a given set of assumption literals
+    -  setting preferred polarities for a (sub)set of variables
     -  extracting a model of a satisfiable input formula
     -  enumerating models of an input formula
     -  extracting an unsatisfiable core of an unsatisfiable formula
@@ -528,6 +529,36 @@ class Solver(object):
 
         if self.solver:
             return self.solver.propagate(assumptions, phase_saving)
+
+    def set_phases(self, literals=[]):
+        """
+            The method takes a list of literals as an argument and sets
+            *phases* (or MiniSat-like *polarities*) of the corresponding
+            variables respecting the literals.
+
+            :param literals: a list of literals.
+            :type literals: list(int)
+
+            Usage example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Glucose3
+                >>>
+                >>> g = Glucose3(bootstrap_with=[[1, 2]])
+                >>> # the formula has 3 models: [-1, 2], [1, -2], [1, 2]
+                >>>
+                >>> g.set_phases(literals=[1, 2])
+                >>> g.solve()
+                True
+                >>> g.get_model()
+                [1, 2]
+                >>>
+                >>> g.delete()
+        """
+
+        if self.solver:
+            return self.solver.set_phases(literals)
 
     def get_status(self):
         """
@@ -1014,6 +1045,14 @@ class Glucose3(object):
 
             return bool(st), props if props != None else []
 
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.glucose:
+            pysolvers.glucose3_setphases(self.glucose, literals)
+
     def get_status(self):
         """
             Returns solver's status.
@@ -1298,6 +1337,14 @@ class Glucose4(object):
 
             return bool(st), props if props != None else []
 
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_setphases(self.glucose, literals)
+
     def get_status(self):
         """
             Returns solver's status.
@@ -1545,6 +1592,14 @@ class Lingeling(object):
         """
 
         raise NotImplementedError('Simple literal propagation is not yet implemented for Lingeling.')
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.lingeling:
+            pysolvers.lingeling_setphases(self.lingeling, literals)
 
     def get_status(self):
         """
@@ -1804,6 +1859,14 @@ class Minicard(object):
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.minicard:
+            pysolvers.minicard_setphases(self.minicard, literals)
 
     def get_status(self):
         """
@@ -2079,6 +2142,14 @@ class Minisat22(object):
 
             return bool(st), props if props != None else []
 
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.minisat:
+            pysolvers.minisat22_setphases(self.minisat, literals)
+
     def get_status(self):
         """
             Returns solver's status.
@@ -2345,6 +2416,14 @@ class MinisatGH(object):
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.minisat:
+            pysolvers.minisatgh_setphases(self.minisat, literals)
 
     def get_status(self):
         """

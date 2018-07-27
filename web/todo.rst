@@ -17,7 +17,7 @@ features were implemented:
 -  formula *(pre-)processing*
 
 -  lower level access to some of the solvers' internal parameters
-   (e.g. *variable polarities*, *activities*, etc.)
+   (e.g. *variable activities*, etc.)
 
 -  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
    [16]_ them internally)

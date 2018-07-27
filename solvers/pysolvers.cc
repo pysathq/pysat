@@ -50,6 +50,7 @@ static char   addam_docstring[] = "Add an atmost constraint to formula "
 static char   solve_docstring[] = "Solve a given CNF instance.";
 static char     lim_docstring[] = "Solve a given CNF instance within a budget.";
 static char    prop_docstring[] = "Propagate a given set of literals.";
+static char  phases_docstring[] = "Set variable polarities.";
 static char cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char pbudget_docstring[] = "Set limit on the number of propagations.";
 static char setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
@@ -72,6 +73,7 @@ extern "C" {
 	static PyObject *py_glucose3_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose3_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_glucose3_propagate (PyObject *, PyObject *);
+	static PyObject *py_glucose3_setphases (PyObject *, PyObject *);
 	static PyObject *py_glucose3_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_setincr   (PyObject *, PyObject *);
@@ -88,6 +90,7 @@ extern "C" {
 	static PyObject *py_glucose41_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose41_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_glucose41_propagate (PyObject *, PyObject *);
+	static PyObject *py_glucose41_setphases (PyObject *, PyObject *);
 	static PyObject *py_glucose41_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_setincr   (PyObject *, PyObject *);
@@ -102,6 +105,7 @@ extern "C" {
 	static PyObject *py_lingeling_new       (PyObject *, PyObject *);
 	static PyObject *py_lingeling_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_lingeling_solve     (PyObject *, PyObject *);
+	static PyObject *py_lingeling_setphases (PyObject *, PyObject *);
 	static PyObject *py_lingeling_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_lingeling_core      (PyObject *, PyObject *);
 	static PyObject *py_lingeling_model     (PyObject *, PyObject *);
@@ -116,6 +120,7 @@ extern "C" {
 	static PyObject *py_minicard_solve     (PyObject *, PyObject *);
 	static PyObject *py_minicard_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minicard_propagate (PyObject *, PyObject *);
+	static PyObject *py_minicard_setphases (PyObject *, PyObject *);
 	static PyObject *py_minicard_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_core      (PyObject *, PyObject *);
@@ -130,6 +135,7 @@ extern "C" {
 	static PyObject *py_minisat22_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisat22_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minisat22_propagate (PyObject *, PyObject *);
+	static PyObject *py_minisat22_setphases (PyObject *, PyObject *);
 	static PyObject *py_minisat22_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_core      (PyObject *, PyObject *);
@@ -144,6 +150,7 @@ extern "C" {
 	static PyObject *py_minisatgh_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_propagate (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_setphases (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_core      (PyObject *, PyObject *);
@@ -163,6 +170,7 @@ static PyMethodDef module_methods[] = {
         { "glucose3_solve",     py_glucose3_solve,     METH_VARARGS,   solve_docstring },
         { "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,     lim_docstring },
         { "glucose3_propagate", py_glucose3_propagate, METH_VARARGS,    prop_docstring },
+        { "glucose3_setphases", py_glucose3_setphases, METH_VARARGS,  phases_docstring },
         { "glucose3_cbudget",   py_glucose3_cbudget,   METH_VARARGS, cbudget_docstring },
         { "glucose3_pbudget",   py_glucose3_pbudget,   METH_VARARGS, pbudget_docstring },
         { "glucose3_setincr",   py_glucose3_setincr,   METH_VARARGS, setincr_docstring },
@@ -179,6 +187,7 @@ static PyMethodDef module_methods[] = {
         { "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,   solve_docstring },
         { "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,     lim_docstring },
         { "glucose41_propagate", py_glucose41_propagate, METH_VARARGS,    prop_docstring },
+        { "glucose41_setphases", py_glucose41_setphases, METH_VARARGS,  phases_docstring },
         { "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS, cbudget_docstring },
         { "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS, pbudget_docstring },
         { "glucose41_setincr",   py_glucose41_setincr,   METH_VARARGS, setincr_docstring },
@@ -193,6 +202,7 @@ static PyMethodDef module_methods[] = {
 	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,     new_docstring },
         { "lingeling_add_cl",    py_lingeling_add_cl,    METH_VARARGS,   addcl_docstring },
         { "lingeling_solve",     py_lingeling_solve,     METH_VARARGS,   solve_docstring },
+        { "lingeling_setphases", py_lingeling_setphases, METH_VARARGS,  phases_docstring },
         { "lingeling_tracepr",   py_lingeling_tracepr,   METH_VARARGS, tracepr_docstring },
         { "lingeling_core",      py_lingeling_core,      METH_VARARGS,    core_docstring },
         { "lingeling_model",     py_lingeling_model,     METH_VARARGS,   model_docstring },
@@ -206,6 +216,7 @@ static PyMethodDef module_methods[] = {
         { "minicard_solve",     py_minicard_solve,     METH_VARARGS,   solve_docstring },
         { "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,     lim_docstring },
         { "minicard_propagate", py_minicard_propagate, METH_VARARGS,    prop_docstring },
+        { "minicard_setphases", py_minicard_setphases, METH_VARARGS,  phases_docstring },
         { "minicard_cbudget",   py_minicard_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minicard_pbudget",   py_minicard_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minicard_core",      py_minicard_core,      METH_VARARGS,    core_docstring },
@@ -221,6 +232,7 @@ static PyMethodDef module_methods[] = {
         { "minisat22_solve",     py_minisat22_solve,     METH_VARARGS,   solve_docstring },
         { "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,     lim_docstring },
         { "minisat22_propagate", py_minisat22_propagate, METH_VARARGS,    prop_docstring },
+        { "minisat22_setphases", py_minisat22_setphases, METH_VARARGS,  phases_docstring },
         { "minisat22_cbudget",   py_minisat22_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minisat22_pbudget",   py_minisat22_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minisat22_core",      py_minisat22_core,      METH_VARARGS,    core_docstring },
@@ -235,6 +247,7 @@ static PyMethodDef module_methods[] = {
         { "minisatgh_solve",     py_minisatgh_solve,     METH_VARARGS,   solve_docstring },
         { "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,     lim_docstring },
         { "minisatgh_propagate", py_minisatgh_propagate, METH_VARARGS,    prop_docstring },
+        { "minisatgh_setphases", py_minisatgh_setphases, METH_VARARGS,  phases_docstring },
         { "minisatgh_cbudget",   py_minisatgh_cbudget,   METH_VARARGS, cbudget_docstring },
         { "minisatgh_pbudget",   py_minisatgh_pbudget,   METH_VARARGS, pbudget_docstring },
         { "minisatgh_core",      py_minisatgh_core,      METH_VARARGS,    core_docstring },
@@ -558,6 +571,43 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
 	Py_DECREF(propagated);
 
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+	vector<int> p(size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		p[i] = pyint_to_cint(l_obj);
+
+		if (abs(p[i]) > max_var)
+			max_var = abs(p[i]);
+	}
+
+	if (max_var > 0)
+		glucose3_declare_vars(s, max_var);
+
+	for (int i = 0; i < size; ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
 	return ret;
 }
 
@@ -994,6 +1044,43 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+	vector<int> p(size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		p[i] = pyint_to_cint(l_obj);
+
+		if (abs(p[i]) > max_var)
+			max_var = abs(p[i]);
+	}
+
+	if (max_var > 0)
+		glucose41_declare_vars(s, max_var);
+
+	for (int i = 0; i < size; ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
 static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -1343,6 +1430,33 @@ static PyObject *py_lingeling_solve(PyObject *self, PyObject *args)
 	bool res = lglsat(s) == 10 ? true : false;
 
 	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_lingeling_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	LGL *s = (LGL *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		int lit = pyint_to_cint(l_obj);
+		lglsetphase(s, lit);
+	}
+
+	PyObject *ret = Py_BuildValue("");
 	return ret;
 }
 
@@ -1720,6 +1834,43 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+	vector<int> p(size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		p[i] = pyint_to_cint(l_obj);
+
+		if (abs(p[i]) > max_var)
+			max_var = abs(p[i]);
+	}
+
+	if (max_var > 0)
+		minicard_declare_vars(s, max_var);
+
+	for (int i = 0; i < size; ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
 static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2081,6 +2232,43 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+	vector<int> p(size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		p[i] = pyint_to_cint(l_obj);
+
+		if (abs(p[i]) > max_var)
+			max_var = abs(p[i]);
+	}
+
+	if (max_var > 0)
+		minisat22_declare_vars(s, max_var);
+
+	for (int i = 0; i < size; ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
 static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2437,6 +2625,43 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
 	Py_DECREF(propagated);
 
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+
+	int size = (int)PyList_Size(p_obj);
+	vector<int> p(size);
+
+	int max_var = -1;
+	for (int i = 0; i < size; ++i) {
+		PyObject *l_obj = PyList_GetItem(p_obj, i);
+		p[i] = pyint_to_cint(l_obj);
+
+		if (abs(p[i]) > max_var)
+			max_var = abs(p[i]);
+	}
+
+	if (max_var > 0)
+		minisatgh_declare_vars(s, max_var);
+
+	for (int i = 0; i < size; ++i)
+		s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
+
+	PyObject *ret = Py_BuildValue("");
 	return ret;
 }
 
