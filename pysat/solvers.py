@@ -532,7 +532,6 @@ class Solver(object):
 
     def set_phases(self, literals=[]):
         """
-
             The method takes a list of literals as an argument and sets
             *phases* (or MiniSat-like *polarities*) of the corresponding
             variables respecting the literals. For example, if a given list of
