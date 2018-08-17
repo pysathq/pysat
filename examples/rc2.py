@@ -143,7 +143,7 @@ class RC2(object):
         if res:
             # extracting a model
             self.model = self.oracle.get_model()
-            self.model = filter(lambda l: abs(l) <= self.orig_nv, self.model)
+            self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
 
             return self.model
 
@@ -691,7 +691,7 @@ class RC2Stratified(RC2, object):
 
         # extracting a model
         self.model = self.oracle.get_model()
-        self.model = filter(lambda l: abs(l) <= self.orig_nv, self.model)
+        self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
 
         return self.model
 

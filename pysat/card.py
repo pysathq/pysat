@@ -369,8 +369,8 @@ class ITotalizer(object):
 
         # its characteristics
         self.lits = []
-        self.ubound = None
-        self.top_id = None
+        self.ubound = 0
+        self.top_id = 0
 
         # encoding result
         self.cnf = CNF()  # CNF formula encoding the totalizer object
@@ -431,8 +431,8 @@ class ITotalizer(object):
             self.tobj = None
 
         self.lits = []
-        self.ubound = None
-        self.top_id = None
+        self.ubound = 0
+        self.top_id = 0
 
         self.cnf = CNF()
         self.rhs = []
@@ -504,7 +504,7 @@ class ITotalizer(object):
                 >>> t.delete()
         """
 
-        self.top_id = max(self.top_id, top_id)
+        self.top_id = max(self.top_id, top_id if top_id != None else 0)
 
         # do nothing if the bound is set incorrectly
         if ubound <= self.ubound or self.ubound >= len(self.lits):
@@ -590,7 +590,7 @@ class ITotalizer(object):
             return
 
         self.top_id = max(map(lambda x: abs(x), self.lits + [self.top_id, top_id if top_id != None else 0]))
-        self.ubound = max(self.ubound, ubound)
+        self.ubound = max(self.ubound, ubound if ubound != None else 0)
 
         # saving default SIGINT handler
         def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -668,8 +668,8 @@ class ITotalizer(object):
                 ...     t2.delete()
         """
 
-        self.top_id = max(self.top_id, top_id, another.top_id)
-        self.ubound = max(self.ubound, ubound, another.ubound)
+        self.top_id = max(self.top_id, top_id if top_id != None else 0, another.top_id)
+        self.ubound = max(self.ubound, ubound if ubound != None else 0, another.ubound)
 
         # extending the list of input literals
         self.lits.extend(another.lits)
@@ -694,3 +694,136 @@ class ITotalizer(object):
 
         # memory deallocation should not be done for the merged tree
         another._merged = True
+
+
+#
+#==============================================================================
+class KAMTotalizer(object):
+    """
+        KAM totalizer.
+        """
+
+    def __init__(self, lits=[], top_id=None, approx=True):
+        """
+            Constructor.
+            """
+
+        # kam totalizer object
+        self.tobj = None
+
+        # its characteristics
+        self.lits = []
+        self.top_id = None
+        self.approx = None
+
+        # encoding result
+        self.cnf = CNF()  # CNF formula encoding the totalizer object
+        self.rhs = []     # upper bounds on the number of literals (rhs)
+
+        # number of new clauses
+        self.nof_new = 0
+
+        if lits:
+            self.new(lits=lits, top_id=top_id, approx=approx)
+
+    def new(self, lits=[], top_id=None, approx=True):
+        """
+            Create a new kamto object.
+            """
+
+        self.lits = lits
+        self.approx = int(approx)
+        self.top_id = max(map(lambda x: abs(x), self.lits + [top_id if top_id != None else 0]))
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # creating the object
+        self.tobj, clauses, self.top_id = pycard.kamto_new(self.lits, self.top_id)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses = clauses
+        self.cnf.nv = self.top_id
+
+        # empty right-hand sizes
+        self.rhs = [None]
+
+        # for convenience, keeping the number of clauses
+        self.nof_new = len(clauses)
+
+    def delete(self):
+        """
+            Destroy a kamto object.
+            """
+
+        if self.tobj:
+            pycard.kamto_del(self.tobj)
+            self.tobj = None
+
+        self.lits = []
+        self.top_id = None
+        self.approx = None
+
+        self.cnf = CNF()
+        self.rhs = []
+
+        self.nof_new = 0
+
+    def __enter__(self):
+        """
+            'with' constructor.
+            """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+            """
+
+        self.delete()
+
+    def __del__(self):
+        """
+            Destructor.
+            """
+
+        self.delete()
+
+    def atmost(self, bound=1, top_id=None):
+        """
+            Increase a possible upper bound (right-hand side) in an existing
+            totalizer object.
+            """
+
+        self.top_id = max(self.top_id, top_id)
+
+        # do nothing if the bound is set incorrectly
+        if bound >= len(self.lits):
+            return
+
+        # saving default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        # updating the object and adding more variables and clauses
+        clauses, self.top_id, aspt = pycard.kamto_atmost(self.tobj, bound,
+                self.top_id, self.approx)
+
+        # recovering default SIGINT handler
+        def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+        # saving the result
+        self.cnf.clauses.extend(clauses)
+        self.cnf.nv = self.top_id
+
+        # saving the assumption
+        self.rhs.extend([None for i in range(len(self.rhs), bound + 1)])
+        self.rhs[bound] = aspt
+
+        # keeping the number of newly added clauses
+        self.nof_new = len(clauses)
+
+        return aspt
