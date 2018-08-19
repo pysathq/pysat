@@ -24,6 +24,7 @@ import os
 from pysat.formula import CNF, WCNF
 from pysat.card import ITotalizer
 from pysat.solvers import Solver
+import re
 import six
 from six.moves import range
 import sys
@@ -978,19 +979,10 @@ if __name__ == '__main__':
 
     if files:
         # parsing the input formula
-        if files[0].endswith('.gz'):
-            fp = gzip.open(files[0], 'rt')
-            ftype = 'WCNF' if files[0].endswith('.wcnf.gz') else 'CNF'
-        else:
-            fp = open(files[0], 'r')
-            ftype = 'WCNF' if files[0].endswith('.wcnf') else 'CNF'
-
-        if ftype == 'WCNF':
-            formula = WCNF(from_fp=fp)
+        if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNF(from_file=files[0])
         else:  # expecting '*.cnf'
-            formula = CNF(from_fp=fp).weighted()
-
-        fp.close()
+            formula = CNF(from_file=files[0]).weighted()
 
         # enabling the competition mode
         if cmode:

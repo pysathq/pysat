@@ -209,6 +209,7 @@ from __future__ import print_function
 import collections
 import copy
 import os
+from pysat._fileio import FileObject
 import sys
 
 try:  # for Python2
@@ -397,7 +398,7 @@ class CNF(object):
         self.comments = []
 
         if from_file:
-            self.from_file(from_file, comment_lead)
+            self.from_file(from_file, comment_lead, compressed_with='use_ext')
         elif from_fp:
             self.from_fp(from_fp, comment_lead)
         elif from_string:
@@ -405,17 +406,27 @@ class CNF(object):
         elif from_clauses:
             self.from_clauses(from_clauses)
 
-    def from_file(self, fname, comment_lead=['c']):
+    def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
             Read a CNF formula from a file in the DIMACS format. A file name is
             expected as an argument. A default argument is ``comment_lead`` for
-            parsing comment lines.
+            parsing comment lines. A given file can be compressed by either
+            gzip, bzip2, or lzma.
 
             :param fname: name of a file to parse.
             :param comment_lead: a list of characters leading comment lines
+            :param compressed_with: file compression algorithm
 
             :type fname: str
             :type comment_lead: list(str)
+            :type compressed_with: str
+
+            Note that the ``compressed_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
+            ``'use_ext'``. The latter value indicates that compression type
+            should be automatically determined based on the file extension.
+            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
+            package to be additionally installed.
 
             Usage example:
 
@@ -423,13 +434,13 @@ class CNF(object):
 
                 >>> from pysat.formula import CNF
                 >>> cnf1 = CNF()
-                >>> cnf1.from_file('some-file.cnf')
+                >>> cnf1.from_file('some-file.cnf.gz', compressed_with='gzip')
                 >>>
                 >>> cnf2 = CNF(from_file='another-file.cnf')
         """
 
-        with open(fname, 'r') as fp:
-            self.from_fp(fp, comment_lead)
+        with FileObject(fname, mode='r', compression=compressed_with) as fobj:
+            self.from_fp(fobj.fp, comment_lead)
 
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
@@ -555,18 +566,28 @@ class CNF(object):
 
         return cnf
 
-    def to_file(self, fname, comments=None):
+    def to_file(self, fname, comments=None, compress_with='use_ext'):
         """
             The method is for saving a CNF formula into a file in the DIMACS
             CNF format. A file name is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
-            parameter.
+            parameter. Also, a file can be compressed using either gzip, bzip2,
+            or lzma (xz).
 
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
+            :param compress_with: file compression algorithm
 
             :type fname: str
             :type comments: list(str)
+            :type compress_with: str
+
+            Note that the ``compress_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
+            ``'use_ext'``. The latter value indicates that compression type
+            should be automatically determined based on the file extension.
+            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
+            package to be additionally installed.
 
             Example:
 
@@ -579,8 +600,8 @@ class CNF(object):
                 >>> cnf.to_file('some-file-name.cnf')  # writing to a file
         """
 
-        with open(fname, 'w') as fp:
-            self.to_fp(fp, comments)
+        with FileObject(fname, mode='w', compression=compress_with) as fobj:
+            self.to_fp(fobj.fp, comments)
 
     def to_fp(self, file_pointer, comments=None):
         """
@@ -797,23 +818,33 @@ class WCNF(object):
         self.comments = []
 
         if from_file:
-            self.from_file(from_file, comment_lead)
+            self.from_file(from_file, comment_lead, compressed_with='use_ext')
         elif from_fp:
             self.from_fp(from_fp, comment_lead)
         elif from_string:
             self.from_string(from_string, comment_lead)
 
-    def from_file(self, fname, comment_lead=['c']):
+    def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
             Read a WCNF formula from a file in the DIMACS format. A file name
             is expected as an argument. A default argument is ``comment_lead``
-            for parsing comment lines.
+            for parsing comment lines. A given file can be compressed by either
+            gzip, bzip2, or lzma.
 
             :param fname: name of a file to parse.
             :param comment_lead: a list of characters leading comment lines
+            :param compressed_with: file compression algorithm
 
             :type fname: str
             :type comment_lead: list(str)
+            :type compressed_with: str
+
+            Note that the ``compressed_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
+            ``'use_ext'``. The latter value indicates that compression type
+            should be automatically determined based on the file extension.
+            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
+            package to be additionally installed.
 
             Usage example:
 
@@ -821,13 +852,13 @@ class WCNF(object):
 
                 >>> from pysat.formula import WCNF
                 >>> cnf1 = WCNF()
-                >>> cnf1.from_file('some-file.wcnf')
+                >>> cnf1.from_file('some-file.wcnf.bz2', compressed_with='bzip2')
                 >>>
                 >>> cnf2 = WCNF(from_file='another-file.wcnf')
         """
 
-        with open(fname, 'r') as fp:
-            self.from_fp(fp, comment_lead)
+        with FileObject(fname, mode='r', compression=compressed_with) as fobj:
+            self.from_fp(fobj.fp, comment_lead)
 
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
@@ -953,18 +984,28 @@ class WCNF(object):
 
         return wcnf
 
-    def to_file(self, fname, comments=None):
+    def to_file(self, fname, comments=None, compress_with='use_ext'):
         """
             The method is for saving a WCNF formula into a file in the DIMACS
             CNF format. A file name is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
-            parameter.
+            parameter. Also, a file can be compressed using either gzip, bzip2,
+            or lzma (xz).
 
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
+            :param compress_with: file compression algorithm
 
             :type fname: str
             :type comments: list(str)
+            :type compress_with: str
+
+            Note that the ``compress_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
+            ``'use_ext'``. The latter value indicates that compression type
+            should be automatically determined based on the file extension.
+            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
+            package to be additionally installed.
 
             Example:
 
@@ -977,8 +1018,8 @@ class WCNF(object):
                 >>> wcnf.to_file('some-file-name.wcnf')  # writing to a file
         """
 
-        with open(fname, 'w') as fp:
-            self.to_fp(fp, comments)
+        with FileObject(fname, mode='w', compression=compress_with) as fobj:
+            self.to_fp(fobj.fp, comments)
 
     def to_fp(self, file_pointer, comments=None):
         """

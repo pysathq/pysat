@@ -15,6 +15,7 @@ import getopt
 import os
 from pysat.formula import CNF, WCNF, WCNFPlus
 from pysat.solvers import Solver
+import re
 import sys
 
 
@@ -292,38 +293,32 @@ if __name__ == '__main__':
         to_enum = 0
 
     if files:
-        if files[0].endswith('cnf'):
-            if files[0].endswith('.wcnf'):
+        # reading standard CNF or WCNF
+        if re.search('cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+            if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
                 formula = WCNF(from_file=files[0])
             else:  # expecting '*.cnf'
                 formula = CNF(from_file=files[0]).weighted()
 
-            with MCSls(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
-                for i, mcs in enumerate(mcsls.enumerate()):
-                    if verbose:
-                        print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')
+            MCSEnum = MCSls
 
-                        if verbose > 1:
-                            cost = sum([formula.wght[cl_id - 1] for cl_id in mcs])
-                            print('c cost:', cost)
-
-                    if to_enum and i + 1 == to_enum:
-                        break
-
-                    mcsls.block(mcs)
-
-                print('c oracle time: {0:.4f}'.format(mcsls.oracle_time()))
-        elif files[0].endswith('.wcnf+'):
+        # reading WCNF+
+        elif re.search('\.wcnf+(\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
+            MCSEnum = MCSlsPlus
 
-            with MCSlsPlus(formula, use_cld=dcalls, use_timer=True) as mcsls:
-                for i, mcs in enumerate(mcsls.enumerate()):
-                    if verbose:
-                        print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')
+        with MCSEnum(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
+            for i, mcs in enumerate(mcsls.enumerate()):
+                if verbose:
+                    print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')
 
-                    if to_enum and i + 1 == to_enum:
-                        break
+                    if verbose > 1:
+                        cost = sum([formula.wght[cl_id - 1] for cl_id in mcs])
+                        print('c cost:', cost)
 
-                    mcsls.block(mcs)
+                if to_enum and i + 1 == to_enum:
+                    break
 
-                print('c oracle time: {0:.4f}'.format(mcsls.oracle_time()))
+                mcsls.block(mcs)
+
+            print('c oracle time: {0:.4f}'.format(mcsls.oracle_time()))

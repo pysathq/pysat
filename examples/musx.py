@@ -15,6 +15,7 @@ import getopt
 import os
 from pysat.formula import CNF, WCNF
 from pysat.solvers import Solver
+import re
 import sys
 
 
@@ -36,10 +37,11 @@ class MUSX(object):
         self.sels, self.vmap = [], {}
 
         # constructing the oracle
-        self.oracle = Solver(name=solver, use_timer=True)
+        self.oracle = Solver(name=solver, bootstrap_with=formula.hard,
+                use_timer=True)
 
-        # relaxing clauses and adding them to the oracle
-        for i, cl in enumerate(formula.clauses):
+        # relaxing soft clauses and adding them to the oracle
+        for i, cl in enumerate(formula.soft):
             topv += 1
 
             self.sels.append(topv)
@@ -176,14 +178,17 @@ if __name__ == '__main__':
     solver, verbose, files = parse_options()
 
     if files:
-        formula = CNF(from_file=files[0])
+        if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNF(from_file=files[0])
+        else:  # expecting '*.cnf'
+            formula = CNF(from_file=files[0]).weighted()
 
         with MUSX(formula, solver=solver, verbosity=verbose) as musx:
             mus = musx.compute()
 
             if mus:
                 if verbose:
-                    print('c CNF size: {0}'.format(len(formula.clauses)))
+                    print('c nof soft: {0}'.format(len(formula.soft)))
                     print('c MUS size: {0}'.format(len(mus)))
 
                 print('v', ' '.join([str(clid) for clid in mus]), '0')
