@@ -750,6 +750,7 @@ static PyObject *py_glucose3_core(PyObject *self, PyObject *args)
 static PyObject *py_glucose3_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -757,22 +758,24 @@ static PyObject *py_glucose3_model(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
 
-	Glucose30::vec<Glucose30::lbool> *m = &(s->model);  // minisat's model
-	Glucose30::lbool True = Glucose30::lbool((uint8_t)0);  // l_True fails to work
+	// minisat's model
+	Glucose30::vec<Glucose30::lbool> *m = &(s->model);
 
-	PyObject *model = PyList_New(m->size() - 1);
-	for (int i = 1; i < m->size(); ++i) {
-		int l = i * ((*m)[i] == True ? 1 : -1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+	if (m->size()) {
+		// l_True fails to work
+		Glucose30::lbool True = Glucose30::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (m->size())
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 
@@ -1218,6 +1221,7 @@ static PyObject *py_glucose41_core(PyObject *self, PyObject *args)
 static PyObject *py_glucose41_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -1225,22 +1229,24 @@ static PyObject *py_glucose41_model(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
 
-	Glucose41::vec<Glucose41::lbool> *m = &(s->model);  // minisat's model
-	Glucose41::lbool True = Glucose41::lbool((uint8_t)0);  // l_True fails to work
+	// minisat's model
+	Glucose41::vec<Glucose41::lbool> *m = &(s->model);
 
-	PyObject *model = PyList_New(m->size() - 1);
-	for (int i = 1; i < m->size(); ++i) {
-		int l = i * ((*m)[i] == True ? 1 : -1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+	if (m->size()) {
+		// l_True fails to work
+		Glucose41::lbool True = Glucose41::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (m->size())
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 
@@ -1504,6 +1510,7 @@ static PyObject *py_lingeling_core(PyObject *self, PyObject *args)
 static PyObject *py_lingeling_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -1512,20 +1519,19 @@ static PyObject *py_lingeling_model(PyObject *self, PyObject *args)
 	LGL *s = (LGL *)pyobj_to_void(s_obj);
 
 	int maxvar = lglmaxvar(s);
-	PyObject *model = PyList_New(maxvar);
-	for (int i = 1; i <= maxvar; ++i) {
-		int l = lglderef(s, i) > 0 ? i : -i;
+	if (maxvar) {
+		PyObject *model = PyList_New(maxvar);
+		for (int i = 1; i <= maxvar; ++i) {
+			int l = lglderef(s, i) > 0 ? i : -i;
 
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (maxvar)
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 
@@ -1948,6 +1954,7 @@ static PyObject *py_minicard_core(PyObject *self, PyObject *args)
 static PyObject *py_minicard_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -1955,22 +1962,24 @@ static PyObject *py_minicard_model(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
 
-	Minicard::vec<Minicard::lbool> *m = &(s->model);  // minisat's model
-	Minicard::lbool True = Minicard::lbool((uint8_t)0);  // l_True fails to work
+	// minisat's model
+	Minicard::vec<Minicard::lbool> *m = &(s->model);
 
-	PyObject *model = PyList_New(m->size() - 1);
-	for (int i = 1; i < m->size(); ++i) {
-		int l = i * ((*m)[i] == True ? 1 : -1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+	if (m->size()) {
+		// l_True fails to work
+		Minicard::lbool True = Minicard::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (m->size())
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 
@@ -2346,6 +2355,7 @@ static PyObject *py_minisat22_core(PyObject *self, PyObject *args)
 static PyObject *py_minisat22_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -2353,22 +2363,24 @@ static PyObject *py_minisat22_model(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
 
-	Minisat22::vec<Minisat22::lbool> *m = &(s->model);  // minisat's model
-	Minisat22::lbool True = Minisat22::lbool((uint8_t)0);  // l_True fails to work
+	// minisat's model
+	Minisat22::vec<Minisat22::lbool> *m = &(s->model);
 
-	PyObject *model = PyList_New(m->size() - 1);
-	for (int i = 1; i < m->size(); ++i) {
-		int l = i * ((*m)[i] == True ? 1 : -1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+	if (m->size()) {
+		// l_True fails to work
+		Minisat22::lbool True = Minisat22::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (m->size())
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 
@@ -2744,6 +2756,7 @@ static PyObject *py_minisatgh_core(PyObject *self, PyObject *args)
 static PyObject *py_minisatgh_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -2751,22 +2764,24 @@ static PyObject *py_minisatgh_model(PyObject *self, PyObject *args)
 	// get pointer to solver
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
 
-	MinisatGH::vec<MinisatGH::lbool> *m = &(s->model);  // minisat's model
-	MinisatGH::lbool True = MinisatGH::lbool((uint8_t)0);  // l_True fails to work
+	// minisat's model
+	MinisatGH::vec<MinisatGH::lbool> *m = &(s->model);
 
-	PyObject *model = PyList_New(m->size() - 1);
-	for (int i = 1; i < m->size(); ++i) {
-		int l = i * ((*m)[i] == True ? 1 : -1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(model, i - 1, lit);
+	if (m->size()) {
+		// l_True fails to work
+		MinisatGH::lbool True = MinisatGH::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (m->size())
-		ret = Py_BuildValue("O", model);
-
-	Py_DECREF(model);
 	return ret;
 }
 

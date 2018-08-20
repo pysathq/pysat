@@ -1076,7 +1076,8 @@ class Glucose3(object):
         """
 
         if self.glucose and self.status == True:
-            return pysolvers.glucose3_model(self.glucose)
+            model = pysolvers.glucose3_model(self.glucose)
+            return model if model != None else []
 
     def get_core(self):
         """
@@ -1368,7 +1369,8 @@ class Glucose4(object):
         """
 
         if self.glucose and self.status == True:
-            return pysolvers.glucose41_model(self.glucose)
+            model = pysolvers.glucose41_model(self.glucose)
+            return model if model != None else []
 
     def get_core(self):
         """
@@ -1624,7 +1626,8 @@ class Lingeling(object):
         """
 
         if self.lingeling and self.status == True:
-            return pysolvers.lingeling_model(self.lingeling)
+            model = pysolvers.lingeling_model(self.lingeling)
+            return model if model != None else []
 
     def get_core(self):
         """
@@ -1891,7 +1894,8 @@ class Minicard(object):
         """
 
         if self.minicard and self.status == True:
-            return pysolvers.minicard_model(self.minicard)
+            model = pysolvers.minicard_model(self.minicard)
+            return model if model != None else []
 
     def get_core(self):
         """
@@ -2173,7 +2177,8 @@ class Minisat22(object):
         """
 
         if self.minisat and self.status == True:
-            return pysolvers.minisat22_model(self.minisat)
+            model = pysolvers.minisat22_model(self.minisat)
+            return model if model != None else []
 
     def get_core(self):
         """
@@ -2448,7 +2453,8 @@ class MinisatGH(object):
         """
 
         if self.minisat and self.status == True:
-            return pysolvers.minisatgh_model(self.minisat)
+            model = pysolvers.minisatgh_model(self.minisat)
+            return model if model != None else []
 
     def get_core(self):
         """
