@@ -11,7 +11,9 @@
 #
 #==============================================================================
 from __future__ import print_function
+import collections
 import getopt
+from math import copysign
 import os
 from pysat.formula import CNF, WCNF, WCNFPlus
 from pysat.solvers import Solver
@@ -32,13 +34,22 @@ class MCSls(object):
         """
 
         # bootstrapping the solver with hard clauses
-        self.oracle = Solver(name=solver_name, bootstrap_with=formula.hard, use_timer=use_timer)
+        self.oracle = Solver(name=solver_name, bootstrap_with=formula.hard,
+                use_timer=use_timer)
 
         self.topv = formula.nv  # top variable id
-        self.soft = []
+        self.sels = []
         self.ucld = use_cld
-        self.vmap_dir = {}
-        self.vmap_opp = {}
+        self.smap = {}
+
+        # mappings between internal and external variables
+        VariableMap = collections.namedtuple('VariableMap', ['e2i', 'i2e'])
+        self.vmap = VariableMap(e2i={}, i2e={})
+
+        # at this point internal and external variables are the same
+        for v in range(1, formula.nv + 1):
+            self.vmap.e2i[v] = v
+            self.vmap.i2e[v] = v
 
         for cl in formula.soft:
             new_cl = cl[:]
@@ -51,9 +62,15 @@ class MCSls(object):
             else:
                 sel = cl[0]
 
-            self.soft.append([sel])
-            self.vmap_dir[sel] = len(self.soft)
-            self.vmap_opp[len(self.soft)] = sel
+            self.sels.append(sel)
+            self.smap[sel] = len(self.sels)
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.delete()
 
     def __enter__(self):
         """
@@ -67,8 +84,7 @@ class MCSls(object):
             'with' destructor.
         """
 
-        self.oracle.delete()
-        self.oracle = None
+        self.delete()
 
     def delete(self):
         """
@@ -78,6 +94,31 @@ class MCSls(object):
         if self.oracle:
             self.oracle.delete()
             self.oracle = None
+
+    def add_clause(self, clause, soft=False):
+        """
+            Add new hard or soft clause (may be needed in MCS enumeration).
+        """
+
+        # first, map external literals to internal literals
+        # introduce new variables if necessary
+        cl = list(map(lambda l: self._map_extlit(l), clause))
+
+        if not soft:
+            # the clause is hard, and so we simply add it to the SAT oracle
+            self.oracle.add_clause(cl)
+        else:
+            self.soft.append(cl)
+
+            # soft clauses should be augmented with a selector
+            sel = cl[0]
+            if len(cl) > 1 or cl[0] < 0:
+                self.topv += 1
+                sel = self.topv
+
+                self.oracle.add_clause(cl + [-sel])
+
+            self.sels.append(sel)
 
     def compute(self):
         """
@@ -94,7 +135,7 @@ class MCSls(object):
             self._overapprox()
             self._compute()
 
-            self.solution = [self.vmap_dir[-l] for l in self.bb_assumps]
+            self.solution = [self.smap[-l] for l in self.bb_assumps]
 
         return self.solution
 
@@ -117,7 +158,7 @@ class MCSls(object):
             Block a (previously computed) MCS.
         """
 
-        self.oracle.add_clause([self.vmap_opp[cl_id] for cl_id in mcs])
+        self.oracle.add_clause([self.sels[cl_id - 1] for cl_id in mcs])
 
     def _overapprox(self):
         """
@@ -126,8 +167,7 @@ class MCSls(object):
 
         model = self.oracle.get_model()
 
-        for cl in self.soft:
-            sel = cl[0]
+        for sel in self.sels:
             if len(model) < sel or model[sel - 1] > 0:
                 # soft clauses contain positive literals
                 # so if var is true then the clause is satisfied
@@ -193,6 +233,23 @@ class MCSls(object):
 
         # deactivating clause D
         self.oracle.add_clause([-sel])
+
+    def _map_extlit(self, l):
+        """
+            Map an external variable to an internal one if necessary.
+        """
+
+        v = abs(l)
+
+        if v in self.vmap.e2i:
+            return int(copysign(self.vmap.e2i[v], l))
+        else:
+            self.topv += 1
+
+            self.vmap.e2i[v] = self.topv
+            self.vmap.i2e[self.topv] = v
+
+            return int(copysign(self.topv, l))
 
     def oracle_time(self):
         """

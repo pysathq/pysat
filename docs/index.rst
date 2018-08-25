@@ -29,6 +29,7 @@ Supplementary :mod:`.examples` package (not yet documented)
 
 .. toctree::
     api/examples/fm
+    api/examples/hitman
     api/examples/genhard
     api/examples/lbx
     api/examples/mcsls

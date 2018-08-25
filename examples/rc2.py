@@ -18,8 +18,8 @@
 from __future__ import print_function
 import collections
 import getopt
-import gzip
 import itertools
+from math import copysign
 import os
 from pysat.formula import CNF, WCNF
 from pysat.card import ITotalizer
@@ -52,15 +52,19 @@ class RC2(object):
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
-        self.sels, self.vmap = [], {}
+        self.sels, self.smap = [], {}
 
         # other MaxSAT related stuff
-        self.topv = self.orig_nv = formula.nv
+        self.topv = formula.nv
         self.wght = {}  # weights of soft clauses
         self.sums = []  # totalizer sum assumptions
         self.bnds = {}  # a mapping from sum assumptions to totalizer bounds
         self.tobj = {}  # a mapping from sum assumptions to totalizer objects
         self.cost = 0
+
+        # mappings between internal and external variables
+        VariableMap = collections.namedtuple('VariableMap', ['e2i', 'i2e'])
+        self.vmap = VariableMap(e2i={}, i2e={})
 
         # initialize SAT oracle with hard clauses only
         self.init(formula, incr=incr)
@@ -70,6 +74,13 @@ class RC2(object):
         wght = self.wght.values()
         if not formula.hard and len(self.sels) > 100000 and min(wght) == max(wght):
             self.minz = False
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.delete()
 
     def __enter__(self):
         """
@@ -109,16 +120,56 @@ class RC2(object):
                 # record selector and its weight
                 self.sels.append(selv)
                 self.wght[selv] = formula.wght[i]
-                self.vmap[selv] = i
+                self.smap[selv] = i
             else:
                 # selector is not new; increment its weight
                 self.wght[selv] += formula.wght[i]
 
+        # storing the set of selectors
         self.sels_set = set(self.sels)
+
+        # at this point internal and external variables are the same
+        for v in range(1, formula.nv + 1):
+            self.vmap.e2i[v] = v
+            self.vmap.i2e[v] = v
 
         if self.verbose > 1:
             print('c formula: {0} vars, {1} hard, {2} soft'.format(formula.nv,
                 len(formula.hard), len(formula.soft)))
+
+    def add_clause(self, clause, weight=None):
+        """
+            Add a new clause (needed for incremental MaxSAT solving).
+        """
+
+        # first, map external literals to internal literals
+        # introduce new variables if necessary
+        cl = list(map(lambda l: self._map_extlit(l), clause))
+
+        if not weight:
+            # the clause is hard, and so we simply add it to the SAT oracle
+            self.oracle.add_clause(cl)
+        else:
+            # soft clauses should be augmented with a selector
+            selv = cl[0]  # for a unit clause, no selector is needed
+
+            if len(cl) > 1:
+                self.topv += 1
+                selv = self.topv
+
+                cl.append(-self.topv)
+                self.oracle.add_clause(cl)
+
+            if selv not in self.wght:
+                # record selector and its weight
+                self.sels.append(selv)
+                self.wght[selv] = weight
+                self.smap[selv] = len(self.sels) - 1
+            else:
+                # selector is not new; increment its weight
+                self.wght[selv] += weight
+
+            self.sels_set.add(selv)
 
     def delete(self):
         """
@@ -144,7 +195,9 @@ class RC2(object):
         if res:
             # extracting a model
             self.model = self.oracle.get_model()
-            self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
+            self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
+            self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
+            self.model = sorted(self.model, key=lambda l: abs(l))
 
             return self.model
 
@@ -360,7 +413,7 @@ class RC2(object):
         # integrating the new selector
         self.sels.append(selv)
         self.wght[selv] = self.minw
-        self.vmap[selv] = len(self.wght) - 1
+        self.smap[selv] = len(self.wght) - 1
 
         # removing unnecessary assumptions
         self.filter_assumps()
@@ -602,6 +655,23 @@ class RC2(object):
 
         return self.oracle.time_accum()
 
+    def _map_extlit(self, l):
+        """
+            Map an external variable to an internal one if necessary.
+        """
+
+        v = abs(l)
+
+        if v in self.vmap.e2i:
+            return int(copysign(self.vmap.e2i[v], l))
+        else:
+            self.topv += 1
+
+            self.vmap.e2i[v] = self.topv
+            self.vmap.i2e[self.topv] = v
+
+            return int(copysign(self.topv, l))
+
 
 #
 #==============================================================================
@@ -692,7 +762,9 @@ class RC2Stratified(RC2, object):
 
         # extracting a model
         self.model = self.oracle.get_model()
-        self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
+        self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
+        self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
+        self.model = sorted(self.model, key=lambda l: abs(l))
 
         return self.model
 
@@ -793,7 +865,7 @@ class RC2Stratified(RC2, object):
         # integrating the new selector
         self.sels.append(selv)
         self.wght[selv] = self.minw
-        self.vmap[selv] = len(self.wght) - 1
+        self.smap[selv] = len(self.wght) - 1
 
         # do not forget this newly selector!
         self.bckp_set.add(selv)
