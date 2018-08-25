@@ -804,14 +804,18 @@ class Solver(object):
             optional argument ``no_return`` controls whether or not to check
             the formula's satisfiability after adding the new clause.
 
-            :param clause: a list of literals.
+            :param clause: an iterable over literals.
             :param no_return: check solver's internal formula and return the
                 result, if set to ``False``.
 
-            :type clause: list(int)
+            :type clause: iterable(int)
             :type no_return: bool
 
             :rtype: bool if ``no_return`` is set to ``False``.
+
+            Note that a clause can be either a ``list`` of integers or another
+            iterable type over integers, e.g. ``tuple`` or ``set`` among
+            others.
 
             A usage example is the following:
 
