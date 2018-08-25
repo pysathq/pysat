@@ -283,6 +283,13 @@ static PyObject *pyint_from_cint(int i)
 	return PyLong_FromLong(i);
 }
 
+// PyInt_Check()
+//=============================================================================
+static int pyint_check(PyObject *i_obj)
+{
+	return PyLong_Check(i_obj);
+}
+
 // PyCapsule_New()
 //=============================================================================
 static PyObject *void_to_pyobj(void *ptr)
@@ -341,6 +348,13 @@ static int pyint_to_cint(PyObject *i_obj)
 static PyObject *pyint_from_cint(int i)
 {
 	return PyInt_FromLong(i);
+}
+
+// PyInt_Check()
+//=============================================================================
+static int pyint_check(PyObject *i_obj)
+{
+	return PyInt_Check(i_obj);
 }
 
 // PyCObject_FromVoidPtr()
@@ -409,19 +423,42 @@ static PyObject *py_glucose3_add_cl(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
-
-	int size = (int)PyList_Size(c_obj);
-	Glucose30::vec<Glucose30::Lit> cl((int)size);
-
+	Glucose30::vec<Glucose30::Lit> cl;
 	int max_var = -1;
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
-		cl[i] = (l > 0) ? Glucose30::mkLit(l, false) : Glucose30::mkLit(-l, true);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		cl.push((l > 0) ? Glucose30::mkLit(l, false) : Glucose30::mkLit(-l, true));
 
 		if (abs(l) > max_var)
 			max_var = abs(l);
 	}
+
+	Py_DECREF(i_obj);
 
 	if (max_var > 0)
 		glucose3_declare_vars(s, max_var);
@@ -880,19 +917,42 @@ static PyObject *py_glucose41_add_cl(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
-
-	int size = (int)PyList_Size(c_obj);
-	Glucose41::vec<Glucose41::Lit> cl((int)size);
-
+	Glucose41::vec<Glucose41::Lit> cl;
 	int max_var = -1;
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
-		cl[i] = (l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		cl.push((l > 0) ? Glucose41::mkLit(l, false) : Glucose41::mkLit(-l, true));
 
 		if (abs(l) > max_var)
 			max_var = abs(l);
 	}
+
+	Py_DECREF(i_obj);
 
 	if (max_var > 0)
 		glucose41_declare_vars(s, max_var);
@@ -1346,16 +1406,38 @@ static PyObject *py_lingeling_add_cl(PyObject *self, PyObject *args)
 	// get pointer to solver
 	LGL *s = (LGL *)pyobj_to_void(s_obj);
 
-	int size = (int)PyList_Size(c_obj);
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
 
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
 		lgladd(s, l);
 		lglfreeze(s, abs(l));
 	}
 
 	lgladd(s, 0);
+	Py_DECREF(i_obj);
 
 	PyObject *ret = PyBool_FromLong((long)true);
 	return ret;
@@ -1637,19 +1719,42 @@ static PyObject *py_minicard_add_cl(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
-
-	int size = (int)PyList_Size(c_obj);
-	Minicard::vec<Minicard::Lit> cl((int)size);
-
+	Minicard::vec<Minicard::Lit> cl;
 	int max_var = -1;
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
-		cl[i] = (l > 0) ? Minicard::mkLit(l, false) : Minicard::mkLit(-l, true);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		cl.push((l > 0) ? Minicard::mkLit(l, false) : Minicard::mkLit(-l, true));
 
 		if (abs(l) > max_var)
 			max_var = abs(l);
 	}
+
+	Py_DECREF(i_obj);
 
 	if (max_var > 0)
 		minicard_declare_vars(s, max_var);
@@ -2074,19 +2179,42 @@ static PyObject *py_minisat22_add_cl(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
-
-	int size = (int)PyList_Size(c_obj);
-	Minisat22::vec<Minisat22::Lit> cl((int)size);
-
+	Minisat22::vec<Minisat22::Lit> cl;
 	int max_var = -1;
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
-		cl[i] = (l > 0) ? Minisat22::mkLit(l, false) : Minisat22::mkLit(-l, true);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		cl.push((l > 0) ? Minisat22::mkLit(l, false) : Minisat22::mkLit(-l, true));
 
 		if (abs(l) > max_var)
 			max_var = abs(l);
 	}
+
+	Py_DECREF(i_obj);
 
 	if (max_var > 0)
 		minisat22_declare_vars(s, max_var);
@@ -2475,19 +2603,42 @@ static PyObject *py_minisatgh_add_cl(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
-
-	int size = (int)PyList_Size(c_obj);
-	MinisatGH::vec<MinisatGH::Lit> cl((int)size);
-
+	MinisatGH::vec<MinisatGH::Lit> cl;
 	int max_var = -1;
-	for (int i = 0; i < size; ++i) {
-		PyObject *l_obj = PyList_GetItem(c_obj, i);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
 		int l = pyint_to_cint(l_obj);
-		cl[i] = (l > 0) ? MinisatGH::mkLit(l, false) : MinisatGH::mkLit(-l, true);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		cl.push((l > 0) ? MinisatGH::mkLit(l, false) : MinisatGH::mkLit(-l, true));
 
 		if (abs(l) > max_var)
 			max_var = abs(l);
 	}
+
+	Py_DECREF(i_obj);
 
 	if (max_var > 0)
 		minisatgh_declare_vars(s, max_var);

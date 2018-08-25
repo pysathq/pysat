@@ -96,7 +96,7 @@ class Hitman(object):
 
         if self.htype == 'rc2':
             # using the RC2-A options from MaxSAT evaluation 2018
-            self.oracle = RC2(formula, solver=self.solver, adapt=True,
+            self.oracle = RC2(formula, solver=self.solver, adapt=False,
                     exhaust=True, trim=5)
         elif self.htype == 'lbx':
             self.oracle = LBX(formula, solver_name=self.solver, use_cld=True)
