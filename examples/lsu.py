@@ -11,7 +11,7 @@ class LSU:
         Linear Sat-Unsat algorithm for MaxSAT.
         Only supports unweighted problems for now.
     """
-    
+
     def __init__(self, formula, solver='g4', verbose=0):
         """
             Constructor.
@@ -23,7 +23,7 @@ class LSU:
         self.sels = []          # soft clause selector variables
         self.tot = None         # totalizer encoder for the cardinality constraint
         self._init(formula)     # initiaize SAT oracle
-    
+
     def _init(self, formula):
         """
             Initialize the SAT solver.
@@ -38,7 +38,7 @@ class LSU:
             self.sels.append(selv)
         if self.verbose > 1:
             print('c formula: {0} vars, {1} hard, {2} soft'.format(formula.nv, len(formula.hard), len(formula.soft)))
-            
+
     def solve(self):
         """
             Computes a solution to the MaxSAT problem.
@@ -55,7 +55,7 @@ class LSU:
             if self.cost == 0:      # if cost is 0, then model is an optimum solution
                 break
             self._assert_lt(self.cost)
-            # TODO: solution based phase saving?
+            self.oracle.set_phases(self.model)  # solution-based phase saving
         if is_sat:
             self.model = filter(lambda l: abs(l) <= self.formula.nv, self.model)
             if self.verbose:
@@ -63,10 +63,10 @@ class LSU:
         elif self.verbose:
             print('s UNSATISFIABLE')
         return is_sat
-        
+
     def get_model(self):
         return self.model
-        
+
     def _get_model_cost(self, formula, model):
         """
             Computes and returns the cost of a given model.
@@ -76,7 +76,7 @@ class LSU:
         for i, cl in enumerate(formula.soft):
             cost += formula.wght[i] if all(l not in model_set for l in filter(lambda l: abs(l) <= self.formula.nv, cl)) else 0
         return cost
-        
+
     def _assert_lt(self, cost):
         """
             Asserts constraint forcing the next solution to have a smaller cost than ``cost``.
@@ -87,13 +87,13 @@ class LSU:
             for cl in self.tot.cnf.clauses:
                 self.oracle.add_clause(cl)
         self.oracle.add_clause([-self.tot.rhs[cost-1]])
-        
+
     def oracle_time(self):
         """
             Report the total SAT solving time.
         """
         return self.oracle.time_accum()
-        
+
 def parse_options():
     """
         Parses command-line options.
@@ -117,7 +117,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
     return verbose, print_model, args
-        
+
 def print_usage():
     """
         Prints usage message.
@@ -127,7 +127,7 @@ def print_usage():
     print('        -h, --help               Show this message')
     print('        -v, --verbose            Be verbose')
     print('        -m, --model              Print model')
-    
+
 def parse_formula(file):
     """
         Parse and return MaxSAT formula.
@@ -144,7 +144,7 @@ def parse_formula(file):
         formula = CNF(from_fp=fp).weighted()
     fp.close()
     return formula
-    
+
 if __name__ == '__main__':
     verbose, print_model, files = parse_options()
     if files:
