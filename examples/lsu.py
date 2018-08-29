@@ -2,10 +2,9 @@ from pysat.formula import CNF, WCNF
 from pysat.card import ITotalizer
 from pysat.solvers import Solver
 import getopt
-import sys, os
-import gzip
+import sys, os, re
 
-# TODO: support weighted MaxSAT (ITotalizer must be extended to support PB constraints first)
+# TODO: support weighted MaxSAT
 class LSU:
     """
         Linear Sat-Unsat algorithm for MaxSAT.
@@ -128,22 +127,15 @@ def print_usage():
     print('        -v, --verbose            Be verbose')
     print('        -m, --model              Print model')
 
-def parse_formula(file):
+def parse_formula(fml_file):
     """
         Parse and return MaxSAT formula.
     """
-    if file.endswith('.gz'):
-        fp = gzip.open(file, 'rt')
-        ftype = 'WCNF' if file.endswith('.wcnf.gz') else 'CNF'
-    else:
-        fp = open(file, 'r')
-        ftype = 'WCNF' if file.endswith('.wcnf') else 'CNF'
-    if ftype == 'WCNF':
-        formula = WCNF(from_fp=fp)
+    if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', fml_file):
+        fml = WCNF(from_file=fml_file)
     else:  # expecting '*.cnf'
-        formula = CNF(from_fp=fp).weighted()
-    fp.close()
-    return formula
+        fml = CNF(from_file=fml_file).weighted()
+    return fml
 
 if __name__ == '__main__':
     verbose, print_model, files = parse_options()
