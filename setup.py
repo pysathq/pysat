@@ -46,7 +46,7 @@ to_install = ['glucose30', 'glucose41', 'lingeling', 'minicard', 'minisat22',
 
 # example scripts to install as standalone executables
 #==============================================================================
-scripts = ['fm', 'genhard', 'lbx', 'mcsls', 'musx', 'rc2']
+scripts = ['fm', 'genhard', 'lbx', 'mcsls', 'musx', 'rc2', 'lsu']
 
 
 # we need to redefine the build command to
