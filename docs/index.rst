@@ -32,6 +32,7 @@ Supplementary :mod:`.examples` package (not yet documented)
     api/examples/genhard
     api/examples/hitman
     api/examples/lbx
+    api/examples/lsu
     api/examples/mcsls
     api/examples/musx
     api/examples/rc2

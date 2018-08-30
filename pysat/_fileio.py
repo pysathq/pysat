@@ -60,8 +60,8 @@ import os
 lzma_present = True
 try:  # for Python3
     import lzma
-except ImportError:  # for Python2 + backports.lzma installed
-    try:
+except ImportError:
+    try:  # for Python2 + backports.lzma installed
         from backports import lzma
     except ImportError:  # for Python2 without lzma
         lzma_present = False
