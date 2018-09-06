@@ -36,7 +36,7 @@ With PySAT it should be easy for you to implement a MaxSAT solver, an
 MUS/MCS extractor/enumerator, or any tool solving an application problem
 with the (potentially multiple) use of a SAT oracle.
 
-Details can be found at `https://pysat.github.io <https://pysat.github.io>`__.
+Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`__.
 """
 
 # solvers to install
