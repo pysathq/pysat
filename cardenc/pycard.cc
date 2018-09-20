@@ -103,6 +103,13 @@ static void *pyobj_to_void(PyObject *obj)
 
 // module initialization
 //=============================================================================
+static int pyint_check(PyObject *i_obj)
+{
+	return PyLong_Check(i_obj);
+}
+
+// module initialization
+//=============================================================================
 static struct PyModuleDef module_def = {
 	PyModuleDef_HEAD_INIT,
 	"pycard",          /* m_name */
@@ -163,6 +170,13 @@ static void *pyobj_to_void(PyObject *obj)
 
 // module initialization
 //=============================================================================
+static int pyint_check(PyObject *i_obj)
+{
+	return PyInt_Check(i_obj);
+}
+
+// module initialization
+//=============================================================================
 PyMODINIT_FUNC initpycard(void)
 {
 	PyObject *m = Py_InitModule3("pycard", module_methods,
@@ -176,6 +190,43 @@ PyMODINIT_FUNC initpycard(void)
 	PyModule_AddObject(m, "error", CardError);
 }
 #endif
+
+//
+//=============================================================================
+static bool pyiter_to_vector(PyObject *obj, vector<int>& vect)
+{
+	PyObject *i_obj = PyObject_GetIter(obj);
+
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		vect.push_back(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
 
 //
 //=============================================================================
@@ -196,14 +247,9 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	// reading arguments
-	size_t lhs_sz = (size_t)PyList_Size(lhs_obj);
-	vector<int> lhs((size_t)lhs_sz);
-
-	for (size_t i = 0; i < lhs_sz; ++i) {
-		PyObject *l_entry = PyList_GetItem(lhs_obj, i);
-		lhs[i] = pyint_to_cint(l_entry);
-	}
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
 
 	// calling encoder
 	ClauseSet dest;
@@ -250,14 +296,9 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	// reading arguments
-	size_t lhs_sz = (size_t)PyList_Size(lhs_obj);
-	vector<int> lhs((size_t)lhs_sz);
-
-	for (size_t i = 0; i < lhs_sz; ++i) {
-		PyObject *l_entry = PyList_GetItem(lhs_obj, i);
-		lhs[i] = pyint_to_cint(l_entry);
-	}
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
 
 	// calling encoder
 	ClauseSet dest;
@@ -303,14 +344,9 @@ static PyObject *py_itot_new(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	// reading arguments
-	size_t lhs_sz = (size_t)PyList_Size(lhs_obj);
-	vector<int> lhs((size_t)lhs_sz);
-
-	for (size_t i = 0; i < lhs_sz; ++i) {
-		PyObject *l_entry = PyList_GetItem(lhs_obj, i);
-		lhs[i] = pyint_to_cint(l_entry);
-	}
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
 
 	// calling encoder
 	ClauseSet dest;
@@ -415,14 +451,9 @@ static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	// reading arguments
-	size_t lhs_sz = (size_t)PyList_Size(lhs_obj);
-	vector<int> lhs((size_t)lhs_sz);
-
-	for (size_t i = 0; i < lhs_sz; ++i) {
-		PyObject *l_entry = PyList_GetItem(lhs_obj, i);
-		lhs[i] = pyint_to_cint(l_entry);
-	}
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
 
 	// get pointer to tree
 	TotTree *tree = (TotTree *)pyobj_to_void(t_obj);

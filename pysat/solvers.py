@@ -197,7 +197,7 @@ class Solver(object):
         :param use_timer: whether or not to measure SAT solving time.
 
         :type name: str
-        :type bootstrap_with: list(list(int))
+        :type bootstrap_with: iterable(iterable(int))
         :type use_timer: bool
 
         The ``bootstrap_with`` argument is useful when there is an input CNF
@@ -347,7 +347,7 @@ class Solver(object):
             and disabled by default.)
 
             :param assumptions: a list of assumption literals.
-            :type assumptions: list(int)
+            :type assumptions: iterable(int)
 
             :rtype: Boolean or ``None``.
 
@@ -393,7 +393,7 @@ class Solver(object):
             and disabled by default.)
 
             :param assumptions: a list of assumption literals.
-            :type assumptions: list(int)
+            :type assumptions: iterable(int)
 
             :rtype: Boolean or ``None``.
 
@@ -502,7 +502,7 @@ class Solver(object):
             :param phase_saving: enable phase saving (can be ``0``, ``1``, and
                 ``2``).
 
-            :type assumptions: list(int)
+            :type assumptions: iterable(int)
             :type phase_saving: int
 
             :rtype: tuple(bool, list(int)).
@@ -546,7 +546,7 @@ class Solver(object):
             following SAT calls due to the phase saving heuristic.
 
             :param literals: a list of literals.
-            :type literals: list(int)
+            :type literals: iterable(int)
 
             Usage example:
 
@@ -773,7 +773,7 @@ class Solver(object):
             is a list of literals to "assume".
 
             :param assumptions: a list of assumption literals.
-            :type assumptions: list(int)
+            :type assumptions: iterable(int)
 
             :rtype: list(int).
 
@@ -848,7 +848,7 @@ class Solver(object):
             :param no_return: check solver's internal formula and return the
                 result, if set to ``False``.
 
-            :type lits: list(int)
+            :type lits: iterable(int)
             :type k: int
             :type no_return: bool
 
@@ -878,7 +878,7 @@ class Solver(object):
             :param no_return: check solver's internal formula and return the
                 result, if set to ``False``.
 
-            :type formula: list(list(int))
+            :type formula: iterable(iterable(int))
             :type no_return: bool
 
             The ``no_return`` argument is set to ``True`` by default.

@@ -229,7 +229,7 @@ class CardEnc(object):
             :param top_id: top variable identifier used so far.
             :param encoding: identifier of the encoding to use.
 
-            :type lits: list(int)
+            :type lits: iterable(int)
             :type bound: int
             :type top_id: integer or None
             :type encoding: integer
@@ -319,7 +319,7 @@ class ITotalizer(object):
         :param ubound: the largest potential bound to use.
         :param top_id: top variable identifier used so far.
 
-        :type lits: list(int)
+        :type lits: iterable(int)
         :type ubound: int
         :type top_id: integer or None
 
@@ -394,7 +394,7 @@ class ITotalizer(object):
             the description of :class:`ITotalizer` for details.
         """
 
-        self.lits = lits
+        self.lits = list(lits)
         self.ubound = ubound
         self.top_id = max(map(lambda x: abs(x), self.lits + [top_id if top_id != None else 0]))
 
@@ -541,7 +541,7 @@ class ITotalizer(object):
             :param ubound: a new upper bound.
             :param top_id: a new top variable identifier.
 
-            :type lits: list(int)
+            :type lits: iterable(int)
             :type ubound: int
             :type top_id: integer or None
 

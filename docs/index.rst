@@ -24,8 +24,8 @@ Core PySAT modules
     api/formula
     api/solvers
 
-Supplementary :mod:`.examples` package (not yet documented)
------------------------------------------------------------
+Supplementary :mod:`.examples` package (partially documented)
+-------------------------------------------------------------
 
 .. toctree::
     api/examples/fm
