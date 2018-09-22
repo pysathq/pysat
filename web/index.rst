@@ -27,6 +27,7 @@ PySAT is licensed under `MIT
 .. toctree::
    :hidden:
 
+   news
    features
    usage
    installation
