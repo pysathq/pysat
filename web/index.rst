@@ -20,6 +20,10 @@ oracle.
 PySAT is licensed under `MIT
 <https://raw.githubusercontent.com/pysathq/pysat/master/LICENSE.txt>`__.
 
+.. image:: medals.svg
+   :width: 270 px
+   :align: right
+
 .. toctree::
    :hidden:
 

@@ -16,6 +16,10 @@ or enumerator, an abstraction-based QBF solver, or any other kind of tool
 solving an application problem with the (potentially *multiple* and/or
 *incremental*) use of a SAT oracle.
 
+.. image:: web/medals.svg
+   :width: 270 px
+   :align: right
+
 Features
 --------
 
