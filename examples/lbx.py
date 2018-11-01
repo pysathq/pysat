@@ -8,6 +8,81 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
+"""
+    ===============
+    List of classes
+    ===============
+
+    .. autosummary::
+        :nosignatures:
+
+        LBX
+        LBXPlus
+
+    ==================
+    Module description
+    ==================
+
+    This module implements a prototype of the LBX algorithm for the computation
+    of a *minimal correction subset* (MCS) and/or MCS enumeration. The LBX
+    abbreviation stands for *literal-based MCS extraction* algorithm, which was
+    proposed in [1]_. Note that this prototype does not follow the original
+    low-level implementation of the corresponding MCS extractor available
+    `online <https://reason.di.fc.ul.pt/wiki/doku.php?id=lbx>`_ (compared to
+    our prototype, the low-level implementation has a number of additional
+    heuristics used). However, it implements the LBX algorithm for partial
+    MaxSAT formulas, as described in [1]_.
+
+    .. [1] Carlos Mencia, Alessandro Previti, Joao Marques-Silva.
+        *Literal-Based MCS Extraction*. IJCAI 2015. pp. 1973-1979
+
+    The implementation can be used as an executable (the list of available
+    command-line options can be shown using ``lbx.py -h``) in the following
+    way:
+
+    ::
+
+        $ xzcat formula.wcnf.xz
+        p wcnf 3 6 4
+        1 1 0
+        1 2 0
+        1 3 0
+        4 -1 -2 0
+        4 -1 -3 0
+        4 -2 -3 0
+
+        $ lbx.py -d -e all -s glucose3 -vv formula.wcnf.xz
+        c MCS: 1 3 0
+        c cost: 2
+        c MCS: 2 3 0
+        c cost: 2
+        c MCS: 1 2 0
+        c cost: 2
+        c oracle time: 0.0002
+
+    Alternatively, the algorithm can be accessed and invoked through the
+    standard ``import`` interface of Python, e.g.
+
+    .. code-block:: python
+
+        >>> from pysat.examples.lbx import LBX
+        >>> from pysat.formula import WCNF
+        >>>
+        >>> wcnf = WCNF(from_file='formula.wcnf.xz')
+        >>>
+        >>> lbx = LBX(wcnf, use_cld=True, solver_name='g3')
+        >>> for mcs in lbx.enumerate():
+        ...     lbx.block(mcs)
+        ...     print mcs
+        [1, 3]
+        [2, 3]
+        [1, 2]
+
+    ==============
+    Module details
+    ==============
+"""
+
 #
 #==============================================================================
 from __future__ import print_function
@@ -26,7 +101,27 @@ import sys
 #==============================================================================
 class LBX(object):
     """
-        LBX-like algorithm for computing MCSes.
+        LBX-like algorithm for computing MCSes. Given an unsatisfiable partial
+        CNF formula, i.e. formula in the :class:`.WCNF` format, this class can
+        be used to compute a given number of MCSes of the formula. The
+        implementation follows the LBX algorithm description in [1]_. It can
+        use any SAT solver available in PySAT. Additionally, the "clause
+        :math:`D`" heuristic can be used when enumerating MCSes.
+
+        The default SAT solver to use is ``m22`` (see :class:`.SolverNames`).
+        The "clause :math:`D`" heuristic is disabled by default, i.e.
+        ``use_cld`` is set to ``False``. Internal SAT solver's timer is also
+        disabled by default, i.e. ``use_timer`` is ``False``.
+
+        :param formula: unsatisfiable partial CNF formula
+        :param use_cld: whether or not to use "clause :math:`D`"
+        :param solver_name: SAT oracle name
+        :param use_timer: whether or not to use SAT solver's timer
+
+        :type formula: :class:`.WCNF`
+        :type use_cld: bool
+        :type solver_name: str
+        :type use_timer: bool
     """
 
     def __init__(self, formula, use_cld=False, solver_name='m22', use_timer=False):
@@ -85,7 +180,7 @@ class LBX(object):
 
     def delete(self):
         """
-            Explicit destructor.
+            Explicit destructor of the internal SAT oracle.
         """
 
         if self.oracle:
@@ -94,7 +189,22 @@ class LBX(object):
 
     def add_clause(self, clause, soft=False):
         """
-            Add new hard or soft clause (may be needed in MCS enumeration).
+            The method for adding a new hard of soft clause to the problem
+            formula. Although the input formula is to be specified as an
+            argument of the constructor of :class:`LBX`, adding clauses may be
+            helpful when *enumerating* MCSes of the formula. This way, the
+            clauses are added incrementally, i.e. *on the fly*.
+
+            The clause to add can be any iterable over integer literals. The
+            additional Boolean parameter ``soft`` can be set to ``True``
+            meaning the the clause being added is soft (note that parameter
+            ``soft`` is set to ``False`` by default).
+
+            :param clause: a clause to add
+            :param soft: whether or not the clause is soft
+
+            :type clause: iterable(int)
+            :type soft: bool
         """
 
         # first, map external literals to internal literals
@@ -119,7 +229,17 @@ class LBX(object):
 
     def compute(self):
         """
-            Compute and return one solution.
+            Compute and return one solution. This method checks whether the
+            hard part of the formula is satisfiable, i.e. an MCS can be
+            extracted. If the formula is satisfiable, the model computed by the
+            SAT call is used as an *over-approximation* of the MCS in the
+            method :func:`_compute` invoked here, which implements the LBX
+            algorithm.
+
+            An MCS is reported as a list of integers, each representing a soft
+            clause index (the smallest index is ``1``).
+
+            :rtype: list(int)
         """
 
         self.setd = []
@@ -139,7 +259,10 @@ class LBX(object):
 
     def enumerate(self):
         """
-            Enumerate all MCSes and report them one by one.
+            This method iterates through MCSes enumerating them until the
+            formula has no more MCSes. The method iteratively invokes
+            :func:`compute`. Note that the method does not block the MCSes
+            computed - this should be explicitly done by a user.
         """
 
         done = False
@@ -153,14 +276,33 @@ class LBX(object):
 
     def block(self, mcs):
         """
-            Block a (previously computed) MCS.
+            Block a (previously computed) MCS. The MCS should be given as an
+            iterable of integers. Note that this method is not automatically
+            invoked from :func:`enumerate` because a user may want to block
+            some of the MCSes conditionally depending on the needs. For
+            example, one may want to compute disjoint MCSes only in which case
+            this standard blocking is not appropriate.
+
+            :param mcs: an MCS to block
+            :type mcs: iterable(int)
         """
 
         self.oracle.add_clause([self.sels[cl_id - 1] for cl_id in mcs])
 
     def _satisfied(self, cl, model):
         """
-            Checks whether or not a clause is satisfied by a model.
+            Given a clause (as an iterable of integers) and an assignment (as a
+            list of integers), this method checks whether or not the assignment
+            satisfies the clause. This is done by a simple clause traversal.
+            The method is invoked from :func:`_filter_satisfied`.
+
+            :param cl: a clause to check
+            :param model: an assignment
+
+            :type cl: iterable(int)
+            :type model: list(int)
+
+            :rtype: bool
         """
 
         for l in cl:
@@ -172,7 +314,21 @@ class LBX(object):
 
     def _filter_satisfied(self, update_setd=False):
         """
-            Separates satisfied clauses and literals of unsatisfied clauses.
+            This method extracts a model provided by the previous call to a SAT
+            oracle and iterates over all soft clauses checking if each of is
+            satisfied by the model. Satisfied clauses are marked accordingly
+            while the literals of the unsatisfied clauses are kept in a list
+            called ``setd``, which is then used to refine the correction set
+            (see :func:`_compute`, and :func:`do_cld_check`).
+
+            Optional Boolean parameter ``update_setd`` enforces the method to
+            update variable ``self.setd``. If this parameter is set to
+            ``False``, the method only updates the list of satisfied clauses,
+            which is an under-approximation of a *maximal satisfiable subset*
+            (MSS).
+
+            :param update_setd: whether or not to update setd
+            :type update_setd: bool
         """
 
         model = self.oracle.get_model()
@@ -191,7 +347,22 @@ class LBX(object):
 
     def _compute(self):
         """
-            Compute an MCS.
+            The main method of the class, which computes an MCS given its
+            over-approximation. The over-approximation is defined by a model
+            for the hard part of the formula obtained in :func:`compute`.
+
+            The method is essentially a simple loop going over all literals
+            unsatisfied by the previous model, i.e. the literals of
+            ``self.setd`` and checking which literals can be satisfied. This
+            process can be seen a refinement of the over-approximation of the
+            MCS. The algorithm follows the pseudo-code of the LBX algorithm
+            presented in [1]_.
+
+            Additionally, if :class:`LBX` was constructed with the requirement
+            to make "clause :math:`D`" calls, the method calls
+            :func:`do_cld_check` at every iteration of the loop using the
+            literals of ``self.setd`` not yet checked, as the contents of
+            "clause :math:`D`".
         """
 
         # unless clause D checks are used, test one literal at a time
@@ -214,7 +385,28 @@ class LBX(object):
 
     def do_cld_check(self, cld):
         """
-            Do clause D check.
+            Do the "clause :math:`D`" check. This method receives a list of
+            literals, which serves a "clause :math:`D`" [2]_, and checks
+            whether the formula conjoined with :math:`D` is satisfiable.
+
+            .. [2] Joao Marques-Silva, Federico Heras, Mikolas Janota,
+                Alessandro Previti, Anton Belov. *On Computing Minimal
+                Correction Subsets*. IJCAI 2013. pp. 615-622
+
+            If clause :math:`D` cannot be satisfied together with the formula,
+            then negations of all of its literals are backbones of the formula
+            and the LBX algorithm can stop. Otherwise, the literals satisfied
+            by the new model refine the MCS further.
+
+            Every time the method is called, a new fresh selector variable
+            :math:`s` is introduced, which augments the current clause
+            :math:`D`. The SAT oracle then checks if clause :math:`(D \\vee
+            \\neg{s})` can be satisfied together with the internal formula.
+            The :math:`D` clause is then disabled by adding a hard clause
+            :math:`(\\neg{s})`.
+
+            :param cld: clause :math:`D` to check
+            :type cld: list(int)
         """
 
         # adding a selector literal to clause D
@@ -241,6 +433,21 @@ class LBX(object):
     def _map_extlit(self, l):
         """
             Map an external variable to an internal one if necessary.
+
+            This method is used when new clauses are added to the formula
+            incrementally, which may result in introducing new variables
+            clashing with the previously used *clause selectors*. The method
+            makes sure no clash occurs, i.e. it maps the original variables
+            used in the new problem clauses to the newly introduced auxiliary
+            variables (see :func:`add_clause`).
+
+            Given an integer literal, a fresh literal is returned. The returned
+            integer has the same sign as the input literal.
+
+            :param l: literal to map
+            :type l: int
+
+            :rtype: int
         """
 
         v = abs(l)
@@ -267,7 +474,8 @@ class LBX(object):
 #==============================================================================
 class LBXPlus(LBX, object):
     """
-        Algorithm LBX for CNF+/WCNF+ formulas.
+        LBX-like algorithm extended for :class:`.WCNFPlus` formulas (using
+        Minicard).
     """
 
     def __init__(self, formula, use_cld=False, use_timer=False):
@@ -275,7 +483,8 @@ class LBXPlus(LBX, object):
             Constructor.
         """
 
-        super(LBXPlus, self).__init__(formula, use_cld=use_cld, solver_name='mc', use_timer=use_timer)
+        super(LBXPlus, self).__init__(formula, use_cld=use_cld,
+                solver_name='mc', use_timer=use_timer)
 
         # adding atmost constraints
         for am in formula.atms:
