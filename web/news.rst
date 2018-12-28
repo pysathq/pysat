@@ -11,6 +11,18 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+28.12.2018 (*0.1.3.dev25*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed model enumerator in :mod:`pysat.examples.rc2`.
+- Documented :mod:`pysat.examples.rc2`.
+
+01.11.2018 (*0.1.3.dev24*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Documented a few example modules including :mod:`pysat.examples.lbx`,
+  :mod:`pysat.examples.mcsls`, and :mod:`pysat.examples.lsu`.
+
 22.09.2018 (*0.1.3.dev23*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

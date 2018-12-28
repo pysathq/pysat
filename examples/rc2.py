@@ -3,15 +3,121 @@
 ##
 ## rc2.py
 ##
-##      Python-based implementation of the OLLITI/RC2 algorithm described in:
-##      1. A. Morgado, J. Marques-Silva. CP 2014
-##      2. A. Morgado, A. Ignatiev, J. Marques-Silva. JSAT 2015
-##      This implementation roughly follows the one of MSCG15.
-##
 ##  Created on: Dec 2, 2017
 ##      Author: Alexey S. Ignatiev
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
+
+"""
+    ===============
+    List of classes
+    ===============
+
+    .. autosummary::
+        :nosignatures:
+
+        RC2
+        RC2Stratified
+
+    ==================
+    Module description
+    ==================
+
+    An implementation of the RC2 algorithm for solving maximum
+    satisfiability. RC2 stands for *relaxable cardinality constraints*
+    (alternatively, *soft cardinality constraints*) and represents an
+    improved version of the OLLITI algorithm, which was described in
+    [1]_ and [2]_ and originally implemented in the `MSCG MaxSAT
+    solver <https://reason.di.fc.ul.pt/wiki/doku.php?id=mscg>`_.
+
+    Initially, this solver was supposed to serve as an example of a
+    possible PySAT usage illustrating how a state-of-the-art MaxSAT
+    algorithm could be implemented in Python and still be efficient.
+    It participated in the `MaxSAT Evaluation 2018
+    <https://maxsat-evaluations.github.io/2018/>`_ where,
+    surprisingly, it `was ranked first
+    <https://maxsat-evaluations.github.io/2018/rankings.html>`_ in two
+    complete categories: *unweighted* and *weighted*. A brief solver
+    description can be found in [3]_.
+
+    .. [1] António Morgado, Carmine Dodaro, Joao Marques-Silva.
+        *Core-Guided MaxSAT with Soft Cardinality Constraints*. CP
+        2014. pp. 564-573
+
+    .. [2] António Morgado, Alexey Ignatiev, Joao Marques-Silva.
+        *MSCG: Robust Core-Guided MaxSAT Solving*. JSAT 9. 2014.
+        pp. 129-134
+
+    .. [3] Alexey Ignatiev, António Morgado, Joao Marques-Silva.
+        *RC2: a Python-based MaxSAT Solver*. MaxSAT Evaluation 2018.
+        p. 22
+
+    The file implements two classes: :class:`RC2` and
+    :class:`RC2Stratified`. The former class is the basic
+    implementation of the algorithm, which can be applied to a MaxSAT
+    formula in the :class:`.WCNF` format. The latter class
+    additionally implements Boolean lexicographic optimization (BLO)
+    [4]_ and stratification [5]_ on top of :class:`RC2`.
+
+    .. [4] Joao Marques-Silva, Josep Argelich, Ana Graça, Inês Lynce.
+        *Boolean lexicographic optimization: algorithms &
+        applications*. Ann. Math. Artif. Intell. 62(3-4). 2011.
+        pp. 317-343
+
+    .. [5] Carlos Ansótegui, Maria Luisa Bonet, Joel Gabàs, Jordi
+        Levy. *Improving WPM2 for (Weighted) Partial MaxSAT*. CP
+        2013. pp. 117-132
+
+    The implementation can be used as an executable (the list of
+    available command-line options can be shown using ``rc2.py -h``)
+    in the following way:
+
+    ::
+
+        $ xzcat formula.wcnf.xz
+        p wcnf 3 6 4
+        1 1 0
+        1 2 0
+        1 3 0
+        4 -1 -2 0
+        4 -1 -3 0
+        4 -2 -3 0
+
+        $ rc2.py -vv formula.wcnf.xz
+        c formula: 3 vars, 3 hard, 3 soft
+        c cost: 1; core sz: 2; soft sz: 2
+        c cost: 2; core sz: 2; soft sz: 1
+        s OPTIMUM FOUND
+        o 2
+        v -1 -2 3
+        c oracle time: 0.0001
+
+    Alternatively, the algorithm can be accessed and invoked through the
+    standard ``import`` interface of Python, e.g.
+
+    .. code-block:: python
+
+        >>> from pysat.examples.rc2 import RC2
+        >>> from pysat.formula import WCNF
+        >>>
+        >>> wcnf = WCNF(from_file='formula.wcnf.xz')
+        >>>
+        >>> with RC2(wcnf) as rc2:
+        ...     for m in rc2.enumerate():
+        ...         print 'model {0} has cost {1}'.format(m, rc2.cost)
+        model [-1, -2, 3] has cost 2
+        model [1, -2, -3] has cost 2
+        model [-1, 2, -3] has cost 2
+        model [-1, -2, -3] has cost 3
+
+    As can be seen in the example above, the solver can be instructed
+    either to compute one MaxSAT solution of an input formula, or to
+    enumerate a given number (or *all*) of its top MaxSAT solutions.
+
+    ==============
+    Module details
+    ==============
+"""
 
 #
 #==============================================================================
@@ -34,7 +140,51 @@ import sys
 #==============================================================================
 class RC2(object):
     """
-        MaxSAT algorithm based on relaxable cardinality constraints (RC2/OLL).
+        Implementation of the basic RC2 algorithm. Given a (weighted)
+        (partial) CNF formula, i.e. formula in the :class:`.WCNF`
+        format, this class can be used to compute a given number of
+        MaxSAT solutions for the input formula. :class:`RC2` roughly
+        follows the implementation of algorithm OLLITI [1]_ [2]_ of
+        MSCG and applies a few heuristics on top of it. These include
+
+        - *unsatisfiable core exhaustion* (see method :func:`exhaust_core`),
+        - *unsatisfiable core reduction* (see method :func:`minimize_core`),
+        - *intrinsic AtMost1 constraints* (see method :func:`adapt_am1`).
+
+        :class:`RC2` can use any SAT solver available in PySAT. The
+        default SAT solver to use is ``g3`` (see
+        :class:`.SolverNames`). Additionally, if Glucose is chosen,
+        the ``incr`` parameter controls whether to use the incremental
+        mode of Glucose [6]_ (turned off by default). Boolean
+        parameters ``adapt``, ``exhaust``, and ``minz`` control
+        whether or to apply detection and adaptation of intrinsic
+        AtMost1 constraints, core exhaustion, and core reduction.
+        Unsatisfiable cores can be trimmed if the ``trim`` parameter
+        is set to a non-zero integer. Finally, verbosity level can be
+        set using the ``verbose`` parameter.
+
+        .. [6] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon.
+            *Improving Glucose for Incremental SAT Solving with
+            Assumptions: Application to MUS Extraction*. SAT 2013.
+            pp. 309-317
+
+        :param formula: (weighted) (partial) CNF formula
+        :param solver: SAT oracle name
+        :param adapt: detect and adapt intrinsic AtMost1 constraints
+        :param exhaust: do core exhaustion
+        :param incr: use incremental mode of Glucose
+        :param minz: do heuristic core reduction
+        :param trim: do core trimming at most this number of times
+        :param verbose: verbosity level
+
+        :type formula: :class:`.WCNF`
+        :type solver: str
+        :type adapt: bool
+        :type exhaust: bool
+        :type incr: bool
+        :type minz: bool
+        :type trim: int
+        :type verbose: int
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
@@ -98,7 +248,23 @@ class RC2(object):
 
     def init(self, formula, incr=False):
         """
-            Initialize the SAT solver.
+            Initialize the internal SAT oracle. The oracle is used
+            incrementally and so it is initialized only once when
+            constructing an object of class :class:`RC2`. Given an
+            input :class:`.WCNF` formula, the method bootstraps the
+            oracle with its hard clauses. It also augments the soft
+            clauses with "fresh" selectors and adds them to the oracle
+            afterwards.
+
+            Optional input parameter ``incr`` (``False`` by default)
+            regulates whether or not Glucose's incremental mode [6]_
+            is turned on.
+
+            :param formula: input formula
+            :param incr: apply incremental mode of Glucose
+
+            :type formula: :class:`.WCNF`
+            :type incr: bool
         """
 
         # creating a solver object
@@ -139,7 +305,49 @@ class RC2(object):
 
     def add_clause(self, clause, weight=None):
         """
-            Add a new clause (needed for incremental MaxSAT solving).
+            The method for adding a new hard of soft clause to the
+            problem formula. Although the input formula is to be
+            specified as an argument of the constructor of
+            :class:`RC2`, adding clauses may be helpful when
+            *enumerating* MaxSAT solutions of the formula. This way,
+            the clauses are added incrementally, i.e. *on the fly*.
+
+            The clause to add can be any iterable over integer
+            literals. The additional integer parameter ``weight`` can
+            be set to meaning the the clause being added is soft
+            having the corresponding weight (note that parameter
+            ``weight`` is set to ``None`` by default meaning that the
+            clause is hard).
+
+            :param clause: a clause to add
+            :param weight: weight of the clause (if any)
+
+            :type clause: iterable(int)
+            :type weight: int
+
+            .. code-block:: python
+
+                >>> from pysat.examples.rc2 import RC2
+                >>> from pysat.formula import WCNF
+                >>>
+                >>> wcnf = WCNF()
+                >>> wcnf.append([-1, -2])  # adding hard clauses
+                >>> wcnf.append([-1, -3])
+                >>>
+                >>> wcnf.append([1], weight=1)  # adding soft clauses
+                >>> wcnf.append([2], weight=1)
+                >>> wcnf.append([3], weight=1)
+                >>>
+                >>> with RC2(wcnf) as rc2:
+                ...     rc2.compute()  # solving the MaxSAT problem
+                [-1, 2, 3]
+                ...     print rc2.cost
+                1
+                ...     rc2.add_clause([-2, -3])  # adding one more hard clause
+                ...     rc2.compute()  # computing another model
+                [-1, -2, 3]
+                ...     print rc2.cost
+                2
         """
 
         # first, map external literals to internal literals
@@ -173,7 +381,8 @@ class RC2(object):
 
     def delete(self):
         """
-            Explicit destructor.
+            Explicit destructor of the internal SAT oracle and all the
+            totalizer objects creating during the solving process.
         """
 
         if self.oracle:
@@ -186,7 +395,42 @@ class RC2(object):
 
     def compute(self):
         """
-            Compute and return a solution.
+            This method can be used for computing one MaxSAT solution,
+            i.e. for computing an assignment satisfying all hard
+            clauses of the input formula and maximizing the sum of
+            weights of satisfied soft clauses. It is a wrapper for the
+            internal :func:`compute_` method, which does the job,
+            followed by the model extraction.
+
+            Note that the method returns ``None`` if no MaxSAT model
+            exists. The method can be called multiple times, each
+            being followed by blocking the last model. This way one
+            can enumerate top-:math:`k` MaxSAT solutions (this can
+            also be done by calling :meth:`enumerate()`).
+
+            :returns: a MaxSAT model
+            :rtype: list(int)
+
+            .. code-block:: python
+
+                >>> from pysat.examples.rc2 import RC2
+                >>> from pysat.formula import WCNF
+                >>>
+                >>> rc2 = RC2(WCNF())  # passing an empty WCNF() formula
+                >>> rc2.add_clause([-1, -2])
+                >>> rc2.add_clause([-1, -3])
+                >>> rc2.add_clause([-2, -3])
+                >>>
+                >>> rc2.add_clause([1], weight=1)
+                >>> rc2.add_clause([2], weight=1)
+                >>> rc2.add_clause([3], weight=1)
+                >>>
+                >>> model = rc2.compute()
+                >>> print model
+                [-1, -2, 3]
+                >>> print rc2.cost
+                2
+                >>> rc2.delete()
         """
 
         # simply apply MaxSAT only once
@@ -203,7 +447,35 @@ class RC2(object):
 
     def enumerate(self):
         """
-            Enumerate MaxSAT solutions (from best to worst).
+            Enumerate top MaxSAT solutions (from best to worst). The
+            method works as a generator, which iteratively calls
+            :meth:`compute` to compute a MaxSAT model, blocks it
+            internally and returns it.
+
+            :returns: a MaxSAT model
+            :rtype: list(int)
+
+            .. code-block:: python
+
+                >>> from pysat.examples.rc2 import RC2
+                >>> from pysat.formula import WCNF
+                >>>
+                >>> rc2 = RC2(WCNF())  # passing an empty WCNF() formula
+                >>> rc2.add_clause([-1, -2])  # adding clauses "on the fly"
+                >>> rc2.add_clause([-1, -3])
+                >>> rc2.add_clause([-2, -3])
+                >>>
+                >>> rc2.add_clause([1], weight=1)
+                >>> rc2.add_clause([2], weight=1)
+                >>> rc2.add_clause([3], weight=1)
+                >>>
+                >>> for model in rc2.enumerate():
+                ...     print model, rc2.cost
+                [-1, -2, 3] 2
+                [1, -2, -3] 2
+                [-1, 2, -3] 2
+                [-1, -2, -3] 3
+                >>> rc2.delete()
         """
 
         done = False
@@ -211,14 +483,21 @@ class RC2(object):
             model = self.compute()
 
             if model != None:
-                self.oracle.add_clause([-l for l in model])
+                self.add_clause([-l for l in model])
                 yield model
             else:
                 done = True
 
     def compute_(self):
         """
-            Compute a MaxSAT solution with RC2.
+            Main core-guided loop, which iteratively calls a SAT
+            oracle, extracts a new unsatisfiable core and processes
+            it. The loop finishes as soon as a satisfiable formula is
+            obtained. If specified in the command line, the method
+            additionally calls :meth:`adapt_am1` to detect and adapt
+            intrinsic AtMost1 constraints before executing the loop.
+
+            :rtype: bool
         """
 
         # trying to adapt (simplify) the formula
@@ -244,7 +523,15 @@ class RC2(object):
 
     def get_core(self):
         """
-            Extract unsatisfiable core.
+            Extract unsatisfiable core. The result of the procedure is
+            stored in variable ``self.core``. If necessary, core
+            trimming and also heuristic core reduction is applied
+            depending on the command-line options. A *minimum weight*
+            of the core is computed and stored in ``self.minw``.
+            Finally, the core is divided into two parts:
+
+            1. clause selectors (``self.core_sels``),
+            2. sum assumptions (``self.core_sums``).
         """
 
         # extracting the core
@@ -267,7 +554,16 @@ class RC2(object):
 
     def process_core(self):
         """
-            Deal with a core found in the main loop.
+            The method deals with a core found previously in
+            :func:`get_core`. Clause selectors ``self.core_sels`` and
+            sum assumptions involved in the core are treated
+            separately of each other. This is handled by calling
+            methods :func:`process_sels` and :func:`process_sums`,
+            respectively. Whenever necessary, both methods relax the
+            core literals, which is followed by creating a new
+            totalizer object encoding the sum of the new relaxation
+            variables. The totalizer object can be "exhausted"
+            depending on the option.
         """
 
         # updating the cost
@@ -310,7 +606,27 @@ class RC2(object):
 
     def adapt_am1(self):
         """
-            Try to detect atmost1 constraints involving soft literals.
+            Detect and adapt intrinsic AtMost1 constraints. Assume
+            there is a subset of soft clauses
+            :math:`\\mathcal{S}'\subseteq \\mathcal{S}` s.t.
+            :math:`\sum_{c\in\\mathcal{S}'}{c\leq 1}`, i.e. at most
+            one of the clauses of :math:`\\mathcal{S}'` can be
+            satisfied.
+
+            Each AtMost1 relationship between the soft clauses can be
+            detected in the following way. The method traverses all
+            soft clauses of the formula one by one, sets one
+            respective selector literal to true and checks whether
+            some other soft clauses are forced to be false. This is
+            checked by testing if selectors for other soft clauses are
+            unit-propagated to be false. Note that this method for
+            detection of AtMost1 constraints is *incomplete*, because
+            in general unit propagation does not suffice to test
+            whether or not :math:`\\mathcal{F}\wedge l_i\\models
+            \\neg{l_j}`.
+
+            Each intrinsic AtMost1 constraint detected this way is
+            handled by calling :func:`process_am1`.
         """
 
         # literal connections
@@ -386,7 +702,27 @@ class RC2(object):
 
     def process_am1(self, am1):
         """
-            Process an atmost1 relation detected (treat as a core).
+            Process an AtMost1 relation detected by :func:`adapt_am1`.
+            Note that given a set of soft clauses
+            :math:`\\mathcal{S}'` at most one of which can be
+            satisfied, one can immediately conclude that the formula
+            has cost at least :math:`|\\mathcal{S}'|-1` (assuming
+            *unweighed* MaxSAT). Furthermore, it is safe to replace
+            all clauses of :math:`\\mathcal{S}'` with a single soft
+            clause :math:`\sum_{c\in\\mathcal{S}'}{c}`.
+
+            Here, input parameter ``am1`` plays the role of subset
+            :math:`\\mathcal{S}'` mentioned above. The procedure bumps
+            the MaxSAT cost by ``self.minw * (len(am1) - 1)``.
+
+            All soft clauses involved in ``am1`` are replaced by a
+            single soft clause, which is a disjunction of the
+            selectors of clauses in ``am1``. The weight of the new
+            soft clause is set to ``self.minw``.
+
+            :param am1: a list of selectors connected by an AtMost1 constraint
+
+            :type am1: list(int)
         """
 
         # computing am1's weight
@@ -420,7 +756,9 @@ class RC2(object):
 
     def trim_core(self):
         """
-            Trim unsatisfiable core at most a given number of times.
+            This method trims a previously extracted unsatisfiable
+            core at most a given number of times. If a fixed point is
+            reached before that, the method returns.
         """
 
         for i in range(self.trim):
@@ -440,8 +778,20 @@ class RC2(object):
 
     def minimize_core(self):
         """
-            Try to minimize a core and compute an approximation of an MUS.
-            Simple deletion-based MUS extraction.
+            Reduce a previously extracted core and compute an
+            over-approximation of an MUS. This is done using the
+            simple deletion-based MUS extraction algorithm.
+
+            The idea is to try to deactivate soft clauses of the
+            unsatisfiable core one by one while checking if the
+            remaining soft clauses together with the hard part of the
+            formula are unsatisfiable. Clauses that are necessary for
+            preserving unsatisfiability comprise an MUS of the input
+            formula (it is contained in the given unsatisfiable core)
+            and are reported as a result of the procedure.
+
+            During this core minimization procedure, all SAT calls are
+            dropped after obtaining 1000 conflicts.
         """
 
         if self.minz and len(self.core) > 1:
@@ -460,6 +810,25 @@ class RC2(object):
     def exhaust_core(self, tobj):
         """
             Exhaust core by increasing its bound as much as possible.
+            Core exhaustion was originally referred to as *cover
+            optimization* in [5]_.
+
+            Given a totalizer object ``tobj`` representing a sum of
+            some *relaxation* variables :math:`r\in R` that augment
+            soft clauses :math:`\\mathcal{C}_r`, the idea is to
+            increase the right-hand side of the sum (which is equal to
+            1 by default) as much as possible, reaching a value
+            :math:`k` s.t. formula
+            :math:`\\mathcal{H}\wedge\\mathcal{C}_r\wedge(\sum_{r\in
+            R}{r\leq k})` is still unsatisfiable while increasing it
+            further makes the formula satisfiable (here
+            :math:`\\mathcal{H}` denotes the hard part of the
+            formula).
+
+            The rationale is that calling an oracle incrementally on a
+            series of slightly modified formulas focusing only on the
+            recently computed unsatisfiable core and disregarding the
+            rest of the formula may be practically effective.
         """
 
         # the first case is simpler
@@ -488,6 +857,17 @@ class RC2(object):
     def process_sels(self):
         """
             Process soft clause selectors participating in a new core.
+            The negation :math:`\\neg{s}` of each selector literal
+            :math:`s` participating in the unsatisfiable core is added
+            to the list of relaxation literals, which will be later
+            used to create a new totalizer object in
+            :func:`create_sum`.
+
+            If the weight associated with a selector is equal to the
+            minimal weight of the core, e.g. ``self.minw``, the
+            selector is marked as garbage and will be removed in
+            :func:`filter_assumps`. Otherwise, the clause is split as
+            described in [1]_.
         """
 
         # new relaxation variables
@@ -515,6 +895,15 @@ class RC2(object):
     def process_sums(self):
         """
             Process cardinality sums participating in a new core.
+            Whenever necessary, some of the sum assumptions are
+            removed or split (depending on the value of
+            ``self.minw``). Deleted sums are marked as garbage and are
+            dealt with in :func:`filter_assumps`.
+
+            In some cases, the process involves updating the
+            right-hand sides of the existing cardinality sums (see the
+            call to :func:`update_sum`). The overall procedure is
+            detailed in [1]_.
         """
 
         for l in self.core_sums:
@@ -547,8 +936,22 @@ class RC2(object):
 
     def create_sum(self, bound=1):
         """
-            Create a totalizer object encoding a new cardinality constraint.
-            For Minicard, native atmostb constraints is used instead.
+            Create a totalizer object encoding a cardinality
+            constraint on the new list of relaxation literals obtained
+            in :func:`process_sels` and :func:`process_sums`. The
+            clauses encoding the sum of the relaxation literals are
+            added to the SAT oracle. The sum of the totalizer object
+            is encoded up to the value of the input parameter
+            ``bound``, which is set to ``1`` by default.
+
+            :param bound: right-hand side for the sum to be created
+            :type bound: int
+
+            :rtype: :class:`.ITotalizer`
+
+            Note that if Minicard is used as a SAT oracle, native
+            cardinality constraints are used instead of
+            :class:`.ITotalizer`.
         """
 
         if self.solver != 'mc':  # standard totalizer-based encoding
@@ -586,7 +989,26 @@ class RC2(object):
 
     def update_sum(self, assump):
         """
-            Increase the bound for a given totalizer object.
+            The method is used to increase the bound for a given
+            totalizer sum. The totalizer object is identified by the
+            input parameter ``assump``, which is an assumption literal
+            associated with the totalizer object.
+
+            The method increases the bound for the totalizer sum,
+            which involves adding the corresponding new clauses to the
+            internal SAT oracle.
+
+            The method returns the totalizer object followed by the
+            new bound obtained.
+
+            :param assump: assumption literal associated with the sum
+            :type assump: int
+
+            :rtype: :class:`.ITotalizer`, int
+
+            Note that if Minicard is used as a SAT oracle, native
+            cardinality constraints are used instead of
+            :class:`.ITotalizer`.
         """
 
         # getting a totalizer object corresponding to assumption
@@ -624,7 +1046,15 @@ class RC2(object):
 
     def set_bound(self, tobj, rhs):
         """
-            Set a bound for a given totalizer object.
+            Given a totalizer sum and its right-hand side to be
+            enforced, the method creates a new sum assumption literal,
+            which will be used in the following SAT oracle calls.
+
+            :param tobj: totalizer sum
+            :param rhs: right-hand side
+
+            :type tobj: :class:`.ITotalizer`
+            :type rhs: int
         """
 
         # saving the sum and its weight in a mapping
@@ -637,7 +1067,13 @@ class RC2(object):
 
     def filter_assumps(self):
         """
-            Filter out both unnecessary selectors and sums.
+            Filter out unnecessary selectors and sums from the list of
+            assumption literals. The corresponding values are also
+            removed from the dictionaries of bounds and weights.
+
+            Note that assumptions marked as garbage are collected in
+            the core processing methods, i.e. in :func:`process_core`,
+            :func:`process_sels`, and :func:`process_sums`.
         """
 
         self.sels = list(filter(lambda x: x not in self.garbage, self.sels))
@@ -658,6 +1094,22 @@ class RC2(object):
     def _map_extlit(self, l):
         """
             Map an external variable to an internal one if necessary.
+
+            This method is used when new clauses are added to the
+            formula incrementally, which may result in introducing new
+            variables clashing with the previously used *clause
+            selectors*. The method makes sure no clash occurs, i.e. it
+            maps the original variables used in the new problem
+            clauses to the newly introduced auxiliary variables (see
+            :func:`add_clause`).
+
+            Given an integer literal, a fresh literal is returned. The
+            returned integer has the same sign as the input literal.
+
+            :param l: literal to map
+            :type l: int
+
+            :rtype: int
         """
 
         v = abs(l)
@@ -677,8 +1129,21 @@ class RC2(object):
 #==============================================================================
 class RC2Stratified(RC2, object):
     """
-        Stratified version of RC2 exploiting Boolean lexicographic optimization
-        and stratification.
+        RC2 augmented with BLO and stratification techniques. Although
+        class :class:`RC2` can deal with weighted formulas, there are
+        situations when it is necessary to apply additional heuristics
+        to improve the performance of the solver on weighted MaxSAT
+        formulas. This class extends capabilities of :class:`RC2` with
+        two heuristics, namely
+
+        1. Boolean lexicographic optimization (BLO) [4]_
+        2. stratification [5]_
+
+        There is no way to enable only one of them -- both heuristics
+        are applied at the same time. Except for the aforementioned
+        additional techniques, every other component of the solver
+        remains as in the base class :class:`RC2`. Therefore, a user
+        is referred to the documentation of :class:`RC2` for details.
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
@@ -705,7 +1170,11 @@ class RC2Stratified(RC2, object):
 
     def init_wstr(self):
         """
-            Compute and initialize optimization levels for BLO.
+            Compute and initialize optimization levels for BLO and
+            stratification. This method is invoked once, from the
+            constructor of an object of :class:`RC2Stratified`. Given
+            the weights of the soft clauses, the method divides the
+            MaxSAT problem into several optimization levels.
         """
 
         # a mapping for stratified problem solving,
@@ -723,7 +1192,13 @@ class RC2Stratified(RC2, object):
 
     def compute(self):
         """
-            Exploit Boolean lexicographic optimization when solving.
+            This method solves the MaxSAT problem iteratively. Each
+            optimization level is tackled the standard way, i.e. by
+            calling :func:`compute_`. A new level is started by
+            calling :func:`next_level` and finished by calling
+            :func:`finish_level`. Each new optimization level
+            activates more soft clauses by invoking
+            :func:`activate_clauses`.
         """
 
         done = 0  # levels done
@@ -770,7 +1245,15 @@ class RC2Stratified(RC2, object):
 
     def next_level(self):
         """
-            Get next weight to use in BLO.
+            Compute the next optimization level (starting from the
+            current one). The procedure represents a loop, each
+            iteration of which checks whether or not one of the
+            conditions holds:
+
+            - partial BLO condition
+            - stratification condition
+
+            If any of these holds, the loop stops.
         """
 
         if self.levl >= len(self.blop):
@@ -795,7 +1278,11 @@ class RC2Stratified(RC2, object):
 
     def activate_clauses(self, beg):
         """
-            Add more soft clauses to the problem.
+            This method is used for activating the clauses that belong
+            to optimization levels up to the newly computed level. It
+            also reactivates previously deactivated clauses (see
+            :func:`process_sels` and :func:`process_sums` for
+            details).
         """
 
         end = min(self.levl + 1, len(self.blop))
@@ -814,8 +1301,10 @@ class RC2Stratified(RC2, object):
 
     def finish_level(self):
         """
-            Postprocess the current optimization level: harden clauses
-            depending on their remaining weights.
+            This method does postprocessing of the current
+            optimization level after it is solved. This includes
+            *hardening* some of the soft clauses (depending on their
+            remaining weights) and also garbage collection.
         """
 
         # assumptions to remove
@@ -838,7 +1327,12 @@ class RC2Stratified(RC2, object):
 
     def process_am1(self, am1):
         """
-            Process an atmost1 relation detected (treat as a core).
+            Due to the solving process involving multiple optimization
+            levels to be treated individually, new soft clauses for
+            the detected intrinsic AtMost1 constraints should be
+            remembered. The method is a slightly modified version of
+            the base method :func:`RC2.process_am1` taking care of
+            this.
         """
 
         # computing am1's weight
@@ -875,7 +1369,11 @@ class RC2Stratified(RC2, object):
 
     def process_sels(self):
         """
-            Process soft clause selectors participating in a new core.
+            A redefined version of :func:`RC2.process_sels`. The only
+            modification affects the clauses whose weight after
+            splitting becomes less than the weight of the current
+            optimization level. Such clauses are deactivated and to be
+            reactivated at a later stage.
         """
 
         # new relaxation variables
@@ -913,7 +1411,11 @@ class RC2Stratified(RC2, object):
 
     def process_sums(self):
         """
-            Process cardinality sums participating in a new core.
+            A redefined version of :func:`RC2.process_sums`. The only
+            modification affects the clauses whose weight after
+            splitting becomes less than the weight of the current
+            optimization level. Such clauses are deactivated and to be
+            reactivated at a later stage.
         """
 
         # sums that should be deactivated (but not removed completely)
