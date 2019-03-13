@@ -12,20 +12,18 @@ features were implemented:
    <http://tools.computational-logic.org/content/riss.php>`__ among many
    others)
 
--  pseudo-Boolean constraint encodings
-
 -  formula *(pre-)processing*
 
 -  lower level access to some of the solvers' internal parameters
    (e.g. *variable activities*, etc.)
 
 -  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
-   [16]_ them internally)
+   [21]_ them internally)
 
 All of these will require a significant effort to be made. Therefore, we would
 like to encourage the SAT community to contribute and make PySAT a tool for an
 easy and comfortable day-to-day use. :)
 
-.. [16] G. S. Tseitin. *On the complexity of derivations in the propositional
+.. [21] G. S. Tseitin. *On the complexity of derivations in the propositional
    calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
    115–125, 1968

@@ -61,3 +61,33 @@ list of cardinality encodings included is the following:
 
 .. [9] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
    Cardinality Constraints*. CP 2005. pp. 827-831
+
+Furthermore, PySAT supports a number of encodings of pseudo-Boolean
+constraints listed below. This is done by exploiting a third-party library
+`PyPBLib <https://pypi.org/project/pypblib/>`__  developed by the `Logic
+Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
+(PyPBLib is a wrapper over the known PBLib library [10]_.)
+
+-  binary decision diagrams (BDD) [11]_ [12]_
+-  sequential weight counters [13]_
+-  sorting networks [11]_
+-  adder networks [11]_
+-  and binary merge [14]_
+
+.. [10] Tobias Philipp, Peter Steinke. *PBLib - A Library for Encoding
+    Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
+
+.. [11] Niklas Eén, Niklas Sörensson. *Translating Pseudo-Boolean
+    Constraints into SAT*. JSAT. vol. 2(1-4). 2006. pp. 1-26
+
+.. [12] Ignasi Abío, Robert Nieuwenhuis, Albert Oliveras,
+    Enric Rodríguez-Carbonell. *BDDs for Pseudo-Boolean Constraints -
+    Revisited*. SAT. 2011. pp. 61-75
+
+.. [13] Steffen Hölldobler, Norbert Manthey, Peter Steinke. *A Compact
+    Encoding of Pseudo-Boolean Constraints into SAT*. KI. 2012.
+    pp. 107-118
+
+.. [14] Norbert Manthey, Tobias Philipp, Peter Steinke. *A More Compact
+    Translation of Pseudo-Boolean Constraints into CNF Such That
+    Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134

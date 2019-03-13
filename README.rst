@@ -4,17 +4,19 @@ PySAT: SAT technology in Python
 PySAT is a Python (2.7, 3.4+) toolkit, which aims at providing a simple and
 unified interface to a number of state-of-art `Boolean satisfiability (SAT)
 <https://en.wikipedia.org/wiki/Boolean_satisfiability_problem>`__ solvers as
-well as to a variety of cardinality encodings. The purpose of PySAT is to
-enable researchers working on SAT and its applications and generalizations to
-easily prototype with SAT oracles in Python while exploiting incrementally the
-power of the original low-level implementations of modern SAT solvers.
+well as to a variety of cardinality and pseudo-Boolean encodings. The purpose
+of PySAT is to enable researchers working on SAT and its applications and
+generalizations to easily prototype with SAT oracles in Python while
+exploiting incrementally the power of the original low-level implementations
+of modern SAT solvers.
 
-PySAT can be helpful when solving problems in :math:`\mathbb{NP}` but also
-`beyond <http://beyondnp.org/>`__ :math:`\mathbb{NP}`. For instance, PySAT is
-handy when one needs to quickly implement a MaxSAT solver, an MUS/MCS extractor
-or enumerator, an abstraction-based QBF solver, or any other kind of tool
-solving an application problem with the (potentially *multiple* and/or
-*incremental*) use of a SAT oracle.
+PySAT can be helpful when solving problems in `NP
+<https://en.wikipedia.org/wiki/NP_(complexity)>`__ but also `beyond NP
+<http://beyondnp.org/>`__. For instance, PySAT is handy when one needs to
+quickly implement a MaxSAT solver, an MUS/MCS extractor or enumerator, an
+abstraction-based QBF solver, or any other kind of tool solving an application
+problem with the (potentially *multiple* and/or *incremental*) use of a SAT
+oracle.
 
 .. image:: web/medals.svg
    :width: 270 px
@@ -83,6 +85,36 @@ list of cardinality encodings included is the following:
 .. [9] Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean
    Cardinality Constraints*. CP 2005. pp. 827-831
 
+Furthermore, PySAT supports a number of encodings of pseudo-Boolean
+constraints listed below. This is done by exploiting a third-party library
+`PyPBLib <https://pypi.org/project/pypblib/>`__  developed by the `Logic
+Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
+(PyPBLib is a wrapper over the known PBLib library [10]_.)
+
+-  binary decision diagrams (BDD) [11]_ [12]_
+-  sequential weight counters [13]_
+-  sorting networks [11]_
+-  adder networks [11]_
+-  and binary merge [14]_
+
+.. [10] Tobias Philipp, Peter Steinke. *PBLib - A Library for Encoding
+    Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
+
+.. [11] Niklas Eén, Niklas Sörensson. *Translating Pseudo-Boolean
+    Constraints into SAT*. JSAT. vol. 2(1-4). 2006. pp. 1-26
+
+.. [12] Ignasi Abío, Robert Nieuwenhuis, Albert Oliveras,
+    Enric Rodríguez-Carbonell. *BDDs for Pseudo-Boolean Constraints -
+    Revisited*. SAT. 2011. pp. 61-75
+
+.. [13] Steffen Hölldobler, Norbert Manthey, Peter Steinke. *A Compact
+    Encoding of Pseudo-Boolean Constraints into SAT*. KI. 2012.
+    pp. 107-118
+
+.. [14] Norbert Manthey, Tobias Philipp, Peter Steinke. *A More Compact
+    Translation of Pseudo-Boolean Constraints into CNF Such That
+    Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
+
 Usage
 -----
 
@@ -145,29 +177,29 @@ PySAT usage is detailed in the `provided examples
 <https://github.com/pysathq/pysat/tree/master/examples>`__. For instance, one
 can find simple PySAT-based implementations of
 
--  Fu&Malik algorithm for MaxSAT [10]_
--  RC2/OLLITI algorithm for MaxSAT [14]_ [15]_
--  CLD-like algorithm for MCS extraction and enumeration [12]_
--  LBX-like algorithm for MCS extraction and enumeration [13]_
--  Deletion-based MUS extraction [11]_
+-  Fu&Malik algorithm for MaxSAT [15]_
+-  RC2/OLLITI algorithm for MaxSAT [19]_ [20]_
+-  CLD-like algorithm for MCS extraction and enumeration [17]_
+-  LBX-like algorithm for MCS extraction and enumeration [18]_
+-  Deletion-based MUS extraction [16]_
 
-.. [10] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
+.. [15] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
    SAT 2006. pp. 252-265
 
-.. [11] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
+.. [16] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
    Applications*. ISMVL 2010. pp. 9-14
 
-.. [12] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
+.. [17] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
    Anton Belov. *On Computing Minimal Correction Subsets*. IJCAI 2013. pp.
    615-622
 
-.. [13] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
+.. [18] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
-.. [14] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
+.. [19] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
    MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573
 
-.. [15] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
+.. [20] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
    Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
    pp. 129-134
 
@@ -274,21 +306,19 @@ features were implemented:
    <http://tools.computational-logic.org/content/riss.php>`__ among many
    others)
 
--  pseudo-Boolean constraint encodings
-
 -  formula *(pre-)processing*
 
 -  lower level access to some of the solvers' internal parameters
    (e.g. *variable activities*, etc.)
 
 -  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
-   [16]_ them internally)
+   [21]_ them internally)
 
 All of these will require a significant effort to be made. Therefore, we would
 like to encourage the SAT community to contribute and make PySAT a tool for an
 easy and comfortable day-to-day use. :)
 
-.. [16] G. S. Tseitin. *On the complexity of derivations in the propositional
+.. [21] G. S. Tseitin. *On the complexity of derivations in the propositional
    calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
    115–125, 1968
 

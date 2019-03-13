@@ -248,7 +248,7 @@ class CardEnc(object):
             bound :math:`n-k` and invoking :meth:`CardEnc.atmost` with the
             modified list of literals and the new bound.
 
-            :raises NoSuchEncodingError: if encoding does not exist.
+            :raises CardEnc.NoSuchEncodingError: if encoding does not exist.
 
             :rtype: a :class:`.CNFPlus` object where the new \
             clauses (or the new native atmost constraint) are stored.

@@ -138,10 +138,10 @@ class FM(object):
         The constructor of :class:`FM` objects receives a target :class:`.WCNF`
         MaxSAT formula, an identifier of the cardinality encoding to use, a SAT
         solver name, and a verbosity level. Note that the algorithm uses the
-        ``pairwise`` (see :class:`.EncType`) cardinality encoding by default,
-        while the default SAT solver is MiniSat22 (referred to as ``'m22'``,
-        see :class:`.SolverNames` for details). The default verbosity level is
-        ``1``.
+        ``pairwise`` (see :class:`.card.EncType`) cardinality encoding by
+        default, while the default SAT solver is MiniSat22 (referred to as
+        ``'m22'``, see :class:`.SolverNames` for details). The default
+        verbosity level is ``1``.
 
         :param formula: input MaxSAT formula
         :param enc: cardinality encoding to use

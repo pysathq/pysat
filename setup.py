@@ -25,12 +25,12 @@ from pysat import __version__
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 LONG_DESCRIPTION = """
-A Python library providing a simple interface to a number of
-state-of-art Boolean satisfiability (SAT) solvers and a few types of
-cardinality encodings. The purpose of PySAT is to enable researchers
-working on SAT and its applications and generalizations to easily
-prototype with SAT oracles in Python while exploiting incrementally the
-power of the original low-level implementations of modern SAT solvers.
+A Python library providing a simple interface to a number of state-of-art
+Boolean satisfiability (SAT) solvers and a few types of cardinality and
+pseudo-Boolean encodings. The purpose of PySAT is to enable researchers
+working on SAT and its applications and generalizations to easily prototype
+with SAT oracles in Python while exploiting incrementally the power of the
+original low-level implementations of modern SAT solvers.
 
 With PySAT it should be easy for you to implement a MaxSAT solver, an
 MUS/MCS extractor/enumerator, or any tool solving an application problem

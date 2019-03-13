@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+13.03.2019 (*0.1.4.dev0*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added :mod:`pysat.pb` providing access to a few PB constraints with the use
+  of PyPBLib.
+- A number of small fixes.
+
 28.12.2018 (*0.1.3.dev25*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
