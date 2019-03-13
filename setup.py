@@ -107,5 +107,5 @@ setup(name='python-sat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in scripts],
     cmdclass={'build': build},
-    install_requires=['six']
+    install_requires=['pypblib>=0.0.3', 'six']
 )
