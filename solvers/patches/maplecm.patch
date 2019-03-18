@@ -1,0 +1,3004 @@
+diff -Naur solvers/maplecm/Makefile solvers/mcm/Makefile
+--- solvers/maplecm/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/mcm/Makefile	2019-03-17 16:48:04.000000000 +0000
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     :=  maplecm
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/maplecm/core/Solver.cc solvers/mcm/core/Solver.cc
+--- solvers/maplecm/core/Solver.cc	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/core/Solver.cc	2019-03-17 18:36:10.000000000 +0000
+@@ -1,12 +1,12 @@
+ /***************************************************************************************[Solver.cc]
+  MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+  Copyright (c) 2007-2010, Niklas Sorensson
+- 
++
+ Chanseok Oh's MiniSat Patch Series -- Copyright (c) 2015, Chanseok Oh
+ 
+ Maple_LCM, Based on MapleCOMSPS_DRUP --Copyright (c) 2017, Mao Luo, Chu-Min LI, Fan Xiao: implementing a learnt clause minimisation approach
+  Reference: M. Luo, C.-M. Li, F. Xiao, F. Manya, and Z. L. , “An effective learnt clause minimization approach for cdcl sat solvers,” in IJCAI-2017, 2017, pp.703-711.
+- 
++
+ Maple_CM, Based on Maple_LCM --Copyright (c) 2018, Chu-Min LI, Mao Luo, Fan Xiao: implementing a clause minimisation approach.
+ 
+ 
+@@ -15,17 +15,17 @@
+  including without limitation the rights to use, copy, modify, merge, publish, distribute,
+  sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+- 
++
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
+- 
++
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+-#define _CRT_SECURE_NO_DEPRECATE
++#define MAPLECM_CRT_SECURE_NO_DEPRECATE
+ 
+ #ifdef _MSC_VER
+ //#include <io.h>
+@@ -38,7 +38,7 @@
+ #include <windows.h>
+ #include <thread>
+ 
+-#define _MSC_VER_Sleep
++#define MAPLECM_MSC_VER_Sleep
+ #endif
+ 
+ 
+@@ -46,13 +46,13 @@
+ #include <math.h>
+ #include <signal.h>
+ 
+-#include "mtl/Sort.h"
+-#include "core/Solver.h"
+-#include "utils/System.h"
++#include "maplecm/mtl/Sort.h"
++#include "maplecm/core/Solver.h"
++#include "maplecm/utils/System.h"
+ 
+-using namespace Minisat;
++using namespace MapleCM;
+ 
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+ int Solver::buf_len = 0;
+ unsigned char Solver::drup_buf[2 * 1024 * 1024];
+ unsigned char* Solver::buf_ptr = drup_buf;
+@@ -88,6 +88,7 @@
+     // Parameters (user settable):
+     //
+     drup_file        (NULL)
++  , drup_pyfile      (NULL)
+   , verbosity        (0)
+   , step_size        (opt_step_size)
+   , step_size_dec    (opt_step_size_dec)
+@@ -176,22 +177,22 @@
+         vec<Watcher>&  ws = watches[p];
+         Watcher        *i, *j, *end;
+         num_props++;
+-        
+-        
++
++
+         // First, Propagate binary clauses
+         vec<Watcher>&  wbin = watches_bin[p];
+-        
++
+         for (int k = 0; k<wbin.size(); k++)
+         {
+-            
++
+             Lit imp = wbin[k].blocker;
+-            
+-            if (value(imp) == l_False)
++
++            if (value(imp) == cml_False)
+             {
+                 return wbin[k].cref;
+             }
+-            
+-            if (value(imp) == l_Undef)
++
++            if (value(imp) == cml_Undef)
+             {
+                 simpleUncheckEnqueue(imp, wbin[k].cref);
+             }
+@@ -200,11 +201,11 @@
+         {
+             // Try to avoid inspecting the clause:
+             Lit blocker = i->blocker;
+-            if (value(blocker) == l_True)
++            if (value(blocker) == cml_True)
+             {
+                 *j++ = *i++; continue;
+             }
+-            
++
+             // Make sure the false literal is data[1]:
+             CRef     cr = i->cref;
+             Clause&  c = ca[cr];
+@@ -213,25 +214,25 @@
+                 c[0] = c[1], c[1] = false_lit;
+             assert(c[1] == false_lit);
+             //  i++;
+-            
++
+             // If 0th watch is true, then clause is already satisfied.
+             // However, 0th watch is not the blocker, make it blocker using a new watcher w
+             // why not simply do i->blocker=first in this case?
+             Lit     first = c[0];
+             //  Watcher w     = Watcher(cr, first);
+-            if (first != blocker && value(first) == l_True)
++            if (first != blocker && value(first) == cml_True)
+             {
+                 i->blocker = first;
+                 *j++ = *i++; continue;
+             }
+-            
++
+             // Look for new watch:
+             //if (incremental)
+             //{ // ----------------- INCREMENTAL MODE
+             //	int choosenPos = -1;
+             //	for (int k = 2; k < c.size(); k++)
+             //	{
+-            //		if (value(c[k]) != l_False)
++            //		if (value(c[k]) != cml_False)
+             //		{
+             //			if (decisionLevel()>assumptions.size())
+             //			{
+@@ -241,12 +242,12 @@
+             //			else
+             //			{
+             //				choosenPos = k;
+-            
+-            //				if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
++
++            //				if (value(c[k]) == cml_True || !isSelector(var(c[k]))) {
+             //					break;
+             //				}
+             //			}
+-            
++
+             //		}
+             //	}
+             //	if (choosenPos != -1)
+@@ -264,8 +265,8 @@
+             {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
+                 for (int k = 2; k < c.size(); k++)
+                 {
+-                    
+-                    if (value(c[k]) != l_False)
++
++                    if (value(c[k]) != cml_False)
+                     {
+                         // watcher i is abandonned using i++, because cr watches now ~c[k] instead of p
+                         // the blocker is first in the watcher. However,
+@@ -277,11 +278,11 @@
+                     }
+                 }
+             }
+-            
++
+             // Did not find watch -- clause is unit under assignment:
+             i->blocker = first;
+             *j++ = *i++;
+-            if (value(first) == l_False)
++            if (value(first) == cml_False)
+             {
+                 confl = cr;
+                 qhead = trail.size();
+@@ -297,14 +298,14 @@
+         }
+         ws.shrink(i - j);
+     }
+-    
++
+     s_propagations += num_props;
+-    
++
+     return confl;
+ }
+ 
+ void Solver::simpleUncheckEnqueue(Lit p, CRef from){
+-    assert(value(p) == l_Undef);
++    assert(value(p) == cml_Undef);
+     assigns[var(p)] = lbool(!sign(p)); // this makes a lbool object whose value is sign(p)
+     vardata[var(p)].reason = from;
+     trail.push_(p);
+@@ -315,12 +316,12 @@
+     for (int c = trail.size() - 1; c >= trailRecord; c--)
+     {
+         Var x = var(trail[c]);
+-        assigns[x] = l_Undef;
+-        
++        assigns[x] = cml_Undef;
++
+     }
+     qhead = trailRecord;
+     trail.shrink(trail.size() - trailRecord);
+-    
++
+ }
+ 
+ void Solver::litsEnqueue(int cutP, Clause& c)
+@@ -340,16 +341,16 @@
+     int pathC = 0;
+     Lit p = lit_Undef;
+     int index = trail.size() - 1;
+-    
++
+     do{
+         if (confl != CRef_Undef){
+             // reason_clause.push(confl);
+             Clause& c = ca[confl];
+             // Special case for binary clauses
+             // The first one has to be SAT
+-            if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
+-                
+-                assert(value(c[1]) == l_True);
++            if (p != lit_Undef && c.size() == 2 && value(c[0]) == cml_False) {
++
++                assert(value(c[1]) == cml_True);
+                 Lit tmp = c[0];
+                 c[0] = c[1], c[1] = tmp;
+             }
+@@ -376,25 +377,25 @@
+         confl = reason(var(p));
+         seen[var(p)] = 0;
+         pathC--;
+-        
++
+     } while (pathC >= 0);
+ }
+ 
+ bool Solver::simplifyLearnt(Clause& c, CRef cr, vec<Lit>& lits) {
+-    
++
+     trailRecord = trail.size();// record the start pointer
+     //sort(&c[0], c.size(), VarOrderLevelLt(vardata));
+-    
++
+     bool True_confl = false, sat=false, false_lit=false;
+     int i, j;
+     CRef confl;
+-    
++
+     for (int i = 0; i < c.size(); i++){
+-        if (value(c[i]) == l_True){
++        if (value(c[i]) == cml_True){
+             sat = true;
+             break;
+         }
+-        else if (value(c[i]) == l_False){
++        else if (value(c[i]) == cml_False){
+             false_lit = true;
+         }
+     }
+@@ -404,11 +405,11 @@
+     }
+     else{
+         // detachClause(cr, true);
+-        
++
+         if (false_lit){
+             int li, lj;
+             for (li = lj = 0; li < c.size(); li++){
+-                if (value(c[li]) != l_False){
++                if (value(c[li]) != cml_False){
+                     c[lj++] = c[li];
+                 }
+                 else assert(li>1);
+@@ -425,16 +426,16 @@
+             }
+         }
+         original_length_record += c.size();
+-        
++
+         assert(c.size() > 1);
+-        
++
+         Lit implied;
+         lits.clear();
+         for(i=0; i<c.size(); i++) lits.push(c[i]);
+         assert(lits.size() == c.size());
+         for (i = 0, j = 0; i < lits.size(); i++){
+-            if (value(lits[i]) == l_Undef){
+-                //printf("///@@@ uncheckedEnqueue:index = %d. l_Undef\n", i);
++            if (value(lits[i]) == cml_Undef){
++                //printf("///@@@ uncheckedEnqueue:index = %d. cml_Undef\n", i);
+                 simpleUncheckEnqueue(~lits[i]);
+                 lits[j++] = lits[i];
+                 confl = simplePropagate();
+@@ -443,8 +444,8 @@
+                 }
+             }
+             else{
+-                if (value(lits[i]) == l_True){
+-                    //printf("///@@@ uncheckedEnqueue:index = %d. l_True\n", i);
++                if (value(lits[i]) == cml_True){
++                    //printf("///@@@ uncheckedEnqueue:index = %d. cml_True\n", i);
+                     lits[j++] = lits[i];
+                     True_confl = true; implied=lits[i];
+                     confl = reason(var(lits[i]));
+@@ -457,7 +458,7 @@
+             lits.shrink(lits.size() - j);
+         }
+         assert(lits.size() > 0 && lits.size() == j);
+-        
++
+         if (confl != CRef_Undef || True_confl == true) {
+             simp_learnt_clause.clear();
+             //  simp_reason_clause.clear();
+@@ -476,24 +477,24 @@
+             assert(simp_learnt_clause.size() == lits.size());
+         }
+         cancelUntilTrailRecord();
+-        
++
+         simplified_length_record += lits.size();
+         return true;
+     }
+ }
+ 
+ bool Solver::simplifyLearnt_core() {
+-    
+-    int learnts_core_size_before = learnts_core.size();
++
++    // int learnts_core_size_before = learnts_core.size();
+     unsigned int nblevels;
+     vec<Lit> lits;
+-    
++
+     int nbSimplified = 0, nbSimplifing = 0, nbShortened=0, ci, cj;
+-    
++
+     for (ci = 0, cj = 0; ci < learnts_core.size(); ci++){
+         CRef cr = learnts_core[ci];
+         Clause& c = ca[cr];
+-        
++
+         if (removed(cr)) continue;
+         else if (c.simplified()){
+             learnts_core[cj++] = learnts_core[ci];
+@@ -509,12 +510,12 @@
+             if (simplifyLearnt(c, cr, lits)) {
+ 
+                 if(drup_file && add_oc.size()!=lits.size()){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+                     binDRUP('a', lits , drup_file);
+ //                    binDRUP('d', add_oc, drup_file);
+ #else
+                     for (int i = 0; i < lits.size(); i++)
+-                        fprintf(drup_file, "%i ", (var(lits[i]) + 1) * (-2 * sign(lits[i]) + 1));
++                        fprintf(drup_file, "%i ", var(lits[i]) * (-2 * sign(lits[i]) + 1));
+                     fprintf(drup_file, "0\n");
+ 
+ //                      fprintf(drup_file, "d ");
+@@ -543,7 +544,7 @@
+                         c[i]=lits[i];
+                     c.shrink(c.size()-lits.size());
+                     attachClause(cr);
+-                    
++
+                     nblevels = computeLBD(c);
+                     if (nblevels < c.lbd()){
+                         //printf("lbd-before: %d, lbd-after: %d\n", c.lbd(), nblevels);
+@@ -558,21 +559,21 @@
+     learnts_core.shrink(ci - cj);
+     //    printf("c nbLearnts_core %d / %d, nbSimplified: %d, nbSimplifing: %d, of which nbShortened: %d\n",
+     //           learnts_core_size_before, learnts_core.size(), nbSimplified, nbSimplifing, nbShortened);
+-    
++
+     return true;
+ }
+ 
+ bool Solver::simplifyLearnt_tier2() {
+-    int learnts_tier2_size_before = learnts_tier2.size();
++    // int learnts_tier2_size_before = learnts_tier2.size();
+     unsigned int nblevels;
+     vec<Lit> lits;
+-    
++
+     int nbSimplified = 0, nbSimplifing = 0, nbShortened=0, ci, cj;
+-    
++
+     for (ci = 0, cj = 0; ci < learnts_tier2.size(); ci++){
+         CRef cr = learnts_tier2[ci];
+         Clause& c = ca[cr];
+-        
++
+         if (removed(cr)) continue;
+         else if (c.simplified()){
+             learnts_tier2[cj++] = learnts_tier2[ci];
+@@ -588,12 +589,12 @@
+             if (simplifyLearnt(c, cr, lits)) {
+ 
+                 if(drup_file && add_oc.size()!=lits.size()){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+                     binDRUP('a', lits , drup_file);
+ //                    binDRUP('d', add_oc, drup_file);
+ #else
+                     for (int i = 0; i < lits.size(); i++)
+-                        fprintf(drup_file, "%i ", (var(lits[i]) + 1) * (-2 * sign(lits[i]) + 1));
++                        fprintf(drup_file, "%i ", var(lits[i]) * (-2 * sign(lits[i]) + 1));
+                     fprintf(drup_file, "0\n");
+ 
+ //                      fprintf(drup_file, "d ");
+@@ -622,16 +623,16 @@
+                         c[i]=lits[i];
+                     c.shrink(c.size()-lits.size());
+                     attachClause(cr);
+-                    
++
+                     nblevels = computeLBD(c);
+                     if (nblevels < c.lbd()){
+                         //printf("lbd-before: %d, lbd-after: %d\n", c.lbd(), nblevels);
+                         c.set_lbd(nblevels);
+                     }
+-                    
++
+                     if (c.lbd() <= core_lbd_cut){
+                         learnts_core.push(cr);
+-                        c.mark(CORE);
++                        c.mark(MAPLECM_CORE);
+                     }
+                     else
+                         learnts_tier2[cj++] = learnts_tier2[ci];
+@@ -641,10 +642,10 @@
+         }
+     }
+     learnts_tier2.shrink(ci - cj);
+-    
++
+     //    printf("c nbLearnts_tier2 %d / %d, nbSimplified: %d, nbSimplifing: %d, of which nbShortened: %d\n",
+     //           learnts_tier2_size_before, learnts_tier2.size(), nbSimplified, nbSimplifing, nbShortened);
+-    
++
+     return true;
+ }
+ 
+@@ -652,43 +653,43 @@
+ {
+     ////
+     simplified_length_record = original_length_record = 0;
+-    
++
+     if (!ok || propagate() != CRef_Undef)
+         return ok = false;
+-    
++
+     //// cleanLearnts(also can delete these code), here just for analyzing
+-    //if (local_learnts_dirty) cleanLearnts(learnts_local, LOCAL);
+-    //if (tier2_learnts_dirty) cleanLearnts(learnts_tier2, TIER2);
++    //if (local_learnts_dirty) cleanLearnts(learnts_local, MAPLECM_LOCAL);
++    //if (tier2_learnts_dirty) cleanLearnts(learnts_tier2, MAPLECM_TIER2);
+     //local_learnts_dirty = tier2_learnts_dirty = false;
+-    
++
+     if (!simplifyLearnt_core()) return ok = false;
+     if (!simplifyLearnt_tier2()) return ok = false;
+     //if (!simplifyLearnt_x(learnts_local)) return ok = false;
+     if (!simplifyUsedOriginalClauses()) return ok = false;
+-    
++
+     checkGarbage();
+-    
++
+     ////
+ //    printf("c size_reduce_ratio     : %4.2f%%\n",
+ //           original_length_record == 0 ? 0 : (original_length_record - simplified_length_record) * 100 / (double)original_length_record);
+-    
++
+     return true;
+ }
+ 
+-#define lbdLimitForOriCls 20
++#define MAPLECM_lbdLimitForOriCls 20
+ 
+ bool Solver::simplifyUsedOriginalClauses() {
+-    
+-    int usedClauses_size_before = usedClauses.size();
++
++    // int usedClauses_size_before = usedClauses.size();
+     unsigned int nblevels;
+     vec<Lit> lits;
+-    int nbSimplified = 0, nbSimplifing = 0, nbShortened=0, nb_remaining=0, nbRemovedLits=0, ci;
++    int /*nbSimplified = 0,*/ nbSimplifing = 0, nbShortened=0, nb_remaining=0, nbRemovedLits=0, ci;
+     double avg;
+-    
++
+     for (ci = 0; ci < usedClauses.size(); ci++){
+         CRef cr = usedClauses[ci];
+         Clause& c = ca[cr];
+-        
++
+         if (!removed(cr)) {
+             nbSimplifing++;
+ 
+@@ -699,17 +700,17 @@
+             if (simplifyLearnt(c, cr, lits)) {
+ 
+                 if(drup_file && add_oc.size()!=lits.size()){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+                     binDRUP('a', lits , drup_file);
+                     binDRUP('d', add_oc, drup_file);
+ #else
+                     for (int i = 0; i < lits.size(); i++)
+-                        fprintf(drup_file, "%i ", (var(lits[i]) + 1) * (-2 * sign(lits[i]) + 1));
++                        fprintf(drup_file, "%i ", var(lits[i]) * (-2 * sign(lits[i]) + 1));
+                     fprintf(drup_file, "0\n");
+ 
+                       fprintf(drup_file, "d ");
+                      for (int i = 0; i < add_oc.size(); i++)
+-                         fprintf(drup_file, "%i ", (var(add_oc[i]) + 1) * (-2 * sign(add_oc[i]) + 1));
++                         fprintf(drup_file, "%i ", var(add_oc[i]) * (-2 * sign(add_oc[i]) + 1));
+                      fprintf(drup_file, "0\n");
+ #endif
+                 }
+@@ -740,7 +741,7 @@
+                         c[i]=lits[i];
+                     c.shrink(c.size()-lits.size());
+                     attachClause(cr);
+-                    
++
+                     nb_remaining++;
+                     c.setSimplified(3);
+                 }
+@@ -753,7 +754,7 @@
+     //    printf("c nb_usedClauses %d / %d, nbSimplified: %d, nbSimplifing: %d, of which nbShortened: %d with nb removed lits %3.2lf\n",
+     //           usedClauses_size_before, nbSimplified+nb_remaining, nbSimplified, nbSimplifing, nbShortened, avg);
+     usedClauses.clear();
+-    
++
+     return true;
+ }
+ 
+@@ -763,24 +764,24 @@
+     bool operator () (CRef x, CRef y) const { return ca[x].size() > ca[y].size(); }
+ };
+ 
+-#define simpLimit 100000000
+-#define tolerance 100
++#define MAPLECM_simpLimit 100000000
++#define MAPLECM_tolerance 100
+ 
+ bool Solver::simplifyOriginalClauses() {
+ 
+-    int last_shorten=0, nbOriginalClauses_before = clauses.size();
++    int last_shorten = 0; //, nbOriginalClauses_before = clauses.size();
+     vec<Lit> lits;
+ 
+     int nbShortened=0, ci, cj, nbRemoved=0, nbShortening=0;
+ 
+     // sort(clauses, clauseSize_lt(ca));
+-    printf("c total nb of literals: %llu\n", clauses_literals);
++    // printf("c total nb of literals: %llu\n", clauses_literals);
+     // if (clauses.size()> simpLimit) {
+     //   printf("c too many original clauses (> %d), no original clause minimization \n",
+     // 	     simpLimit);
+     //   return true;
+     // }
+-    double      begin_simp_time = cpuTime();
++    // double      begin_simp_time = cpuTime();
+     for (ci = 0, cj = 0; ci < clauses.size(); ci++){
+         CRef cr = clauses[ci];
+         Clause& c = ca[cr];
+@@ -789,7 +790,7 @@
+         // if (ci - last_shorten > tolerance)
+         //    clauses[cj++] = clauses[ci];
+         // else
+-        if (s_propagations>simpLimit && ci-last_shorten>tolerance)
++        if (s_propagations > MAPLECM_simpLimit && ci-last_shorten > MAPLECM_tolerance)
+             clauses[cj++] = clauses[ci];
+         else{
+             if (drup_file){
+@@ -799,17 +800,17 @@
+             if (simplifyLearnt(c, cr, lits)) {
+ 
+                 if(drup_file && add_oc.size()!=lits.size()){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+                     binDRUP('a', lits , drup_file);
+                     binDRUP('d', add_oc, drup_file);
+ #else
+                     for (int i = 0; i < lits.size(); i++)
+-                        fprintf(drup_file, "%i ", (var(lits[i]) + 1) * (-2 * sign(lits[i]) + 1));
++                        fprintf(drup_file, "%i ", var(lits[i]) * (-2 * sign(lits[i]) + 1));
+                     fprintf(drup_file, "0\n");
+ 
+                       fprintf(drup_file, "d ");
+                      for (int i = 0; i < add_oc.size(); i++)
+-                         fprintf(drup_file, "%i ", (var(add_oc[i]) + 1) * (-2 * sign(add_oc[i]) + 1));
++                         fprintf(drup_file, "%i ", var(add_oc[i]) * (-2 * sign(add_oc[i]) + 1));
+                      fprintf(drup_file, "0\n");
+ #endif
+                 }
+@@ -872,18 +873,18 @@
+     watches_bin.init(mkLit(v, true ));
+     watches  .init(mkLit(v, false));
+     watches  .init(mkLit(v, true ));
+-    assigns  .push(l_Undef);
++    assigns  .push(cml_Undef);
+     vardata  .push(mkVarData(CRef_Undef, 0));
+     activity_CHB  .push(0);
+     activity_VSIDS.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+-    
++
+     picked.push(0);
+     conflicted.push(0);
+     almost_conflicted.push(0);
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+     canceled.push(0);
+ #endif
+-    
++
+     seen     .push(0);
+     seen2    .push(0);
+     polarity .push(sign);
+@@ -898,38 +899,38 @@
+ {
+     assert(decisionLevel() == 0);
+     if (!ok) return false;
+-    
++
+     // Check if clause is satisfied and remove false/duplicate literals:
+     sort(ps);
+     Lit p; int i, j;
+-    
++
+     if (drup_file){
+         add_oc.clear();
+         for (int i = 0; i < ps.size(); i++) add_oc.push(ps[i]); }
+-    
++
+     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+-        if (value(ps[i]) == l_True || ps[i] == ~p)
++        if (value(ps[i]) == cml_True || ps[i] == ~p)
+             return true;
+-        else if (value(ps[i]) != l_False && ps[i] != p)
++        else if (value(ps[i]) != cml_False && ps[i] != p)
+             ps[j++] = p = ps[i];
+     ps.shrink(i - j);
+-    
++
+     if (drup_file && i != j){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+         binDRUP('a', ps, drup_file);
+         binDRUP('d', add_oc, drup_file);
+ #else
+         for (int i = 0; i < ps.size(); i++)
+-            fprintf(drup_file, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
++            fprintf(drup_file, "%i ", var(ps[i]) * (-2 * sign(ps[i]) + 1));
+         fprintf(drup_file, "0\n");
+-        
++
+         fprintf(drup_file, "d ");
+         for (int i = 0; i < add_oc.size(); i++)
+-            fprintf(drup_file, "%i ", (var(add_oc[i]) + 1) * (-2 * sign(add_oc[i]) + 1));
++            fprintf(drup_file, "%i ", var(add_oc[i]) * (-2 * sign(add_oc[i]) + 1));
+         fprintf(drup_file, "0\n");
+ #endif
+     }
+-    
++
+     if (ps.size() == 0)
+         return ok = false;
+     else if (ps.size() == 1){
+@@ -940,7 +941,7 @@
+         clauses.push(cr);
+         attachClause(cr);
+     }
+-    
++
+     return true;
+ }
+ 
+@@ -959,7 +960,7 @@
+     const Clause& c = ca[cr];
+     assert(c.size() > 1);
+     OccLists<Lit, vec<Watcher>, WatcherDeleted>& ws = c.size() == 2 ? watches_bin : watches;
+-    
++
+     if (strict){
+         remove(ws[~c[0]], Watcher(cr, c[1]));
+         remove(ws[~c[1]], Watcher(cr, c[0]));
+@@ -968,7 +969,7 @@
+         ws.smudge(~c[0]);
+         ws.smudge(~c[1]);
+     }
+-    
++
+     if (c.learnt()) learnts_literals -= c.size();
+     else            clauses_literals -= c.size(); }
+ 
+@@ -977,25 +978,25 @@
+     Clause& c = ca[cr];
+ //    if(c.mark()==1)
+ //        exit(0);
+-    
++
+     if (drup_file){
+         if (c.mark() != 1){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+             binDRUP('d', c, drup_file);
+ #else
+             fprintf(drup_file, "d ");
+             for (int i = 0; i < c.size(); i++)
+-                fprintf(drup_file, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
++                fprintf(drup_file, "%i ", var(c[i]) * (-2 * sign(c[i]) + 1));
+             fprintf(drup_file, "0\n");
+ #endif
+         }else
+             printf("c Bug. I don't expect this to happen.\n");
+     }
+-    
++
+     detachClause(cr);
+     // Don't leave pointers to free'd memory!
+     if (locked(c)){
+-        Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == l_True ? c[0] : c[1]);
++        Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == cml_True ? c[0] : c[1]);
+         vardata[var(implied)].reason = CRef_Undef; }
+     c.mark(1);
+     ca.free(cr);
+@@ -1004,7 +1005,7 @@
+ 
+ bool Solver::satisfied(const Clause& c) const {
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) == l_True)
++        if (value(c[i]) == cml_True)
+             return true;
+     return false; }
+ 
+@@ -1015,7 +1016,7 @@
+     if (decisionLevel() > level){
+         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
+             Var      x  = var(trail[c]);
+-            
++
+             if (!VSIDS){
+                 uint32_t age = conflicts - picked[x];
+                 if (age > 0){
+@@ -1029,13 +1030,13 @@
+                             order_heap_CHB.increase(x);
+                     }
+                 }
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+                 canceled[x] = conflicts;
+ #endif
+             }
+-            
+-            assigns [x] = l_Undef;
+-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last())
++
++            assigns [x] = cml_Undef;
++            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
+                 polarity[x] = sign(trail[c]);
+             insertVarOrder(x); }
+         qhead = trail_lim[level];
+@@ -1052,19 +1053,19 @@
+ {
+     Var next = var_Undef;
+     Heap<VarOrderLt>& order_heap = VSIDS ? order_heap_VSIDS : order_heap_CHB;
+-    
++
+     // Random decision:
+     /*if (drand(random_seed) < random_var_freq && !order_heap.empty()){
+      next = order_heap[irand(random_seed,order_heap.size())];
+-     if (value(next) == l_Undef && decision[next])
++     if (value(next) == cml_Undef && decision[next])
+      rnd_decisions++; }*/
+-    
++
+     // Activity based decision:
+-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
++    while (next == var_Undef || value(next) != cml_Undef || !decision[next])
+         if (order_heap.empty())
+             return lit_Undef;
+         else{
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+             if (!VSIDS){
+                 Var v = order_heap_CHB[0];
+                 uint32_t age = conflicts - canceled[v];
+@@ -1081,7 +1082,7 @@
+ #endif
+             next = order_heap.removeMin();
+         }
+-    
++
+     return mkLit(next, polarity[next]);
+ }
+ 
+@@ -1107,25 +1108,25 @@
+ {
+     int pathC = 0;
+     Lit p     = lit_Undef;
+-    
++
+     // Generate conflict clause:
+     //
+     out_learnt.push();      // (leave room for the asserting literal)
+     int index   = trail.size() - 1;
+-    
++
+     int saved;
+     saved = usedClauses.size();
+-    
++
+     do{
+         assert(confl != CRef_Undef); // (otherwise should be UIP)
+         Clause& c = ca[confl];
+-        
++
+         // For binary clauses, we don't rearrange literals in propagate(), so check and make sure the first is an implied lit.
+-        if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False){
+-            assert(value(c[1]) == l_True);
++        if (p != lit_Undef && c.size() == 2 && value(c[0]) == cml_False){
++            assert(value(c[1]) == cml_True);
+             Lit tmp = c[0];
+             c[0] = c[1], c[1] = tmp; }
+-        
++
+         int lbd = computeLBD(c);
+         if (lbd < c.lbd()){
+             if (lbd == 1)
+@@ -1134,37 +1135,37 @@
+                 c.setSimplified(c.simplified()-1);
+             if (c.learnt()) {
+                 if (c.lbd() <= 30) c.removable(false); // Protect once from reduction.
+-                // move confl into CORE or TIER2 if the new lbd is small enough
+-                if  (c.mark() != CORE){
++                // move confl into MAPLECM_CORE or MAPLECM_TIER2 if the new lbd is small enough
++                if  (c.mark() != MAPLECM_CORE){
+                     if (lbd <= core_lbd_cut){
+                         learnts_core.push(confl);
+-                        c.mark(CORE);
+-                    }else if (lbd <= 6 && c.mark() == LOCAL){
+-                        // Bug: 'cr' may already be in 'learnts_tier2', e.g., if 'cr' was demoted from TIER2
+-                        // to LOCAL previously and if that 'cr' is not cleaned from 'learnts_tier2' yet.
++                        c.mark(MAPLECM_CORE);
++                    }else if (lbd <= 6 && c.mark() == MAPLECM_LOCAL){
++                        // Bug: 'cr' may already be in 'learnts_tier2', e.g., if 'cr' was demoted from MAPLECM_TIER2
++                        // to MAPLECM_LOCAL previously and if that 'cr' is not cleaned from 'learnts_tier2' yet.
+                         learnts_tier2.push(confl);
+-                        c.mark(TIER2); }
++                        c.mark(MAPLECM_TIER2); }
+                 }
+             }
+             c.set_lbd(lbd);
+         }
+         if (c.learnt()) {
+-            if (c.mark() == TIER2)
++            if (c.mark() == MAPLECM_TIER2)
+                 c.touched() = conflicts;
+-            else if (c.mark() == LOCAL)
++            else if (c.mark() == MAPLECM_LOCAL)
+                 claBumpActivity(c);
+         }
+         else {
+             if (c.used()==0 && c.simplified()==0) {
+-                // if (c.used()==0 && c.lbd() <= lbdLimitForOriCls) {
++                // if (c.used()==0 && c.lbd() <= MAPLECM_lbdLimitForOriCls) {
+                 usedClauses.push(confl);
+                 c.setUsed(1);
+             }
+         }
+-        
++
+         for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
+             Lit q = c[j];
+-            
++
+             if (!seen[var(q)] && level(var(q)) > 0){
+                 if (VSIDS){
+                     varBumpActivity(var(q), .5);
+@@ -1178,17 +1179,17 @@
+                     out_learnt.push(q);
+             }
+         }
+-        
++
+         // Select next clause to look at:
+         while (!seen[var(trail[index--])]);
+         p     = trail[index+1];
+         confl = reason(var(p));
+         seen[var(p)] = 0;
+         pathC--;
+-        
++
+     }while (pathC > 0);
+     out_learnt[0] = ~p;
+-    
++
+     // Simplify conflict clause:
+     //
+     int i, j;
+@@ -1197,15 +1198,15 @@
+         uint32_t abstract_level = 0;
+         for (i = 1; i < out_learnt.size(); i++)
+             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
+-        
++
+         for (i = j = 1; i < out_learnt.size(); i++)
+             if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
+                 out_learnt[j++] = out_learnt[i];
+-        
++
+     }else if (ccmin_mode == 1){
+         for (i = j = 1; i < out_learnt.size(); i++){
+             Var x = var(out_learnt[i]);
+-            
++
+             if (reason(x) == CRef_Undef)
+                 out_learnt[j++] = out_learnt[i];
+             else{
+@@ -1218,16 +1219,16 @@
+         }
+     }else
+         i = j = out_learnt.size();
+-    
++
+     max_literals += out_learnt.size();
+     out_learnt.shrink(i - j);
+     tot_literals += out_learnt.size();
+-    
++
+     out_lbd = computeLBD(out_learnt);
+     if (out_lbd <= 6 && out_learnt.size() <= 30) // Try further minimization?
+         if (binResMinimize(out_learnt))
+             out_lbd = computeLBD(out_learnt); // Recompute LBD if minimized.
+-    
++
+     // Find correct backtrack level:
+     //
+     if (out_learnt.size() == 1)
+@@ -1244,7 +1245,7 @@
+         out_learnt[1]     = p;
+         out_btlevel       = level(var(p));
+     }
+-    
++
+     if (VSIDS){
+         for (int i = 0; i < add_tmp.size(); i++){
+             Var v = var(add_tmp[i]);
+@@ -1265,13 +1266,13 @@
+                         seen[var(l)] = true;
+                         almost_conflicted[var(l)]++;
+                         analyze_toclear.push(l); } } } } }
+-    
+-    if (out_lbd > lbdLimitForOriCls) {
++
++    if (out_lbd > MAPLECM_lbdLimitForOriCls) {
+         for(int i = saved; i < usedClauses.size(); i++)
+             ca[usedClauses[i]].setUsed(0);
+         usedClauses.shrink(usedClauses.size() - saved);
+     }
+-    
++
+     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
+ }
+ 
+@@ -1283,20 +1284,20 @@
+     counter++;
+     for (int i = 1; i < out_learnt.size(); i++)
+         seen2[var(out_learnt[i])] = counter;
+-    
++
+     // Get the list of binary clauses containing 'out_learnt[0]'.
+     const vec<Watcher>& ws = watches_bin[~out_learnt[0]];
+-    
++
+     int to_remove = 0;
+     for (int i = 0; i < ws.size(); i++){
+         Lit the_other = ws[i].blocker;
+         // Does 'the_other' appear negatively in 'out_learnt'?
+-        if (seen2[var(the_other)] == counter && value(the_other) == l_True){
++        if (seen2[var(the_other)] == counter && value(the_other) == cml_True){
+             to_remove++;
+             seen2[var(the_other)] = counter - 1; // Remember to remove this variable.
+         }
+     }
+-    
++
+     // Shrink.
+     if (to_remove > 0){
+         int last = out_learnt.size() - 1;
+@@ -1318,13 +1319,13 @@
+     while (analyze_stack.size() > 0){
+         assert(reason(var(analyze_stack.last())) != CRef_Undef);
+         Clause& c = ca[reason(var(analyze_stack.last()))]; analyze_stack.pop();
+-        
++
+         // Special handling for binary clauses like in 'analyze()'.
+-        if (c.size() == 2 && value(c[0]) == l_False){
+-            assert(value(c[1]) == l_True);
++        if (c.size() == 2 && value(c[0]) == cml_False){
++            assert(value(c[1]) == cml_True);
+             Lit tmp = c[0];
+             c[0] = c[1], c[1] = tmp; }
+-        
++
+         for (int i = 1; i < c.size(); i++){
+             Lit p  = c[i];
+             if (!seen[var(p)] && level(var(p)) > 0){
+@@ -1341,7 +1342,7 @@
+             }
+         }
+     }
+-    
++
+     return true;
+ }
+ 
+@@ -1359,12 +1360,12 @@
+ {
+     out_conflict.clear();
+     out_conflict.push(p);
+-    
++
+     if (decisionLevel() == 0)
+         return;
+-    
++
+     seen[var(p)] = 1;
+-    
++
+     for (int i = trail.size()-1; i >= trail_lim[0]; i--){
+         Var x = var(trail[i]);
+         if (seen[x]){
+@@ -1380,20 +1381,20 @@
+             seen[x] = 0;
+         }
+     }
+-    
++
+     seen[var(p)] = 0;
+ }
+ 
+ 
+ void Solver::uncheckedEnqueue(Lit p, CRef from)
+ {
+-    assert(value(p) == l_Undef);
++    assert(value(p) == cml_Undef);
+     Var x = var(p);
+     if (!VSIDS){
+         picked[x] = conflicts;
+         conflicted[x] = 0;
+         almost_conflicted[x] = 0;
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+         uint32_t age = conflicts - canceled[var(p)];
+         if (age > 0){
+             double decay = pow(0.95, age);
+@@ -1403,13 +1404,66 @@
+         }
+ #endif
+     }
+-    
++
+     assigns[x] = lbool(!sign(p));
+     vardata[x] = mkVarData(from, decisionLevel());
+     trail.push_(p);
+ }
+ 
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == cml_False)
++            st = false;
++        else if (value(p) != cml_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        // here we may choose a wrong literal
++        // in Glucose if the clause is binary!
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
++    return st && confl == CRef_Undef;
++}
++
++
+ /*_________________________________________________________________________________________________
+  |
+  |  propagate : [void]  ->  [Clause*]
+@@ -1427,33 +1481,33 @@
+     int     num_props = 0;
+     watches.cleanAll();
+     watches_bin.cleanAll();
+-    
++
+     while (qhead < trail.size()){
+         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+         vec<Watcher>&  ws  = watches[p];
+         Watcher        *i, *j, *end;
+         num_props++;
+-        
++
+         vec<Watcher>& ws_bin = watches_bin[p];  // Propagate binary clauses first.
+         for (int k = 0; k < ws_bin.size(); k++){
+             Lit the_other = ws_bin[k].blocker;
+-            if (value(the_other) == l_False){
++            if (value(the_other) == cml_False){
+                 confl = ws_bin[k].cref;
+-#ifdef LOOSE_PROP_STAT
++#ifdef MAPLECM_LOOSE_PROP_STAT
+                 return confl;
+ #else
+                 goto ExitProp;
+ #endif
+-            }else if(value(the_other) == l_Undef)
++            }else if(value(the_other) == cml_Undef)
+                 uncheckedEnqueue(the_other, ws_bin[k].cref);
+         }
+-        
++
+         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
+             // Try to avoid inspecting the clause:
+             Lit blocker = i->blocker;
+-            if (value(blocker) == l_True){
++            if (value(blocker) == cml_True){
+                 *j++ = *i++; continue; }
+-            
++
+             // Make sure the false literal is data[1]:
+             CRef     cr        = i->cref;
+             Clause&  c         = ca[cr];
+@@ -1462,23 +1516,23 @@
+                 c[0] = c[1], c[1] = false_lit;
+             assert(c[1] == false_lit);
+             i++;
+-            
++
+             // If 0th watch is true, then clause is already satisfied.
+             Lit     first = c[0];
+             Watcher w     = Watcher(cr, first);
+-            if (first != blocker && value(first) == l_True){
++            if (first != blocker && value(first) == cml_True){
+                 *j++ = w; continue; }
+-            
++
+             // Look for new watch:
+             for (int k = 2; k < c.size(); k++)
+-                if (value(c[k]) != l_False){
++                if (value(c[k]) != cml_False){
+                     c[1] = c[k]; c[k] = false_lit;
+                     watches[~c[1]].push(w);
+                     goto NextClause; }
+-            
++
+             // Did not find watch -- clause is unit under assignment:
+             *j++ = w;
+-            if (value(first) == l_False){
++            if (value(first) == cml_False){
+                 confl = cr;
+                 qhead = trail.size();
+                 // Copy the remaining watches:
+@@ -1486,16 +1540,18 @@
+                     *j++ = *i++;
+             }else
+                 uncheckedEnqueue(first, cr);
+-            
++
+ NextClause:;
+         }
+         ws.shrink(i - j);
+     }
+-    
++
++#ifndef MAPLECM_LOOSE_PROP_STAT
+ ExitProp:;
+     propagations += num_props;
+     simpDB_props -= num_props;
+-    
++#endif
++
+     return confl;
+ }
+ 
+@@ -1516,24 +1572,25 @@
+ void Solver::reduceDB()
+ {
+     int     i, j;
+-    //if (local_learnts_dirty) cleanLearnts(learnts_local, LOCAL);
++    //if (local_learnts_dirty) cleanLearnts(learnts_local, MAPLECM_LOCAL);
+     //local_learnts_dirty = false;
+-    
++
+     sort(learnts_local, reduceDB_lt(ca));
+-    
++
+     int limit = learnts_local.size() / 2;
+     for (i = j = 0; i < learnts_local.size(); i++){
+         Clause& c = ca[learnts_local[i]];
+-        if (c.mark() == LOCAL)
++        if (c.mark() == MAPLECM_LOCAL) {
+             if (c.removable() && !locked(c) && i < limit)
+                 removeClause(learnts_local[i]);
+             else{
+                 if (!c.removable()) limit++;
+                 c.removable(true);
+                 learnts_local[j++] = learnts_local[i]; }
++        }
+     }
+     learnts_local.shrink(i - j);
+-    
++
+     checkGarbage();
+ }
+ void Solver::reduceDB_Tier2()
+@@ -1541,15 +1598,16 @@
+     int i, j;
+     for (i = j = 0; i < learnts_tier2.size(); i++){
+         Clause& c = ca[learnts_tier2[i]];
+-        if (c.mark() == TIER2)
++        if (c.mark() == MAPLECM_TIER2) {
+             if (!locked(c) && c.touched() + 50000 < conflicts){
+                 learnts_local.push(learnts_tier2[i]);
+-                c.mark(LOCAL);
++                c.mark(MAPLECM_LOCAL);
+                 //c.removable(true);
+                 c.activity() = 0;
+                 claBumpActivity(c);
+             }else
+                 learnts_tier2[j++] = learnts_tier2[i];
++        }
+     }
+     learnts_tier2.shrink(i - j);
+ }
+@@ -1575,11 +1633,12 @@
+     int i, j;
+     for (i = j = 0; i < cs.size(); i++){
+         Clause& c = ca[cs[i]];
+-        if (c.mark() == valid_mark)
++        if (c.mark() == valid_mark) {
+             if (satisfied(c))
+                 removeClause(cs[i]);
+             else
+                 cs[j++] = cs[i];
++        }
+     }
+     cs.shrink(i - j);
+ }
+@@ -1588,9 +1647,9 @@
+ {
+     vec<Var> vs;
+     for (Var v = 0; v < nVars(); v++)
+-        if (decision[v] && value(v) == l_Undef)
++        if (decision[v] && value(v) == cml_Undef)
+             vs.push(v);
+-    
++
+     order_heap_CHB  .build(vs);
+     order_heap_VSIDS.build(vs);
+ }
+@@ -1607,25 +1666,25 @@
+ bool Solver::simplify()
+ {
+     assert(decisionLevel() == 0);
+-    
++
+     if (!ok || propagate() != CRef_Undef)
+         return ok = false;
+-    
++
+     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
+         return true;
+-    
++
+     // Remove satisfied clauses:
+     removeSatisfied(learnts_core); // Should clean core first.
+-    safeRemoveSatisfied(learnts_tier2, TIER2);
+-    safeRemoveSatisfied(learnts_local, LOCAL);
++    safeRemoveSatisfied(learnts_tier2, MAPLECM_TIER2);
++    safeRemoveSatisfied(learnts_local, MAPLECM_LOCAL);
+     if (remove_satisfied)        // Can be turned off.
+         removeSatisfied(clauses);
+     checkGarbage();
+     rebuildOrderHeap();
+-    
++
+     simpDB_assigns = nAssigns();
+     simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
+-    
++
+     return true;
+ }
+ 
+@@ -1638,9 +1697,9 @@
+  |    Search for a model the specified number of conflicts.
+  |
+  |  Output:
+- |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+- |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+- |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
++ |    'cml_True' if a partial assigment that is consistent with respect to the clauseset is found. If
++ |    all variables are decision variables, this means that the clause set is satisfiable. 'cml_False'
++ |    if the clause set is unsatisfiable. 'cml_Undef' if the bound on number of conflicts is reached.
+  |________________________________________________________________________________________________@*/
+ lbool Solver::search(int& nof_conflicts)
+ {
+@@ -1650,44 +1709,44 @@
+     vec<Lit>    learnt_clause;
+     bool        cached = false;
+     starts++;
+-    
++
+     // simplify
+     //
+     if (conflicts >= curSimplify * nbconfbeforesimplify){
+         nbSimplifyAll++;
+ //        printf("c ### simplifyAll %llu on conflict : %lld and restart: %lld\n",  nbSimplifyAll, conflicts, starts);
+         if (!simplifyAll()){
+-            return l_False;
++            return cml_False;
+         }
+         curSimplify = (conflicts / nbconfbeforesimplify) + 1;
+         nbconfbeforesimplify += incSimplify;
+     }
+-    
++
+     for (;;){
+         CRef confl = propagate();
+-        
++
+         if (confl != CRef_Undef){
+             // CONFLICT
+             if (VSIDS){
+                 if (--timer == 0 && var_decay < 0.95) timer = 5000, var_decay += 0.01;
+             }else
+                 if (step_size > min_step_size) step_size -= step_size_dec;
+-            
++
+             conflicts++; nof_conflicts--;
+             if (conflicts == 100000 && learnts_core.size() < 100) core_lbd_cut = 5;
+-            if (decisionLevel() == 0) return l_False;
+-            
++            if (decisionLevel() == 0) return cml_False;
++
+             learnt_clause.clear();
+             analyze(confl, learnt_clause, backtrack_level, lbd);
+             cancelUntil(backtrack_level);
+-            
++
+             lbd--;
+             if (VSIDS){
+                 cached = false;
+                 conflicts_VSIDS++;
+                 lbd_queue.push(lbd);
+                 global_lbd_sum += (lbd > 50 ? 50 : lbd); }
+-            
++
+             if (learnt_clause.size() == 1){
+                 uncheckedEnqueue(learnt_clause[0]);
+             }else{
+@@ -1695,10 +1754,10 @@
+                 ca[cr].set_lbd(lbd);
+                 if (lbd <= core_lbd_cut){
+                     learnts_core.push(cr);
+-                    ca[cr].mark(CORE);
++                    ca[cr].mark(MAPLECM_CORE);
+                 }else if (lbd <= 6){
+                     learnts_tier2.push(cr);
+-                    ca[cr].mark(TIER2);
++                    ca[cr].mark(MAPLECM_TIER2);
+                     ca[cr].touched() = conflicts;
+                 }else{
+                     learnts_local.push(cr);
+@@ -1707,30 +1766,30 @@
+                 uncheckedEnqueue(learnt_clause[0], cr);
+             }
+             if (drup_file){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+                 binDRUP('a', learnt_clause, drup_file);
+ #else
+                 for (int i = 0; i < learnt_clause.size(); i++)
+-                    fprintf(drup_file, "%i ", (var(learnt_clause[i]) + 1) * (-2 * sign(learnt_clause[i]) + 1));
++                    fprintf(drup_file, "%i ", var(learnt_clause[i]) * (-2 * sign(learnt_clause[i]) + 1));
+                 fprintf(drup_file, "0\n");
+ #endif
+             }
+-            
++
+             if (VSIDS) varDecayActivity();
+             claDecayActivity();
+-            
++
+             /*if (--learntsize_adjust_cnt == 0){
+              learntsize_adjust_confl *= learntsize_adjust_inc;
+              learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+              max_learnts             *= learntsize_inc;
+-             
++
+              if (verbosity >= 1)
+              printf("c | %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+              (int)conflicts,
+              (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+              (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+              }*/
+-            
++
+         }else{
+             // NO CONFLICT
+             bool restart = false;
+@@ -1746,45 +1805,45 @@
+                 // Reached bound on number of conflicts:
+                 progress_estimate = progressEstimate();
+                 cancelUntil(0);
+-                return l_Undef; }
+-            
++                return cml_Undef; }
++
+             // Simplify the set of problem clauses:
+             if (decisionLevel() == 0 && !simplify())
+-                return l_False;
+-            
++                return cml_False;
++
+             if (conflicts >= next_T2_reduce){
+                 next_T2_reduce = conflicts + 10000;
+                 reduceDB_Tier2(); }
+             if (conflicts >= next_L_reduce){
+                 next_L_reduce = conflicts + 15000;
+                 reduceDB(); }
+-            
++
+             Lit next = lit_Undef;
+-            /*while (decisionLevel() < assumptions.size()){
++            while (decisionLevel() < assumptions.size()){
+              // Perform user provided assumption:
+              Lit p = assumptions[decisionLevel()];
+-             if (value(p) == l_True){
++             if (value(p) == cml_True){
+              // Dummy decision level:
+              newDecisionLevel();
+-             }else if (value(p) == l_False){
++             }else if (value(p) == cml_False){
+              analyzeFinal(~p, conflict);
+-             return l_False;
++             return cml_False;
+              }else{
+              next = p;
+              break;
+              }
+              }
+-             
+-             if (next == lit_Undef)*/{
++
++             if (next == lit_Undef) {
+                 // New variable decision:
+                 decisions++;
+                 next = pickBranchLit();
+ 
+                 if (next == lit_Undef)
+                     // Model found:
+-                    return l_True;
++                    return cml_True;
+             }
+-            
++
+             // Increase decision level and enqueue 'next'
+             newDecisionLevel();
+             uncheckedEnqueue(next);
+@@ -1797,53 +1856,53 @@
+ {
+     double  progress = 0;
+     double  F = 1.0 / nVars();
+-    
++
+     for (int i = 0; i <= decisionLevel(); i++){
+         int beg = i == 0 ? 0 : trail_lim[i - 1];
+         int end = i == decisionLevel() ? trail.size() : trail_lim[i];
+         progress += pow(F, i) * (end - beg);
+     }
+-    
++
+     return progress / nVars();
+ }
+ 
+ /*
+  Finite subsequences of the Luby-sequence:
+- 
++
+  0: 1
+  1: 1 1 2
+  2: 1 1 2 1 1 2 4
+  3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
+  ...
+- 
+- 
++
++
+  */
+ 
+ static double luby(double y, int x){
+-    
++
+     // Find the finite subsequence that contains index 'x', and the
+     // size of that subsequence:
+     int size, seq;
+     for (size = 1, seq = 0; size < x+1; seq++, size = 2*size+1);
+-    
++
+     while (size-1 != x){
+         size = (size-1)>>1;
+         seq--;
+         x = x % size;
+     }
+-    
++
+     return pow(y, seq);
+ }
+ 
+ 
+ static bool switch_mode = false;
+ 
+-#ifdef _MSC_VER_Sleep
++#ifdef MAPLECM__MSC_VER_Sleep
+ void sleep(int time)
+ {
+     Sleep(time * 1000);
+     switch_mode = true;
+-    printf("switch_mode = true\n");
++    // printf("switch_mode = true\n");
+ }
+ 
+ #else
+@@ -1855,50 +1914,50 @@
+ // NOTE: assumptions passed in member-variable 'assumptions'.
+ lbool Solver::solve_()
+ {
+-#ifdef _MSC_VER_Sleep
++#ifdef MAPLECM__MSC_VER_Sleep
+     std::thread t(sleep, 2500);
+     t.detach();
+ #else
+     signal(SIGALRM, SIGALRM_switch);
+     alarm(2500);
+ #endif
+-    
++
+     model.clear(); usedClauses.clear();
+     conflict.clear();
+-    if (!ok) return l_False;
+-    
++    if (!ok) return cml_False;
++
+     solves++;
+-    
++
+     max_learnts               = nClauses() * learntsize_factor;
+     learntsize_adjust_confl   = learntsize_adjust_start_confl;
+     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
+-    lbool   status            = l_Undef;
+-    
++    lbool   status            = cml_Undef;
++
+     if (verbosity >= 1){
+         printf("c ============================[ Search Statistics ]==============================\n");
+         printf("c | Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
+         printf("c |           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
+         printf("c ===============================================================================\n");
+     }
+-    
++
+     add_tmp.clear();
+-    
++
+     if (!simplifyOriginalClauses()){
+-#ifdef BIN_DRUP
++#ifdef MAPLECM_BIN_DRUP
+         if (drup_file) binDRUP_flush(drup_file);
+ #endif
+-        return l_False;
++        return cml_False;
+     }
+-    
++
+     VSIDS = true;
+     int init = 10000;
+-    while (status == l_Undef && init > 0 /*&& withinBudget()*/)
++    while (status == cml_Undef && init > 0 /*&& withinBudget()*/)
+         status = search(init);
+     VSIDS = false;
+-    
++
+     // Search:
+     int curr_restarts = 0;
+-    while (status == l_Undef /*&& withinBudget()*/){
++    while (status == cml_Undef /*&& withinBudget()*/){
+         if (VSIDS){
+             int weighted = INT32_MAX;
+             status = search(weighted);
+@@ -1909,33 +1968,35 @@
+         }
+         if (!VSIDS && switch_mode){
+             VSIDS = true;
+-            printf("c Switched to VSIDS.\n");
++            // printf("c Switched to VSIDS.\n");
+             fflush(stdout);
+             picked.clear();
+             conflicted.clear();
+             almost_conflicted.clear();
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+             canceled.clear();
+ #endif
+         }
+     }
+-    
++
+     if (verbosity >= 1)
+         printf("c ===============================================================================\n");
+-    
+-#ifdef BIN_DRUP
+-    if (drup_file && status == l_False) binDRUP_flush(drup_file);
++
++#ifdef MAPLECM_BIN_DRUP
++    if (drup_file && status == cml_False) binDRUP_flush(drup_file);
++#else
++    if (drup_file && status == cml_False) fprintf(drup_file, "0\n");
+ #endif
+-    
+-    if (status == l_True){
++
++    if (status == cml_True){
+         // Extend & copy model:
+         model.growTo(nVars());
+         for (int i = 0; i < nVars(); i++) model[i] = value(i);
+-    }else if (status == l_False && conflict.size() == 0)
++    }else if (status == cml_False && conflict.size() == 0)
+         ok = false;
+-    
++
+     cancelUntil(0);
+-    
++
+     return status;
+ }
+ 
+@@ -1957,9 +2018,9 @@
+ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max)
+ {
+     if (satisfied(c)) return;
+-    
++
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) != l_False)
++        if (value(c[i]) != cml_False)
+             fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
+     fprintf(f, "0\n");
+ }
+@@ -1981,37 +2042,37 @@
+     if (!ok){
+         fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
+         return; }
+-    
++
+     vec<Var> map; Var max = 0;
+-    
++
+     // Cannot use removeClauses here because it is not safe
+     // to deallocate them at this point. Could be improved.
+     int cnt = 0;
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]]))
+             cnt++;
+-    
++
+     for (int i = 0; i < clauses.size(); i++)
+         if (!satisfied(ca[clauses[i]])){
+             Clause& c = ca[clauses[i]];
+             for (int j = 0; j < c.size(); j++)
+-                if (value(c[j]) != l_False)
++                if (value(c[j]) != cml_False)
+                     mapVar(var(c[j]), map, max);
+         }
+-    
++
+     // Assumptions are added as unit clauses:
+     cnt += assumptions.size();
+-    
++
+     fprintf(f, "p cnf %d %d\n", max, cnt);
+-    
++
+     for (int i = 0; i < assumptions.size(); i++){
+-        assert(value(assumptions[i]) != l_False);
++        assert(value(assumptions[i]) != cml_False);
+         fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max)+1);
+     }
+-    
++
+     for (int i = 0; i < clauses.size(); i++)
+         toDimacs(f, ca[clauses[i]], map, max);
+-    
++
+     if (verbosity > 0)
+         printf("c Wrote %d clauses with %d variables.\n", cnt, max);
+ }
+@@ -2038,16 +2099,16 @@
+             for (int j = 0; j < ws_bin.size(); j++)
+                 ca.reloc(ws_bin[j].cref, to);
+         }
+-    
++
+     // All reasons:
+     //
+     for (int i = 0; i < trail.size(); i++){
+         Var v = var(trail[i]);
+-        
++
+         if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
+             ca.reloc(vardata[v].reason, to);
+     }
+-    
++
+     // All learnt:
+     //
+     for (int i = 0; i < learnts_core.size(); i++)
+@@ -2056,7 +2117,7 @@
+         ca.reloc(learnts_tier2[i], to);
+     for (int i = 0; i < learnts_local.size(); i++)
+         ca.reloc(learnts_local[i], to);
+-    
++
+     // All original:
+     //
+     int i, j;
+@@ -2065,14 +2126,14 @@
+             ca.reloc(clauses[i], to);
+             clauses[j++] = clauses[i]; }
+     clauses.shrink(i - j);
+-    
++
+     // All original used clauses
+     for (i = j = 0; i < usedClauses.size(); i++)
+         if (ca[usedClauses[i]].mark() != 1){
+             ca.reloc(usedClauses[i], to);
+             usedClauses[j++] = usedClauses[i]; }
+     usedClauses.shrink(i - j);
+-    
++
+ //    printf("c **** garbage collection done ****\n");
+ }
+ 
+@@ -2082,11 +2143,11 @@
+     // Initialize the next region to a size corresponding to the estimated utilization degree. This
+     // is not precise but should avoid some unnecessary reallocations for the new region:
+     ClauseAllocator to(ca.size() - ca.wasted());
+-    
++
+     relocAll(to);
+     // if (verbosity >= 2)
+-    printf("c |  Garbage collection:   %12d bytes => %12d bytes             |\n",
+-           ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
++    // printf("c |  Garbage collection:   %12d bytes => %12d bytes             |\n",
++    //        ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+     to.moveTo(ca);
+ }
+ 
+diff -Naur solvers/maplecm/core/Solver.h solvers/mcm/core/Solver.h
+--- solvers/maplecm/core/Solver.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/core/Solver.h	2019-03-17 17:58:50.000000000 +0000
+@@ -6,9 +6,9 @@
+ 
+ Maple_LCM, Based on MapleCOMSPS_DRUP --Copyright (c) 2017, Mao Luo, Chu-Min LI, Fan Xiao: implementing a learnt clause minimisation approach
+  Reference: M. Luo, C.-M. Li, F. Xiao, F. Manya, and Z. L. , “An effective learnt clause minimization approach for cdcl sat solvers,” in IJCAI-2017, 2017, pp.703-711.
+- 
++
+ Maple_CM, Based on Maple_LCM --Copyright (c) 2018, Chu-Min LI, Mao Luo, Fan Xiao: implementing a clause minimisation approach.
+- 
++
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+@@ -25,34 +25,34 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Solver_h
+-#define Minisat_Solver_h
++#ifndef MapleCM_Solver_h
++#define MapleCM_Solver_h
+ 
+-#define ANTI_EXPLORATION
+-#define BIN_DRUP
++#define MAPLECM_ANTI_EXPLORATION
++// #define MAPLECM_BIN_DRUP
+ 
+-#define GLUCOSE23
+-//#define INT_QUEUE_AVG
+-//#define LOOSE_PROP_STAT
+-
+-#ifdef GLUCOSE23
+-  #define INT_QUEUE_AVG
+-  #define LOOSE_PROP_STAT
++#define MAPLECM_GLUCOSE23
++//#define MAPLECM_INT_QUEUE_AVG
++//#define MAPLECM_LOOSE_PROP_STAT
++
++#ifdef MAPLECM_GLUCOSE23
++  #define MAPLECM_INT_QUEUE_AVG
++  #define MAPLECM_LOOSE_PROP_STAT
+ #endif
+ 
+-#include "mtl/Vec.h"
+-#include "mtl/Heap.h"
+-#include "mtl/Alg.h"
+-#include "utils/Options.h"
+-#include "core/SolverTypes.h"
++#include "maplecm/mtl/Vec.h"
++#include "maplecm/mtl/Heap.h"
++#include "maplecm/mtl/Alg.h"
++#include "maplecm/utils/Options.h"
++#include "maplecm/core/SolverTypes.h"
+ 
+ 
+ // Don't change the actual numbers.
+-#define LOCAL 0
+-#define TIER2 2
+-#define CORE  3
++#define MAPLECM_LOCAL 0
++#define MAPLECM_TIER2 2
++#define MAPLECM_CORE  3
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Solver -- the main class:
+@@ -68,7 +68,7 @@
+     public:
+         MyQueue(int sz) : max_sz(sz), q_sz(0), ptr(0), sum(0) { assert(sz > 0); q.growTo(sz); }
+         inline bool   full () const { return q_sz == max_sz; }
+-#ifdef INT_QUEUE_AVG
++#ifdef MAPLECM_INT_QUEUE_AVG
+         inline T      avg  () const { assert(full()); return sum / max_sz; }
+ #else
+         inline double avg  () const { assert(full()); return sum / (double) max_sz; }
+@@ -94,11 +94,11 @@
+     //
+     Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+ 
+-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
++    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
+-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
++    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
++    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+                                                                 // change the passed vector 'ps'.
+ 
+@@ -112,6 +112,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
+ 
+     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+     void    toDimacs     (const char *file, const vec<Lit>& assumps);
+@@ -122,9 +123,9 @@
+     void    toDimacs     (const char* file, Lit p);
+     void    toDimacs     (const char* file, Lit p, Lit q);
+     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+-    
++
+     // Variable mode:
+-    // 
++    //
+     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
+ 
+@@ -162,7 +163,8 @@
+ 
+     // Mode of operation:
+     //
+-    FILE*     drup_file;
++    FILE     *drup_file;
++    void     *drup_pyfile;
+     int       verbosity;
+     double    step_size;
+     double    step_size_dec;
+@@ -195,7 +197,7 @@
+     vec<uint32_t> picked;
+     vec<uint32_t> conflicted;
+     vec<uint32_t> almost_conflicted;
+-#ifdef ANTI_EXPLORATION
++#ifdef MAPLECM_ANTI_EXPLORATION
+     vec<uint32_t> canceled;
+ #endif
+ 
+@@ -247,7 +249,7 @@
+     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
+     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
+     vec<VarData>        vardata;          // Stores reason and level for each variable.
+-    int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
++    int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MapleCM).
+     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
+     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
+     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
+@@ -365,12 +367,12 @@
+     // simplify
+     //
+ public:
+-    
+-#ifdef BIN_DRUP
++
++#ifdef MAPLECM_BIN_DRUP
+     static int buf_len;
+     static unsigned char drup_buf[];
+     static unsigned char* buf_ptr;
+-    
++
+     static inline void byteDRUP(Lit l){
+         unsigned int u = 2 * (var(l) + 1) + sign(l);
+         do{
+@@ -379,7 +381,7 @@
+         }while (u);
+         *(buf_ptr - 1) &= 0x7f; // End marker of this unsigned number.
+     }
+-    
++
+     template<class V>
+     static inline void binDRUP(unsigned char op, const V& c, FILE* drup_file){
+         assert(op == 'a' || op == 'd');
+@@ -388,7 +390,7 @@
+         *buf_ptr++ = 0; buf_len++;
+         if (buf_len > 1048576) binDRUP_flush(drup_file);
+     }
+-    
++
+     static inline void binDRUP_strengthen(const Clause& c, Lit l, FILE* drup_file){
+         *buf_ptr++ = 'a'; buf_len++;
+         for (int i = 0; i < c.size(); i++)
+@@ -396,14 +398,14 @@
+         *buf_ptr++ = 0; buf_len++;
+         if (buf_len > 1048576) binDRUP_flush(drup_file);
+     }
+-    
++
+     static inline void binDRUP_flush(FILE* drup_file){
+         //        fwrite(drup_buf, sizeof(unsigned char), buf_len, drup_file);
+         fwrite_unlocked(drup_buf, sizeof(unsigned char), buf_len, drup_file);
+         buf_ptr = drup_buf; buf_len = 0;
+     }
+ #endif
+-    
++
+     bool	simplifyAll();
+     bool	simplifyLearnt(Clause& c, CRef cr, vec<Lit>& lits);
+     // bool	simplifyLearnt_x(vec<CRef>& learnts_x);
+@@ -474,15 +476,15 @@
+         garbageCollect(); }
+ 
+ // NOTE: enqueue does not set the ok flag! (only public methods do)
+-inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
++inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != cml_Undef ? value(p) != cml_False : (uncheckedEnqueue(p, from), true); }
+ inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
+ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
+ inline bool     Solver::locked          (const Clause& c) const {
+-    int i = c.size() != 2 ? 0 : (value(c[0]) == l_True ? 0 : 1);
+-    return value(c[i]) == l_True && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c;
++    int i = c.size() != 2 ? 0 : (value(c[0]) == cml_True ? 0 : 1);
++    return value(c[i]) == cml_True && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c;
+ }
+ inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+ 
+@@ -498,8 +500,8 @@
+ inline int      Solver::nVars         ()      const   { return vardata.size(); }
+ inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+ inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
+-inline void     Solver::setDecisionVar(Var v, bool b) 
+-{ 
++inline void     Solver::setDecisionVar(Var v, bool b)
++{
+     if      ( b && !decision[v]) dec_vars++;
+     else if (!b &&  decision[v]) dec_vars--;
+ 
+@@ -521,11 +523,11 @@
+ // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
+ // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
+ // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
+-inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
+-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
++inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == cml_True; }
++inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == cml_True; }
++inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == cml_True; }
++inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == cml_True; }
++inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == cml_True; }
+ inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
+ inline bool     Solver::okay          ()      const   { return ok; }
+ 
+diff -Naur solvers/maplecm/core/SolverTypes.h solvers/mcm/core/SolverTypes.h
+--- solvers/maplecm/core/SolverTypes.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/core/SolverTypes.h	2019-03-17 17:22:56.000000000 +0000
+@@ -6,9 +6,9 @@
+ 
+ Maple_LCM, Based on MapleCOMSPS_DRUP --Copyright (c) 2017, Mao Luo, Chu-Min LI, Fan Xiao: implementing a learnt clause minimisation approach
+  Reference: M. Luo, C.-M. Li, F. Xiao, F. Manya, and Z. L. , “An effective learnt clause minimization approach for cdcl sat solvers,” in IJCAI-2017, 2017, pp.703-711.
+- 
++
+ Maple_CM, Based on Maple_LCM --Copyright (c) 2018, Chu-Min LI, Mao Luo, Fan Xiao: implementing a clause minimisation approach.
+- 
++
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+@@ -26,18 +26,18 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_SolverTypes_h
+-#define Minisat_SolverTypes_h
++#ifndef MapleCM_SolverTypes_h
++#define MapleCM_SolverTypes_h
+ 
+ #include <assert.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Vec.h"
+-#include "mtl/Map.h"
+-#include "mtl/Alloc.h"
++#include "maplecm/mtl/IntTypes.h"
++#include "maplecm/mtl/Alg.h"
++#include "maplecm/mtl/Vec.h"
++#include "maplecm/mtl/Map.h"
++#include "maplecm/mtl/Alloc.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+@@ -69,9 +69,9 @@
+ inline  int  var       (Lit p)              { return p.x >> 1; }
+ 
+ // Mapping Literals to and from compact integers suitable for array indexing:
+-inline  int  toInt     (Var v)              { return v; } 
+-inline  int  toInt     (Lit p)              { return p.x; } 
+-inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; } 
++inline  int  toInt     (Var v)              { return v; }
++inline  int  toInt     (Lit p)              { return p.x; }
++inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
+ 
+ //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
+ //const Lit lit_Error = mkLit(var_Undef, true );  // }
+@@ -84,13 +84,13 @@
+ // Lifted booleans:
+ //
+ // NOTE: this implementation is optimized for the case when comparisons between values are mostly
+-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
++//       between one variable and one constant. Some care had to be taken to make sure that gcc
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+-#define l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+-#define l_False (lbool((uint8_t)1))
+-#define l_Undef (lbool((uint8_t)2))
++#define cml_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
++#define cml_False (lbool((uint8_t)1))
++#define cml_Undef (lbool((uint8_t)2))
+ 
+ class lbool {
+     uint8_t value;
+@@ -105,7 +105,7 @@
+     bool  operator != (lbool b) const { return !(*this == b); }
+     lbool operator ^  (bool  b) const { return lbool((uint8_t)(value^(uint8_t)b)); }
+ 
+-    lbool operator && (lbool b) const { 
++    lbool operator && (lbool b) const {
+         uint8_t sel = (this->value << 1) | (b.value << 3);
+         uint8_t v   = (0xF7F755F4 >> sel) & 3;
+         return lbool(v); }
+@@ -137,7 +137,7 @@
+         unsigned simplified     : 8;
+       unsigned used             : 18;
+         unsigned lbd       : 26;
+-        unsigned size      : 32; 
++        unsigned size      : 32;
+ 		//simplify
+ 	}                            header;
+     union { Lit lit; float act; uint32_t abs; uint32_t touched; CRef rel; } data[0];
+@@ -159,14 +159,14 @@
+ 		header.simplified = 0;
+ 		header.used = 0;
+ 
+-        for (int i = 0; i < ps.size(); i++) 
++        for (int i = 0; i < ps.size(); i++)
+             data[i].lit = ps[i];
+ 
+         if (header.has_extra){
+             if (header.learnt){
+-                data[header.size].act = 0; 
++                data[header.size].act = 0;
+                 data[header.size+1].touched = 0;
+-            }else 
++            }else
+                 calcAbstraction(); }
+     }
+ 
+@@ -180,13 +180,13 @@
+ 
+ 
+     int          size        ()      const   { return header.size; }
+-    void         shrink      (int i)         { 
+-      assert(i <= size()); 
++    void         shrink      (int i)         {
++      assert(i <= size());
+       if (header.has_extra) {
+ 	data[header.size-i] = data[header.size];
+ 	data[header.size-i+1] = data[header.size+1];
+       }
+-      header.size -= i; 
++      header.size -= i;
+     }
+     void         pop         ()              { shrink(1); }
+     bool         learnt      ()      const   { return header.learnt; }
+@@ -277,13 +277,13 @@
+     void reloc(CRef& cr, ClauseAllocator& to)
+     {
+         Clause& c = operator[](cr);
+-        
++
+         if (c.reloced()) { cr = c.relocation(); return; }
+-        
++
+         cr = to.alloc(c, c.learnt());
+         c.relocate(cr);
+-        
+-        // Copy extra data-fields: 
++
++        // Copy extra data-fields:
+         // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
+         to[cr].mark(c.mark());
+ 	// simplify
+@@ -313,7 +313,7 @@
+ 
+  public:
+     OccLists(const Deleted& d) : deleted(d) {}
+-    
++
+     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
+     // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+@@ -372,13 +372,13 @@
+ 
+     typedef Map<CRef, T, CRefHash> HashTable;
+     HashTable map;
+-        
++
+  public:
+     // Size-operations:
+     void     clear       ()                           { map.clear(); }
+     int      size        ()                const      { return map.elems(); }
+ 
+-    
++
+     // Insert/Remove/Test mapping:
+     void     insert      (CRef cr, const T& t){ map.insert(cr, t); }
+     void     growTo      (CRef cr, const T& t){ map.insert(cr, t); } // NOTE: for compatibility
+@@ -405,11 +405,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  subsumes : (other : const Clause&)  ->  Lit
+-|  
++|
+ |  Description:
+ |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+ |       by subsumption resolution.
+-|  
++|
+ |    Result:
+ |       lit_Error  - No subsumption or simplification
+ |       lit_Undef  - Clause subsumes 'other'
+diff -Naur solvers/maplecm/mtl/Alg.h solvers/mcm/mtl/Alg.h
+--- solvers/maplecm/mtl/Alg.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Alg.h	2019-03-17 16:53:46.000000000 +0000
+@@ -1,7 +1,7 @@
+ /*******************************************************************************************[Alg.h]
+ Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+ Copyright (c) 2007-2010, Niklas Sorensson
+- 
++
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+@@ -19,12 +19,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Alg_h
+-#define Minisat_Alg_h
++#ifndef MapleCM_Alg_h
++#define MapleCM_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur solvers/maplecm/mtl/Alloc.h solvers/mcm/mtl/Alloc.h
+--- solvers/maplecm/mtl/Alloc.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Alloc.h	2019-03-17 16:54:19.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_Alloc_h
+-#define Minisat_Alloc_h
++#ifndef MapleCM_Alloc_h
++#define MapleCM_Alloc_h
+ 
+-#include "mtl/XAlloc.h"
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/XAlloc.h"
++#include "maplecm/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+@@ -56,7 +56,7 @@
+     uint32_t size      () const      { return sz; }
+     uint32_t wasted    () const      { return wasted_; }
+ 
+-    Ref      alloc     (int size); 
++    Ref      alloc     (int size);
+     void     free      (int size)    { wasted_ += size; }
+ 
+     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+@@ -109,14 +109,14 @@
+ template<class T>
+ typename RegionAllocator<T>::Ref
+ RegionAllocator<T>::alloc(int size)
+-{ 
++{
+     // printf("ALLOC called (this = %p, size = %d)\n", this, size); fflush(stdout);
+     assert(size > 0);
+     capacity(sz + size);
+ 
+     uint32_t prev_sz = sz;
+     sz += size;
+-    
++
+     // Handle overflow:
+     if (sz < prev_sz)
+         throw OutOfMemoryException();
+diff -Naur solvers/maplecm/mtl/Heap.h solvers/mcm/mtl/Heap.h
+--- solvers/maplecm/mtl/Heap.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Heap.h	2019-03-17 16:54:29.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Heap_h
+-#define Minisat_Heap_h
++#ifndef MapleCM_Heap_h
++#define MapleCM_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+@@ -45,7 +45,7 @@
+     {
+         int x  = heap[i];
+         int p  = parent(i);
+-        
++
+         while (i != 0 && lt(x, heap[p])){
+             heap[i]          = heap[p];
+             indices[heap[p]] = i;
+@@ -103,7 +103,7 @@
+ 
+         indices[n] = heap.size();
+         heap.push(n);
+-        percolateUp(indices[n]); 
++        percolateUp(indices[n]);
+     }
+ 
+ 
+@@ -115,7 +115,7 @@
+         indices[x]       = -1;
+         heap.pop();
+         if (heap.size() > 1) percolateDown(0);
+-        return x; 
++        return x;
+     }
+ 
+ 
+@@ -133,11 +133,11 @@
+             percolateDown(i);
+     }
+ 
+-    void clear(bool dealloc = false) 
+-    { 
++    void clear(bool dealloc = false)
++    {
+         for (int i = 0; i < heap.size(); i++)
+             indices[heap[i]] = -1;
+-        heap.clear(dealloc); 
++        heap.clear(dealloc);
+     }
+ };
+ 
+diff -Naur solvers/maplecm/mtl/IntTypes.h solvers/mcm/mtl/IntTypes.h
+--- solvers/maplecm/mtl/IntTypes.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/IntTypes.h	2019-03-17 16:54:38.000000000 +0000
+@@ -17,8 +17,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_IntTypes_h
+-#define Minisat_IntTypes_h
++#ifndef MapleCM_IntTypes_h
++#define MapleCM_IntTypes_h
+ 
+ #ifdef __sun
+     // Not sure if there are newer versions that support C99 headers. The
+diff -Naur solvers/maplecm/mtl/Map.h solvers/mcm/mtl/Map.h
+--- solvers/maplecm/mtl/Map.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Map.h	2019-03-17 16:54:48.000000000 +0000
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Map_h
+-#define Minisat_Map_h
++#ifndef MapleCM_Map_h
++#define MapleCM_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/IntTypes.h"
++#include "maplecm/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+@@ -72,7 +72,7 @@
+     bool    checkCap(int new_size) const { return new_size > cap; }
+ 
+     int32_t index  (const K& k) const { return hash(k) % cap; }
+-    void   _insert (const K& k, const D& d) { 
++    void   _insert (const K& k, const D& d) {
+         vec<Pair>& ps = table[index(k)];
+         ps.push(); ps.last().key = k; ps.last().data = d; }
+ 
+@@ -96,7 +96,7 @@
+         // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
+     }
+ 
+-    
++
+  public:
+ 
+     Map () : table(NULL), cap(0), size(0) {}
+@@ -137,7 +137,7 @@
+         for (int i = 0; i < ps.size(); i++)
+             if (equals(ps[i].key, k)){
+                 d = ps[i].data;
+-                return true; } 
++                return true; }
+         return false;
+     }
+ 
+diff -Naur solvers/maplecm/mtl/Queue.h solvers/mcm/mtl/Queue.h
+--- solvers/maplecm/mtl/Queue.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Queue.h	2019-03-17 16:55:08.000000000 +0000
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Queue_h
+-#define Minisat_Queue_h
++#ifndef MapleCM_Queue_h
++#define MapleCM_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/Vec.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ 
+diff -Naur solvers/maplecm/mtl/Sort.h solvers/mcm/mtl/Sort.h
+--- solvers/maplecm/mtl/Sort.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Sort.h	2019-03-17 16:55:18.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Sort_h
+-#define Minisat_Sort_h
++#ifndef MapleCM_Sort_h
++#define MapleCM_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "maplecm/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur solvers/maplecm/mtl/Vec.h solvers/mcm/mtl/Vec.h
+--- solvers/maplecm/mtl/Vec.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/Vec.h	2019-03-17 17:35:11.000000000 +0000
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Vec_h
+-#define Minisat_Vec_h
++#ifndef MapleCM_Vec_h
++#define MapleCM_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "maplecm/mtl/IntTypes.h"
++#include "maplecm/mtl/XAlloc.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+@@ -43,7 +43,7 @@
+     // Don't allow copying (error prone):
+     vec<T>&  operator = (vec<T>& other) { assert(0); return *this; }
+              vec        (vec<T>& other) { assert(0); }
+-             
++
+     // Helpers for calculating next capacity:
+     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
+     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+@@ -96,7 +96,7 @@
+ void vec<T>::capacity(int min_cap) {
+     if (cap >= min_cap) return;
+     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+-    if (add > INT_MAX - cap || ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM)
++    if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
+         throw OutOfMemoryException();
+  }
+ 
+diff -Naur solvers/maplecm/mtl/XAlloc.h solvers/mcm/mtl/XAlloc.h
+--- solvers/maplecm/mtl/XAlloc.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/mtl/XAlloc.h	2019-03-17 16:55:36.000000000 +0000
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Minisat_XAlloc_h
+-#define Minisat_XAlloc_h
++#ifndef MapleCM_XAlloc_h
++#define MapleCM_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur solvers/maplecm/utils/Options.cc solvers/mcm/utils/Options.cc
+--- solvers/maplecm/utils/Options.cc	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/utils/Options.cc	2019-03-17 17:54:00.000000000 +0000
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "mtl/Sort.h"
+-#include "utils/Options.h"
+-#include "utils/ParseUtils.h"
++#include "maplecm/mtl/Sort.h"
++#include "maplecm/utils/Options.h"
++#include "maplecm/utils/ParseUtils.h"
+ 
+-using namespace Minisat;
++using namespace MapleCM;
+ 
+-void Minisat::parseOptions(int& argc, char** argv, bool strict)
++void MapleCM::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -35,18 +35,19 @@
+                 printUsageAndExit(argc, argv, true);
+         } else {
+             bool parsed_ok = false;
+-        
++
+             for (int k = 0; !parsed_ok && k < Option::getOptionList().size(); k++){
+                 parsed_ok = Option::getOptionList()[k]->parse(argv[i]);
+ 
+                 // fprintf(stderr, "checking %d: %s against flag <%s> (%s)\n", i, argv[i], Option::getOptionList()[k]->name, parsed_ok ? "ok" : "skip");
+             }
+ 
+-            if (!parsed_ok)
++            if (!parsed_ok) {
+                 if (strict && match(argv[i], "-"))
+                     fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i], Option::getHelpPrefixString()), exit(1);
+                 else
+                     argv[j++] = argv[i];
++            }
+         }
+     }
+ 
+@@ -54,9 +55,9 @@
+ }
+ 
+ 
+-void Minisat::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Minisat::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Minisat::printUsageAndExit (int argc, char** argv, bool verbose)
++void MapleCM::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void MapleCM::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void MapleCM::printUsageAndExit (int argc, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur solvers/maplecm/utils/Options.h solvers/mcm/utils/Options.h
+--- solvers/maplecm/utils/Options.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/utils/Options.h	2019-03-17 17:35:46.000000000 +0000
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_Options_h
+-#define Minisat_Options_h
++#ifndef MapleCM_Options_h
++#define MapleCM_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "maplecm/mtl/IntTypes.h"
++#include "maplecm/mtl/Vec.h"
++#include "maplecm/utils/ParseUtils.h"
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+@@ -60,20 +60,20 @@
+     struct OptionLt {
+         bool operator()(const Option* x, const Option* y) {
+             int test1 = strcmp(x->category, y->category);
+-            return test1 < 0 || test1 == 0 && strcmp(x->type_name, y->type_name) < 0;
++            return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
+         }
+     };
+ 
+-    Option(const char* name_, 
++    Option(const char* name_,
+            const char* desc_,
+            const char* cate_,
+-           const char* type_) : 
++           const char* type_) :
+       name       (name_)
+     , description(desc_)
+     , category   (cate_)
+     , type_name  (type_)
+-    { 
+-        getOptionList().push(this); 
++    {
++        getOptionList().push(this);
+     }
+ 
+  public:
+@@ -135,7 +135,7 @@
+     DoubleOption& operator=(double x)   { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -143,7 +143,7 @@
+         char*  end;
+         double tmp = strtod(span, &end);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp >= range.end && (!range.end_inclusive || tmp != range.end)){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -159,12 +159,12 @@
+     }
+ 
+     virtual void help (bool verbose = false){
+-        fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n", 
+-                name, type_name, 
+-                range.begin_inclusive ? '[' : '(', 
++        fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n",
++                name, type_name,
++                range.begin_inclusive ? '[' : '(',
+                 range.begin,
+                 range.end,
+-                range.end_inclusive ? ']' : ')', 
++                range.end_inclusive ? ']' : ')',
+                 value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+@@ -187,13 +187,13 @@
+  public:
+     IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
+         : Option(n, d, c, "<int32>"), range(r), value(def) {}
+- 
++
+     operator   int32_t   (void) const { return value; }
+     operator   int32_t&  (void)       { return value; }
+     IntOption& operator= (int32_t x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -201,7 +201,7 @@
+         char*   end;
+         int32_t tmp = strtol(span, &end, 10);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp > range.end){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -249,13 +249,13 @@
+  public:
+     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
+         : Option(n, d, c, "<int64>"), range(r), value(def) {}
+- 
++
+     operator     int64_t   (void) const { return value; }
+     operator     int64_t&  (void)       { return value; }
+     Int64Option& operator= (int64_t x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -263,7 +263,7 @@
+         char*   end;
+         int64_t tmp = strtoll(span, &end, 10);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp > range.end){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -282,15 +282,15 @@
+         if (range.begin == INT64_MIN)
+             fprintf(stderr, "imin");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.begin);
++            fprintf(stderr, "%4" PRIi64, range.begin);
+ 
+         fprintf(stderr, " .. ");
+         if (range.end == INT64_MAX)
+             fprintf(stderr, "imax");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.end);
++            fprintf(stderr, "%4" PRIi64, range.end);
+ 
+-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
++        fprintf(stderr, "] (default: %" PRIi64")\n", value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+@@ -307,7 +307,7 @@
+ {
+     const char* value;
+  public:
+-    StringOption(const char* c, const char* n, const char* d, const char* def = NULL) 
++    StringOption(const char* c, const char* n, const char* d, const char* def = NULL)
+         : Option(n, d, c, "<string>"), value(def) {}
+ 
+     operator      const char*  (void) const     { return value; }
+@@ -315,7 +315,7 @@
+     StringOption& operator=    (const char* x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -330,7 +330,7 @@
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+         }
+-    }    
++    }
+ };
+ 
+ 
+@@ -343,7 +343,7 @@
+     bool value;
+ 
+  public:
+-    BoolOption(const char* c, const char* n, const char* d, bool v) 
++    BoolOption(const char* c, const char* n, const char* d, bool v)
+         : Option(n, d, c, "<bool>"), value(v) {}
+ 
+     operator    bool     (void) const { return value; }
+@@ -351,8 +351,8 @@
+     BoolOption& operator=(bool b)     { value = b; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
+-        
++        const char* span = str;
++
+         if (match(span, "-")){
+             bool b = !match(span, "no-");
+ 
+diff -Naur solvers/maplecm/utils/ParseUtils.h solvers/mcm/utils/ParseUtils.h
+--- solvers/maplecm/utils/ParseUtils.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/utils/ParseUtils.h	2019-03-17 16:52:52.000000000 +0000
+@@ -18,19 +18,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_ParseUtils_h
+-#define Minisat_ParseUtils_h
++#ifndef MapleCM_ParseUtils_h
++#define MapleCM_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+-#ifdef _MSC_VER 
+-#   include <win/zlib.h> 
+-#else 
+-#   include <zlib.h> 
+-#endif 
++#ifdef _MSC_VER
++#   include <win/zlib.h>
++#else
++#   include <zlib.h>
++#endif
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ //-------------------------------------------------------------------------------------------------
+ // A simple buffered character stream class:
+@@ -108,7 +108,7 @@
+ 
+     in += i;
+ 
+-    return true; 
++    return true;
+ }
+ 
+ // String matching: consumes characters eagerly, but does not require random access iterator.
+diff -Naur solvers/maplecm/utils/System.cc solvers/mcm/utils/System.cc
+--- solvers/maplecm/utils/System.cc	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/utils/System.cc	2019-03-17 16:50:28.000000000 +0000
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "maplecm/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace Minisat;
++using namespace MapleCM;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,14 +67,14 @@
+     return peak_kb;
+ }
+ 
+-double Minisat::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Minisat::memUsedPeak() { 
++double MapleCM::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double MapleCM::memUsedPeak() {
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double Minisat::memUsed(void) {
++double MapleCM::memUsed(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+@@ -82,13 +82,13 @@
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Minisat::memUsed(void) {
++double MapleCM::memUsed(void) {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+-double Minisat::memUsedPeak(void) {return memUsed(); }
++double MapleCM::memUsedPeak(void) {return memUsed(); }
+ 
+ #else
+-double Minisat::memUsed() { 
++double MapleCM::memUsed() {
+     return 0; }
+ #endif
+diff -Naur solvers/maplecm/utils/System.h solvers/mcm/utils/System.h
+--- solvers/maplecm/utils/System.h	2019-03-17 18:36:48.000000000 +0000
++++ solvers/mcm/utils/System.h	2019-03-17 16:50:37.000000000 +0000
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Minisat_System_h
+-#define Minisat_System_h
++#ifndef MapleCM_System_h
++#define MapleCM_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
++#include "maplecm/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Minisat {
++namespace MapleCM {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
+@@ -43,14 +43,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Minisat::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double MapleCM::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Minisat::cpuTime(void) {
++static inline double MapleCM::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }

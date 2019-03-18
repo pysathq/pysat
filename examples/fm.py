@@ -483,7 +483,7 @@ def usage():
     print('                         Available values: bw, cardn, kmtot, ladder, mtot, pw, seqc, sortn, tot (default = seqc)')
     print('        -h, --help')
     print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, g4, lgl, m22, mc, mgh (default = m22)')
+    print('                         Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
     print('        -v, --verbose    Be verbose')
 
 

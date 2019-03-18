@@ -25,6 +25,18 @@
 #include "lingeling/lglib.h"
 #endif
 
+#ifdef WITH_MAPLECHRONO
+#include "maplechrono/core/Solver.h"
+#endif
+
+#ifdef WITH_MAPLECM
+#include "maplecm/core/Solver.h"
+#endif
+
+#ifdef WITH_MAPLESAT
+#include "maplesat/core/Solver.h"
+#endif
+
 #ifdef WITH_MINICARD
 #include "minicard/core/Solver.h"
 #endif
@@ -112,6 +124,54 @@ extern "C" {
 	static PyObject *py_lingeling_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_lingeling_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_lingeling_del       (PyObject *, PyObject *);
+#endif
+#ifdef WITH_MAPLECHRONO
+	static PyObject *py_maplechrono_new       (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_solve     (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_propagate (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_setphases (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_core      (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_model     (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_del       (PyObject *, PyObject *);
+#endif
+#ifdef WITH_MAPLECM
+	static PyObject *py_maplecm_new       (PyObject *, PyObject *);
+	static PyObject *py_maplecm_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_maplecm_solve     (PyObject *, PyObject *);
+	static PyObject *py_maplecm_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_maplecm_propagate (PyObject *, PyObject *);
+	static PyObject *py_maplecm_setphases (PyObject *, PyObject *);
+	static PyObject *py_maplecm_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplecm_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplecm_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_maplecm_core      (PyObject *, PyObject *);
+	static PyObject *py_maplecm_model     (PyObject *, PyObject *);
+	static PyObject *py_maplecm_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_maplecm_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_maplecm_del       (PyObject *, PyObject *);
+#endif
+#ifdef WITH_MAPLESAT
+	static PyObject *py_maplesat_new       (PyObject *, PyObject *);
+	static PyObject *py_maplesat_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_maplesat_solve     (PyObject *, PyObject *);
+	static PyObject *py_maplesat_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_maplesat_propagate (PyObject *, PyObject *);
+	static PyObject *py_maplesat_setphases (PyObject *, PyObject *);
+	static PyObject *py_maplesat_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplesat_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplesat_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_maplesat_core      (PyObject *, PyObject *);
+	static PyObject *py_maplesat_model     (PyObject *, PyObject *);
+	static PyObject *py_maplesat_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_maplesat_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_maplesat_del       (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MINICARD
 	static PyObject *py_minicard_new       (PyObject *, PyObject *);
@@ -209,6 +269,54 @@ static PyMethodDef module_methods[] = {
 	{ "lingeling_nof_vars",  py_lingeling_nof_vars,  METH_VARARGS,   nvars_docstring },
 	{ "lingeling_nof_cls",   py_lingeling_nof_cls,   METH_VARARGS,    ncls_docstring },
 	{ "lingeling_del",       py_lingeling_del,       METH_VARARGS,     del_docstring },
+#endif
+#ifdef WITH_MAPLECHRONO
+	{ "maplechrono_new",       py_maplechrono_new,       METH_VARARGS,     new_docstring },
+	{ "maplechrono_add_cl",    py_maplechrono_add_cl,    METH_VARARGS,   addcl_docstring },
+	{ "maplechrono_solve",     py_maplechrono_solve,     METH_VARARGS,   solve_docstring },
+	{ "maplechrono_solve_lim", py_maplechrono_solve_lim, METH_VARARGS,     lim_docstring },
+	{ "maplechrono_propagate", py_maplechrono_propagate, METH_VARARGS,    prop_docstring },
+	{ "maplechrono_setphases", py_maplechrono_setphases, METH_VARARGS,  phases_docstring },
+	{ "maplechrono_cbudget",   py_maplechrono_cbudget,   METH_VARARGS, cbudget_docstring },
+	{ "maplechrono_pbudget",   py_maplechrono_pbudget,   METH_VARARGS, pbudget_docstring },
+	{ "maplechrono_tracepr",   py_maplechrono_tracepr,   METH_VARARGS, tracepr_docstring },
+	{ "maplechrono_core",      py_maplechrono_core,      METH_VARARGS,    core_docstring },
+	{ "maplechrono_model",     py_maplechrono_model,     METH_VARARGS,   model_docstring },
+	{ "maplechrono_nof_vars",  py_maplechrono_nof_vars,  METH_VARARGS,   nvars_docstring },
+	{ "maplechrono_nof_cls",   py_maplechrono_nof_cls,   METH_VARARGS,    ncls_docstring },
+	{ "maplechrono_del",       py_maplechrono_del,       METH_VARARGS,     del_docstring },
+#endif
+#ifdef WITH_MAPLECM
+	{ "maplecm_new",       py_maplecm_new,       METH_VARARGS,     new_docstring },
+	{ "maplecm_add_cl",    py_maplecm_add_cl,    METH_VARARGS,   addcl_docstring },
+	{ "maplecm_solve",     py_maplecm_solve,     METH_VARARGS,   solve_docstring },
+	{ "maplecm_solve_lim", py_maplecm_solve_lim, METH_VARARGS,     lim_docstring },
+	{ "maplecm_propagate", py_maplecm_propagate, METH_VARARGS,    prop_docstring },
+	{ "maplecm_setphases", py_maplecm_setphases, METH_VARARGS,  phases_docstring },
+	{ "maplecm_cbudget",   py_maplecm_cbudget,   METH_VARARGS, cbudget_docstring },
+	{ "maplecm_pbudget",   py_maplecm_pbudget,   METH_VARARGS, pbudget_docstring },
+	{ "maplecm_tracepr",   py_maplecm_tracepr,   METH_VARARGS, tracepr_docstring },
+	{ "maplecm_core",      py_maplecm_core,      METH_VARARGS,    core_docstring },
+	{ "maplecm_model",     py_maplecm_model,     METH_VARARGS,   model_docstring },
+	{ "maplecm_nof_vars",  py_maplecm_nof_vars,  METH_VARARGS,   nvars_docstring },
+	{ "maplecm_nof_cls",   py_maplecm_nof_cls,   METH_VARARGS,    ncls_docstring },
+	{ "maplecm_del",       py_maplecm_del,       METH_VARARGS,     del_docstring },
+#endif
+#ifdef WITH_MAPLESAT
+	{ "maplesat_new",       py_maplesat_new,       METH_VARARGS,     new_docstring },
+	{ "maplesat_add_cl",    py_maplesat_add_cl,    METH_VARARGS,   addcl_docstring },
+	{ "maplesat_solve",     py_maplesat_solve,     METH_VARARGS,   solve_docstring },
+	{ "maplesat_solve_lim", py_maplesat_solve_lim, METH_VARARGS,     lim_docstring },
+	{ "maplesat_propagate", py_maplesat_propagate, METH_VARARGS,    prop_docstring },
+	{ "maplesat_setphases", py_maplesat_setphases, METH_VARARGS,  phases_docstring },
+	{ "maplesat_cbudget",   py_maplesat_cbudget,   METH_VARARGS, cbudget_docstring },
+	{ "maplesat_pbudget",   py_maplesat_pbudget,   METH_VARARGS, pbudget_docstring },
+	{ "maplesat_tracepr",   py_maplesat_tracepr,   METH_VARARGS, tracepr_docstring },
+	{ "maplesat_core",      py_maplesat_core,      METH_VARARGS,    core_docstring },
+	{ "maplesat_model",     py_maplesat_model,     METH_VARARGS,   model_docstring },
+	{ "maplesat_nof_vars",  py_maplesat_nof_vars,  METH_VARARGS,   nvars_docstring },
+	{ "maplesat_nof_cls",   py_maplesat_nof_cls,   METH_VARARGS,    ncls_docstring },
+	{ "maplesat_del",       py_maplesat_del,       METH_VARARGS,     del_docstring },
 #endif
 #ifdef WITH_MINICARD
 	{ "minicard_new",       py_minicard_new,       METH_VARARGS,     new_docstring },
@@ -1139,7 +1247,7 @@ static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose41_declare_vars(s, max_var);
 
-	for (int i = 0; i < p.size(); ++i)
+	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
 	PyObject *ret = Py_BuildValue("");
@@ -1732,6 +1840,1386 @@ static PyObject *py_lingeling_del(PyObject *self, PyObject *args)
 }
 #endif  // WITH_LINGELING
 
+// API for MapleChrono
+//=============================================================================
+#ifdef WITH_MAPLECHRONO
+static PyObject *py_maplechrono_new(PyObject *self, PyObject *args)
+{
+	MapleChrono::Solver *s = new MapleChrono::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void maplechrono_declare_vars(
+	MapleChrono::Solver *s,
+	const int max_id
+)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool maplechrono_iterate(
+	PyObject *obj,
+	MapleChrono::vec<MapleChrono::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? MapleChrono::mkLit(l, false) : MapleChrono::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+	MapleChrono::vec<MapleChrono::Lit> cl;
+	int max_var = -1;
+
+	if (maplechrono_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplechrono_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_solve(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+	MapleChrono::vec<MapleChrono::Lit> a;
+	int max_var = -1;
+
+	if (maplechrono_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplechrono_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	bool res = s->solve(a);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+	MapleChrono::vec<MapleChrono::Lit> a;
+	int max_var = -1;
+
+	if (maplechrono_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplechrono_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	MapleChrono::lbool res = s->solveLimited(a);
+
+	PyObject *ret;
+	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
+		ret = PyBool_FromLong((long)!(MapleChrono::toInt(res)));
+	else
+		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+	MapleChrono::vec<MapleChrono::Lit> a;
+	int max_var = -1;
+
+	if (maplechrono_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplechrono_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	MapleChrono::vec<MapleChrono::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = MapleChrono::var(p[i]) * (MapleChrono::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplechrono_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->drup_file = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->drup_file = fdopen(fd, "w+");
+	if (s->drup_file == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->drup_file);
+	Py_INCREF(p_obj);
+#endif
+
+	s->drup_pyfile = (void *)p_obj;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	MapleChrono::vec<MapleChrono::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = MapleChrono::var((*c)[i]) * (MapleChrono::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	PyObject *ret = Py_None;
+
+	if (c->size())
+		ret = Py_BuildValue("O", core);
+
+	Py_DECREF(core);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *ret = Py_None;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	MapleChrono::vec<MapleChrono::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		MapleChrono::lbool True = MapleChrono::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+	}
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->drup_file)
+		PyFile_DecUseCount((PyFileObject *)(s->drup_pyfile));
+#else
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->drup_file)
+		Py_DECREF((PyObject *)s->drup_pyfile);
+#endif
+
+	delete s;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+#endif  // WITH_MAPLECHRONO
+
+// API for Maplesat
+//=============================================================================
+#ifdef WITH_MAPLESAT
+static PyObject *py_maplesat_new(PyObject *self, PyObject *args)
+{
+	Maplesat::Solver *s = new Maplesat::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void maplesat_declare_vars(
+	Maplesat::Solver *s,
+	const int max_id
+)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool maplesat_iterate(
+	PyObject *obj,
+	Maplesat::vec<Maplesat::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? Maplesat::mkLit(l, false) : Maplesat::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+	Maplesat::vec<Maplesat::Lit> cl;
+	int max_var = -1;
+
+	if (maplesat_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplesat_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_solve(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+	Maplesat::vec<Maplesat::Lit> a;
+	int max_var = -1;
+
+	if (maplesat_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplesat_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	bool res = s->solve(a);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+	Maplesat::vec<Maplesat::Lit> a;
+	int max_var = -1;
+
+	if (maplesat_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplesat_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Maplesat::lbool res = s->solveLimited(a);
+
+	PyObject *ret;
+	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
+		ret = PyBool_FromLong((long)!(Maplesat::toInt(res)));
+	else
+		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+	Maplesat::vec<Maplesat::Lit> a;
+	int max_var = -1;
+
+	if (maplesat_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplesat_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	Maplesat::vec<Maplesat::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Maplesat::var(p[i]) * (Maplesat::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplesat_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->drup_file = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->drup_file = fdopen(fd, "w+");
+	if (s->drup_file == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->drup_file);
+	Py_INCREF(p_obj);
+#endif
+
+	s->drup_pyfile = (void *)p_obj;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	Maplesat::vec<Maplesat::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = Maplesat::var((*c)[i]) * (Maplesat::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	PyObject *ret = Py_None;
+
+	if (c->size())
+		ret = Py_BuildValue("O", core);
+
+	Py_DECREF(core);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *ret = Py_None;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	Maplesat::vec<Maplesat::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		Maplesat::lbool True = Maplesat::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+	}
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->drup_file)
+		PyFile_DecUseCount((PyFileObject *)(s->drup_pyfile));
+#else
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->drup_file)
+		Py_DECREF((PyObject *)s->drup_pyfile);
+#endif
+
+	delete s;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+#endif  // WITH_MAPLESAT
+
+// API for MapleCM
+//=============================================================================
+#ifdef WITH_MAPLECM
+static PyObject *py_maplecm_new(PyObject *self, PyObject *args)
+{
+	MapleCM::Solver *s = new MapleCM::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void maplecm_declare_vars(
+	MapleCM::Solver *s,
+	const int max_id
+)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool maplecm_iterate(
+	PyObject *obj,
+	MapleCM::vec<MapleCM::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? MapleCM::mkLit(l, false) : MapleCM::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+	MapleCM::vec<MapleCM::Lit> cl;
+	int max_var = -1;
+
+	if (maplecm_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplecm_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_solve(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+	MapleCM::vec<MapleCM::Lit> a;
+	int max_var = -1;
+
+	if (maplecm_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplecm_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	bool res = s->solve(a);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+	MapleCM::vec<MapleCM::Lit> a;
+	int max_var = -1;
+
+	if (maplecm_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplecm_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	MapleCM::lbool res = s->solveLimited(a);
+
+	PyObject *ret;
+	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
+		ret = PyBool_FromLong((long)!(MapleCM::toInt(res)));
+	else
+		ret = Py_BuildValue("");  // return Python's None if l_Undef
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_propagate(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &save_phases))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+	MapleCM::vec<MapleCM::Lit> a;
+	int max_var = -1;
+
+	if (maplecm_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplecm_declare_vars(s, max_var);
+
+	if (setjmp(env) != 0) {
+		PyErr_SetString(SATError, "Caught keyboard interrupt");
+		return NULL;
+	}
+
+	MapleCM::vec<MapleCM::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = MapleCM::var(p[i]) * (MapleCM::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_setphases(PyObject *self, PyObject *args)
+{
+	signal(SIGINT, sigint_handler);
+
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		maplecm_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->drup_file = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->drup_file = fdopen(fd, "w+");
+	if (s->drup_file == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->drup_file);
+	Py_INCREF(p_obj);
+#endif
+
+	s->drup_pyfile = (void *)p_obj;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	MapleCM::vec<MapleCM::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = MapleCM::var((*c)[i]) * (MapleCM::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	PyObject *ret = Py_None;
+
+	if (c->size())
+		ret = Py_BuildValue("O", core);
+
+	Py_DECREF(core);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *ret = Py_None;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	MapleCM::vec<MapleCM::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		MapleCM::lbool True = MapleCM::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+	}
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->drup_file)
+		PyFile_DecUseCount((PyFileObject *)(s->drup_pyfile));
+#else
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->drup_file)
+		Py_DECREF((PyObject *)s->drup_pyfile);
+#endif
+
+	delete s;
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+#endif  // WITH_MAPLECM
+
 // API for Minicard
 //=============================================================================
 #ifdef WITH_MINICARD
@@ -1996,7 +3484,7 @@ static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minicard_declare_vars(s, max_var);
 
-	for (int i = 0; i < p.size(); ++i)
+	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
 	PyObject *ret = Py_BuildValue("");
@@ -2402,7 +3890,7 @@ static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisat22_declare_vars(s, max_var);
 
-	for (int i = 0; i < p.size(); ++i)
+	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
 	PyObject *ret = Py_BuildValue("");
@@ -2808,7 +4296,7 @@ static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisatgh_declare_vars(s, max_var);
 
-	for (int i = 0; i < p.size(); ++i)
+	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
 
 	PyObject *ret = Py_BuildValue("");

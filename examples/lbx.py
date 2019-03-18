@@ -550,7 +550,7 @@ def usage():
     print('                               Available values: [1 .. all] (default: 1)')
     print('        -h, --help')
     print('        -s, --solver           SAT solver to use')
-    print('                               Available values: g3, lgl, m22, mc, mgh (default: m22)')
+    print('                               Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
     print('        -v, --verbose          Be verbose')
 
 

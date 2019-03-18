@@ -1538,7 +1538,7 @@ def usage():
     print('        -l, --blo                Use BLO and stratification')
     print('        -m, --minimize           Use a heuristic unsatisfiable core minimizer')
     print('        -s, --solver=<string>    SAT solver to use')
-    print('                                 Available values: g3, g4, lgl, mc, m22, mgh (default = g3)')
+    print('                                 Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
     print('                                 Available values: [0 .. INT_MAX] (default = 0)')
     print('        -v, --verbose            Be verbose')

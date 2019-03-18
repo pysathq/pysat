@@ -39,6 +39,18 @@ sources = {
         'http://fmv.jku.at/lingeling/lingeling-bbc-9230380-160707-druplig-009.tar.gz',
         'solvers/lingeling.tar.gz'
     ),
+    'maplechrono': (
+        'http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/MapleLCMDistChronoBT.zip',
+        'solvers/maplechrono.zip'
+    ),
+    'maplecm': (
+        'http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/Maple_CM.zip',
+        'solvers/maplecm.zip'
+    ),
+    'maplesat': (
+        'https://sites.google.com/a/gsd.uwaterloo.ca/maplesat/MapleCOMSPS_pure_LRB.zip',
+        'solvers/maplesat.zip'
+    ),
     'minicard': (
         'https://github.com/liffiton/minicard/archive/v1.2.tar.gz',
         'http://reason.di.fc.ul.pt/~aign/storage/mirror/minicard-v1.2.tar.gz',
@@ -61,6 +73,9 @@ to_extract = {
     'glucose30': [],
     'glucose41': [],
     'lingeling': ['druplig-009.zip', 'lingeling-bbc-9230380-160707.tar.gz'],
+    'maplechrono': [],
+    'maplecm': [],
+    'maplesat': [],
     'minicard': [],
     'minisat22': [],
     'minisatgh': []
@@ -81,6 +96,17 @@ to_move = {
         ('lingeling-bbc-9230380-160707/lglopts.c', 'lglopts.c'),
         ('lingeling-bbc-9230380-160707/lglopts.h', 'lglopts.h')
     ],
+    'maplechrono': [
+        ('sources/core', 'core'),
+        ('sources/mtl', 'mtl'),
+        ('sources/utils', 'utils')
+    ],
+    'maplecm': [
+        ('sources/core', 'core'),
+        ('sources/mtl', 'mtl'),
+        ('sources/utils', 'utils')
+    ],
+    'maplesat': [],
     'minicard': [
         ('core', '_core'),
         ('minicard', 'core')
@@ -159,6 +185,43 @@ to_remove = {
         'lingeling-bbc-9230380-160707.tar.gz',
         'extract-and-compile.sh',
         '.tar.gz',
+        'README'
+    ],
+    'maplechrono': [
+        'bin',
+        'core/Dimacs.h',
+        'core/Main.cc',
+        'core/Makefile',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'utils/Makefile',
+        'sources',
+        'starexec_build'
+    ],
+    'maplecm': [
+        '__MACOSX',
+        'bin',
+        'core/Dimacs.h',
+        'core/Main.cc',
+        'core/Makefile',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'utils/Makefile',
+        'utils/Options.o',
+        'utils/System.o',
+        'sources',
+        'starexec_build'
+    ],
+    'maplesat': [
+        'core/Dimacs.h',
+        'core/Main.cc',
+        'core/Makefile',
+        'doc',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'simp',
+        'utils/Makefile',
+        'LICENSE',
         'README'
     ],
     'minicard': [
@@ -302,6 +365,7 @@ def extract_archive(archive, solver, put_inside = False):
         myzip = zipfile.ZipFile(archive, 'r')
         myzip.extractall(root)
         directory = myzip.namelist()[0]
+        directory = directory.rstrip('/').split('/')[0]
         myzip.close()
 
     if not put_inside:

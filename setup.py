@@ -41,8 +41,8 @@ Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`_
 
 # solvers to install
 #==============================================================================
-to_install = ['glucose30', 'glucose41', 'lingeling', 'minicard', 'minisat22',
-        'minisatgh']
+to_install = ['glucose30', 'glucose41', 'lingeling', 'maplechrono', 'maplecm',
+        'maplesat', 'minicard', 'minisat22', 'minisatgh']
 
 # example scripts to install as standalone executables
 #==============================================================================
@@ -73,7 +73,7 @@ class build(distutils.command.build.build):
 #==============================================================================
 pycard_ext = Extension('pycard',
     sources=['cardenc/pycard.cc'],
-    extra_compile_args=['-std=c++11', '-Wno-deprecated'],
+    extra_compile_args=['-std=c++11', '-Wall', '-Wno-deprecated'],
     include_dirs=['cardenc'] ,
     language='c++',
     libraries=['stdc++'],
@@ -82,7 +82,7 @@ pycard_ext = Extension('pycard',
 
 pysolvers_ext = Extension('pysolvers',
     sources = ['solvers/pysolvers.cc'],
-    extra_compile_args = ['-std=c++11', '-Wno-deprecated'] + \
+    extra_compile_args=['-std=c++11', '-Wall', '-Wno-deprecated'] + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
     include_dirs = ['solvers'],
     language = 'c++',

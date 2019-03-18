@@ -21,6 +21,9 @@
         Glucose3
         Glucose4
         Lingeling
+        MapleChrono
+        MapleCM
+        Maplesat
         Minicard
         Minisat22
         MinisatGH
@@ -35,6 +38,9 @@
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
+    -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
+    -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
+    -  Maplesat (`MapleCOMSPS_LRB <https://sites.google.com/a/gsd.uwaterloo.ca/maplesat/>`__)
     -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
     -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
     -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)
@@ -50,7 +56,8 @@
 
     The module provides direct access to all supported solvers using the
     corresponding classes :class:`Glucose3`, :class:`Glucose4`,
-    :class:`Lingeling`, :class:`Minicard`, :class:`Minisat22`, and
+    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
+    :class:`Maplesat`, :class:`Minicard`, :class:`Minisat22`, and
     :class:`MinisatGH`. However, the solvers can also be accessed through the
     common base class :class:`Solver` using the solver ``name`` argument. For
     example, both of the following pieces of code create a copy of the
@@ -117,10 +124,11 @@
 
     In order to shorten the description of the module, the classes providing
     direct access to the individual solvers, i.e. classes :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Lingeling`, :class:`Minicard`,
-    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They replicate
-    the interface of the base class :class:`Solver` and, thus, can be used the
-    same exact way.
+    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
+    :class:`MapleCM`, :class:`Maplesat`, :class:`Minicard`,
+    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
+    replicate the interface of the base class :class:`Solver` and, thus, can
+    be used the same exact way.
 
     ==============
     Module details
@@ -139,10 +147,11 @@ import time
 #==============================================================================
 class NoSuchSolverError(Exception):
     """
-        This exception is raised when creating a new SAT solver whose name does
-        not match any name in :class:`SolverNames`. The list of *known* solvers
-        includes the names `'glucose3'`, `'glucose4'`, `'lingeling'`,
-        `'minicard'`, `'minisat22'`, and `'minisatgh'`.
+        This exception is raised when creating a new SAT solver whose name
+        does not match any name in :class:`SolverNames`. The list of *known*
+        solvers includes the names `'glucose3'`, `'glucose4'`, `'lingeling'`,
+        `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'minicard'`,
+        `'minisat22'`, and `'minisatgh'`.
     """
 
     pass
@@ -158,12 +167,15 @@ class SolverNames(object):
 
         .. code-block:: python
 
-            glucose3  = ('g3', 'g30', 'glucose3', 'glucose30')
-            glucose4  = ('g4', 'g41', 'glucose4', 'glucose41')
-            lingeling = ('lgl', 'lingeling')
-            minicard  = ('mc', 'mcard', 'minicard')
-            minisat22 = ('m22', 'msat22', 'minisat22')
-            minisatgh = ('mgh', 'msat-gh', 'minisat-gh')
+            glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
+            glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
+            lingeling   = ('lgl', 'lingeling')
+            maplechrono = ('mcb', 'chrono', 'maplechrono')
+            maplecm     = ('mcm', 'maplecm')
+            maplesat    = ('mpl', 'maple', 'maplesat')
+            minicard    = ('mc', 'mcard', 'minicard')
+            minisat22   = ('m22', 'msat22', 'minisat22')
+            minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
 
         As a result, in order to select Glucose3, a user can specify the
         solver's name: either ``'g3'``, ``'g30'``, ``'glucose3'``, or
@@ -171,12 +183,15 @@ class SolverNames(object):
         also allowed*.
     """
 
-    glucose3  = ('g3', 'g30', 'glucose3', 'glucose30')
-    glucose4  = ('g4', 'g41', 'glucose4', 'glucose41')
-    lingeling = ('lgl', 'lingeling')
-    minicard  = ('mc', 'mcard', 'minicard')
-    minisat22 = ('m22', 'msat22', 'minisat22')
-    minisatgh = ('mgh', 'msat-gh', 'minisat-gh')
+    glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
+    glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
+    lingeling   = ('lgl', 'lingeling')
+    maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
+    maplecm     = ('mcm', 'maplecm')
+    maplesat    = ('mpl', 'maple', 'maplesat')
+    minicard    = ('mc', 'mcard', 'minicard')
+    minisat22   = ('m22', 'msat22', 'minisat22')
+    minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
 
 
 #
@@ -237,12 +252,14 @@ class Solver(object):
 
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
-        :class:`Lingeling`, :class:`Glucose3`, and :class:`Glucose4` can have
+        :class:`Lingeling`, :class:`Glucose3`, :class:`Glucose4`,
+        :class:`MapleChrono`, :class:`MapleCM` and :class:`Maplesat` can have
         additional default arguments. One such argument supported by
-        :class:`Glucose3` and :class:`Glucose4` but also by ``Lingeling`` is
-        `DRUP proof <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This
-        can be enabled by setting the ``with_proof`` argument to ``True``
-        (``False`` by default):
+        :class:`Glucose3` and :class:`Glucose4` but also by ``Lingeling``,
+        ``MapleChrono``, ``MapleCM``, and ``Maplesat`` is `DRUP proof
+        <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
+        enabled by setting the ``with_proof`` argument to ``True`` (``False``
+        by default):
 
         .. code-block:: python
 
@@ -316,6 +333,12 @@ class Solver(object):
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.lingeling:
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.maplechrono:
+                self.solver = MapleChrono(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.maplecm:
+                self.solver = MapleCM(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.maplesat:
+                self.solver = Maplesat(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.minicard:
                 self.solver = Minicard(bootstrap_with, use_timer)
             elif name_ in SolverNames.minisat22:
@@ -541,7 +564,8 @@ class Solver(object):
             **Note** that once these preferences are specified,
             :class:`MinisatGH` and :class:`Lingeling` will always respect them
             when branching on these variables. However, solvers
-            :class:`Glucose3`, :class:`Glucose4`, :class:`Minisat22`, and
+            :class:`Glucose3`, :class:`Glucose4`, :class:`MapleChrono`,
+            :class:`MapleCM`, :class:`Maplesat`, :class:`Minisat22`, and
             :class:`Minicard` can redefine the preferences in any of the
             following SAT calls due to the phase saving heuristic.
 
@@ -1731,6 +1755,876 @@ class Lingeling(object):
         if self.lingeling:
             for clause in formula:
                 self.add_clause(clause, no_return)
+
+
+#
+#==============================================================================
+class MapleChrono(object):
+    """
+        MapleLCMDistChronoBT SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by MapleChrono.')
+
+        self.maplesat = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.maplesat:
+            self.maplesat = pysolvers.maplechrono_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.maplechrono_tracepr(self.maplesat, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_del(self.maplesat)
+            self.maplesat = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[]):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplechrono_solve_lim(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_cbudget(self.maplesat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_pbudget(self.maplesat, budget)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.maplechrono_propagate(self.maplesat, assumptions, phase_saving)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_setphases(self.maplesat, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.maplesat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.maplesat and self.status == True:
+            model = pysolvers.maplechrono_model(self.maplesat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.maplesat and self.status == False:
+            return pysolvers.maplechrono_core(self.maplesat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        if self.maplesat and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip() for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.maplesat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.maplesat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplechrono_nof_vars(self.maplesat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplechrono_nof_cls(self.maplesat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.maplesat:
+            done = False
+            while not done:
+                if self.use_timer:
+                    start_time = time.clock()
+
+                self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions)
+
+                if self.use_timer:
+                    self.call_time = time.clock() - start_time
+                    self.accu_time += self.call_time
+
+                model = self.get_model()
+
+                if model:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = pysolvers.maplechrono_add_cl(self.maplesat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by MapleChrono.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by MapleChrono.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = None
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+            if not no_return:
+                return res
+
+
+#
+#==============================================================================
+class MapleCM(object):
+    """
+        MapleCM SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by MapleCM.')
+
+        self.maplesat = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.maplesat:
+            self.maplesat = pysolvers.maplecm_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.maplecm_tracepr(self.maplesat, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_del(self.maplesat)
+            self.maplesat = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplecm_solve(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[]):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplecm_solve_lim(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_cbudget(self.maplesat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_pbudget(self.maplesat, budget)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.maplecm_propagate(self.maplesat, assumptions, phase_saving)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_setphases(self.maplesat, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.maplesat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.maplesat and self.status == True:
+            model = pysolvers.maplecm_model(self.maplesat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.maplesat and self.status == False:
+            return pysolvers.maplecm_core(self.maplesat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        if self.maplesat and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip() for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.maplesat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.maplesat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplecm_nof_vars(self.maplesat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplecm_nof_cls(self.maplesat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.maplesat:
+            done = False
+            while not done:
+                if self.use_timer:
+                    start_time = time.clock()
+
+                self.status = pysolvers.maplecm_solve(self.maplesat, assumptions)
+
+                if self.use_timer:
+                    self.call_time = time.clock() - start_time
+                    self.accu_time += self.call_time
+
+                model = self.get_model()
+
+                if model:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = pysolvers.maplecm_add_cl(self.maplesat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by MapleCM.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by MapleCM.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = None
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+            if not no_return:
+                return res
+
+
+#
+#==============================================================================
+class Maplesat(object):
+    """
+        MapleCOMSPS_LRB SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Maplesat.')
+
+        self.maplesat = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.maplesat:
+            self.maplesat = pysolvers.maplesat_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.maplesat_tracepr(self.maplesat, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_del(self.maplesat)
+            self.maplesat = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplesat_solve(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[]):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.maplesat_solve_lim(self.maplesat, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_cbudget(self.maplesat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_pbudget(self.maplesat, budget)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.maplesat:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            st, props = pysolvers.maplesat_propagate(self.maplesat, assumptions, phase_saving)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_setphases(self.maplesat, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.maplesat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.maplesat and self.status == True:
+            model = pysolvers.maplesat_model(self.maplesat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.maplesat and self.status == False:
+            return pysolvers.maplesat_core(self.maplesat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        if self.maplesat and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip() for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.maplesat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.maplesat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplesat_nof_vars(self.maplesat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplesat_nof_cls(self.maplesat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.maplesat:
+            done = False
+            while not done:
+                if self.use_timer:
+                    start_time = time.clock()
+
+                self.status = pysolvers.maplesat_solve(self.maplesat, assumptions)
+
+                if self.use_timer:
+                    self.call_time = time.clock() - start_time
+                    self.accu_time += self.call_time
+
+                model = self.get_model()
+
+                if model:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = pysolvers.maplesat_add_cl(self.maplesat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by Maplesat.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by Maplesat.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.maplesat:
+            res = None
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+            if not no_return:
+                return res
 
 
 #

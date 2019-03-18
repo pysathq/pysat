@@ -11,7 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
-13.03.2019 (*0.1.4.dev0*)
+17.03.2019 (*0.1.4.dev2*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added three solvers of the Maple family: Maplesat (i.e. MapleCOMSPS_LRB),
+  MapleCM, and MapleChrono (i.e. MapleLCMDistChronoBT).
+- A few minor fixes.
+
+13.03.2019 (*0.1.4.dev1*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Added :mod:`pysat.pb` providing access to a few PB constraints with the use
