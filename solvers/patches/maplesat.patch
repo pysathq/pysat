@@ -42,8 +42,8 @@ diff -Naur solvers/maplesat/Makefile solvers/maple/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
---- solvers/maplesat/core/Solver.cc	2019-03-17 23:32:50.000000000 +0000
-+++ solvers/maple/core/Solver.cc	2019-03-17 23:29:42.000000000 +0000
+--- solvers/maplesat/core/Solver.cc	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/core/Solver.cc	2019-03-18 22:33:07.000000000 +0000
 @@ -22,12 +22,12 @@
  
  #include <math.h>
@@ -646,7 +646,13 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                             (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
              }*/
  
-@@ -1034,11 +1093,11 @@
+@@ -1029,16 +1088,16 @@
+                 restart = lbd_queue.full() && (lbd_queue.avg() * K > global_lbd_sum / conflicts_glue);
+                 cached = true;
+             }
+-            if (restart /*|| !withinBudget()*/){
++            if (restart || !withinBudget()){
+                 lbd_queue.clear();
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
@@ -747,28 +753,48 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
  
      if (verbosity >= 1){
          printf("c ============================[ Search Statistics ]==============================\n");
-@@ -1148,7 +1207,7 @@
+@@ -1148,38 +1207,43 @@
  
      glucose_restart = true;
      int init = 10000;
 -    while (status == l_Undef && init > 0 /*&& withinBudget()*/)
-+    while (status == mpl_Undef && init > 0 /*&& withinBudget()*/)
++    while (status == mpl_Undef && init > 0 && withinBudget())
         status = search(init);
-     glucose_restart = false;
+-    glucose_restart = false;
  
-@@ -1158,9 +1217,9 @@
-         int weighted = glucose_restart ? phase_allotment * 2 : phase_allotment;
-         fflush(stdout);
+-    // Search:
+-    int phase_allotment = 100;
+-    for (;;){
+-        int weighted = glucose_restart ? phase_allotment * 2 : phase_allotment;
+-        fflush(stdout);
++    if (status == mpl_Undef) {
++        glucose_restart = false;
++
++        // Search:
++        int phase_allotment = 100;
++        for (;;){
++            int weighted = glucose_restart ? phase_allotment * 2 : phase_allotment;
++            fflush(stdout);
++
++            while (status == mpl_Undef && weighted > 0 && withinBudget())
++                status = search(weighted);
++            if (status != mpl_Undef || !withinBudget())
++                break; // Should break here for correctness in incremental SAT solving.
  
 -        while (status == l_Undef && weighted > 0 /*&& withinBudget()*/)
-+        while (status == mpl_Undef && weighted > 0 /*&& withinBudget()*/)
-             status = search(weighted);
+-            status = search(weighted);
 -        if (status != l_Undef /*|| !withinBudget()*/)
-+        if (status != mpl_Undef /*|| !withinBudget()*/)
-             break; // Should break here for correctness in incremental SAT solving.
+-            break; // Should break here for correctness in incremental SAT solving.
+-
+-        glucose_restart = !glucose_restart;
+-        if (!glucose_restart)
+-            phase_allotment += phase_allotment / 10;
++            glucose_restart = !glucose_restart;
++            if (!glucose_restart)
++                phase_allotment += phase_allotment / 10;
++        }
+     }
  
-         glucose_restart = !glucose_restart;
-@@ -1171,15 +1230,17 @@
      if (verbosity >= 1)
          printf("c ===============================================================================\n");
  
@@ -790,7 +816,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
          ok = false;
  
      cancelUntil(0);
-@@ -1188,7 +1249,7 @@
+@@ -1188,7 +1252,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -799,7 +825,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -1206,7 +1267,7 @@
+@@ -1206,7 +1270,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -808,7 +834,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -1237,12 +1298,12 @@
+@@ -1237,12 +1301,12 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -823,7 +849,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -1252,7 +1313,7 @@
+@@ -1252,7 +1316,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++){
@@ -832,7 +858,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max)+1);
      }
  
-@@ -1319,11 +1380,11 @@
+@@ -1319,11 +1383,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
@@ -846,7 +872,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                 ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
      to.moveTo(ca);
  }
-@@ -1356,7 +1417,7 @@
+@@ -1356,7 +1420,7 @@
          int first = l;
          do{
              Lit p = toLit(l);
@@ -855,7 +881,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                      (!roots_only || isRoot(p, use_bin_learnts)) &&
                      implExistsByBin(p, use_bin_learnts)){
                  stamp_time = stamp(p, stamp_time, use_bin_learnts);
-@@ -1377,7 +1438,7 @@
+@@ -1377,7 +1441,7 @@
  
  int Solver::stamp(Lit p, int stamp_time, bool use_bin_learnts)
  {
@@ -864,7 +890,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
      assert(rec_stack.size() == 0 && scc.size() == 0);
  
      int start_stamp = 0;
-@@ -1414,7 +1475,7 @@
+@@ -1414,7 +1478,7 @@
                  for (int k = 0; k < ws.size(); k++){
                      Lit the_other = ws[k].blocker;
  
@@ -873,7 +899,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                       && !seen[toInt(the_other)]
                       && undiscovered == !discovered[toInt(the_other)])
  //                     && (use_bin_learnts || !ca[ws[k].cref].learnt()))
-@@ -1450,8 +1511,8 @@
+@@ -1450,8 +1514,8 @@
                       failed = parent[toInt(failed)])
                      assert(failed != lit_Undef);
  
@@ -884,7 +910,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                      assert(add_tmp.size() == 0);
                      add_tmp.push(~failed);
                      binDRUP('a', add_tmp, drup_file);
-@@ -1501,14 +1562,14 @@
+@@ -1501,14 +1565,14 @@
  }
  
  bool Solver::implExistsByBin(Lit p, bool use_bin_learnts) const {
@@ -903,7 +929,7 @@ diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
                  return true;
      }
 diff -Naur solvers/maplesat/core/Solver.h solvers/maple/core/Solver.h
---- solvers/maplesat/core/Solver.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/core/Solver.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/core/Solver.h	2019-03-17 23:28:05.000000000 +0000
 @@ -20,33 +20,33 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1089,7 +1115,7 @@ diff -Naur solvers/maplesat/core/Solver.h solvers/maple/core/Solver.h
  inline bool     Solver::okay          ()      const   { return ok; }
  
 diff -Naur solvers/maplesat/core/SolverTypes.h solvers/maple/core/SolverTypes.h
---- solvers/maplesat/core/SolverTypes.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/core/SolverTypes.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/core/SolverTypes.h	2019-03-17 23:19:41.000000000 +0000
 @@ -21,18 +21,18 @@
  **************************************************************************************************/
@@ -1251,7 +1277,7 @@ diff -Naur solvers/maplesat/core/SolverTypes.h solvers/maple/core/SolverTypes.h
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
 diff -Naur solvers/maplesat/mtl/Alg.h solvers/maple/mtl/Alg.h
---- solvers/maplesat/mtl/Alg.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Alg.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Alg.h	2019-03-17 22:57:48.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1271,7 +1297,7 @@ diff -Naur solvers/maplesat/mtl/Alg.h solvers/maple/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/maplesat/mtl/Alloc.h solvers/maple/mtl/Alloc.h
---- solvers/maplesat/mtl/Alloc.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Alloc.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Alloc.h	2019-03-17 22:57:55.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -1319,7 +1345,7 @@ diff -Naur solvers/maplesat/mtl/Alloc.h solvers/maple/mtl/Alloc.h
      if (sz < prev_sz)
          throw OutOfMemoryException();
 diff -Naur solvers/maplesat/mtl/Heap.h solvers/maple/mtl/Heap.h
---- solvers/maplesat/mtl/Heap.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Heap.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Heap.h	2019-03-17 22:58:06.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1381,7 +1407,7 @@ diff -Naur solvers/maplesat/mtl/Heap.h solvers/maple/mtl/Heap.h
  };
  
 diff -Naur solvers/maplesat/mtl/IntTypes.h solvers/maple/mtl/IntTypes.h
---- solvers/maplesat/mtl/IntTypes.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/IntTypes.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/IntTypes.h	2019-03-17 22:58:19.000000000 +0000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1395,7 +1421,7 @@ diff -Naur solvers/maplesat/mtl/IntTypes.h solvers/maple/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/maplesat/mtl/Map.h solvers/maple/mtl/Map.h
---- solvers/maplesat/mtl/Map.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Map.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Map.h	2019-03-17 22:58:30.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1444,7 +1470,7 @@ diff -Naur solvers/maplesat/mtl/Map.h solvers/maple/mtl/Map.h
      }
  
 diff -Naur solvers/maplesat/mtl/Queue.h solvers/maple/mtl/Queue.h
---- solvers/maplesat/mtl/Queue.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Queue.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Queue.h	2019-03-17 22:58:39.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1464,7 +1490,7 @@ diff -Naur solvers/maplesat/mtl/Queue.h solvers/maple/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/maplesat/mtl/Sort.h solvers/maple/mtl/Sort.h
---- solvers/maplesat/mtl/Sort.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Sort.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Sort.h	2019-03-17 22:58:48.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1488,7 +1514,7 @@ diff -Naur solvers/maplesat/mtl/Sort.h solvers/maple/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/maplesat/mtl/Vec.h solvers/maple/mtl/Vec.h
---- solvers/maplesat/mtl/Vec.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/Vec.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/Vec.h	2019-03-17 23:15:11.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1531,7 +1557,7 @@ diff -Naur solvers/maplesat/mtl/Vec.h solvers/maple/mtl/Vec.h
   }
  
 diff -Naur solvers/maplesat/mtl/XAlloc.h solvers/maple/mtl/XAlloc.h
---- solvers/maplesat/mtl/XAlloc.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/mtl/XAlloc.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/mtl/XAlloc.h	2019-03-17 22:59:23.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -1551,7 +1577,7 @@ diff -Naur solvers/maplesat/mtl/XAlloc.h solvers/maple/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/maplesat/utils/Options.cc solvers/maple/utils/Options.cc
---- solvers/maplesat/utils/Options.cc	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/utils/Options.cc	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/utils/Options.cc	2019-03-17 23:22:01.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1608,7 +1634,7 @@ diff -Naur solvers/maplesat/utils/Options.cc solvers/maple/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/maplesat/utils/Options.h solvers/maple/utils/Options.h
---- solvers/maplesat/utils/Options.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/utils/Options.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/utils/Options.h	2019-03-17 23:15:40.000000000 +0000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1814,7 +1840,7 @@ diff -Naur solvers/maplesat/utils/Options.h solvers/maple/utils/Options.h
              bool b = !match(span, "no-");
  
 diff -Naur solvers/maplesat/utils/ParseUtils.h solvers/maple/utils/ParseUtils.h
---- solvers/maplesat/utils/ParseUtils.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/utils/ParseUtils.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/utils/ParseUtils.h	2019-03-17 22:57:35.000000000 +0000
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1845,7 +1871,7 @@ diff -Naur solvers/maplesat/utils/ParseUtils.h solvers/maple/utils/ParseUtils.h
  
  // String matching: consumes characters eagerly, but does not require random access iterator.
 diff -Naur solvers/maplesat/utils/System.cc solvers/maple/utils/System.cc
---- solvers/maplesat/utils/System.cc	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/utils/System.cc	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/utils/System.cc	2019-03-17 22:57:20.000000000 +0000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1898,7 +1924,7 @@ diff -Naur solvers/maplesat/utils/System.cc solvers/maple/utils/System.cc
      return 0; }
  #endif
 diff -Naur solvers/maplesat/utils/System.h solvers/maple/utils/System.h
---- solvers/maplesat/utils/System.h	2019-03-17 23:32:50.000000000 +0000
+--- solvers/maplesat/utils/System.h	2019-03-18 22:31:57.000000000 +0000
 +++ solvers/maple/utils/System.h	2019-03-17 22:56:55.000000000 +0000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

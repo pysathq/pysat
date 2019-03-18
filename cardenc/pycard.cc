@@ -101,7 +101,7 @@ static void *pyobj_to_void(PyObject *obj)
 	return PyCapsule_GetPointer(obj, NULL);
 }
 
-// module initialization
+// PyInt_Check()
 //=============================================================================
 static int pyint_check(PyObject *i_obj)
 {
@@ -168,7 +168,7 @@ static void *pyobj_to_void(PyObject *obj)
 	return PyCObject_AsVoidPtr(obj);
 }
 
-// module initialization
+// PyInt_Check()
 //=============================================================================
 static int pyint_check(PyObject *i_obj)
 {
@@ -191,7 +191,7 @@ PyMODINIT_FUNC initpycard(void)
 }
 #endif
 
-//
+// auxiliary function for translating an iterable to a vector<int>
 //=============================================================================
 static bool pyiter_to_vector(PyObject *obj, vector<int>& vect)
 {
