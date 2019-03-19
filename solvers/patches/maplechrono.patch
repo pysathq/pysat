@@ -42,8 +42,8 @@ diff -Naur solvers/maplechrono/Makefile solvers/chrono/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
---- solvers/maplechrono/core/Solver.cc	2019-03-17 18:36:48.000000000 +0000
-+++ solvers/chrono/core/Solver.cc	2019-03-17 18:35:41.000000000 +0000
+--- solvers/maplechrono/core/Solver.cc	2019-03-19 09:32:15.000000000 +0000
++++ solvers/chrono/core/Solver.cc	2019-03-19 09:31:51.000000000 +0000
 @@ -1,14 +1,14 @@
  /***************************************************************************************[Solver.cc]
  MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
@@ -736,7 +736,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          uint32_t age = conflicts - canceled[var(p)];
          if (age > 0){
              double decay = pow(0.95, age);
-@@ -1445,14 +1446,67 @@
+@@ -1445,14 +1446,75 @@
  }
  
  
@@ -782,8 +782,16 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
 +        if (confl != CRef_Undef)
 +            prop.push(ca[confl][0]);
 +
-+        // backtracking
-+        cancelUntil(level);
++        // backtracking (simplistic cancelUntil())
++        for (int c = trail.size() - 1; c >= trail_lim[level]; --c) {
++            Var      x  = var(trail[c]);
++            assigns [x] = chrl_Undef;
++            insertVarOrder(x);
++        }
++
++        qhead = trail_lim[level];
++        trail.shrink(trail.size() - trail_lim[level]);
++        trail_lim.shrink(trail_lim.size() - level);
 +    }
 +
 +    // restoring phase saving
@@ -806,7 +814,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -1473,26 +1527,26 @@
+@@ -1473,26 +1535,26 @@
          vec<Watcher>& ws_bin = watches_bin[p];  // Propagate binary clauses first.
          for (int k = 0; k < ws_bin.size(); k++){
              Lit the_other = ws_bin[k].blocker;
@@ -839,7 +847,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                  *j++ = *i++; continue; }
  
              // Make sure the false literal is data[1]:
-@@ -1507,19 +1561,19 @@
+@@ -1507,19 +1569,19 @@
              // If 0th watch is true, then clause is already satisfied.
              Lit     first = c[0];
              Watcher w     = Watcher(cr, first);
@@ -862,7 +870,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -1530,9 +1584,9 @@
+@@ -1530,9 +1592,9 @@
  				if (currLevel == decisionLevel())
  				{
  					uncheckedEnqueue(first, currLevel, cr);
@@ -874,7 +882,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  				}
  				else
  				{
-@@ -1552,14 +1606,14 @@
+@@ -1552,14 +1614,14 @@
  					if (nMaxInd != 1)
  					{
  						std::swap(c[1], c[nMaxInd]);
@@ -893,7 +901,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  				}
  			}
  
-@@ -1568,9 +1622,11 @@
+@@ -1568,9 +1630,11 @@
          ws.shrink(i - j);
      }
  
@@ -905,7 +913,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  
      return confl;
  }
-@@ -1579,12 +1635,12 @@
+@@ -1579,12 +1643,12 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -920,7 +928,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      ClauseAllocator& ca;
      reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
      bool operator () (CRef x, CRef y) const { return ca[x].activity() < ca[y].activity(); }
-@@ -1592,7 +1648,7 @@
+@@ -1592,7 +1656,7 @@
  void Solver::reduceDB()
  {
      int     i, j;
@@ -929,7 +937,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      //local_learnts_dirty = false;
  
      sort(learnts_local, reduceDB_lt(ca));
-@@ -1600,13 +1656,14 @@
+@@ -1600,13 +1664,14 @@
      int limit = learnts_local.size() / 2;
      for (i = j = 0; i < learnts_local.size(); i++){
          Clause& c = ca[learnts_local[i]];
@@ -945,7 +953,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      }
      learnts_local.shrink(i - j);
  
-@@ -1617,15 +1674,16 @@
+@@ -1617,15 +1682,16 @@
      int i, j;
      for (i = j = 0; i < learnts_tier2.size(); i++){
          Clause& c = ca[learnts_tier2[i]];
@@ -964,7 +972,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      }
      learnts_tier2.shrink(i - j);
  }
-@@ -1649,11 +1707,12 @@
+@@ -1649,11 +1715,12 @@
      int i, j;
      for (i = j = 0; i < cs.size(); i++){
          Clause& c = ca[cs[i]];
@@ -978,7 +986,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      }
      cs.shrink(i - j);
  }
-@@ -1662,7 +1721,7 @@
+@@ -1662,7 +1729,7 @@
  {
      vec<Var> vs;
      for (Var v = 0; v < nVars(); v++)
@@ -987,7 +995,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
              vs.push(v);
  
      order_heap_CHB  .build(vs);
-@@ -1674,7 +1733,7 @@
+@@ -1674,7 +1741,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -996,7 +1004,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -1691,8 +1750,8 @@
+@@ -1691,8 +1758,8 @@
  
      // Remove satisfied clauses:
      removeSatisfied(learnts_core); // Should clean core first.
@@ -1007,7 +1015,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      if (remove_satisfied)        // Can be turned off.
          removeSatisfied(clauses);
      checkGarbage();
-@@ -1737,10 +1796,10 @@
+@@ -1737,10 +1804,10 @@
                  Clause& rc=ca[reason(v)];
                  int reasonVarLevel=var_iLevel_tmp[v]+1;
                  if(reasonVarLevel>max_level) max_level=reasonVarLevel;
@@ -1020,7 +1028,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                      Lit tmp = rc[0];
                      rc[0] =  rc[1], rc[1] = tmp;
                  }
-@@ -1811,7 +1870,7 @@
+@@ -1811,7 +1878,7 @@
  
      for(i=lits.size()-1; i>=0; i--) {
          lit=lits[i];
@@ -1029,7 +1037,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
              newDecisionLevel();
              uncheckedEnqueue(lit);
              CRef confl = propagate();
-@@ -1825,14 +1884,14 @@
+@@ -1825,14 +1892,14 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1050,7 +1058,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  |________________________________________________________________________________________________@*/
  lbool Solver::search(int& nof_conflicts)
  {
-@@ -1852,7 +1911,7 @@
+@@ -1852,7 +1919,7 @@
          //	learnts_core.size() + learnts_tier2.size() + learnts_local.size());
          nbSimplifyAll++;
          if (!simplifyAll()){
@@ -1059,7 +1067,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          }
          curSimplify = (conflicts / nbconfbeforesimplify) + 1;
          nbconfbeforesimplify += incSimplify;
-@@ -1871,13 +1930,13 @@
+@@ -1871,13 +1938,13 @@
              conflicts++; nof_conflicts--;
              if (conflicts == 100000 && learnts_core.size() < 100) core_lbd_cut = 5;
              ConflictData data = FindConflictLevel(confl);
@@ -1075,7 +1083,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
              learnt_clause.clear();
              if(conflicts>50000) DISTANCE=0;
              else DISTANCE=1;
-@@ -1911,10 +1970,10 @@
+@@ -1911,10 +1978,10 @@
                  ca[cr].set_lbd(lbd);
                  if (lbd <= core_lbd_cut){
                      learnts_core.push(cr);
@@ -1088,7 +1096,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                      ca[cr].touched() = conflicts;
                  }else{
                      learnts_local.push(cr);
-@@ -1922,17 +1981,17 @@
+@@ -1922,17 +1989,17 @@
                  attachClause(cr);
  
                  uncheckedEnqueue(learnt_clause[0], backtrack_level, cr);
@@ -1110,7 +1118,14 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                  fprintf(drup_file, "0\n");
  #endif
              }
-@@ -1967,11 +2026,11 @@
+@@ -1961,17 +2028,17 @@
+                 restart = lbd_queue.full() && (lbd_queue.avg() * 0.8 > global_lbd_sum / conflicts_VSIDS);
+                 cached = true;
+             }
+-            if (restart /*|| !withinBudget()*/){
++            if (restart || !withinBudget()){
+                 lbd_queue.clear();
+                 cached = false;
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
@@ -1124,7 +1139,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  
              if (conflicts >= next_T2_reduce){
                  next_T2_reduce = conflicts + 10000;
-@@ -1981,37 +2040,37 @@
+@@ -1981,37 +2048,37 @@
                  reduceDB(); }
  
              Lit next = lit_Undef;
@@ -1170,7 +1185,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          }
      }
  }
-@@ -2070,14 +2129,14 @@
+@@ -2070,14 +2137,14 @@
  
      model.clear();
      conflict.clear();
@@ -1187,38 +1202,63 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  
      if (verbosity >= 1){
          printf("c ============================[ Search Statistics ]==============================\n");
-@@ -2090,13 +2149,13 @@
+@@ -2090,46 +2157,51 @@
  
      VSIDS = true;
      int init = 10000;
 -    while (status == l_Undef && init > 0 /*&& withinBudget()*/)
-+    while (status == chrl_Undef && init > 0 /*&& withinBudget()*/)
++    while (status == chrl_Undef && init > 0 && withinBudget())
          status = search(init);
-     VSIDS = false;
+-    VSIDS = false;
  
-     // Search:
-     int curr_restarts = 0;
+-    // Search:
+-    int curr_restarts = 0;
 -    while (status == l_Undef /*&& withinBudget()*/){
-+    while (status == chrl_Undef /*&& withinBudget()*/){
-         if (VSIDS){
-             int weighted = INT32_MAX;
-             status = search(weighted);
-@@ -2107,12 +2166,12 @@
-         }
-         if (!VSIDS && switch_mode){
-             VSIDS = true;
+-        if (VSIDS){
+-            int weighted = INT32_MAX;
+-            status = search(weighted);
+-        }else{
+-            int nof_conflicts = luby(restart_inc, curr_restarts) * restart_first;
+-            curr_restarts++;
+-            status = search(nof_conflicts);
+-        }
+-        if (!VSIDS && switch_mode){
+-            VSIDS = true;
 -            printf("c Switched to VSIDS.\n");
-+            // printf("c Switched to VSIDS.\n");
-             fflush(stdout);
-             picked.clear();
-             conflicted.clear();
-             almost_conflicted.clear();
+-            fflush(stdout);
+-            picked.clear();
+-            conflicted.clear();
+-            almost_conflicted.clear();
 -#ifdef ANTI_EXPLORATION
+-            canceled.clear();
++    if (status == chrl_Undef) {
++        VSIDS = false;
++
++        // Search:
++        int curr_restarts = 0;
++        while (status == chrl_Undef && withinBudget()){
++            if (VSIDS){
++                int weighted = INT32_MAX;
++                status = search(weighted);
++            }else{
++                int nof_conflicts = luby(restart_inc, curr_restarts) * restart_first;
++                curr_restarts++;
++                status = search(nof_conflicts);
++            }
++            if (!VSIDS && switch_mode){
++                VSIDS = true;
++                // printf("c Switched to VSIDS.\n");
++                fflush(stdout);
++                picked.clear();
++                conflicted.clear();
++                almost_conflicted.clear();
 +#ifdef MAPLECHRONO_ANTI_EXPLORATION
-             canceled.clear();
++                canceled.clear();
  #endif
++            }
          }
-@@ -2121,15 +2180,17 @@
+     }
+ 
      if (verbosity >= 1)
          printf("c ===============================================================================\n");
  
@@ -1240,7 +1280,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          ok = false;
  
      cancelUntil(0);
-@@ -2138,7 +2199,7 @@
+@@ -2138,7 +2210,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -1249,7 +1289,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -2156,7 +2217,7 @@
+@@ -2156,7 +2228,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -1258,7 +1298,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -2192,7 +2253,7 @@
+@@ -2192,7 +2264,7 @@
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
              for (int j = 0; j < c.size(); j++)
@@ -1267,7 +1307,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -2202,7 +2263,7 @@
+@@ -2202,7 +2274,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++){
@@ -1277,7 +1317,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
      }
  
 diff -Naur solvers/maplechrono/core/Solver.h solvers/chrono/core/Solver.h
---- solvers/maplechrono/core/Solver.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/core/Solver.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/core/Solver.h	2019-03-16 23:11:34.000000000 +0000
 @@ -3,13 +3,13 @@
             Copyright (c) 2007-2010, Niklas Sorensson
@@ -1504,7 +1544,7 @@ diff -Naur solvers/maplechrono/core/Solver.h solvers/chrono/core/Solver.h
  inline bool     Solver::okay          ()      const   { return ok; }
  
 diff -Naur solvers/maplechrono/core/SolverTypes.h solvers/chrono/core/SolverTypes.h
---- solvers/maplechrono/core/SolverTypes.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/core/SolverTypes.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/core/SolverTypes.h	2019-03-16 21:16:54.000000000 +0000
 @@ -1,15 +1,15 @@
  /***********************************************************************************[SolverTypes.h]
@@ -1659,7 +1699,7 @@ diff -Naur solvers/maplechrono/core/SolverTypes.h solvers/chrono/core/SolverType
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
 diff -Naur solvers/maplechrono/mtl/Alg.h solvers/chrono/mtl/Alg.h
---- solvers/maplechrono/mtl/Alg.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Alg.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Alg.h	2019-03-16 10:06:28.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1679,7 +1719,7 @@ diff -Naur solvers/maplechrono/mtl/Alg.h solvers/chrono/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/maplechrono/mtl/Alloc.h solvers/chrono/mtl/Alloc.h
---- solvers/maplechrono/mtl/Alloc.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Alloc.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Alloc.h	2019-03-16 10:06:38.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -1727,7 +1767,7 @@ diff -Naur solvers/maplechrono/mtl/Alloc.h solvers/chrono/mtl/Alloc.h
      if (sz < prev_sz)
          throw OutOfMemoryException();
 diff -Naur solvers/maplechrono/mtl/Heap.h solvers/chrono/mtl/Heap.h
---- solvers/maplechrono/mtl/Heap.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Heap.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Heap.h	2019-03-16 10:07:08.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1789,7 +1829,7 @@ diff -Naur solvers/maplechrono/mtl/Heap.h solvers/chrono/mtl/Heap.h
  };
  
 diff -Naur solvers/maplechrono/mtl/IntTypes.h solvers/chrono/mtl/IntTypes.h
---- solvers/maplechrono/mtl/IntTypes.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/IntTypes.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/IntTypes.h	2019-03-16 10:07:28.000000000 +0000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1803,7 +1843,7 @@ diff -Naur solvers/maplechrono/mtl/IntTypes.h solvers/chrono/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/maplechrono/mtl/Map.h solvers/chrono/mtl/Map.h
---- solvers/maplechrono/mtl/Map.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Map.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Map.h	2019-03-16 10:07:56.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1852,7 +1892,7 @@ diff -Naur solvers/maplechrono/mtl/Map.h solvers/chrono/mtl/Map.h
      }
  
 diff -Naur solvers/maplechrono/mtl/Queue.h solvers/chrono/mtl/Queue.h
---- solvers/maplechrono/mtl/Queue.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Queue.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Queue.h	2019-03-16 10:08:41.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1872,7 +1912,7 @@ diff -Naur solvers/maplechrono/mtl/Queue.h solvers/chrono/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/maplechrono/mtl/Sort.h solvers/chrono/mtl/Sort.h
---- solvers/maplechrono/mtl/Sort.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Sort.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Sort.h	2019-03-16 10:09:06.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1896,7 +1936,7 @@ diff -Naur solvers/maplechrono/mtl/Sort.h solvers/chrono/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/maplechrono/mtl/Vec.h solvers/chrono/mtl/Vec.h
---- solvers/maplechrono/mtl/Vec.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/Vec.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/Vec.h	2019-03-16 10:32:13.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -1939,7 +1979,7 @@ diff -Naur solvers/maplechrono/mtl/Vec.h solvers/chrono/mtl/Vec.h
   }
  
 diff -Naur solvers/maplechrono/mtl/XAlloc.h solvers/chrono/mtl/XAlloc.h
---- solvers/maplechrono/mtl/XAlloc.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/mtl/XAlloc.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/mtl/XAlloc.h	2019-03-16 10:09:45.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -1959,7 +1999,7 @@ diff -Naur solvers/maplechrono/mtl/XAlloc.h solvers/chrono/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/maplechrono/utils/Options.cc solvers/chrono/utils/Options.cc
---- solvers/maplechrono/utils/Options.cc	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/utils/Options.cc	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/utils/Options.cc	2019-03-16 11:54:41.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2016,7 +2056,7 @@ diff -Naur solvers/maplechrono/utils/Options.cc solvers/chrono/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/maplechrono/utils/Options.h solvers/chrono/utils/Options.h
---- solvers/maplechrono/utils/Options.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/utils/Options.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/utils/Options.h	2019-03-16 10:37:24.000000000 +0000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2222,7 +2262,7 @@ diff -Naur solvers/maplechrono/utils/Options.h solvers/chrono/utils/Options.h
              bool b = !match(span, "no-");
  
 diff -Naur solvers/maplechrono/utils/ParseUtils.h solvers/chrono/utils/ParseUtils.h
---- solvers/maplechrono/utils/ParseUtils.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/utils/ParseUtils.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/utils/ParseUtils.h	2019-03-16 10:05:07.000000000 +0000
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2253,7 +2293,7 @@ diff -Naur solvers/maplechrono/utils/ParseUtils.h solvers/chrono/utils/ParseUtil
  
  // String matching: consumes characters eagerly, but does not require random access iterator.
 diff -Naur solvers/maplechrono/utils/System.cc solvers/chrono/utils/System.cc
---- solvers/maplechrono/utils/System.cc	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/utils/System.cc	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/utils/System.cc	2019-03-16 10:03:55.000000000 +0000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2310,7 +2350,7 @@ diff -Naur solvers/maplechrono/utils/System.cc solvers/chrono/utils/System.cc
      return 0; }
  #endif
 diff -Naur solvers/maplechrono/utils/System.h solvers/chrono/utils/System.h
---- solvers/maplechrono/utils/System.h	2019-03-17 18:36:48.000000000 +0000
+--- solvers/maplechrono/utils/System.h	2019-03-19 09:32:15.000000000 +0000
 +++ solvers/chrono/utils/System.h	2019-03-16 10:04:33.000000000 +0000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
