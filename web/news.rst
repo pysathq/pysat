@@ -14,7 +14,7 @@ Changelog and more
 19.03.2019 (*0.1.4.dev5*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Fixed an issue in :func:`.propagate`` for the MapleChrono solver.
+- Fixed an issue in :func:`.propagate` for the MapleChrono solver.
 
 18.03.2019 (*0.1.4.dev3*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
