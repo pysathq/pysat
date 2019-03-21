@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+21.03.2019 (*0.1.4.dev6*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a potential bug related to "deallocating None".
+
 19.03.2019 (*0.1.4.dev5*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

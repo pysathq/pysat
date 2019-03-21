@@ -268,12 +268,12 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 		PyList_SetItem(dest_obj, i, cl_obj);
 	}
 
-	if (dest.size()){
+	if (dest.size()) {
 		PyObject *ret = Py_BuildValue("On", dest_obj, (Py_ssize_t)top);
 		Py_DECREF(dest_obj);
 		return ret;
 	}
-	else{
+	else {
 		Py_DECREF(dest_obj);
 		Py_RETURN_NONE;
 	}
@@ -319,14 +319,13 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 		PyList_SetItem(dest_obj, i, cl_obj);
 	}
 
-
-	if (dest.size()){
+	if (dest.size()) {
 		PyObject *ret = Py_BuildValue("On", dest_obj, (Py_ssize_t)top);
 		Py_DECREF(dest_obj);
 		return ret;
 
 	}
-	else{
+	else {
 		Py_DECREF(dest_obj);
 		Py_RETURN_NONE;
 	}
@@ -544,16 +543,14 @@ static PyObject *py_itot_mrg(PyObject *self, PyObject *args)
 		PyList_SetItem(ubs_obj, i, ub_obj);
 	}
 
-	 
-
-	if (dest.size()){
+	if (dest.size()) {
 		PyObject *ret = Py_BuildValue("OOOn", void_to_pyobj((void *)tree1),
-				dest_obj, ubs_obj, (Py_ssize_t)top);		
+				dest_obj, ubs_obj, (Py_ssize_t)top);
 		Py_DECREF(dest_obj);
 		Py_DECREF( ubs_obj);
 		return ret;
 	}
-	else{
+	else {
 		Py_DECREF(dest_obj);
 		Py_DECREF( ubs_obj);
 		Py_RETURN_NONE;

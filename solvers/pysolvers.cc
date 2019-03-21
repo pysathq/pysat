@@ -694,13 +694,10 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 
 	Glucose30::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(Glucose30::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(Glucose30::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -774,8 +771,7 @@ static PyObject *py_glucose3_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -796,8 +792,7 @@ static PyObject *py_glucose3_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -818,8 +813,7 @@ static PyObject *py_glucose3_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -836,8 +830,7 @@ static PyObject *py_glucose3_setincr(PyObject *self, PyObject *args)
 
 	s->setIncrementalMode();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -878,8 +871,7 @@ static PyObject *py_glucose3_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -903,13 +895,14 @@ static PyObject *py_glucose3_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -917,7 +910,6 @@ static PyObject *py_glucose3_core(PyObject *self, PyObject *args)
 static PyObject *py_glucose3_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -939,11 +931,12 @@ static PyObject *py_glucose3_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1005,9 +998,7 @@ static PyObject *py_glucose3_del(PyObject *self, PyObject *args)
 #endif
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_GLUCOSE30
 
@@ -1170,13 +1161,10 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 
 	Glucose41::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(Glucose41::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(Glucose41::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE; // return Python's None if l_Undef
 }
 
 //
@@ -1250,8 +1238,7 @@ static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1272,8 +1259,7 @@ static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1294,8 +1280,7 @@ static PyObject *py_glucose41_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1312,8 +1297,7 @@ static PyObject *py_glucose41_setincr(PyObject *self, PyObject *args)
 
 	s->setIncrementalMode();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1354,8 +1338,7 @@ static PyObject *py_glucose41_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1379,13 +1362,14 @@ static PyObject *py_glucose41_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1393,7 +1377,6 @@ static PyObject *py_glucose41_core(PyObject *self, PyObject *args)
 static PyObject *py_glucose41_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -1415,11 +1398,12 @@ static PyObject *py_glucose41_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1481,9 +1465,7 @@ static PyObject *py_glucose41_del(PyObject *self, PyObject *args)
 #endif
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_GLUCOSE41
 
@@ -1594,8 +1576,7 @@ static PyObject *py_lingeling_tracepr(PyObject *self, PyObject *args)
 	lglsetopt (s, "druplig", 1);
 	lglsetopt (s, "drupligtrace", 2);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1700,9 +1681,7 @@ static PyObject *py_lingeling_setphases(PyObject *self, PyObject *args)
 	}
 
 	Py_DECREF(i_obj);
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1735,13 +1714,14 @@ static PyObject *py_lingeling_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c.size())
-		ret = Py_BuildValue("O", core);
+	if (c.size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1749,7 +1729,6 @@ static PyObject *py_lingeling_core(PyObject *self, PyObject *args)
 static PyObject *py_lingeling_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -1767,11 +1746,12 @@ static PyObject *py_lingeling_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -1834,9 +1814,7 @@ static PyObject *py_lingeling_del(PyObject *self, PyObject *args)
 #endif
 
 	lglrelease(s);
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_LINGELING
 
@@ -2002,13 +1980,10 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 
 	MapleChrono::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(MapleChrono::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(MapleChrono::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -2082,8 +2057,7 @@ static PyObject *py_maplechrono_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2104,8 +2078,7 @@ static PyObject *py_maplechrono_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2126,8 +2099,7 @@ static PyObject *py_maplechrono_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2166,9 +2138,7 @@ static PyObject *py_maplechrono_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2192,13 +2162,14 @@ static PyObject *py_maplechrono_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2206,7 +2177,6 @@ static PyObject *py_maplechrono_core(PyObject *self, PyObject *args)
 static PyObject *py_maplechrono_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -2228,11 +2198,12 @@ static PyObject *py_maplechrono_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2294,9 +2265,7 @@ static PyObject *py_maplechrono_del(PyObject *self, PyObject *args)
 #endif
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MAPLECHRONO
 
@@ -2462,13 +2431,10 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 
 	Maplesat::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(Maplesat::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(Maplesat::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -2542,8 +2508,7 @@ static PyObject *py_maplesat_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2564,8 +2529,7 @@ static PyObject *py_maplesat_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2586,8 +2550,7 @@ static PyObject *py_maplesat_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2626,9 +2589,7 @@ static PyObject *py_maplesat_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2652,13 +2613,14 @@ static PyObject *py_maplesat_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2666,7 +2628,6 @@ static PyObject *py_maplesat_core(PyObject *self, PyObject *args)
 static PyObject *py_maplesat_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -2688,11 +2649,12 @@ static PyObject *py_maplesat_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -2754,9 +2716,7 @@ static PyObject *py_maplesat_del(PyObject *self, PyObject *args)
 #endif
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MAPLESAT
 
@@ -2922,13 +2882,10 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 
 	MapleCM::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(MapleCM::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(MapleCM::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -3002,8 +2959,7 @@ static PyObject *py_maplecm_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3024,8 +2980,7 @@ static PyObject *py_maplecm_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3046,8 +3001,7 @@ static PyObject *py_maplecm_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3086,9 +3040,7 @@ static PyObject *py_maplecm_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3112,13 +3064,14 @@ static PyObject *py_maplecm_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3126,7 +3079,6 @@ static PyObject *py_maplecm_core(PyObject *self, PyObject *args)
 static PyObject *py_maplecm_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -3148,11 +3100,12 @@ static PyObject *py_maplecm_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3214,9 +3167,7 @@ static PyObject *py_maplecm_del(PyObject *self, PyObject *args)
 #endif
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MAPLECM
 
@@ -3407,13 +3358,10 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 
 	Minicard::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != Minicard::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(Minicard::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(Minicard::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -3487,8 +3435,7 @@ static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3509,8 +3456,7 @@ static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3531,8 +3477,7 @@ static PyObject *py_minicard_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3556,13 +3501,14 @@ static PyObject *py_minicard_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3570,7 +3516,6 @@ static PyObject *py_minicard_core(PyObject *self, PyObject *args)
 static PyObject *py_minicard_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -3592,11 +3537,12 @@ static PyObject *py_minicard_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3648,9 +3594,7 @@ static PyObject *py_minicard_del(PyObject *self, PyObject *args)
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MINICARD
 
@@ -3813,13 +3757,10 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 
 	Minisat22::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(Minisat22::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(Minisat22::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -3893,8 +3834,7 @@ static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), p[i] < 0);
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3915,8 +3855,7 @@ static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3937,8 +3876,7 @@ static PyObject *py_minisat22_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3962,13 +3900,14 @@ static PyObject *py_minisat22_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -3976,7 +3915,6 @@ static PyObject *py_minisat22_core(PyObject *self, PyObject *args)
 static PyObject *py_minisat22_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -3998,11 +3936,12 @@ static PyObject *py_minisat22_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4054,9 +3993,7 @@ static PyObject *py_minisat22_del(PyObject *self, PyObject *args)
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MINISAT22
 
@@ -4219,13 +4156,10 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 
 	MinisatGH::lbool res = s->solveLimited(a);
 
-	PyObject *ret;
 	if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
-		ret = PyBool_FromLong((long)!(MinisatGH::toInt(res)));
-	else
-		ret = Py_BuildValue("");  // return Python's None if l_Undef
+		return PyBool_FromLong((long)!(MinisatGH::toInt(res)));
 
-	return ret;
+	Py_RETURN_NONE;  // return Python's None if l_Undef
 }
 
 //
@@ -4299,8 +4233,7 @@ static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
 	for (size_t i = 0; i < p.size(); ++i)
 		s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4321,8 +4254,7 @@ static PyObject *py_minisatgh_cbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4343,8 +4275,7 @@ static PyObject *py_minisatgh_pbudget(PyObject *self, PyObject *args)
 	else
 		s->budgetOff();
 
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4368,13 +4299,14 @@ static PyObject *py_minisatgh_core(PyObject *self, PyObject *args)
 		PyList_SetItem(core, i, lit);
 	}
 
-	PyObject *ret = Py_None;
-
-	if (c->size())
-		ret = Py_BuildValue("O", core);
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
 
 	Py_DECREF(core);
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4382,7 +4314,6 @@ static PyObject *py_minisatgh_core(PyObject *self, PyObject *args)
 static PyObject *py_minisatgh_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *ret = Py_None;
 
 	if (!PyArg_ParseTuple(args, "O", &s_obj))
 		return NULL;
@@ -4404,11 +4335,12 @@ static PyObject *py_minisatgh_model(PyObject *self, PyObject *args)
 			PyList_SetItem(model, i - 1, lit);
 		}
 
-		ret = Py_BuildValue("O", model);
+		PyObject *ret = Py_BuildValue("O", model);
 		Py_DECREF(model);
+		return ret;
 	}
 
-	return ret;
+	Py_RETURN_NONE;
 }
 
 //
@@ -4460,9 +4392,7 @@ static PyObject *py_minisatgh_del(PyObject *self, PyObject *args)
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
 
 	delete s;
-
-	PyObject *ret = Py_BuildValue("");
-	return ret;
+	Py_RETURN_NONE;
 }
 #endif  // WITH_MINISATGH
 
