@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+19.04.2019 (*0.1.4.dev7*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a couple of minor issues in :mod:`pysat.examples.hitman` and
+  :mod:`pysat.example.mcsls`.
+
 21.03.2019 (*0.1.4.dev6*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -219,8 +219,6 @@ class MCSls(object):
             # the clause is hard, and so we simply add it to the SAT oracle
             self.oracle.add_clause(cl)
         else:
-            self.soft.append(cl)
-
             # soft clauses should be augmented with a selector
             sel = cl[0]
             if len(cl) > 1 or cl[0] < 0:
@@ -230,6 +228,7 @@ class MCSls(object):
                 self.oracle.add_clause(cl + [-sel])
 
             self.sels.append(sel)
+            self.smap[sel] = len(self.sels)
 
     def compute(self):
         """

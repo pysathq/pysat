@@ -328,7 +328,7 @@ class Hitman(object):
         to_hit = list(map(lambda obj: self.idpool.id(obj), to_hit))
 
         # a soft clause should be added for each new object
-        new_obj = filter(lambda vid: vid not in self.oracle.vmap.e2i, to_hit)
+        new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_hit))
 
         # new hard clause
         self.oracle.add_clause(to_hit)
@@ -352,7 +352,7 @@ class Hitman(object):
         to_block = list(map(lambda obj: self.idpool.id(obj), to_block))
 
         # a soft clause should be added for each new object
-        new_obj = filter(lambda vid: vid not in self.oracle.vmap.e2i, to_block)
+        new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_block))
 
         # new hard clause
         self.oracle.add_clause([-vid for vid in to_block])
