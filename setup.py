@@ -16,6 +16,7 @@ from distutils.core import setup, Extension
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
+import platform
 import prepare
 
 from pysat import __version__
@@ -69,24 +70,31 @@ class build(distutils.command.build.build):
         distutils.command.build.build.run(self)
 
 
+# compilation flags for C extensions
+#==============================================================================
+compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'], ['stdc++']
+if platform.system() == 'Darwin':
+    compile_flags += ['--stdlib=libc++']
+    cpplib = ['c++']
+
 # C extensions: pycard and pysolvers
 #==============================================================================
 pycard_ext = Extension('pycard',
     sources=['cardenc/pycard.cc'],
-    extra_compile_args=['-std=c++11', '-Wall', '-Wno-deprecated'],
+    extra_compile_args=compile_flags,
     include_dirs=['cardenc'] ,
     language='c++',
-    libraries=['stdc++'],
+    libraries=cpplib,
     library_dirs=[]
 )
 
 pysolvers_ext = Extension('pysolvers',
     sources = ['solvers/pysolvers.cc'],
-    extra_compile_args=['-std=c++11', '-Wall', '-Wno-deprecated'] + \
+    extra_compile_args=compile_flags + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
     include_dirs = ['solvers'],
     language = 'c++',
-    libraries = to_install + ['stdc++'],
+    libraries = to_install + cpplib,
     library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
 )
 

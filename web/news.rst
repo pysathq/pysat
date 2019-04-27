@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+27.04.2019 (*0.1.4.dev8*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Made an attempt to fix the C++ library issue on MacOS.
+
 19.04.2019 (*0.1.4.dev7*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
