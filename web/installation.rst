@@ -14,6 +14,13 @@ Note that PySAT was not tested on the Microsoft Windows platform, and so *it is
 not yet supported*. We are working on resolving this issue but your input may
 be needed.
 
+Also note that using Clang is preferred on MacOS as there may be an issue with
+GCC *being unaware of* the command-line option ``--stdlib=libc++``. Clang is
+available on MacOS by default. To enforce the installer to use it, you need to
+set the environment variable ``CC`` to ``/usr/bin/clang``. For that, do
+``export CC=/usr/bin/clang`` if using Bash, or ``setenv CC /usr/bin/clang`` if
+using tsch. *This is not needed on Linux!*
+
 Once all the prerequisites are installed, the simplest way to get and start
 using PySAT is to install the latest stable release of the toolkit from `PyPI
 <https://pypi.org/>`__:
