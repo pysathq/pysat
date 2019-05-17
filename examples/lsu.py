@@ -17,6 +17,7 @@
         :nosignatures:
 
         LSU
+        LSUPlus
 
     ==================
     Module description
@@ -307,12 +308,12 @@ class LSU:
 class LSUPlus(LSU, object):
     """
         LSU-like algorithm extended for :class:`.WCNFPlus` formulas (using
-        Minicard).
+        :class:`.Minicard`).
 
         :param formula: input MaxSAT formula in WCNF+ format
         :param verbose: verbosity level
 
-        :type formula: :class:`.WCNF`
+        :type formula: :class:`.WCNFPlus`
         :type verbose: int
     """
 
@@ -332,8 +333,8 @@ class LSUPlus(LSU, object):
             Overrides _assert_lt of :class:`.LSU` in order to use Minicard's
             native support for cardinality constraints
 
-            :param cost: the cost of the next MaxSAT solution is enforced to be
-                *lower* than this current cost
+            :param cost: the cost of the next MaxSAT solution is enforced to
+                be *lower* than this current cost
 
             :type cost: int
         """
@@ -407,7 +408,7 @@ if __name__ == '__main__':
             lsu = LSU(formula, solver=solver, verbose=verbose)
 
         # reading WCNF+
-        elif re.search('\.wcnfp(\.(gz|bz2|lzma|xz))?$', files[0]):
+        elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
             lsu = LSUPlus(formula, verbose=verbose)
 

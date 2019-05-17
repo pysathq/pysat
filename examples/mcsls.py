@@ -454,7 +454,7 @@ class MCSlsPlus(MCSls, object):
         Minicard).
     """
 
-    def __init__(self, formula, use_cld=False, use_timer=False):
+    def __init__(self, formula, use_cld=False, solver_name=None, use_timer=False):
         """
             Constructor.
         """
@@ -549,7 +549,7 @@ if __name__ == '__main__':
             MCSEnum = MCSls
 
         # reading WCNF+
-        elif re.search('\.wcnf+(\.(gz|bz2|lzma|xz))?$', files[0]):
+        elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
             MCSEnum = MCSlsPlus
 
