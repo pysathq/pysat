@@ -570,25 +570,24 @@ if __name__ == '__main__':
             else:  # expecting '*.cnf'
                 formula = CNF(from_file=files[0]).weighted()
 
-            MCSEnum = LBX
+            mcsls = LBX(formula, use_cld=dcalls, solver_name=solver, use_timer=True)
 
         # reading WCNF+
-        elif re.search('\.wcnf+(\.(gz|bz2|lzma|xz))?$', files[0]):
+        elif re.search('\.wcnfp(\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
-            MCSEnum = LBXPlus
+            mcsls = LBXPlus(formula, use_cld=dcalls, use_timer=True)
 
-        with MCSEnum(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
-            for i, mcs in enumerate(mcsls.enumerate()):
-                if verbose:
-                    print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')
+        for i, mcs in enumerate(mcsls.enumerate()):
+            if verbose:
+                print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')
 
-                    if verbose > 1:
-                        cost = sum([formula.wght[cl_id - 1] for cl_id in mcs])
-                        print('c cost:', cost)
+                if verbose > 1:
+                    cost = sum([formula.wght[cl_id - 1] for cl_id in mcs])
+                    print('c cost:', cost)
 
-                if to_enum and i + 1 == to_enum:
-                    break
+            if to_enum and i + 1 == to_enum:
+                break
 
-                mcsls.block(mcs)
+            mcsls.block(mcs)
 
-            print('c oracle time: {0:.4f}'.format(mcsls.oracle_time()))
+        print('c oracle time: {0:.4f}'.format(mcsls.oracle_time()))

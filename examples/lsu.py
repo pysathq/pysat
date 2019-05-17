@@ -86,7 +86,7 @@
 from __future__ import print_function
 import getopt
 from pysat.card import ITotalizer
-from pysat.formula import CNF, WCNF
+from pysat.formula import CNF, WCNF, WCNFPlus
 from pysat.solvers import Solver
 import os
 import sys
@@ -225,7 +225,6 @@ class LSU:
             if self.cost == 0:      # if cost is 0, then model is an optimum solution
                 break
             self._assert_lt(self.cost)
-            self.oracle.set_phases(self.model)  # solution-based phase saving
 
         if is_sat:
             self.model = filter(lambda l: abs(l) <= self.formula.nv, self.model)
@@ -305,6 +304,45 @@ class LSU:
 
 #
 #==============================================================================
+class LSUPlus(LSU, object):
+    """
+        LSU-like algorithm extended for :class:`.WCNFPlus` formulas (using
+        Minicard).
+
+        :param formula: input MaxSAT formula in WCNF+ format
+        :param verbose: verbosity level
+
+        :type formula: :class:`.WCNF`
+        :type verbose: int
+    """
+
+    def __init__(self, formula, verbose=0):
+        """
+            Constructor.
+        """
+
+        super(LSUPlus, self).__init__(formula, solver='mc', verbose=verbose)
+
+        # adding atmost constraints
+        for am in formula.atms:
+            self.oracle.add_atmost(*am)
+
+    def _assert_lt(self, cost):
+        """
+            Overrides _assert_lt of :class:`.LSU` in order to use Minicard's
+            native support for cardinality constraints
+
+            :param cost: the cost of the next MaxSAT solution is enforced to be
+                *lower* than this current cost
+
+            :type cost: int
+        """
+
+        self.oracle.add_atmost(self.sels, cost-1)
+
+
+#
+#==============================================================================
 def parse_options():
     """
         Parses command-line options.
@@ -355,28 +393,24 @@ def print_usage():
 
 #
 #==============================================================================
-def parse_formula(fml_file):
-    """
-        Parse and return MaxSAT formula.
-    """
-
-    if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', fml_file):
-        fml = WCNF(from_file=fml_file)
-    else:  # expecting '*.cnf'
-        fml = CNF(from_file=fml_file).weighted()
-
-    return fml
-
-
-#
-#==============================================================================
 if __name__ == '__main__':
     print_model, solver, verbose, files = parse_options()
 
     if files:
-        formula = parse_formula(files[0])
+        # reading standard CNF or WCNF
+        if re.search('cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+            if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+                formula = WCNF(from_file=files[0])
+            else:  # expecting '*.cnf'
+                formula = CNF(from_file=files[0]).weighted()
 
-        lsu = LSU(formula, solver=solver, verbose=verbose)
+            lsu = LSU(formula, solver=solver, verbose=verbose)
+
+        # reading WCNF+
+        elif re.search('\.wcnfp(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNFPlus(from_file=files[0])
+            lsu = LSUPlus(formula, verbose=verbose)
+
         if lsu.solve():
             if print_model:
                 print('v ' + ' '.join([str(l) for l in lsu.get_model()]), '0')
