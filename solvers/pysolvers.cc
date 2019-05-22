@@ -726,8 +726,8 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -1230,8 +1230,8 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -2086,8 +2086,8 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -2574,8 +2574,8 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -3062,8 +3062,8 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -3575,8 +3575,8 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -4011,8 +4011,8 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
@@ -4447,8 +4447,8 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
-    Py_BEGIN_ALLOW_THREADS
+	MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
+	Py_BEGIN_ALLOW_THREADS
 	res = s->solveLimited(a);
 	Py_END_ALLOW_THREADS
 
