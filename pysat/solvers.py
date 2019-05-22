@@ -507,6 +507,49 @@ class Solver(object):
         if self.solver:
             self.solver.prop_budget(budget)
 
+    def interrupt(self):
+        """
+            Interrupt the execution of the current limited SAT call
+            (see :meth:`solve_limited`). Can be used to enforce time limits
+            using timer objects. The interrupt must be cleared before
+            performing another SAT call (see :meth:`clear_interrupt`).
+            Behaviour is undefined if used to interrupt a non-limited SAT
+            call (see :meth:`solve`).
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import MinisatGH
+                >>> from pysat.examples.genhard import PHP
+                >>> from threading import Timer
+                >>>
+                >>> cnf = PHP(nof_holes=20)  # PHP20 is too hard for a SAT solver
+                >>> m = MinisatGH(bootstrap_with=cnf.clauses)
+                >>>
+                >>> def interrupt(s):
+                >>>     s.interrupt()
+                >>> timer = Timer(10, interrupt, [m])
+                >>> timer.start()
+                >>>
+                >>> print m.solve_limited()
+                None
+                >>> m.delete()
+        """
+
+        if self.solver:
+            self.solver.interrupt()
+
+    def clear_interrupt(self):
+        """
+            Clears an interrupt. If a limited SAT call was interrupted using
+            the :meth:`interrupt` method, this method must be called before
+            calling the SAT solver again.
+        """
+
+        if self.solver:
+            self.solver.clear_interrupt()
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             The method takes a list of assumption literals and does unit
@@ -1059,6 +1102,22 @@ class Glucose3(object):
         if self.glucose:
             pysolvers.glucose3_pbudget(self.glucose, budget)
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.glucose:
+            pysolvers.glucose3_interrupt(self.glucose)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.glucose:
+            pysolvers.glucose3_clearint(self.glucose)
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -1352,6 +1411,22 @@ class Glucose4(object):
         if self.glucose:
             pysolvers.glucose41_pbudget(self.glucose, budget)
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_interrupt(self.glucose)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_clearint(self.glucose)
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -1625,6 +1700,20 @@ class Lingeling(object):
 
         raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -1888,6 +1977,22 @@ class MapleChrono(object):
 
         if self.maplesat:
             pysolvers.maplechrono_pbudget(self.maplesat, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_interrupt(self.maplesat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.maplesat:
+            pysolvers.maplechrono_clearint(self.maplesat)
 
     def propagate(self, assumptions=[], phase_saving=0):
         """
@@ -2179,6 +2284,22 @@ class MapleCM(object):
         if self.maplesat:
             pysolvers.maplecm_pbudget(self.maplesat, budget)
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_interrupt(self.maplesat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.maplesat:
+            pysolvers.maplecm_clearint(self.maplesat)
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -2469,6 +2590,22 @@ class Maplesat(object):
         if self.maplesat:
             pysolvers.maplesat_pbudget(self.maplesat, budget)
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_interrupt(self.maplesat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_clearint(self.maplesat)
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -2746,6 +2883,22 @@ class Minicard(object):
 
         if self.minicard:
             pysolvers.minicard_pbudget(self.minicard, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.minicard:
+            pysolvers.minicard_interrupt(self.minicard)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.minicard:
+            pysolvers.minicard_clearint(self.minicard)
 
     def propagate(self, assumptions=[], phase_saving=0):
         """
@@ -3030,6 +3183,22 @@ class Minisat22(object):
         if self.minisat:
             pysolvers.minisat22_pbudget(self.minisat, budget)
 
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.minisat:
+            pysolvers.minisat22_interrupt(self.minisat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.minisat:
+            pysolvers.minisat22_clearint(self.minisat)
+
     def propagate(self, assumptions=[], phase_saving=0):
         """
             Propagate a given set of assumption literals.
@@ -3305,6 +3474,22 @@ class MinisatGH(object):
 
         if self.minisat:
             pysolvers.minisatgh_pbudget(self.minisat, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.minisat:
+            pysolvers.minisatgh_interrupt(self.minisat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.minisat:
+            pysolvers.minisatgh_clearint(self.minisat)
 
     def propagate(self, assumptions=[], phase_saving=0):
         """

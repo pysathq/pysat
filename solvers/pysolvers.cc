@@ -53,25 +53,27 @@ using namespace std;
 
 // docstrings
 //=============================================================================
-static char  module_docstring[] = "This module provides a wrapper interface "
+static char    module_docstring[] = "This module provides a wrapper interface "
 				  "for several SAT solvers.";
-static char     new_docstring[] = "Create a new solver object.";
-static char   addcl_docstring[] = "Add a clause to formula.";
-static char   addam_docstring[] = "Add an atmost constraint to formula "
+static char       new_docstring[] = "Create a new solver object.";
+static char     addcl_docstring[] = "Add a clause to formula.";
+static char     addam_docstring[] = "Add an atmost constraint to formula "
 				  "(for Minicard only).";
-static char   solve_docstring[] = "Solve a given CNF instance.";
-static char     lim_docstring[] = "Solve a given CNF instance within a budget.";
-static char    prop_docstring[] = "Propagate a given set of literals.";
-static char  phases_docstring[] = "Set variable polarities.";
-static char cbudget_docstring[] = "Set limit on the number of conflicts.";
-static char pbudget_docstring[] = "Set limit on the number of propagations.";
-static char setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
-static char tracepr_docstring[] = "Trace resolution proof.";
-static char    core_docstring[] = "Get an unsatisfiable core if formula is UNSAT.";
-static char   model_docstring[] = "Get a model if formula is SAT.";
-static char   nvars_docstring[] = "Get number of variables used by the solver.";
-static char    ncls_docstring[] = "Get number of clauses used by the solver.";
-static char     del_docstring[] = "Delete a previously created solver object.";
+static char     solve_docstring[] = "Solve a given CNF instance.";
+static char       lim_docstring[] = "Solve a given CNF instance within a budget.";
+static char      prop_docstring[] = "Propagate a given set of literals.";
+static char    phases_docstring[] = "Set variable polarities.";
+static char   cbudget_docstring[] = "Set limit on the number of conflicts.";
+static char   pbudget_docstring[] = "Set limit on the number of propagations.";
+static char interrupt_docstring[] = "Interrupt SAT solver execution (not supported by lingeling).";
+static char  clearint_docstring[] = "Clear interrupt indicator flag.";
+static char   setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
+static char   tracepr_docstring[] = "Trace resolution proof.";
+static char      core_docstring[] = "Get an unsatisfiable core if formula is UNSAT.";
+static char     model_docstring[] = "Get a model if formula is SAT.";
+static char     nvars_docstring[] = "Get number of variables used by the solver.";
+static char      ncls_docstring[] = "Get number of clauses used by the solver.";
+static char       del_docstring[] = "Delete a previously created solver object.";
 
 static PyObject *SATError;
 static jmp_buf env;
@@ -88,6 +90,8 @@ extern "C" {
 	static PyObject *py_glucose3_setphases (PyObject *, PyObject *);
 	static PyObject *py_glucose3_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_glucose3_interrupt (PyObject *, PyObject *);
+	static PyObject *py_glucose3_clearint  (PyObject *, PyObject *);
 	static PyObject *py_glucose3_setincr   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_core      (PyObject *, PyObject *);
@@ -105,6 +109,8 @@ extern "C" {
 	static PyObject *py_glucose41_setphases (PyObject *, PyObject *);
 	static PyObject *py_glucose41_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_interrupt (PyObject *, PyObject *);
+	static PyObject *py_glucose41_clearint  (PyObject *, PyObject *);
 	static PyObject *py_glucose41_setincr   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_core      (PyObject *, PyObject *);
@@ -134,6 +140,8 @@ extern "C" {
 	static PyObject *py_maplechrono_setphases (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_interrupt (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_clearint  (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_core      (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_model     (PyObject *, PyObject *);
@@ -150,6 +158,8 @@ extern "C" {
 	static PyObject *py_maplecm_setphases (PyObject *, PyObject *);
 	static PyObject *py_maplecm_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_maplecm_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplecm_interrupt (PyObject *, PyObject *);
+	static PyObject *py_maplecm_clearint  (PyObject *, PyObject *);
 	static PyObject *py_maplecm_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_maplecm_core      (PyObject *, PyObject *);
 	static PyObject *py_maplecm_model     (PyObject *, PyObject *);
@@ -166,6 +176,8 @@ extern "C" {
 	static PyObject *py_maplesat_setphases (PyObject *, PyObject *);
 	static PyObject *py_maplesat_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_maplesat_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_maplesat_interrupt (PyObject *, PyObject *);
+	static PyObject *py_maplesat_clearint  (PyObject *, PyObject *);
 	static PyObject *py_maplesat_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_maplesat_core      (PyObject *, PyObject *);
 	static PyObject *py_maplesat_model     (PyObject *, PyObject *);
@@ -183,6 +195,8 @@ extern "C" {
 	static PyObject *py_minicard_setphases (PyObject *, PyObject *);
 	static PyObject *py_minicard_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_minicard_interrupt (PyObject *, PyObject *);
+	static PyObject *py_minicard_clearint  (PyObject *, PyObject *);
 	static PyObject *py_minicard_core      (PyObject *, PyObject *);
 	static PyObject *py_minicard_model     (PyObject *, PyObject *);
 	static PyObject *py_minicard_nof_vars  (PyObject *, PyObject *);
@@ -198,6 +212,8 @@ extern "C" {
 	static PyObject *py_minisat22_setphases (PyObject *, PyObject *);
 	static PyObject *py_minisat22_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_minisat22_interrupt (PyObject *, PyObject *);
+	static PyObject *py_minisat22_clearint  (PyObject *, PyObject *);
 	static PyObject *py_minisat22_core      (PyObject *, PyObject *);
 	static PyObject *py_minisat22_model     (PyObject *, PyObject *);
 	static PyObject *py_minisat22_nof_vars  (PyObject *, PyObject *);
@@ -213,6 +229,8 @@ extern "C" {
 	static PyObject *py_minisatgh_setphases (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_interrupt (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_clearint  (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_core      (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_model     (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_nof_vars  (PyObject *, PyObject *);
@@ -225,38 +243,42 @@ extern "C" {
 //=============================================================================
 static PyMethodDef module_methods[] = {
 #ifdef WITH_GLUCOSE30
-	{ "glucose3_new",       py_glucose3_new,       METH_VARARGS,     new_docstring },
-	{ "glucose3_add_cl",    py_glucose3_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "glucose3_solve",     py_glucose3_solve,     METH_VARARGS,   solve_docstring },
-	{ "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "glucose3_propagate", py_glucose3_propagate, METH_VARARGS,    prop_docstring },
-	{ "glucose3_setphases", py_glucose3_setphases, METH_VARARGS,  phases_docstring },
-	{ "glucose3_cbudget",   py_glucose3_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "glucose3_pbudget",   py_glucose3_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "glucose3_setincr",   py_glucose3_setincr,   METH_VARARGS, setincr_docstring },
-	{ "glucose3_tracepr",   py_glucose3_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "glucose3_core",      py_glucose3_core,      METH_VARARGS,    core_docstring },
-	{ "glucose3_model",     py_glucose3_model,     METH_VARARGS,   model_docstring },
-	{ "glucose3_nof_vars",  py_glucose3_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "glucose3_nof_cls",   py_glucose3_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "glucose3_del",       py_glucose3_del,       METH_VARARGS,     del_docstring },
+	{ "glucose3_new",       py_glucose3_new,       METH_VARARGS,       new_docstring },
+	{ "glucose3_add_cl",    py_glucose3_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "glucose3_solve",     py_glucose3_solve,     METH_VARARGS,     solve_docstring },
+	{ "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "glucose3_propagate", py_glucose3_propagate, METH_VARARGS,      prop_docstring },
+	{ "glucose3_setphases", py_glucose3_setphases, METH_VARARGS,    phases_docstring },
+	{ "glucose3_cbudget",   py_glucose3_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "glucose3_pbudget",   py_glucose3_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "glucose3_interrupt", py_glucose3_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "glucose3_clearint",  py_glucose3_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "glucose3_setincr",   py_glucose3_setincr,   METH_VARARGS,   setincr_docstring },
+	{ "glucose3_tracepr",   py_glucose3_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "glucose3_core",      py_glucose3_core,      METH_VARARGS,      core_docstring },
+	{ "glucose3_model",     py_glucose3_model,     METH_VARARGS,     model_docstring },
+	{ "glucose3_nof_vars",  py_glucose3_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "glucose3_nof_cls",   py_glucose3_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "glucose3_del",       py_glucose3_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_GLUCOSE41
-	{ "glucose41_new",       py_glucose41_new,       METH_VARARGS,     new_docstring },
-	{ "glucose41_add_cl",    py_glucose41_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,   solve_docstring },
-	{ "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "glucose41_propagate", py_glucose41_propagate, METH_VARARGS,    prop_docstring },
-	{ "glucose41_setphases", py_glucose41_setphases, METH_VARARGS,  phases_docstring },
-	{ "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "glucose41_setincr",   py_glucose41_setincr,   METH_VARARGS, setincr_docstring },
-	{ "glucose41_tracepr",   py_glucose41_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "glucose41_core",      py_glucose41_core,      METH_VARARGS,    core_docstring },
-	{ "glucose41_model",     py_glucose41_model,     METH_VARARGS,   model_docstring },
-	{ "glucose41_nof_vars",  py_glucose41_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "glucose41_nof_cls",   py_glucose41_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "glucose41_del",       py_glucose41_del,       METH_VARARGS,     del_docstring },
+	{ "glucose41_new",       py_glucose41_new,       METH_VARARGS,       new_docstring },
+	{ "glucose41_add_cl",    py_glucose41_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,     solve_docstring },
+	{ "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "glucose41_propagate", py_glucose41_propagate, METH_VARARGS,      prop_docstring },
+	{ "glucose41_setphases", py_glucose41_setphases, METH_VARARGS,    phases_docstring },
+	{ "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "glucose41_interrupt", py_glucose41_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "glucose41_clearint",  py_glucose41_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "glucose41_setincr",   py_glucose41_setincr,   METH_VARARGS,   setincr_docstring },
+	{ "glucose41_tracepr",   py_glucose41_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "glucose41_core",      py_glucose41_core,      METH_VARARGS,      core_docstring },
+	{ "glucose41_model",     py_glucose41_model,     METH_VARARGS,     model_docstring },
+	{ "glucose41_nof_vars",  py_glucose41_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "glucose41_nof_cls",   py_glucose41_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "glucose41_del",       py_glucose41_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_LINGELING
 	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,     new_docstring },
@@ -271,98 +293,110 @@ static PyMethodDef module_methods[] = {
 	{ "lingeling_del",       py_lingeling_del,       METH_VARARGS,     del_docstring },
 #endif
 #ifdef WITH_MAPLECHRONO
-	{ "maplechrono_new",       py_maplechrono_new,       METH_VARARGS,     new_docstring },
-	{ "maplechrono_add_cl",    py_maplechrono_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "maplechrono_solve",     py_maplechrono_solve,     METH_VARARGS,   solve_docstring },
-	{ "maplechrono_solve_lim", py_maplechrono_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "maplechrono_propagate", py_maplechrono_propagate, METH_VARARGS,    prop_docstring },
-	{ "maplechrono_setphases", py_maplechrono_setphases, METH_VARARGS,  phases_docstring },
-	{ "maplechrono_cbudget",   py_maplechrono_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "maplechrono_pbudget",   py_maplechrono_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "maplechrono_tracepr",   py_maplechrono_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "maplechrono_core",      py_maplechrono_core,      METH_VARARGS,    core_docstring },
-	{ "maplechrono_model",     py_maplechrono_model,     METH_VARARGS,   model_docstring },
-	{ "maplechrono_nof_vars",  py_maplechrono_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "maplechrono_nof_cls",   py_maplechrono_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "maplechrono_del",       py_maplechrono_del,       METH_VARARGS,     del_docstring },
+	{ "maplechrono_new",       py_maplechrono_new,       METH_VARARGS,       new_docstring },
+	{ "maplechrono_add_cl",    py_maplechrono_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "maplechrono_solve",     py_maplechrono_solve,     METH_VARARGS,     solve_docstring },
+	{ "maplechrono_solve_lim", py_maplechrono_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "maplechrono_propagate", py_maplechrono_propagate, METH_VARARGS,      prop_docstring },
+	{ "maplechrono_setphases", py_maplechrono_setphases, METH_VARARGS,    phases_docstring },
+	{ "maplechrono_cbudget",   py_maplechrono_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "maplechrono_pbudget",   py_maplechrono_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "maplechrono_interrupt", py_maplechrono_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "maplechrono_clearint",  py_maplechrono_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "maplechrono_tracepr",   py_maplechrono_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "maplechrono_core",      py_maplechrono_core,      METH_VARARGS,      core_docstring },
+	{ "maplechrono_model",     py_maplechrono_model,     METH_VARARGS,     model_docstring },
+	{ "maplechrono_nof_vars",  py_maplechrono_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "maplechrono_nof_cls",   py_maplechrono_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "maplechrono_del",       py_maplechrono_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_MAPLECM
-	{ "maplecm_new",       py_maplecm_new,       METH_VARARGS,     new_docstring },
-	{ "maplecm_add_cl",    py_maplecm_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "maplecm_solve",     py_maplecm_solve,     METH_VARARGS,   solve_docstring },
-	{ "maplecm_solve_lim", py_maplecm_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "maplecm_propagate", py_maplecm_propagate, METH_VARARGS,    prop_docstring },
-	{ "maplecm_setphases", py_maplecm_setphases, METH_VARARGS,  phases_docstring },
-	{ "maplecm_cbudget",   py_maplecm_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "maplecm_pbudget",   py_maplecm_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "maplecm_tracepr",   py_maplecm_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "maplecm_core",      py_maplecm_core,      METH_VARARGS,    core_docstring },
-	{ "maplecm_model",     py_maplecm_model,     METH_VARARGS,   model_docstring },
-	{ "maplecm_nof_vars",  py_maplecm_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "maplecm_nof_cls",   py_maplecm_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "maplecm_del",       py_maplecm_del,       METH_VARARGS,     del_docstring },
+	{ "maplecm_new",       py_maplecm_new,       METH_VARARGS,       new_docstring },
+	{ "maplecm_add_cl",    py_maplecm_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "maplecm_solve",     py_maplecm_solve,     METH_VARARGS,     solve_docstring },
+	{ "maplecm_solve_lim", py_maplecm_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "maplecm_propagate", py_maplecm_propagate, METH_VARARGS,      prop_docstring },
+	{ "maplecm_setphases", py_maplecm_setphases, METH_VARARGS,    phases_docstring },
+	{ "maplecm_cbudget",   py_maplecm_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "maplecm_pbudget",   py_maplecm_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "maplecm_interrupt", py_maplecm_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "maplecm_clearint",  py_maplecm_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "maplecm_tracepr",   py_maplecm_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "maplecm_core",      py_maplecm_core,      METH_VARARGS,      core_docstring },
+	{ "maplecm_model",     py_maplecm_model,     METH_VARARGS,     model_docstring },
+	{ "maplecm_nof_vars",  py_maplecm_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "maplecm_nof_cls",   py_maplecm_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "maplecm_del",       py_maplecm_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_MAPLESAT
-	{ "maplesat_new",       py_maplesat_new,       METH_VARARGS,     new_docstring },
-	{ "maplesat_add_cl",    py_maplesat_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "maplesat_solve",     py_maplesat_solve,     METH_VARARGS,   solve_docstring },
-	{ "maplesat_solve_lim", py_maplesat_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "maplesat_propagate", py_maplesat_propagate, METH_VARARGS,    prop_docstring },
-	{ "maplesat_setphases", py_maplesat_setphases, METH_VARARGS,  phases_docstring },
-	{ "maplesat_cbudget",   py_maplesat_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "maplesat_pbudget",   py_maplesat_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "maplesat_tracepr",   py_maplesat_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "maplesat_core",      py_maplesat_core,      METH_VARARGS,    core_docstring },
-	{ "maplesat_model",     py_maplesat_model,     METH_VARARGS,   model_docstring },
-	{ "maplesat_nof_vars",  py_maplesat_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "maplesat_nof_cls",   py_maplesat_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "maplesat_del",       py_maplesat_del,       METH_VARARGS,     del_docstring },
+	{ "maplesat_new",       py_maplesat_new,       METH_VARARGS,       new_docstring },
+	{ "maplesat_add_cl",    py_maplesat_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "maplesat_solve",     py_maplesat_solve,     METH_VARARGS,     solve_docstring },
+	{ "maplesat_solve_lim", py_maplesat_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "maplesat_propagate", py_maplesat_propagate, METH_VARARGS,      prop_docstring },
+	{ "maplesat_setphases", py_maplesat_setphases, METH_VARARGS,    phases_docstring },
+	{ "maplesat_cbudget",   py_maplesat_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "maplesat_pbudget",   py_maplesat_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "maplesat_interrupt", py_maplesat_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "maplesat_clearint",  py_maplesat_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "maplesat_tracepr",   py_maplesat_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "maplesat_core",      py_maplesat_core,      METH_VARARGS,      core_docstring },
+	{ "maplesat_model",     py_maplesat_model,     METH_VARARGS,     model_docstring },
+	{ "maplesat_nof_vars",  py_maplesat_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "maplesat_nof_cls",   py_maplesat_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "maplesat_del",       py_maplesat_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_MINICARD
-	{ "minicard_new",       py_minicard_new,       METH_VARARGS,     new_docstring },
-	{ "minicard_add_cl",    py_minicard_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "minicard_solve",     py_minicard_solve,     METH_VARARGS,   solve_docstring },
-	{ "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "minicard_propagate", py_minicard_propagate, METH_VARARGS,    prop_docstring },
-	{ "minicard_setphases", py_minicard_setphases, METH_VARARGS,  phases_docstring },
-	{ "minicard_cbudget",   py_minicard_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "minicard_pbudget",   py_minicard_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "minicard_core",      py_minicard_core,      METH_VARARGS,    core_docstring },
-	{ "minicard_model",     py_minicard_model,     METH_VARARGS,   model_docstring },
-	{ "minicard_nof_vars",  py_minicard_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "minicard_nof_cls",   py_minicard_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "minicard_del",       py_minicard_del,       METH_VARARGS,     del_docstring },
-	{ "minicard_add_am",    py_minicard_add_am,    METH_VARARGS,   addam_docstring },
+	{ "minicard_new",       py_minicard_new,       METH_VARARGS,       new_docstring },
+	{ "minicard_add_cl",    py_minicard_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "minicard_solve",     py_minicard_solve,     METH_VARARGS,     solve_docstring },
+	{ "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "minicard_propagate", py_minicard_propagate, METH_VARARGS,      prop_docstring },
+	{ "minicard_setphases", py_minicard_setphases, METH_VARARGS,    phases_docstring },
+	{ "minicard_cbudget",   py_minicard_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "minicard_pbudget",   py_minicard_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "minicard_interrupt", py_minicard_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "minicard_clearint",  py_minicard_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "minicard_core",      py_minicard_core,      METH_VARARGS,      core_docstring },
+	{ "minicard_model",     py_minicard_model,     METH_VARARGS,     model_docstring },
+	{ "minicard_nof_vars",  py_minicard_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "minicard_nof_cls",   py_minicard_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "minicard_del",       py_minicard_del,       METH_VARARGS,       del_docstring },
+	{ "minicard_add_am",    py_minicard_add_am,    METH_VARARGS,     addam_docstring },
 #endif
 #ifdef WITH_MINISAT22
-	{ "minisat22_new",       py_minisat22_new,       METH_VARARGS,     new_docstring },
-	{ "minisat22_add_cl",    py_minisat22_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "minisat22_solve",     py_minisat22_solve,     METH_VARARGS,   solve_docstring },
-	{ "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "minisat22_propagate", py_minisat22_propagate, METH_VARARGS,    prop_docstring },
-	{ "minisat22_setphases", py_minisat22_setphases, METH_VARARGS,  phases_docstring },
-	{ "minisat22_cbudget",   py_minisat22_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "minisat22_pbudget",   py_minisat22_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "minisat22_core",      py_minisat22_core,      METH_VARARGS,    core_docstring },
-	{ "minisat22_model",     py_minisat22_model,     METH_VARARGS,   model_docstring },
-	{ "minisat22_nof_vars",  py_minisat22_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "minisat22_nof_cls",   py_minisat22_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "minisat22_del",       py_minisat22_del,       METH_VARARGS,     del_docstring },
+	{ "minisat22_new",       py_minisat22_new,       METH_VARARGS,       new_docstring },
+	{ "minisat22_add_cl",    py_minisat22_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "minisat22_solve",     py_minisat22_solve,     METH_VARARGS,     solve_docstring },
+	{ "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "minisat22_propagate", py_minisat22_propagate, METH_VARARGS,      prop_docstring },
+	{ "minisat22_setphases", py_minisat22_setphases, METH_VARARGS,    phases_docstring },
+	{ "minisat22_cbudget",   py_minisat22_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "minisat22_pbudget",   py_minisat22_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "minisat22_interrupt", py_minisat22_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "minisat22_clearint",  py_minisat22_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "minisat22_core",      py_minisat22_core,      METH_VARARGS,      core_docstring },
+	{ "minisat22_model",     py_minisat22_model,     METH_VARARGS,     model_docstring },
+	{ "minisat22_nof_vars",  py_minisat22_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "minisat22_nof_cls",   py_minisat22_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "minisat22_del",       py_minisat22_del,       METH_VARARGS,       del_docstring },
 #endif
 #ifdef WITH_MINISATGH
-	{ "minisatgh_new",       py_minisatgh_new,       METH_VARARGS,     new_docstring },
-	{ "minisatgh_add_cl",    py_minisatgh_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "minisatgh_solve",     py_minisatgh_solve,     METH_VARARGS,   solve_docstring },
-	{ "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,     lim_docstring },
-	{ "minisatgh_propagate", py_minisatgh_propagate, METH_VARARGS,    prop_docstring },
-	{ "minisatgh_setphases", py_minisatgh_setphases, METH_VARARGS,  phases_docstring },
-	{ "minisatgh_cbudget",   py_minisatgh_cbudget,   METH_VARARGS, cbudget_docstring },
-	{ "minisatgh_pbudget",   py_minisatgh_pbudget,   METH_VARARGS, pbudget_docstring },
-	{ "minisatgh_core",      py_minisatgh_core,      METH_VARARGS,    core_docstring },
-	{ "minisatgh_model",     py_minisatgh_model,     METH_VARARGS,   model_docstring },
-	{ "minisatgh_nof_vars",  py_minisatgh_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "minisatgh_nof_cls",   py_minisatgh_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "minisatgh_del",       py_minisatgh_del,       METH_VARARGS,     del_docstring },
+	{ "minisatgh_new",       py_minisatgh_new,       METH_VARARGS,       new_docstring },
+	{ "minisatgh_add_cl",    py_minisatgh_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "minisatgh_solve",     py_minisatgh_solve,     METH_VARARGS,     solve_docstring },
+	{ "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "minisatgh_propagate", py_minisatgh_propagate, METH_VARARGS,      prop_docstring },
+	{ "minisatgh_setphases", py_minisatgh_setphases, METH_VARARGS,    phases_docstring },
+	{ "minisatgh_cbudget",   py_minisatgh_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "minisatgh_pbudget",   py_minisatgh_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "minisatgh_interrupt", py_minisatgh_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "minisatgh_clearint",  py_minisatgh_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "minisatgh_core",      py_minisatgh_core,      METH_VARARGS,      core_docstring },
+	{ "minisatgh_model",     py_minisatgh_model,     METH_VARARGS,     model_docstring },
+	{ "minisatgh_nof_vars",  py_minisatgh_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "minisatgh_nof_cls",   py_minisatgh_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "minisatgh_del",       py_minisatgh_del,       METH_VARARGS,       del_docstring },
 #endif
 	{ NULL, NULL, 0, NULL }
 };
@@ -692,7 +726,10 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Glucose30::lbool res = s->solveLimited(a);
+    Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Glucose30::toInt(res)));
@@ -812,6 +849,40 @@ static PyObject *py_glucose3_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -1159,7 +1230,10 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Glucose41::lbool res = s->solveLimited(a);
+    Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Glucose41::toInt(res)));
@@ -1279,6 +1353,40 @@ static PyObject *py_glucose41_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -1978,7 +2086,10 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	MapleChrono::lbool res = s->solveLimited(a);
+    MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MapleChrono::toInt(res)));
@@ -2098,6 +2209,40 @@ static PyObject *py_maplechrono_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleChrono::Solver *s = (MapleChrono::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -2429,7 +2574,10 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Maplesat::lbool res = s->solveLimited(a);
+    Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Maplesat::toInt(res)));
@@ -2549,6 +2697,40 @@ static PyObject *py_maplesat_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -2880,7 +3062,10 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	MapleCM::lbool res = s->solveLimited(a);
+    MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MapleCM::toInt(res)));
@@ -3000,6 +3185,40 @@ static PyObject *py_maplecm_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -3356,7 +3575,10 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Minicard::lbool res = s->solveLimited(a);
+    Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != Minicard::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Minicard::toInt(res)));
@@ -3476,6 +3698,40 @@ static PyObject *py_minicard_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minicard_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minicard_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -3755,7 +4011,10 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Minisat22::lbool res = s->solveLimited(a);
+    Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Minisat22::toInt(res)));
@@ -3875,6 +4134,40 @@ static PyObject *py_minisat22_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisat22_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisat22_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
@@ -4154,7 +4447,10 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	MinisatGH::lbool res = s->solveLimited(a);
+    MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
+    Py_BEGIN_ALLOW_THREADS
+	res = s->solveLimited(a);
+	Py_END_ALLOW_THREADS
 
 	if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MinisatGH::toInt(res)));
@@ -4274,6 +4570,40 @@ static PyObject *py_minisatgh_pbudget(PyObject *self, PyObject *args)
 		s->setPropBudget(budget);
 	else
 		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
 
 	Py_RETURN_NONE;
 }
