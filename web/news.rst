@@ -11,6 +11,17 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+26.05.2019 (*0.1.4.dev10*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added support for non-deterministic interruption, e.g. based on a timer.
+
+17.05.2019 (*0.1.4.dev9*)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Minor fixes related to the WCNF+ support in :mod:`pysat.examples.lsu`,
+  :mod:`pysat.examples.lbx`, and :mod:`pysat.examples.mcsls`.
+
 27.04.2019 (*0.1.4.dev8*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

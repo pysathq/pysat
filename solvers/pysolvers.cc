@@ -54,11 +54,11 @@ using namespace std;
 // docstrings
 //=============================================================================
 static char    module_docstring[] = "This module provides a wrapper interface "
-				  "for several SAT solvers.";
+				    "for several SAT solvers.";
 static char       new_docstring[] = "Create a new solver object.";
 static char     addcl_docstring[] = "Add a clause to formula.";
 static char     addam_docstring[] = "Add an atmost constraint to formula "
-				  "(for Minicard only).";
+				    "(for Minicard only).";
 static char     solve_docstring[] = "Solve a given CNF instance.";
 static char       lim_docstring[] = "Solve a given CNF instance within a budget.";
 static char      prop_docstring[] = "Propagate a given set of literals.";

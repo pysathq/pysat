@@ -350,8 +350,8 @@ class Solver(object):
 
     def delete(self):
         """
-            Solver destructor, which must be called explicitly if the solver is
-            to be removed. This is not needed inside an ``with`` block.
+            Solver destructor, which must be called explicitly if the solver
+            is to be removed. This is not needed inside an ``with`` block.
         """
 
         if self.solver:
@@ -362,8 +362,8 @@ class Solver(object):
         """
             This method is used to check satisfiability of a CNF formula given
             to the solver (see methods :meth:`add_clause` and
-            :meth:`append_formula`). Unless interrupted with SIGINT, the method
-            returns either ``True`` or ``False``.
+            :meth:`append_formula`). Unless interrupted with SIGINT, the
+            method returns either ``True`` or ``False``.
 
             Incremental SAT calls can be made with the use of assumption
             literals. (**Note** that the ``assumptions`` argument is optional
@@ -424,6 +424,12 @@ class Solver(object):
             *complete* SAT calls are too expensive. For instance, it can be
             useful when minimizing unsatisfiable cores in MaxSAT (see
             :meth:`pysat.examples.RC2.minimize_core` also shown below).
+
+            Also and besides supporting deterministic interruption based on
+            :meth:`conf_budget` and/or :meth:`prop_budget`, limited SAT calls
+            support *deterministic* and *non-deterministic* interruption from
+            inside a Python script. See the :meth:`interrupt` and
+            :meth:`clear_interrupt` methods for details.
 
             Usage example:
 
@@ -509,12 +515,13 @@ class Solver(object):
 
     def interrupt(self):
         """
-            Interrupt the execution of the current limited SAT call
-            (see :meth:`solve_limited`). Can be used to enforce time limits
-            using timer objects. The interrupt must be cleared before
-            performing another SAT call (see :meth:`clear_interrupt`).
-            Behaviour is undefined if used to interrupt a non-limited SAT
-            call (see :meth:`solve`).
+            Interrupt the execution of the current *limited* SAT call (see
+            :meth:`solve_limited`). Can be used to enforce time limits using
+            timer objects. The interrupt must be cleared before performing
+            another SAT call (see :meth:`clear_interrupt`).
+
+            Behaviour is **undefined** if used to interrupt a *non-limited*
+            SAT call (see :meth:`solve`).
 
             Example:
 
@@ -529,6 +536,7 @@ class Solver(object):
                 >>>
                 >>> def interrupt(s):
                 >>>     s.interrupt()
+                >>>
                 >>> timer = Timer(10, interrupt, [m])
                 >>> timer.start()
                 >>>
@@ -542,9 +550,9 @@ class Solver(object):
 
     def clear_interrupt(self):
         """
-            Clears an interrupt. If a limited SAT call was interrupted using
-            the :meth:`interrupt` method, this method must be called before
-            calling the SAT solver again.
+            Clears a previous interrupt. If a limited SAT call was interrupted
+            using the :meth:`interrupt` method, this method **must be called**
+            before calling the SAT solver again.
         """
 
         if self.solver:

@@ -302,8 +302,8 @@ class LSU:
     def interrupt(self):
         """
             Interrupt the current execution of LSU's :meth:`solve` method.
-            Can be used to enforce time limits using timer objects. The interrupt
-            must be cleared before running the LSU algorithm again
+            Can be used to enforce time limits using timer objects. The
+            interrupt must be cleared before running the LSU algorithm again
             (see :meth:`clear_interrupt`).
         """
 
@@ -391,7 +391,8 @@ def parse_options():
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-t', '--timeout'):
-            timeout = float(arg)
+            if str(arg) != 'none':
+                timeout = float(arg)
         elif opt in ('-v', '--verbose'):
             verbose += 1
         else:
@@ -409,12 +410,13 @@ def print_usage():
 
     print('Usage: ' + os.path.basename(sys.argv[0]) + ' [options] dimacs-file')
     print('Options:')
-    print('        -h, --help       Show this message')
-    print('        -m, --model      Print model')
-    print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, g4, mc, m22, mgh (default = g4)')
-    print('        -t, --timeout    Set time limit for MaxSAT solver')
-    print('        -v, --verbose    Be verbose')
+    print('        -h, --help               Show this message')
+    print('        -m, --model              Print model')
+    print('        -s, --solver=<string>    SAT solver to use')
+    print('                                 Available values: g3, g4, mc, m22, mgh (default = g4)')
+    print('        -t, --timeout=<float>    Set time limit for MaxSAT solver')
+    print('                                 Available values: [0 .. FLOAT_MAX], none (default: none)')
+    print('        -v, --verbose            Be verbose')
 
 
 #
@@ -437,9 +439,11 @@ if __name__ == '__main__':
             formula = WCNFPlus(from_file=files[0])
             lsu = LSUPlus(formula, verbose=verbose)
 
+        # setting a timer if necessary
         if timeout is not None:
             if verbose > 1:
                 print('c timeout: {0}'.format(timeout))
+
             timer = Timer(timeout, lambda s: s.interrupt(), [lsu])
             timer.start()
 
