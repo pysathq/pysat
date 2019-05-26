@@ -89,6 +89,7 @@ import getopt
 from pysat.card import ITotalizer
 from pysat.formula import CNF, WCNF, WCNFPlus
 from pysat.solvers import Solver
+from threading import Timer
 import os
 import sys
 import re
@@ -216,7 +217,7 @@ class LSU:
 
         is_sat = False
 
-        while self.oracle.solve():
+        while self.oracle.solve_limited():
             is_sat = True
             self.model = self.oracle.get_model()
             self.cost = self._get_model_cost(self.formula, self.model)
@@ -230,7 +231,10 @@ class LSU:
         if is_sat:
             self.model = filter(lambda l: abs(l) <= self.formula.nv, self.model)
             if self.verbose:
-                print('s OPTIMUM FOUND')
+                if self.oracle.get_status() is None:
+                    print('s SATISFIABLE')
+                else:
+                    print('s OPTIMUM FOUND')
         elif self.verbose:
             print('s UNSATISFIABLE')
 
@@ -295,6 +299,23 @@ class LSU:
 
         self.oracle.add_clause([-self.tot.rhs[cost-1]])
 
+    def interrupt(self):
+        """
+            Interrupt the current execution of LSU's :meth:`solve` method.
+            Can be used to enforce time limits using timer objects. The interrupt
+            must be cleared before running the LSU algorithm again
+            (see :meth:`clear_interrupt`).
+        """
+
+        self.oracle.interrupt()
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        self.oracle.clear_interrupt()
+
     def oracle_time(self):
         """
             Method for calculating and reporting the total SAT solving time.
@@ -350,7 +371,7 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hms:v', ['help', 'model', 'solver=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hms:t:v', ['help', 'model', 'solver=', 'timeout=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         print_usage()
@@ -359,6 +380,7 @@ def parse_options():
     solver = 'g4'
     verbose = 1
     print_model = False
+    timeout = None
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -368,12 +390,14 @@ def parse_options():
             print_model = True
         elif opt in ('-s', '--solver'):
             solver = str(arg)
+        elif opt in ('-t', '--timeout'):
+            timeout = float(arg)
         elif opt in ('-v', '--verbose'):
             verbose += 1
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return print_model, solver, verbose, args
+    return print_model, solver, timeout, verbose, args
 
 
 #
@@ -388,14 +412,15 @@ def print_usage():
     print('        -h, --help       Show this message')
     print('        -m, --model      Print model')
     print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, g4, m22, mgh (default = g4)')
+    print('                         Available values: g3, g4, mc, m22, mgh (default = g4)')
+    print('        -t, --timeout    Set time limit for MaxSAT solver')
     print('        -v, --verbose    Be verbose')
 
 
 #
 #==============================================================================
 if __name__ == '__main__':
-    print_model, solver, verbose, files = parse_options()
+    print_model, solver, timeout, verbose, files = parse_options()
 
     if files:
         # reading standard CNF or WCNF
@@ -412,11 +437,20 @@ if __name__ == '__main__':
             formula = WCNFPlus(from_file=files[0])
             lsu = LSUPlus(formula, verbose=verbose)
 
+        if timeout is not None:
+            if verbose > 1:
+                print('c timeout: {0}'.format(timeout))
+            timer = Timer(timeout, lambda s: s.interrupt(), [lsu])
+            timer.start()
+
         if lsu.solve():
             if print_model:
                 print('v ' + ' '.join([str(l) for l in lsu.get_model()]), '0')
 
         if verbose > 1:
             print('c oracle time: {0:.4f}'.format(lsu.oracle_time()))
+
+        if timeout is not None:
+            timer.cancel()
     else:
         print_usage()
