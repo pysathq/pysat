@@ -1098,6 +1098,8 @@ class WCNF(object):
         self.nv = max([abs(l) for l in clause] + [self.nv])
 
         if weight:
+            if weight >= self.topw:
+                self.topw = weight+1
             self.soft.append(clause)
             self.wght.append(weight)
         else:
@@ -1593,6 +1595,8 @@ class WCNFPlus(WCNF, object):
             self.nv = max([abs(l) for l in clause] + [self.nv])
 
             if weight:
+                if weight >= self.topw:
+                    self.topw = weight + 1
                 self.soft.append(clause)
                 self.wght.append(weight)
             else:
