@@ -814,7 +814,7 @@ class WCNF(object):
         self.hard = []
         self.soft = []
         self.wght = []
-        self.topw = 0
+        self.topw = 1
         self.comments = []
 
         if from_file:
@@ -1098,6 +1098,7 @@ class WCNF(object):
         self.nv = max([abs(l) for l in clause] + [self.nv])
 
         if weight:
+            self.topw += weight
             self.soft.append(clause)
             self.wght.append(weight)
         else:
@@ -1593,6 +1594,7 @@ class WCNFPlus(WCNF, object):
             self.nv = max([abs(l) for l in clause] + [self.nv])
 
             if weight:
+                self.topw += weight
                 self.soft.append(clause)
                 self.wght.append(weight)
             else:
