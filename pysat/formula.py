@@ -889,7 +889,7 @@ class WCNF(object):
         self.hard = []
         self.soft = []
         self.wght = []
-        self.topw = 0
+        self.topw = 1
         self.comments = []
         comment_lead = tuple('p') + tuple(comment_lead)
 
@@ -1098,9 +1098,10 @@ class WCNF(object):
         self.nv = max([abs(l) for l in clause] + [self.nv])
 
         if weight:
-            self.topw += weight
             self.soft.append(clause)
             self.wght.append(weight)
+
+            self.topw += weight
         else:
             self.hard.append(clause)
 
@@ -1466,7 +1467,7 @@ class WCNFPlus(WCNF, object):
         self.atms = []
         self.soft = []
         self.wght = []
-        self.topw = 0
+        self.topw = 1
         self.comments = []
         comment_lead = tuple('p') + tuple(comment_lead)
 
@@ -1594,9 +1595,10 @@ class WCNFPlus(WCNF, object):
             self.nv = max([abs(l) for l in clause] + [self.nv])
 
             if weight:
-                self.topw += weight
                 self.soft.append(clause)
                 self.wght.append(weight)
+
+                self.topw += weight
             else:
                 self.hard.append(clause)
         else:

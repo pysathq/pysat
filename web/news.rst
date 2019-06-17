@@ -11,8 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+17.07.2019 (*0.1.4.dev11*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added top weight update when adding soft clauses into a WCNF.
+
 26.05.2019 (*0.1.4.dev10*)
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Added support for non-deterministic interruption, e.g. based on a timer.
 
