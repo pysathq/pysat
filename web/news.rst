@@ -11,7 +11,7 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
-17.07.2019 (*0.1.4.dev11*)
+17.06.2019 (*0.1.4.dev11*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Added top weight update when adding soft clauses into a WCNF.
