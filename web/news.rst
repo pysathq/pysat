@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+25.06.2019 (*0.1.4.dev12*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Corrected a typo in the method name :meth:`WCNF.unweighted`.
+
 17.06.2019 (*0.1.4.dev11*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
