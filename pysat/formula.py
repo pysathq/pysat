@@ -1146,7 +1146,7 @@ class WCNF(object):
             for cl in clauses:
                 self.append(cl)
 
-    def unweighed(self):
+    def unweighted(self):
         """
             This method creates a *plain* (unweighted) copy of the internal
             formula. As a result, an object of class :class:`CNF` is returned.

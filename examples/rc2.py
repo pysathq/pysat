@@ -707,7 +707,7 @@ class RC2(object):
             :math:`\\mathcal{S}'` at most one of which can be
             satisfied, one can immediately conclude that the formula
             has cost at least :math:`|\\mathcal{S}'|-1` (assuming
-            *unweighed* MaxSAT). Furthermore, it is safe to replace
+            *unweighted* MaxSAT). Furthermore, it is safe to replace
             all clauses of :math:`\\mathcal{S}'` with a single soft
             clause :math:`\sum_{c\in\\mathcal{S}'}{c}`.
 
