@@ -686,6 +686,14 @@ class CNF(object):
         for cl in clauses:
             self.append(cl)
 
+    def __iter__(self):
+        """
+            Iterator over all clauses of the formula.
+        """
+
+        for cl in self.clauses:
+            yield cl
+
     def weighted(self):
         """
             This method creates a weighted copy of the internal formula. As a

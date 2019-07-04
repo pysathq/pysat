@@ -192,11 +192,15 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
-        if not top_id:
-            top_id = max(map(lambda x: abs(x), lits))
-
         # we are going to return this formula
         ret = CNFPlus()
+
+        # if the list of literals is empty, return empty formula
+        if not lits:
+            return ret
+
+        if not top_id:
+            top_id = max(map(lambda x: abs(x), lits))
 
         # MiniCard's native representation is handled separately
         if encoding == 9:
@@ -257,11 +261,15 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
-        if not top_id:
-            top_id = max(map(lambda x: abs(x), lits))
-
         # we are going to return this formula
         ret = CNFPlus()
+
+        # if the list of literals is empty, return empty formula
+        if not lits:
+            return ret
+
+        if not top_id:
+            top_id = max(map(lambda x: abs(x), lits))
 
         # Minicard's native representation is handled separately
         if encoding == 9:
@@ -295,7 +303,7 @@ class CardEnc(object):
         res2 = cls.atmost(lits, bound, res1.nv, encoding)
 
         # merging together AtLeast and AtMost constraints
-        res1.nv = res2.nv
+        res1.nv = max(res1.nv, res2.nv)
         res1.clauses.extend(res2.clauses)
         res1.atmosts.extend(res2.atmosts)
 

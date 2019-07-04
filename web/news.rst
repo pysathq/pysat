@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.06.2019 (*0.1.4.dev13*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed the wrong number of variables after calling methods of :class:`CardEnc`.
+- Added clause iterator to :class:`CNF`.
+- Calling :class:`CardEnc.*([])` returns an empty CNF formula.
+
 25.06.2019 (*0.1.4.dev12*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
