@@ -1,0 +1,112 @@
+diff -Naur solvers/cadical/Makefile solvers/cdc/Makefile
+--- solvers/cadical/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/cdc/Makefile	2019-08-21 19:47:23.000000000 +0100
+@@ -0,0 +1,42 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DQUIET
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I.
++LIBS     := -L.
++SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backtrack.cpp backward.cpp bins.cpp block.cpp ccadical.cpp checker.cpp clause.cpp collect.cpp compact.cpp config.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp elim.cpp ema.cpp extend.cpp external.cpp file.cpp flags.cpp format.cpp gates.cpp instantiate.cpp internal.cpp ipasir.cpp limit.cpp logging.cpp lucky.cpp message.cpp minimize.cpp mobical.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp signal.cpp solution.cpp solver.cpp stats.cpp subsume.cpp terminal.cpp ternary.cpp tracer.cpp transred.cpp util.cpp var.cpp version.cpp vivify.cpp walk.cpp watch.cpp
++OBJECTS  := $(SOURCES:.cpp=.o)
++TRGT     := cadical
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: build.hpp $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++build.hpp:
++	./make-build-header.sh > build.hpp
++
++%.o: %.cpp
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/cadical/build.hpp solvers/cdc/build.hpp
+--- solvers/cadical/build.hpp	1970-01-01 01:00:00.000000000 +0100
++++ solvers/cdc/build.hpp	2019-07-11 10:16:56.000000000 +0100
+@@ -0,0 +1,3 @@
++#define VERSION "1.0.2"
++#define IDENTIFIER "93cea3a86d42697a35af7ea477ef5214332f059f"
++#define DATE "Thu Jul 11 10:16:56 WEST 2019 Darwin antares.local 18.6.0 x86_64"
+diff -Naur solvers/cadical/make-build-header.sh solvers/cdc/make-build-header.sh
+--- solvers/cadical/make-build-header.sh	2019-07-01 17:53:57.000000000 +0100
++++ solvers/cdc/make-build-header.sh	2019-07-11 11:27:30.000000000 +0100
+@@ -19,17 +19,9 @@
+ }
+ 
+ #--------------------------------------------------------------------------#
+-
+-[ ! -f VERSION -a ! -f ../VERSION ] && \
+-die "needs to be called from build sub-directory"
+-
+-[ -f makefile ] || \
+-warning "could not find 'makefile'"
+-
+-#--------------------------------------------------------------------------#
+ # The version.
+ #
+-VERSION="`cat ../VERSION`"
++VERSION="`cat VERSION`"
+ if [ x"$VERSION" = x ]
+ then
+   warning "could not determine 'VERSION'"
+@@ -40,7 +32,7 @@
+ #--------------------------------------------------------------------------#
+ # The unique GIT hash.
+ #
+-IDENTIFIER="`../scripts/get-git-id.sh`"
++IDENTIFIER="`./get-git-id.sh`"
+ if [ x"$IDENTIFIER" = x ]
+ then
+   warning "could not determine 'IDENTIFIER' (git id)"
+@@ -51,9 +43,15 @@
+ #--------------------------------------------------------------------------#
+ # C++ compiler 'CXX' used in 'makefile'.
+ #
+-COMPILER="`sed -e '/^CXX=/!d' -e 's,^CXX=,,' makefile 2>/dev/null`"
+-case x"$COMPILER" in 
+-  xg++* | xclang++*)
++if [[ "$OSTYPE" == "darwin"* ]]; then
++  SEDMAC=-E
++else
++  SEDMAC=
++fi
++
++  COMPILER="`sed $SEDMAC -e '/^CXX[ \t]+:=/!d' -e 's,^CXX[ \t]+:= ,,' Makefile 2>/dev/null`"
++case x"$COMPILER" in
++  xc++* | xg++* | xclang++*)
+     COMPILER="`$COMPILER --version 2>/dev/null|head -1`";;
+   *) COMPILER="";;
+ esac
+@@ -67,7 +65,7 @@
+ #--------------------------------------------------------------------------#
+ # C++ compiler flags 'CXXFLAGS' used in 'makefile'.
+ #
+-FLAGS="`sed -e '/^CXXFLAGS=/!d' -e 's,^CXXFLAGS=,,' makefile 2>/dev/null`"
++FLAGS="`sed $SEDMAC -e '/^CXXFLAGS[ \t]+:=/!d' -e 's,^CXXFLAGS[ \t]+:= ,,' Makefile 2>/dev/null`"
+ if [ x"$FLAGS" = x ]
+ then
+   warning "could not determine 'FLAGS' ('CXXFLAGS')"

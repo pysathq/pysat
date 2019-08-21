@@ -94,7 +94,8 @@ html_theme_options = {
     'logo': 'pysat.png',
     'github_user': 'pysathq',
     'github_repo': 'pysat',
-    'sidebar_width': '152px'
+    'sidebar_width': '152px',
+    'body_text_align': 'justify'
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

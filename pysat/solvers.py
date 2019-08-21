@@ -18,6 +18,7 @@
 
         SolverNames
         Solver
+        Cadical
         Glucose3
         Glucose4
         Lingeling
@@ -35,6 +36,7 @@
     This module provides *incremental* access to a few modern SAT solvers. The
     solvers supported by PySAT are:
 
+    -  CaDiCaL (`rel-1.0.3 <https://github.com/arminbiere/cadical>`__)
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
@@ -123,12 +125,12 @@
         [3, 1]
 
     In order to shorten the description of the module, the classes providing
-    direct access to the individual solvers, i.e. classes :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
-    :class:`MapleCM`, :class:`Maplesat`, :class:`Minicard`,
-    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
-    replicate the interface of the base class :class:`Solver` and, thus, can
-    be used the same exact way.
+    direct access to the individual solvers, i.e. classes :class:`Cadical`,
+    :class:`Glucose3`, :class:`Glucose4`, :class:`Lingeling`,
+    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
+    :class:`Minicard`, :class:`Minisat22`, and :class:`MinisatGH`, are
+    **omitted**. They replicate the interface of the base class
+    :class:`Solver` and, thus, can be used the same exact way.
 
     ==============
     Module details
@@ -149,9 +151,9 @@ class NoSuchSolverError(Exception):
     """
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
-        solvers includes the names `'glucose3'`, `'glucose4'`, `'lingeling'`,
-        `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'minicard'`,
-        `'minisat22'`, and `'minisatgh'`.
+        solvers includes the names `'cadical'`, `'glucose3'`, `'glucose4'`,
+        `'lingeling'`, `'maplechrono'`, `'maplecm'`, `'maplesat'`,
+        `'minicard'`, `'minisat22'`, and `'minisatgh'`.
     """
 
     pass
@@ -167,6 +169,7 @@ class SolverNames(object):
 
         .. code-block:: python
 
+            cadical     = ('cd', 'cdl', 'cadical')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
             lingeling   = ('lgl', 'lingeling')
@@ -183,6 +186,7 @@ class SolverNames(object):
         also allowed*.
     """
 
+    cadical     = ('cd', 'cdl', 'cadical')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
     lingeling   = ('lgl', 'lingeling')
@@ -252,11 +256,12 @@ class Solver(object):
 
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
-        :class:`Lingeling`, :class:`Glucose3`, :class:`Glucose4`,
-        :class:`MapleChrono`, :class:`MapleCM` and :class:`Maplesat` can have
-        additional default arguments. One such argument supported by
-        :class:`Glucose3` and :class:`Glucose4` but also by ``Lingeling``,
-        ``MapleChrono``, ``MapleCM``, and ``Maplesat`` is `DRUP proof
+        :class:`Cadical`, :class:`Lingeling`, :class:`Glucose3`,
+        :class:`Glucose4`, :class:`MapleChrono`, :class:`MapleCM` and
+        :class:`Maplesat` can have additional default arguments. One such
+        argument supported by :class:`Glucose3` and :class:`Glucose4` but also
+        by ``Cadical``, ``Lingeling``, ``MapleChrono``, ``MapleCM``, and
+        ``Maplesat`` is `DRUP proof
         <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
         enabled by setting the ``with_proof`` argument to ``True`` (``False``
         by default):
@@ -274,11 +279,11 @@ class Solver(object):
             ...     l.get_proof()
             ['-5 0', '6 0', '-2 0', '-4 0', '1 0', '3 0', '0']
 
-        Additionally and in contrast to :class:`Lingeling`, both
-        :class:`Glucose3` and :class:`Glucose4` have one more default argument
-        ``incr`` (``False`` by default), which enables incrementality features
-        introduced in Glucose3 [3]_. To summarize, the additional arguments of
-        Glucose are:
+        Additionally and in contrast to :class:`Cadical` and
+        :class:`Lingeling`, both :class:`Glucose3` and :class:`Glucose4` have
+        one more default argument ``incr`` (``False`` by default), which
+        enables incrementality features introduced in Glucose3 [3]_. To
+        summarize, the additional arguments of Glucose are:
 
         :param incr: enable the incrementality features of Glucose3 [3]_.
         :param with_proof: enable proof logging in the `DRUP format <http://www.cs.utexas.edu/~marijn/drup/>`__.
@@ -327,7 +332,9 @@ class Solver(object):
 
         if not self.solver:
             name_ = name.lower()
-            if name_ in SolverNames.glucose3:
+            if name_ in SolverNames.cadical:
+                self.solver = Cadical(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.glucose3:
                 self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose4:
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
@@ -409,7 +416,7 @@ class Solver(object):
             ``False``.
 
             **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Lingeling` does not support it).
+            (e.g. :class:`Cadical` and :class:`Lingeling` do not support it).
 
             Incremental SAT calls can be made with the use of assumption
             literals. (**Note** that the ``assumptions`` argument is optional
@@ -570,7 +577,7 @@ class Solver(object):
             saving.
 
             **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Lingeling` does not support it).
+            (e.g. :class:`Cadical` and :class:`Lingeling` do not support it).
 
             :param assumptions: a list of assumption literals.
             :param phase_saving: enable phase saving (can be ``0``, ``1``, and
@@ -620,6 +627,9 @@ class Solver(object):
             :class:`Minicard` can redefine the preferences in any of the
             following SAT calls due to the phase saving heuristic.
 
+            Also **note** that :class:`Cadical` does not support this
+            functionality.
+
             :param literals: a list of literals.
             :type literals: iterable(int)
 
@@ -659,7 +669,6 @@ class Solver(object):
 
     def get_model(self):
         """
-
             The method is to be used for extracting a satisfying assignment for
             a CNF formula given to the solver. A model is provided if a
             previous SAT call returned ``True``. Otherwise, ``None`` is
@@ -688,7 +697,6 @@ class Solver(object):
 
     def get_core(self):
         """
-
             This method is to be used for extracting an unsatisfiable core in
             the form of a subset of a given set of assumption literals, which
             are responsible for unsatisfiability of the formula. This can be
@@ -971,6 +979,276 @@ class Solver(object):
 
         if self.solver:
             res = self.solver.append_formula(formula, no_return)
+            if not no_return:
+                return res
+
+
+#
+#==============================================================================
+class Cadical(object):
+    """
+        CaDiCaL SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        self.cadical = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.cadical = None
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.cadical:
+            self.cadical = pysolvers.cadical_new()
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.cadical_tracepr(self.cadical, self.prfile)
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.cadical:
+            pysolvers.cadical_del(self.cadical, self.prfile)
+            self.cadical = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = time.clock()
+
+            # saving default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+            self.status = pysolvers.cadical_solve(self.cadical, assumptions)
+
+            # recovering default SIGINT handler
+            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+
+            if self.use_timer:
+                self.call_time = time.clock() - start_time
+                self.accu_time += self.call_time
+
+            self.prev_assumps = assumptions
+            return self.status
+
+    def solve_limited(self, assumptions=[]):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        raise NotImplementedError('Simple literal propagation is not yet implemented for CaDiCaL.')
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        raise NotImplementedError('Setting preferred phases is not yet implemented for CaDiCaL.')
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.cadical:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.cadical and self.status == True:
+            model = pysolvers.cadical_model(self.cadical)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.cadical and self.status == False:
+            return pysolvers.cadical_core(self.cadical, self.prev_assumps)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.cadical and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip() for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.cadical:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.cadical:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical_nof_vars(self.cadical)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical_nof_cls(self.cadical)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.cadical:
+            done = False
+            while not done:
+                if self.use_timer:
+                    start_time = time.clock()
+
+                self.status = pysolvers.cadical_solve(self.cadical, assumptions)
+
+                if self.use_timer:
+                    self.call_time = time.clock() - start_time
+                    self.accu_time += self.call_time
+
+                model = self.get_model()
+
+                if model:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = pysolvers.cadical_add_cl(self.cadical, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by CaDiCaL.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by CaDiCaL.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = None
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
             if not no_return:
                 return res
 
