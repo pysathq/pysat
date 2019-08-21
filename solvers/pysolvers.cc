@@ -674,7 +674,7 @@ static PyObject *py_cadical_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	s->trace_proof((PyFileObject *)p_obj, "<py_fobj>");
+	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
