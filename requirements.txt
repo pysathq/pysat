@@ -1,3 +1,3 @@
-py-aiger>=3.3.3
+py-aiger>=3.3.0
 pypblib>=0.0.3
 six

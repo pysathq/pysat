@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+28.08.2019 (*0.1.4.dev17*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Updated the minimum version of py-aiger required for installation.
+
 28.08.2019 (*0.1.4.dev16*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
