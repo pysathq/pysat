@@ -206,6 +206,7 @@
 #
 #==============================================================================
 from __future__ import print_function
+import aiger
 import collections
 import copy
 import os
@@ -378,17 +379,19 @@ class CNF(object):
         :param from_fp: a file pointer to read from
         :param from_string: a string storing a CNF formula
         :param from_clauses: a list of clauses to bootstrap the formula with
+        :param from_aiger: an AIGER circuit to bootstrap the formula with
         :param comment_lead: a list of characters leading comment lines
 
         :type from_file: str
         :type from_fp: file_pointer
         :type from_string: str
         :type from_clauses: list(list(int))
+        :type from_aiger: :class:`aiger.AIG` (see `py-aiger package <https://github.com/mvcisback/py-aiger>`__)
         :type comment_lead: list(str)
     """
 
     def __init__(self, from_file=None, from_fp=None, from_string=None,
-            from_clauses=[], comment_lead=['c']):
+            from_clauses=[], from_aiger=None, comment_lead=['c']):
         """
             Constructor.
         """
@@ -405,6 +408,8 @@ class CNF(object):
             self.from_string(from_string, comment_lead)
         elif from_clauses:
             self.from_clauses(from_clauses)
+        elif from_aiger:
+            self.from_aiger(from_aiger)
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -519,7 +524,7 @@ class CNF(object):
         """
             This methods copies a list of clauses into a CNF object.
 
-            :param clauses: a list of clauses.
+            :param clauses: a list of clauses
             :type clauses: list(list(int))
 
             Example:
@@ -538,6 +543,126 @@ class CNF(object):
 
         for cl in self.clauses:
             self.nv = max([abs(l) for l in cl] + [self.nv])
+
+    def from_aiger(self, aig, vpool=None):
+        """
+
+            Create a CNF formula by Tseitin-encoding an input AIGER circuit.
+
+            Input circuit is expected to be an object of class
+            :class:`aiger.AIG`. Alternatively, it can be specified as an
+            :class:`aiger.BoolExpr`, or an ``*.aag`` filename, or an AIGER
+            string to parse. (Classes :class:`aiger.AIG` and
+            :class:`aiger.BoolExpr` are defined in the `py-aiger package
+            <https://github.com/mvcisback/py-aiger>`__.)
+
+            Note that this implementation is inspired by (and so resembles)
+            similar functinality of the `py-aiger-analysis package
+            <https://github.com/mvcisback/py-AIGAR/>`__.
+
+            :param aig: an input AIGER circuit
+            :param vpool: pool of variable identifiers (optional)
+
+            :type aig: :class:`aiger.AIG` (see `py-aiger package <https://github.com/mvcisback/py-aiger>`__)
+            :type vpool: :class:`.IDPool`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> import aiger
+                >>> x, y, z = aiger.atom('x'), aiger.atom('y'), aiger.atom('z')
+                >>> expr = ~(x | y) & z
+                >>> print(expr.aig)
+                aag 5 3 0 1 2
+                2
+                4
+                8
+                10
+                6 3 5
+                10 6 8
+                i0 y
+                i1 x
+                i2 z
+                o0 6c454aea-c9e1-11e9-bbe3-3af9d34370a9
+                >>>
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_aiger=expr.aig)
+                >>> print(cnf.nv)
+                5
+                >>> print(cnf.clauses)
+                [[3, 2, 4], [-3, -4], [-2, -4], [-4, -1, 5], [4, -5], [1, -5]]
+                >>> print(['{0} <-> {1}'.format(v, cnf.vpool.obj(v)) for v in cnf.inps])
+                ['3 <-> y', '2 <-> x', '1 <-> z']
+                >>> print(['{0} <-> {1}'.format(v, cnf.vpool.obj(v)) for v in cnf.outs])
+                ['5 <-> 6c454aea-c9e1-11e9-bbe3-3af9d34370a9']
+        """
+
+        if isinstance(aig, str):
+            if aig.startswith('aag '):
+                # assume it is an AIGER string
+                aig = aiger.parse(aig)
+            else:
+                # assume it is a file path
+                aig = aiger.load(aig)
+        elif isinstance(aig, aiger.BoolExpr):
+            aig = aig.aig
+
+        # at this point it should definitely be an aiger.AIG
+        assert isinstance(aig, aiger.AIG), 'Unknown representation of input AIGER circuit'
+
+        # resetting the formula
+        self.clauses, self.nv = [], 0
+        self.comments = ['c ' + c.strip() for c in aig.comments]
+
+        # creating a pool of variable IDs if necessary
+        self.vpool = vpool if vpool else IDPool()
+
+        g2lmap = {}  # temporary mapping from gates to literals
+        for gate in aiger.common.eval_order(aig):
+            if isinstance(gate, aiger.aig.ConstFalse):
+                # this is a constant False
+                # create a variable if it occures the first # time
+                if aiger.aig.ConstFalse not in self.vpool.obj2id:
+                    self.append([IDPool.id(aiger.aig.ConstFalse)])
+
+                # reusing the newly created variable
+                g2lmap[gate] = -self.clauses[-1][0]
+
+            elif isinstance(gate, aiger.aig.Inverter):
+                # inverter gate => negating its input variable
+                g2lmap[gate] = -g2lmap[gate.input]
+
+            elif isinstance(gate, aiger.aig.Input):
+                # if it is a new input, associate a new variable with it
+                if gate.name not in self.vpool.obj2id:
+                    g2lmap[gate] = self.vpool.id(gate.name)
+
+            elif isinstance(gate, aiger.aig.AndGate):
+                # and gate => Tseitin-encode conjunction of the inputs
+                g2lmap[gate] = self.vpool.id(gate)
+
+                self.append([-g2lmap[gate.left], -g2lmap[gate.right],  g2lmap[gate]])
+                self.append([ g2lmap[gate.left],                      -g2lmap[gate]])
+                self.append([                     g2lmap[gate.right], -g2lmap[gate]])
+
+        # saving input variables
+        self.inps = [self.vpool.id(gate) for gate in aig.inputs]
+
+        # saving output variables
+        self.outs = []
+        for out in aig.node_map:
+            if g2lmap[out[1]] < 0:
+                # this output is an inventer => creating a new variable
+                newv = self.vpool.id(out[0])
+                self.append([-newv,  g2lmap[out[1]]])
+                self.append([ newv, -g2lmap[out[1]]])
+            else:
+                # saving the output in the pool by its name
+                self.vpool.obj2id[out[0]] = g2lmap[out[1]]
+                self.vpool.id2obj[g2lmap[out[1]]] = out[0]
+
+            self.outs.append(self.vpool.id(out[0]))
 
     def copy(self):
         """

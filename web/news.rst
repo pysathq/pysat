@@ -11,6 +11,18 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+28.08.2019 (*0.1.4.dev16*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- CNF formulas can now be bootstrapped by Tseitin-encoding AIGER circuits.
+  This is done with the use of the `py-aiger package
+  <https://github.com/mvcisback/py-aiger>`__.
+
+21.08.2019 (*0.1.4.dev15*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added rudimentary support of CaDiCaL.
+
 04.06.2019 (*0.1.4.dev13*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
