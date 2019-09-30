@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+30.09.2019 (*0.1.4.dev18*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug related to using py-aiger on Python 2.
+
 28.08.2019 (*0.1.4.dev17*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

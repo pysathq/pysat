@@ -206,12 +206,18 @@
 #
 #==============================================================================
 from __future__ import print_function
-import aiger
 import collections
 import copy
 import os
 from pysat._fileio import FileObject
 import sys
+
+# checking whether or not py-aiger is available and working as expected
+aiger_present = True
+try:
+    import aiger
+except SyntaxError:
+    aiger_present = False
 
 try:  # for Python2
     from cStringIO import StringIO
@@ -598,6 +604,8 @@ class CNF(object):
                 ['5 <-> 6c454aea-c9e1-11e9-bbe3-3af9d34370a9']
         """
 
+        assert aiger_present, 'Package \'py-aiger\' is unavailable. Check your installation.'
+
         if isinstance(aig, str):
             if aig.startswith('aag '):
                 # assume it is an AIGER string
@@ -609,7 +617,7 @@ class CNF(object):
             aig = aig.aig
 
         # at this point it should definitely be an aiger.AIG
-        assert isinstance(aig, aiger.AIG), 'Unknown representation of input AIGER circuit'
+        assert isinstance(aig, aiger.AIG), 'Unknown representation of input AIGER circuit.'
 
         # resetting the formula
         self.clauses, self.nv = [], 0
