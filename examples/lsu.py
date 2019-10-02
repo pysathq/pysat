@@ -252,7 +252,7 @@ class LSU:
 
     def found_optimum(self):
         """
-            Checks if the optimum solutiona was found in a prior call to
+            Checks if the optimum solution was found in a prior call to
             :func:`solve`.
 
             :rtype: bool
