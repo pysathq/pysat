@@ -231,10 +231,10 @@ class LSU:
         if is_sat:
             self.model = filter(lambda l: abs(l) <= self.formula.nv, self.model)
             if self.verbose:
-                if self.oracle.get_status() is None:
-                    print('s SATISFIABLE')
-                else:
+                if self.found_optimum():
                     print('s OPTIMUM FOUND')
+                else:
+                    print('s SATISFIABLE')
         elif self.verbose:
             print('s UNSATISFIABLE')
 
@@ -249,6 +249,16 @@ class LSU:
         """
 
         return self.model
+
+    def found_optimum(self):
+        """
+            Checks if the optimum solution was found in a prior call to
+            :func:`solve`.
+
+            :rtype: bool
+        """
+
+        return self.oracle.get_status is not None
 
     def _get_model_cost(self, formula, model):
         """
