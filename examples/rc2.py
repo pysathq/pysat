@@ -30,15 +30,15 @@
     [1]_ and [2]_ and originally implemented in the `MSCG MaxSAT
     solver <https://reason.di.fc.ul.pt/wiki/doku.php?id=mscg>`_.
 
-    Initially, this solver was supposed to serve as an example of a
-    possible PySAT usage illustrating how a state-of-the-art MaxSAT
-    algorithm could be implemented in Python and still be efficient.
-    It participated in the `MaxSAT Evaluation 2018
-    <https://maxsat-evaluations.github.io/2018/>`_ where,
-    surprisingly, it `was ranked first
-    <https://maxsat-evaluations.github.io/2018/rankings.html>`_ in two
-    complete categories: *unweighted* and *weighted*. A brief solver
-    description can be found in [3]_.
+    Initially, this solver was supposed to serve as an example of a possible
+    PySAT usage illustrating how a state-of-the-art MaxSAT algorithm could be
+    implemented in Python and still be efficient. It participated in the
+    `MaxSAT Evaluations 2018
+    <https://maxsat-evaluations.github.io/2018/rankings.html>`_ and `2019
+    <https://maxsat-evaluations.github.io/2019/rankings.html>`_ where,
+    surprisingly, it was ranked first in two complete categories: *unweighted*
+    and *weighted*. A brief solver description can be found in [3]_. A more
+    detailed solver description can be found in [4]_.
 
     .. [1] António Morgado, Carmine Dodaro, Joao Marques-Silva.
         *Core-Guided MaxSAT with Soft Cardinality Constraints*. CP
@@ -49,22 +49,26 @@
         pp. 129-134
 
     .. [3] Alexey Ignatiev, António Morgado, Joao Marques-Silva.
-        *RC2: a Python-based MaxSAT Solver*. MaxSAT Evaluation 2018.
+        *RC2: A Python-based MaxSAT Solver*. MaxSAT Evaluation 2018.
         p. 22
+
+    .. [4] Alexey Ignatiev, António Morgado, Joao Marques-Silva.
+        *RC2: An Efficient MaxSAT Solver*. MaxSAT Evaluation 2018.
+        JSAT 11. 2019. pp. 53-64
 
     The file implements two classes: :class:`RC2` and
     :class:`RC2Stratified`. The former class is the basic
     implementation of the algorithm, which can be applied to a MaxSAT
     formula in the :class:`.WCNF` format. The latter class
     additionally implements Boolean lexicographic optimization (BLO)
-    [4]_ and stratification [5]_ on top of :class:`RC2`.
+    [5]_ and stratification [6]_ on top of :class:`RC2`.
 
-    .. [4] Joao Marques-Silva, Josep Argelich, Ana Graça, Inês Lynce.
+    .. [5] Joao Marques-Silva, Josep Argelich, Ana Graça, Inês Lynce.
         *Boolean lexicographic optimization: algorithms &
         applications*. Ann. Math. Artif. Intell. 62(3-4). 2011.
         pp. 317-343
 
-    .. [5] Carlos Ansótegui, Maria Luisa Bonet, Joel Gabàs, Jordi
+    .. [6] Carlos Ansótegui, Maria Luisa Bonet, Joel Gabàs, Jordi
         Levy. *Improving WPM2 for (Weighted) Partial MaxSAT*. CP
         2013. pp. 117-132
 
@@ -155,7 +159,7 @@ class RC2(object):
         default SAT solver to use is ``g3`` (see
         :class:`.SolverNames`). Additionally, if Glucose is chosen,
         the ``incr`` parameter controls whether to use the incremental
-        mode of Glucose [6]_ (turned off by default). Boolean
+        mode of Glucose [7]_ (turned off by default). Boolean
         parameters ``adapt``, ``exhaust``, and ``minz`` control
         whether or to apply detection and adaptation of intrinsic
         AtMost1 constraints, core exhaustion, and core reduction.
@@ -163,7 +167,7 @@ class RC2(object):
         is set to a non-zero integer. Finally, verbosity level can be
         set using the ``verbose`` parameter.
 
-        .. [6] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon.
+        .. [7] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon.
             *Improving Glucose for Incremental SAT Solving with
             Assumptions: Application to MUS Extraction*. SAT 2013.
             pp. 309-317
@@ -257,7 +261,7 @@ class RC2(object):
             afterwards.
 
             Optional input parameter ``incr`` (``False`` by default)
-            regulates whether or not Glucose's incremental mode [6]_
+            regulates whether or not Glucose's incremental mode [7]_
             is turned on.
 
             :param formula: input formula
@@ -811,7 +815,7 @@ class RC2(object):
         """
             Exhaust core by increasing its bound as much as possible.
             Core exhaustion was originally referred to as *cover
-            optimization* in [5]_.
+            optimization* in [6]_.
 
             Given a totalizer object ``tobj`` representing a sum of
             some *relaxation* variables :math:`r\in R` that augment
@@ -1136,8 +1140,8 @@ class RC2Stratified(RC2, object):
         formulas. This class extends capabilities of :class:`RC2` with
         two heuristics, namely
 
-        1. Boolean lexicographic optimization (BLO) [4]_
-        2. stratification [5]_
+        1. Boolean lexicographic optimization (BLO) [5]_
+        2. stratification [6]_
 
         There is no way to enable only one of them -- both heuristics
         are applied at the same time. Except for the aforementioned

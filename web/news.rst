@@ -11,6 +11,16 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+09.10.2019 (*0.1.4.dev19*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added solution optimality check in :mod:`pysat.examples.lsu`.
+- Added a way to update the used variable identifiers using
+  :class:`pysat.formula.IDPool` when working with
+  :class:`pysat.card.CardEnc.*` and :class:`pysat.pb.PBEnc.*`.
+- Minor cosmetic changes.
+- New logo.
+
 30.09.2019 (*0.1.4.dev18*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
