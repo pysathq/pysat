@@ -605,14 +605,16 @@ class CNF(object):
         """
         assert aiger_present, 'Package \'py-aiger\' is unavailable. Check your installation.'
 
+        # resetting the formula
+        self.clauses, self.nv = [], 0
+
         # creating a pool of variable IDs if necessary
         self.vpool = vpool if vpool else IDPool()
 
         # Use py-aiger-cnf to insulate from internal py-aiger details.
         aig_cnf = aiger_cnf.aig2cnf(aig, fresh=self.vpool.id, force_true=False)
-
-        # resetting the formula
-        self.clauses, self.nv = [], 0
+        
+        self.clauses = [list(cls) for cls in aig_cnf.clauses]
         self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
 
         # saving input and output variables
