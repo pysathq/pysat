@@ -212,10 +212,10 @@ import os
 from pysat._fileio import FileObject
 import sys
 
-# checking whether or not py-aiger is available and working as expected
+# checking whether or not py-aiger-cnf is available and working as expected
 aiger_present = True
 try:
-    import aiger
+    import aiger_cnf
 except SyntaxError:
     aiger_present = False
 
@@ -603,74 +603,26 @@ class CNF(object):
                 >>> print(['{0} <-> {1}'.format(v, cnf.vpool.obj(v)) for v in cnf.outs])
                 ['5 <-> 6c454aea-c9e1-11e9-bbe3-3af9d34370a9']
         """
-
         assert aiger_present, 'Package \'py-aiger\' is unavailable. Check your installation.'
-
-        if isinstance(aig, str):
-            if aig.startswith('aag '):
-                # assume it is an AIGER string
-                aig = aiger.parse(aig)
-            else:
-                # assume it is a file path
-                aig = aiger.load(aig)
-        elif isinstance(aig, aiger.BoolExpr):
-            aig = aig.aig
-
-        # at this point it should definitely be an aiger.AIG
-        assert isinstance(aig, aiger.AIG), 'Unknown representation of input AIGER circuit.'
-
-        # resetting the formula
-        self.clauses, self.nv = [], 0
-        self.comments = ['c ' + c.strip() for c in aig.comments]
 
         # creating a pool of variable IDs if necessary
         self.vpool = vpool if vpool else IDPool()
 
-        g2lmap = {}  # temporary mapping from gates to literals
-        for gate in aiger.common.eval_order(aig):
-            if isinstance(gate, aiger.aig.ConstFalse):
-                # this is a constant False
-                # create a variable if it occures the first # time
-                if aiger.aig.ConstFalse not in self.vpool.obj2id:
-                    self.append([IDPool.id(aiger.aig.ConstFalse)])
+        # Use py-aiger-cnf to insulate from internal py-aiger details.
+        aig_cnf = aiger_cnf.aig2cnf(aig, fresh=self.vpool.id, force_true=False)
 
-                # reusing the newly created variable
-                g2lmap[gate] = -self.clauses[-1][0]
+        # resetting the formula
+        self.clauses, self.nv = [], 0
+        self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
 
-            elif isinstance(gate, aiger.aig.Inverter):
-                # inverter gate => negating its input variable
-                g2lmap[gate] = -g2lmap[gate.input]
+        # saving input and output variables
+        self.inps = list(aig_cnf.input2lit.values())
+        self.outs = list(aig_cnf.output2lit.values())
 
-            elif isinstance(gate, aiger.aig.Input):
-                # if it is a new input, associate a new variable with it
-                if gate.name not in self.vpool.obj2id:
-                    g2lmap[gate] = self.vpool.id(gate.name)
-
-            elif isinstance(gate, aiger.aig.AndGate):
-                # and gate => Tseitin-encode conjunction of the inputs
-                g2lmap[gate] = self.vpool.id(gate)
-
-                self.append([-g2lmap[gate.left], -g2lmap[gate.right],  g2lmap[gate]])
-                self.append([ g2lmap[gate.left],                      -g2lmap[gate]])
-                self.append([                     g2lmap[gate.right], -g2lmap[gate]])
-
-        # saving input variables
-        self.inps = [self.vpool.id(gate) for gate in aig.inputs]
-
-        # saving output variables
-        self.outs = []
-        for out in aig.node_map:
-            if g2lmap[out[1]] < 0:
-                # this output is an inventer => creating a new variable
-                newv = self.vpool.id(out[0])
-                self.append([-newv,  g2lmap[out[1]]])
-                self.append([ newv, -g2lmap[out[1]]])
-            else:
-                # saving the output in the pool by its name
-                self.vpool.obj2id[out[0]] = g2lmap[out[1]]
-                self.vpool.id2obj[g2lmap[out[1]]] = out[0]
-
-            self.outs.append(self.vpool.id(out[0]))
+        # saving the output in the pool by its name
+        for name, lit in aig_cnf.output2lit.items():
+            self.vpool.obj2id[name] = lit
+            self.vpool.id2obj[lit] = name
 
     def copy(self):
         """
