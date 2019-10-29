@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+29.10.2019 (*0.1.4.dev20*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The use of py-aiger is replaced by py-aiger-cnf to incapsulate the internals
+  of py-aiger.
+
 09.10.2019 (*0.1.4.dev19*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
