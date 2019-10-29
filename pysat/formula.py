@@ -208,6 +208,7 @@
 from __future__ import print_function
 import collections
 import copy
+import itertools
 import os
 from pysat._fileio import FileObject
 import sys
@@ -562,10 +563,6 @@ class CNF(object):
             :class:`aiger.BoolExpr` are defined in the `py-aiger package
             <https://github.com/mvcisback/py-aiger>`__.)
 
-            Note that this implementation is inspired by (and so resembles)
-            similar functinality of the `py-aiger-analysis package
-            <https://github.com/mvcisback/py-AIGAR/>`__.
-
             :param aig: an input AIGER circuit
             :param vpool: pool of variable identifiers (optional)
 
@@ -605,9 +602,6 @@ class CNF(object):
         """
         assert aiger_present, 'Package \'py-aiger\' is unavailable. Check your installation.'
 
-        # resetting the formula
-        self.clauses, self.nv = [], 0
-
         # creating a pool of variable IDs if necessary
         self.vpool = vpool if vpool else IDPool()
 
@@ -616,6 +610,7 @@ class CNF(object):
         
         self.clauses = [list(cls) for cls in aig_cnf.clauses]
         self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
+        self.nv = max(map(abs, itertools.chain(*self.clauses)))
 
         # saving input and output variables
         self.inps = list(aig_cnf.input2lit.values())
