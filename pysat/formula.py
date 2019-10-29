@@ -610,9 +610,7 @@ class CNF(object):
         
         self.clauses = [list(cls) for cls in aig_cnf.clauses]
         self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
-
-        # Flatten clauses and count unique elements.
-        self.nv = len(set(itertools.chain(*self.clauses)))
+        self.nv = max(itertools.chain(*self.clauses))
 
         # saving input and output variables
         self.inps = list(aig_cnf.input2lit.values())
