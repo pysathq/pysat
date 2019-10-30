@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+30.10.2019 (*0.1.4.dev21*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Marked py-aiger-cnf as an optional dependency.
+
 29.10.2019 (*0.1.4.dev20*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

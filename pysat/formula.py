@@ -600,14 +600,14 @@ class CNF(object):
                 >>> print(['{0} <-> {1}'.format(v, cnf.vpool.obj(v)) for v in cnf.outs])
                 ['5 <-> 6c454aea-c9e1-11e9-bbe3-3af9d34370a9']
         """
-        assert aiger_present, 'Package \'py-aiger\' is unavailable. Check your installation.'
+        assert aiger_present, 'Package \'py-aiger-cnf\' is unavailable. Check your installation.'
 
         # creating a pool of variable IDs if necessary
         self.vpool = vpool if vpool else IDPool()
 
         # Use py-aiger-cnf to insulate from internal py-aiger details.
         aig_cnf = aiger_cnf.aig2cnf(aig, fresh=self.vpool.id, force_true=False)
-        
+
         self.clauses = [list(cls) for cls in aig_cnf.clauses]
         self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
         self.nv = max(map(abs, itertools.chain(*self.clauses)))
@@ -615,6 +615,13 @@ class CNF(object):
         # saving input and output variables
         self.inps = list(aig_cnf.input2lit.values())
         self.outs = list(aig_cnf.output2lit.values())
+
+        # updating input name to variable mappings
+        for var in self.inps:
+            name = self.vpool.id2obj[var].name
+
+            self.vpool.obj2id[name] = var
+            self.vpool.id2obj[var] = name
 
         # saving the output in the pool by its name
         for name, lit in aig_cnf.output2lit.items():
