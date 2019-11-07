@@ -217,7 +217,7 @@ import sys
 aiger_present = True
 try:
     import aiger_cnf
-except SyntaxError:
+except ImportError:
     aiger_present = False
 
 try:  # for Python2
