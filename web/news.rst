@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+07.11.2019 (*0.1.4.dev22*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A minor fix in :mod:`pysat.formula` related to importing py-aiger-cnf.
+
 30.10.2019 (*0.1.4.dev21*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
