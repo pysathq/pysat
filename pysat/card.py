@@ -93,7 +93,8 @@
 
 #
 #==============================================================================
-from pysat.formula import CNF, CNFPlus
+import math
+from pysat.formula import CNF, CNFPlus, IDPool
 import pycard
 import signal
 
@@ -181,7 +182,43 @@ class CardEnc(object):
     """
 
     @classmethod
-    def atmost(cls, lits, bound=1, top_id=None, encoding=EncType.seqcounter):
+    def _update_vids(cls, cnf, vpool):
+        """
+            Update variable ids in the given formula and id pool.
+
+            :param cnf: a list of literals in the sum.
+            :param vpool: the value of bound :math:`k`.
+
+            :type cnf: :class:`.formula.CNFPlus`
+            :type vpool: :class:`.formula.IDPool`
+        """
+
+        top, vmap = vpool.top, {}  # current top and variable mapping
+
+        # creating a new variable mapping, taking into
+        # account variables marked as "occupied"
+        while top < cnf.nv:
+            top += 1
+            vpool.top += 1
+
+            while vpool._occupied and vpool.top >= vpool._occupied[0][0]:
+                if vpool.top <= vpool._occupied[0][1] + 1:
+                    vpool.top = vpool._occupied[0][1] + 1
+
+                vpool._occupied.pop(0)
+
+            vmap[top] = vpool.top
+
+        # updating the clauses
+        for cl in cnf.clauses:
+            cl[:] = map(lambda l: int(math.copysign(vmap[abs(l)], l)) if abs(l) in vmap else l, cl)
+
+        # updating the number of variables
+        cnf.nv = vpool.top
+
+    @classmethod
+    def atmost(cls, lits, bound=1, top_id=None, vpool=None,
+            encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an AtMostK
             constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}\leq k`. The method
@@ -192,12 +229,19 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        assert not top_id or not vpool, \
+                'Use either a top id or a pool of variables but not both.'
+
         # we are going to return this formula
         ret = CNFPlus()
 
         # if the list of literals is empty, return empty formula
         if not lits:
             return ret
+
+        # obtaining the top id from the variable pool
+        if vpool:
+            top_id = vpool.top
 
         if not top_id:
             top_id = max(map(lambda x: abs(x), lits))
@@ -218,32 +262,49 @@ class CardEnc(object):
         if res:
             ret.clauses, ret.nv = res
 
+        # updating vpool if necessary
+        if vpool:
+            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
+                cls._update_vids(ret, vpool)
+            else:
+                vpool.top = ret.nv - 1
+                vpool._next()
+
         return ret
 
     @classmethod
-    def atleast(cls, lits, bound=1, top_id=None, encoding=EncType.seqcounter):
+    def atleast(cls, lits, bound=1, top_id=None, vpool=None,
+            encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an AtLeastK
             constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}\geq k`. The method
             takes 1 mandatory argument ``lits`` and 3 default arguments can be
-            specified: ``bound``, ``top_id``, and ``encoding``.
+            specified: ``bound``, ``top_id``, ``vpool``, and ``encoding``.
 
             :param lits: a list of literals in the sum.
             :param bound: the value of bound :math:`k`.
             :param top_id: top variable identifier used so far.
+            :param vpool: variable pool for counting the number of variables.
             :param encoding: identifier of the encoding to use.
 
             :type lits: iterable(int)
             :type bound: int
             :type top_id: integer or None
+            :type vpool: :class:`.IDPool`
             :type encoding: integer
 
             Parameter ``top_id`` serves to increase integer identifiers of
-            auxiliary variables introduced during the encoding process. This is
-            helpful when augmenting an existing CNF formula with the new
+            auxiliary variables introduced during the encoding process. This
+            is helpful when augmenting an existing CNF formula with the new
             cardinality encoding to make sure there is no collision between
-            identifiers of the variables. If specified the identifiers of the
+            identifiers of the variables. If specified, the identifiers of the
             first auxiliary variable will be ``top_id+1``.
+
+            Instead of ``top_id``, one may want to use a pool of variable
+            identifiers ``vpool``, which is automatically updated during the
+            method call. In many circumstances, this is more convenient than
+            using ``top_id``. Also note that parameters ``top_id`` and
+            ``vpool`` **cannot** be specified *simultaneusly*.
 
             The default value of ``encoding`` is :attr:`Enctype.seqcounter`.
 
@@ -261,12 +322,19 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        assert not top_id or not vpool, \
+                'Use either a top id or a pool of variables but not both.'
+
         # we are going to return this formula
         ret = CNFPlus()
 
         # if the list of literals is empty, return empty formula
         if not lits:
             return ret
+
+        # obtaining the top id from the variable pool
+        if vpool:
+            top_id = vpool.top
 
         if not top_id:
             top_id = max(map(lambda x: abs(x), lits))
@@ -287,10 +355,19 @@ class CardEnc(object):
         if res:
             ret.clauses, ret.nv = res
 
+        # updating vpool if necessary
+        if vpool:
+            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
+                cls._update_vids(ret, vpool)
+            else:
+                vpool.top = ret.nv - 1
+                vpool._next()
+
         return ret
 
     @classmethod
-    def equals(cls, lits, bound=1, top_id=None, encoding=EncType.seqcounter):
+    def equals(cls, lits, bound=1, top_id=None, vpool=None,
+            encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an EqualsK
             constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}= k`. The method
@@ -299,8 +376,12 @@ class CardEnc(object):
             with method :meth:`CardEnc.atleast`. Please, see it for details.
         """
 
-        res1 = cls.atleast(lits, bound, top_id, encoding)
-        res2 = cls.atmost(lits, bound, res1.nv, encoding)
+        if vpool:
+            res1 = cls.atleast(lits, bound=bound, vpool=vpool, encoding=encoding)
+            res2 = cls.atmost(lits, bound=bound, vpool=vpool, encoding=encoding)
+        else:
+            res1 = cls.atleast(lits, bound=bound, top_id=top_id, encoding=encoding)
+            res2 = cls.atmost(lits, bound=bound, top_id=res1.nv, encoding=encoding)
 
         # merging together AtLeast and AtMost constraints
         res1.nv = max(res1.nv, res2.nv)

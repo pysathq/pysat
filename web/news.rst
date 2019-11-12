@@ -11,6 +11,37 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+07.11.2019 (*0.1.4.dev22*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A minor fix in :mod:`pysat.formula` related to importing py-aiger-cnf.
+
+30.10.2019 (*0.1.4.dev21*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Marked py-aiger-cnf as an optional dependency.
+
+29.10.2019 (*0.1.4.dev20*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The use of py-aiger is replaced by py-aiger-cnf to incapsulate the internals
+  of py-aiger.
+
+09.10.2019 (*0.1.4.dev19*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added solution optimality check in :mod:`pysat.examples.lsu`.
+- Added a way to update the used variable identifiers using
+  :class:`pysat.formula.IDPool` when working with
+  :class:`pysat.card.CardEnc.*` and :class:`pysat.pb.PBEnc.*`.
+- Minor cosmetic changes.
+- New logo.
+
+30.09.2019 (*0.1.4.dev18*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug related to using py-aiger on Python 2.
+
 28.08.2019 (*0.1.4.dev17*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

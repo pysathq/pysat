@@ -77,6 +77,7 @@
 
 #
 #==============================================================================
+import math
 from pypblib import pblib
 from pysat.formula import CNF
 
@@ -174,7 +175,42 @@ class PBEnc(object):
     """
 
     @classmethod
-    def _encode(cls, lits, weights=None, bound=1, top_id=None,
+    def _update_vids(cls, cnf, vpool):
+        """
+            Update variable ids in the given formula and id pool.
+
+            :param cnf: a list of literals in the sum.
+            :param vpool: the value of bound :math:`k`.
+
+            :type cnf: :class:`.formula.CNF`
+            :type vpool: :class:`.formula.IDPool`
+        """
+
+        top, vmap = vpool.top, {}  # current top and variable mapping
+
+        # creating a new variable mapping, taking into
+        # account variables marked as "occupied"
+        while top < cnf.nv:
+            top += 1
+            vpool.top += 1
+
+            while vpool._occupied and vpool.top >= vpool._occupied[0][0]:
+                if vpool.top <= vpool._occupied[0][1] + 1:
+                    vpool.top = vpool._occupied[0][1] + 1
+
+                vpool._occupied.pop(0)
+
+            vmap[top] = vpool.top
+
+        # updating the clauses
+        for cl in cnf.clauses:
+            cl[:] = map(lambda l: int(math.copysign(vmap[abs(l)], l)) if abs(l) in vmap else l, cl)
+
+        # updating the number of variables
+        cnf.nv = vpool.top
+
+    @classmethod
+    def _encode(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best, comparator='<'):
         """
             This is the method that wraps the encoder of PyPBLib. Although the
@@ -191,6 +227,7 @@ class PBEnc(object):
             :param weights: a list of weights
             :param bound: the value of bound :math:`k`.
             :param top_id: top variable identifier used so far.
+            :param vpool: variable pool for counting the number of variables.
             :param encoding: identifier of the encoding to use.
             :param comparator: identifier of the comparison operator
 
@@ -198,6 +235,7 @@ class PBEnc(object):
             :type weights: iterable(int)
             :type bound: int
             :type top_id: integer or None
+            :type vpool: :class:`.IDPool`
             :type encoding: integer
             :type comparator: str
 
@@ -208,6 +246,9 @@ class PBEnc(object):
             raise(NoSuchEncodingError(encoding))
 
         assert lits, 'No literals are provided.'
+
+        assert not top_id or not vpool, \
+                'Use either a top id or a pool of variables but not both.'
 
         # preparing weighted literals
         if weights:
@@ -223,6 +264,10 @@ class PBEnc(object):
                 wlits = [pblib.WeightedLit(l, 1) for l in lits]
             else:
                 assert 0, 'Incorrect literals given.'
+
+        # obtaining the top id from the variable pool
+        if vpool:
+            top_id = vpool.top
 
         if not top_id:
             top_id = max(map(lambda x: abs(x), lits))
@@ -241,10 +286,20 @@ class PBEnc(object):
         pb2cnf.encode(constr, result, varmgr)
 
         # extracting clauses
-        return CNF(from_clauses=result.get_clauses())
+        ret = CNF(from_clauses=result.get_clauses())
+
+        # updating vpool if necessary
+        if vpool:
+            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
+                cls._update_vids(ret, vpool)
+            else:
+                vpool.top = ret.nv - 1
+                vpool._next()
+
+        return ret
 
     @classmethod
-    def leq(cls, lits, weights=None, bound=1, top_id=None,
+    def leq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
         """
             This method can be used for creating a CNF encoding of a LEQ
@@ -264,33 +319,34 @@ class PBEnc(object):
             :param weights: a list of weights
             :param bound: the value of bound :math:`k`.
             :param top_id: top variable identifier used so far.
+            :param vpool: variable pool for counting the number of variables.
             :param encoding: identifier of the encoding to use.
 
             :type lits: iterable(int)
             :type weights: iterable(int)
             :type bound: int
             :type top_id: integer or None
+            :type vpool: :class:`.IDPool`
             :type encoding: integer
 
             :rtype: :class:`pysat.formula.CNF`
-
-
         """
 
-        return cls._encode(lits, weights, bound, top_id, encoding,
-                comparator='<')
+        return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
+                vpool=vpool, encoding=encoding, comparator='<')
 
     @classmethod
-    def atmost(cls, lits, weights=None, bound=1, top_id=None,
+    def atmost(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
         """
             A synonim for :meth:`PBEnc.leq`.
         """
 
-        return cls.leq(lits, weights, bound, top_id, encoding)
+        return cls.leq(lits, weights=weights, bound=bound, top_id=top_id,
+                vpool=vpool, encoding=encoding)
 
     @classmethod
-    def geq(cls, lits, weights=None, bound=1, top_id=None,
+    def geq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
         """
             This method can be used for creating a CNF encoding of a GEQ
@@ -300,20 +356,21 @@ class PBEnc(object):
             Please, see it for details.
         """
 
-        return cls._encode(lits, weights, bound, top_id, encoding,
-                comparator='>')
+        return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
+                vpool=vpool, encoding=encoding, comparator='>')
 
     @classmethod
-    def atleast(cls, lits, weights=None, bound=1, top_id=None,
+    def atleast(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
         """
             A synonym for :meth:`PBEnc.geq`.
         """
 
-        return cls.geq(lits, weights, bound, top_id, encoding)
+        return cls.geq(lits, weights=weights, bound=bound, top_id=top_id,
+                vpool=vpool, encoding=encoding)
 
     @classmethod
-    def equals(cls, lits, weights=None, bound=1, top_id=None,
+    def equals(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
         """
             This method can be used for creating a CNF encoding of a weighted
@@ -322,5 +379,5 @@ class PBEnc(object):
             method :meth:`PBEnc.leq`. Please, see it for details.
         """
 
-        return cls._encode(lits, weights, bound, top_id, encoding,
-                comparator='=')
+        return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
+                vpool=vpool, encoding=encoding, comparator='=')
