@@ -258,7 +258,7 @@ class LSU:
             :rtype: bool
         """
 
-        return self.oracle.get_status is not None
+        return self.oracle.get_status() is not None
 
     def _get_model_cost(self, formula, model):
         """
