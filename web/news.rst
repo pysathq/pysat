@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+14.11.2019 (*0.1.4.dev23*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug in :mod:`pysat.examples.lsu`.
+
 07.11.2019 (*0.1.4.dev22*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
