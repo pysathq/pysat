@@ -237,7 +237,7 @@ are using a POSIX-compliant operating system with GNU `make
 command line. Installation also relies on a C/C++ compiler supporting C++11,
 e.g. `GCC <https://gcc.gnu.org/>`__ or `Clang <https://clang.llvm.org/>`__, as
 well as the ``six`` `Python package <https://pypi.org/project/six/>`__.
-Finally, in order to compile "C extentions" included as modules, the installer
+Finally, in order to compile "C extensions" included as modules, the installer
 requires the headers of `Python <https://www.python.org/>`__ and `zlib
 <https://www.zlib.net/>`__. Both can be installed using the standard package
 repositories.
