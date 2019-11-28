@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+28.11.2019 (*0.1.4.dev24*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed signal handling in the multithreaded use of PySAT. Multiple oracles
+  can be used at a time now.
+
 14.11.2019 (*0.1.4.dev23*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

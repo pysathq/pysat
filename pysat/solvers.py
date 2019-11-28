@@ -139,6 +139,7 @@
 
 #
 #==============================================================================
+from pysat._utils import MainThread
 import pysolvers
 import signal
 import tempfile
@@ -1061,13 +1062,16 @@ class Cadical(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.cadical_solve(self.cadical, assumptions)
+                self.status = pysolvers.cadical_solve(self.cadical, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.cadical_solve(self.cadical, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1201,15 +1205,7 @@ class Cadical(object):
         if self.cadical:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.cadical_solve(self.cadical, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -1334,13 +1330,16 @@ class Glucose3(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.glucose3_solve(self.glucose, assumptions)
+                self.status = pysolvers.glucose3_solve(self.glucose, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.glucose3_solve(self.glucose, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1358,13 +1357,16 @@ class Glucose3(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.glucose3_solve_lim(self.glucose, assumptions)
+                self.status = pysolvers.glucose3_solve_lim(self.glucose, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.glucose3_solve_lim(self.glucose, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1413,13 +1415,16 @@ class Glucose3(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, phase_saving)
+                st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1510,15 +1515,7 @@ class Glucose3(object):
         if self.glucose:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.glucose3_solve(self.glucose, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -1643,13 +1640,16 @@ class Glucose4(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.glucose41_solve(self.glucose, assumptions)
+                self.status = pysolvers.glucose41_solve(self.glucose, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.glucose41_solve(self.glucose, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1667,13 +1667,16 @@ class Glucose4(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.glucose41_solve_lim(self.glucose, assumptions)
+                self.status = pysolvers.glucose41_solve_lim(self.glucose, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.glucose41_solve_lim(self.glucose, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1722,13 +1725,16 @@ class Glucose4(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, phase_saving)
+                st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -1819,15 +1825,7 @@ class Glucose4(object):
         if self.glucose:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.glucose41_solve(self.glucose, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -1949,13 +1947,16 @@ class Lingeling(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.lingeling_solve(self.lingeling, assumptions)
+                self.status = pysolvers.lingeling_solve(self.lingeling, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.lingeling_solve(self.lingeling, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2090,15 +2091,7 @@ class Lingeling(object):
         if self.lingeling:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.lingeling_solve(self.lingeling, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -2210,13 +2203,16 @@ class MapleChrono(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions)
+                self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2234,13 +2230,16 @@ class MapleChrono(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplechrono_solve_lim(self.maplesat, assumptions)
+                self.status = pysolvers.maplechrono_solve_lim(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplechrono_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2289,13 +2288,16 @@ class MapleChrono(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.maplechrono_propagate(self.maplesat, assumptions, phase_saving)
+                st, props = pysolvers.maplechrono_propagate(self.maplesat, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.maplechrono_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2386,15 +2388,7 @@ class MapleChrono(object):
         if self.maplesat:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -2516,13 +2510,16 @@ class MapleCM(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplecm_solve(self.maplesat, assumptions)
+                self.status = pysolvers.maplecm_solve(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplecm_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2540,13 +2537,16 @@ class MapleCM(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplecm_solve_lim(self.maplesat, assumptions)
+                self.status = pysolvers.maplecm_solve_lim(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplecm_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2595,13 +2595,16 @@ class MapleCM(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.maplecm_propagate(self.maplesat, assumptions, phase_saving)
+                st, props = pysolvers.maplecm_propagate(self.maplesat, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.maplecm_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2692,15 +2695,7 @@ class MapleCM(object):
         if self.maplesat:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.maplecm_solve(self.maplesat, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -2822,13 +2817,16 @@ class Maplesat(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplesat_solve(self.maplesat, assumptions)
+                self.status = pysolvers.maplesat_solve(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplesat_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2846,13 +2844,16 @@ class Maplesat(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.maplesat_solve_lim(self.maplesat, assumptions)
+                self.status = pysolvers.maplesat_solve_lim(self.maplesat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.maplesat_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2901,13 +2902,16 @@ class Maplesat(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.maplesat_propagate(self.maplesat, assumptions, phase_saving)
+                st, props = pysolvers.maplesat_propagate(self.maplesat, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.maplesat_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -2998,15 +3002,7 @@ class Maplesat(object):
         if self.maplesat:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.maplesat_solve(self.maplesat, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -3116,13 +3112,16 @@ class Minicard(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minicard_solve(self.minicard, assumptions)
+                self.status = pysolvers.minicard_solve(self.minicard, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minicard_solve(self.minicard, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3140,13 +3139,16 @@ class Minicard(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minicard_solve_lim(self.minicard, assumptions)
+                self.status = pysolvers.minicard_solve_lim(self.minicard, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minicard_solve_lim(self.minicard, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3195,13 +3197,16 @@ class Minicard(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minicard_propagate(self.minicard, assumptions, phase_saving)
+                st, props = pysolvers.minicard_propagate(self.minicard, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.minicard_propagate(self.minicard, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3290,15 +3295,7 @@ class Minicard(object):
         if self.minicard:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.minicard_solve(self.minicard, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -3415,13 +3412,16 @@ class Minisat22(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minisat22_solve(self.minisat, assumptions)
+                self.status = pysolvers.minisat22_solve(self.minisat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minisat22_solve(self.minisat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3439,13 +3439,16 @@ class Minisat22(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minisat22_solve_lim(self.minisat, assumptions)
+                self.status = pysolvers.minisat22_solve_lim(self.minisat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minisat22_solve_lim(self.minisat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3494,13 +3497,16 @@ class Minisat22(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, phase_saving)
+                st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3589,15 +3595,7 @@ class Minisat22(object):
         if self.minisat:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.minisat22_solve(self.minisat, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
@@ -3707,13 +3705,16 @@ class MinisatGH(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minisatgh_solve(self.minisat, assumptions)
+                self.status = pysolvers.minisatgh_solve(self.minisat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minisatgh_solve(self.minisat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3731,13 +3732,16 @@ class MinisatGH(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            self.status = pysolvers.minisatgh_solve_lim(self.minisat, assumptions)
+                self.status = pysolvers.minisatgh_solve_lim(self.minisat, assumptions, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                self.status = pysolvers.minisatgh_solve_lim(self.minisat, assumptions, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3786,13 +3790,16 @@ class MinisatGH(object):
             if self.use_timer:
                  start_time = time.clock()
 
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
+            if MainThread.check() == True:
+                # saving default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-            st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, phase_saving)
+                st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, phase_saving, 1)
 
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+                # recovering default SIGINT handler
+                def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
+            else:
+                st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, phase_saving, 0)
 
             if self.use_timer:
                 self.call_time = time.clock() - start_time
@@ -3881,15 +3888,7 @@ class MinisatGH(object):
         if self.minisat:
             done = False
             while not done:
-                if self.use_timer:
-                    start_time = time.clock()
-
-                self.status = pysolvers.minisatgh_solve(self.minisat, assumptions)
-
-                if self.use_timer:
-                    self.call_time = time.clock() - start_time
-                    self.accu_time += self.call_time
-
+                self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
                 if model:
