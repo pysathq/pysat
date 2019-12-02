@@ -10,9 +10,12 @@
 
 #
 #==============================================================================
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 import distutils.command.build
 import distutils.command.install
-from distutils.core import setup, Extension
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
