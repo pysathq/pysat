@@ -1242,8 +1242,12 @@ class Cadical(object):
 
         if self.cadical:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -1552,8 +1556,12 @@ class Glucose3(object):
 
         if self.glucose:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -1862,8 +1870,12 @@ class Glucose4(object):
 
         if self.glucose:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -2425,8 +2437,12 @@ class MapleChrono(object):
 
         if self.maplesat:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -2732,8 +2748,12 @@ class MapleCM(object):
 
         if self.maplesat:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -3039,8 +3059,12 @@ class Maplesat(object):
 
         if self.maplesat:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -3339,8 +3363,16 @@ class Minicard(object):
 
         if self.minicard:
             res = None
-            for clause in formula:
+
+            for clause in formula.clauses:
                 res = self.add_clause(clause, no_return)
+                if not no_return and res == False:
+                    return res
+
+            for atmost in formula.atmosts:
+                res = self.add_atmost(atmost[0], atmost[1], no_return)
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -3632,8 +3664,12 @@ class Minisat22(object):
 
         if self.minisat:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
@@ -3925,8 +3961,12 @@ class MinisatGH(object):
 
         if self.minisat:
             res = None
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
 
             if not no_return:
                 return res
