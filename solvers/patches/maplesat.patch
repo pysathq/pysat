@@ -1,6 +1,6 @@
-diff -Naur build/solvers/maplesat/Makefile solvers/maplesat/Makefile
---- build/solvers/maplesat/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/maplesat/Makefile	2019-11-28 15:13:07.487628700 +0100
+diff -Naur solvers/maplesat/Makefile solvers/maple/Makefile
+--- solvers/maplesat/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/maple/Makefile	2019-03-17 23:08:19.000000000 +0000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -41,9 +41,9 @@ diff -Naur build/solvers/maplesat/Makefile solvers/maplesat/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur build/solvers/maplesat/core/Solver.cc solvers/maplesat/core/Solver.cc
---- build/solvers/maplesat/core/Solver.cc	2019-12-01 20:49:50.977370300 +0100
-+++ solvers/maplesat/core/Solver.cc	2019-11-28 15:13:07.500321400 +0100
+diff -Naur solvers/maplesat/core/Solver.cc solvers/maple/core/Solver.cc
+--- solvers/maplesat/core/Solver.cc	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/core/Solver.cc	2019-03-18 22:33:07.000000000 +0000
 @@ -22,12 +22,12 @@
  
  #include <math.h>
@@ -928,9 +928,9 @@ diff -Naur build/solvers/maplesat/core/Solver.cc solvers/maplesat/core/Solver.cc
              if (use_bin_learnts || !ca[ws[i].cref].learnt())
                  return true;
      }
-diff -Naur build/solvers/maplesat/core/Solver.h solvers/maplesat/core/Solver.h
---- build/solvers/maplesat/core/Solver.h	2019-12-01 20:49:50.973470600 +0100
-+++ solvers/maplesat/core/Solver.h	2019-11-28 15:13:07.520811500 +0100
+diff -Naur solvers/maplesat/core/Solver.h solvers/maple/core/Solver.h
+--- solvers/maplesat/core/Solver.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/core/Solver.h	2019-03-17 23:28:05.000000000 +0000
 @@ -20,33 +20,33 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1114,9 +1114,9 @@ diff -Naur build/solvers/maplesat/core/Solver.h solvers/maplesat/core/Solver.h
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
-diff -Naur build/solvers/maplesat/core/SolverTypes.h solvers/maplesat/core/SolverTypes.h
---- build/solvers/maplesat/core/SolverTypes.h	2019-12-01 20:49:50.971513600 +0100
-+++ solvers/maplesat/core/SolverTypes.h	2019-11-28 15:13:07.538379200 +0100
+diff -Naur solvers/maplesat/core/SolverTypes.h solvers/maple/core/SolverTypes.h
+--- solvers/maplesat/core/SolverTypes.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/core/SolverTypes.h	2019-03-17 23:19:41.000000000 +0000
 @@ -21,18 +21,18 @@
  **************************************************************************************************/
  
@@ -1276,9 +1276,9 @@ diff -Naur build/solvers/maplesat/core/SolverTypes.h solvers/maplesat/core/Solve
  |    Result:
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
-diff -Naur build/solvers/maplesat/mtl/Alg.h solvers/maplesat/mtl/Alg.h
---- build/solvers/maplesat/mtl/Alg.h	2019-12-01 20:49:51.002746000 +0100
-+++ solvers/maplesat/mtl/Alg.h	2019-11-28 15:13:07.547163600 +0100
+diff -Naur solvers/maplesat/mtl/Alg.h solvers/maple/mtl/Alg.h
+--- solvers/maplesat/mtl/Alg.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Alg.h	2019-03-17 22:57:48.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1296,9 +1296,9 @@ diff -Naur build/solvers/maplesat/mtl/Alg.h solvers/maplesat/mtl/Alg.h
  
  //=================================================================================================
  // Useful functions on vector-like types:
-diff -Naur build/solvers/maplesat/mtl/Alloc.h solvers/maplesat/mtl/Alloc.h
---- build/solvers/maplesat/mtl/Alloc.h	2019-12-01 20:49:51.006648900 +0100
-+++ solvers/maplesat/mtl/Alloc.h	2019-11-28 15:13:07.561803500 +0100
+diff -Naur solvers/maplesat/mtl/Alloc.h solvers/maple/mtl/Alloc.h
+--- solvers/maplesat/mtl/Alloc.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Alloc.h	2019-03-17 22:57:55.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1344,9 +1344,9 @@ diff -Naur build/solvers/maplesat/mtl/Alloc.h solvers/maplesat/mtl/Alloc.h
      // Handle overflow:
      if (sz < prev_sz)
          throw OutOfMemoryException();
-diff -Naur build/solvers/maplesat/mtl/Heap.h solvers/maplesat/mtl/Heap.h
---- build/solvers/maplesat/mtl/Heap.h	2019-12-01 20:49:51.011530000 +0100
-+++ solvers/maplesat/mtl/Heap.h	2019-11-28 15:13:07.566684300 +0100
+diff -Naur solvers/maplesat/mtl/Heap.h solvers/maple/mtl/Heap.h
+--- solvers/maplesat/mtl/Heap.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Heap.h	2019-03-17 22:58:06.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1406,9 +1406,9 @@ diff -Naur build/solvers/maplesat/mtl/Heap.h solvers/maplesat/mtl/Heap.h
      }
  };
  
-diff -Naur build/solvers/maplesat/mtl/IntTypes.h solvers/maplesat/mtl/IntTypes.h
---- build/solvers/maplesat/mtl/IntTypes.h	2019-12-01 20:49:50.999817300 +0100
-+++ solvers/maplesat/mtl/IntTypes.h	2019-11-28 15:13:07.571565600 +0100
+diff -Naur solvers/maplesat/mtl/IntTypes.h solvers/maple/mtl/IntTypes.h
+--- solvers/maplesat/mtl/IntTypes.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/IntTypes.h	2019-03-17 22:58:19.000000000 +0000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1420,9 +1420,9 @@ diff -Naur build/solvers/maplesat/mtl/IntTypes.h solvers/maplesat/mtl/IntTypes.h
  
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
-diff -Naur build/solvers/maplesat/mtl/Map.h solvers/maplesat/mtl/Map.h
---- build/solvers/maplesat/mtl/Map.h	2019-12-01 20:49:51.003721200 +0100
-+++ solvers/maplesat/mtl/Map.h	2019-11-28 15:13:07.576445900 +0100
+diff -Naur solvers/maplesat/mtl/Map.h solvers/maple/mtl/Map.h
+--- solvers/maplesat/mtl/Map.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Map.h	2019-03-17 22:58:30.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1469,9 +1469,9 @@ diff -Naur build/solvers/maplesat/mtl/Map.h solvers/maplesat/mtl/Map.h
          return false;
      }
  
-diff -Naur build/solvers/maplesat/mtl/Queue.h solvers/maplesat/mtl/Queue.h
---- build/solvers/maplesat/mtl/Queue.h	2019-12-01 20:49:51.000793700 +0100
-+++ solvers/maplesat/mtl/Queue.h	2019-11-28 15:13:07.581327000 +0100
+diff -Naur solvers/maplesat/mtl/Queue.h solvers/maple/mtl/Queue.h
+--- solvers/maplesat/mtl/Queue.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Queue.h	2019-03-17 22:58:39.000000000 +0000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1489,9 +1489,9 @@ diff -Naur build/solvers/maplesat/mtl/Queue.h solvers/maplesat/mtl/Queue.h
  
  //=================================================================================================
  
-diff -Naur build/solvers/maplesat/mtl/Sort.h solvers/maplesat/mtl/Sort.h
---- build/solvers/maplesat/mtl/Sort.h	2019-12-01 20:49:51.010557700 +0100
-+++ solvers/maplesat/mtl/Sort.h	2019-11-28 15:13:07.586204100 +0100
+diff -Naur solvers/maplesat/mtl/Sort.h solvers/maple/mtl/Sort.h
+--- solvers/maplesat/mtl/Sort.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Sort.h	2019-03-17 22:58:48.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1513,9 +1513,9 @@ diff -Naur build/solvers/maplesat/mtl/Sort.h solvers/maplesat/mtl/Sort.h
  
  template<class T>
  struct LessThan_default {
-diff -Naur build/solvers/maplesat/mtl/Vec.h solvers/maplesat/mtl/Vec.h
---- build/solvers/maplesat/mtl/Vec.h	2019-12-01 20:49:51.009576900 +0100
-+++ solvers/maplesat/mtl/Vec.h	2019-11-28 15:13:07.590108500 +0100
+diff -Naur solvers/maplesat/mtl/Vec.h solvers/maple/mtl/Vec.h
+--- solvers/maplesat/mtl/Vec.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/Vec.h	2019-03-17 23:15:11.000000000 +0000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1556,9 +1556,9 @@ diff -Naur build/solvers/maplesat/mtl/Vec.h solvers/maplesat/mtl/Vec.h
          throw OutOfMemoryException();
   }
  
-diff -Naur build/solvers/maplesat/mtl/XAlloc.h solvers/maplesat/mtl/XAlloc.h
---- build/solvers/maplesat/mtl/XAlloc.h	2019-12-01 20:49:50.998844300 +0100
-+++ solvers/maplesat/mtl/XAlloc.h	2019-11-28 15:13:07.599869700 +0100
+diff -Naur solvers/maplesat/mtl/XAlloc.h solvers/maple/mtl/XAlloc.h
+--- solvers/maplesat/mtl/XAlloc.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/mtl/XAlloc.h	2019-03-17 22:59:23.000000000 +0000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1576,9 +1576,9 @@ diff -Naur build/solvers/maplesat/mtl/XAlloc.h solvers/maplesat/mtl/XAlloc.h
  
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
-diff -Naur build/solvers/maplesat/utils/Options.cc solvers/maplesat/utils/Options.cc
---- build/solvers/maplesat/utils/Options.cc	2019-12-01 20:49:50.990057300 +0100
-+++ solvers/maplesat/utils/Options.cc	2019-11-28 15:13:07.605724600 +0100
+diff -Naur solvers/maplesat/utils/Options.cc solvers/maple/utils/Options.cc
+--- solvers/maplesat/utils/Options.cc	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/utils/Options.cc	2019-03-17 23:22:01.000000000 +0000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1633,9 +1633,9 @@ diff -Naur build/solvers/maplesat/utils/Options.cc solvers/maplesat/utils/Option
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
-diff -Naur build/solvers/maplesat/utils/Options.h solvers/maplesat/utils/Options.h
---- build/solvers/maplesat/utils/Options.h	2019-12-01 20:49:50.985177000 +0100
-+++ solvers/maplesat/utils/Options.h	2019-11-28 15:13:07.615484800 +0100
+diff -Naur solvers/maplesat/utils/Options.h solvers/maple/utils/Options.h
+--- solvers/maplesat/utils/Options.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/utils/Options.h	2019-03-17 23:15:40.000000000 +0000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1839,9 +1839,9 @@ diff -Naur build/solvers/maplesat/utils/Options.h solvers/maplesat/utils/Options
          if (match(span, "-")){
              bool b = !match(span, "no-");
  
-diff -Naur build/solvers/maplesat/utils/ParseUtils.h solvers/maplesat/utils/ParseUtils.h
---- build/solvers/maplesat/utils/ParseUtils.h	2019-12-01 20:49:50.984202500 +0100
-+++ solvers/maplesat/utils/ParseUtils.h	2019-11-28 15:13:07.625244800 +0100
+diff -Naur solvers/maplesat/utils/ParseUtils.h solvers/maple/utils/ParseUtils.h
+--- solvers/maplesat/utils/ParseUtils.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/utils/ParseUtils.h	2019-03-17 22:57:35.000000000 +0000
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1870,9 +1870,9 @@ diff -Naur build/solvers/maplesat/utils/ParseUtils.h solvers/maplesat/utils/Pars
  }
  
  // String matching: consumes characters eagerly, but does not require random access iterator.
-diff -Naur build/solvers/maplesat/utils/System.cc solvers/maplesat/utils/System.cc
---- build/solvers/maplesat/utils/System.cc	2019-12-01 20:49:50.987130100 +0100
-+++ solvers/maplesat/utils/System.cc	2019-11-28 15:13:07.630125000 +0100
+diff -Naur solvers/maplesat/utils/System.cc solvers/maple/utils/System.cc
+--- solvers/maplesat/utils/System.cc	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/utils/System.cc	2019-03-17 22:57:20.000000000 +0000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1923,9 +1923,9 @@ diff -Naur build/solvers/maplesat/utils/System.cc solvers/maplesat/utils/System.
 +double Maplesat::memUsed() {
      return 0; }
  #endif
-diff -Naur build/solvers/maplesat/utils/System.h solvers/maplesat/utils/System.h
---- build/solvers/maplesat/utils/System.h	2019-12-01 20:49:50.989080700 +0100
-+++ solvers/maplesat/utils/System.h	2019-11-28 15:13:07.641835700 +0100
+diff -Naur solvers/maplesat/utils/System.h solvers/maple/utils/System.h
+--- solvers/maplesat/utils/System.h	2019-03-18 22:31:57.000000000 +0000
++++ solvers/maple/utils/System.h	2019-03-17 22:56:55.000000000 +0000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

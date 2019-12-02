@@ -5,10 +5,6 @@
  *      Author: aign
  */
 
-#ifdef _MSC_VER
-#define setlinebuf(a)
-#endif
-
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
