@@ -10,22 +10,12 @@
 
 #
 #==============================================================================
-import os
-import os.path
-import contextlib
-import glob
-
 try:
     from setuptools import setup, Extension
-    HAVE_SETUPTOOLS = True
 except ImportError:
     from distutils.core import setup, Extension
-    HAVE_SETUPTOOLS = False
-
-
 import distutils.command.build
 import distutils.command.install
-#from distutils.core import setup, Extension
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
@@ -33,15 +23,6 @@ import platform
 import prepare
 
 from pysat import __version__
-
-@contextlib.contextmanager
-def chdir(newDir):
-    oldDir=os.getcwd()
-    try:
-        os.chdir(newDir)
-        yield
-    finally:
-        os.chdir(oldDir)
 
 #
 #==============================================================================
@@ -84,6 +65,7 @@ class build(distutils.command.build.build):
         """
             Download, patch and compile SAT solvers before building.
         """
+
         # download and compile solvers
         prepare.do(to_install)
 
@@ -93,13 +75,10 @@ class build(distutils.command.build.build):
 
 # compilation flags for C extensions
 #==============================================================================
-
-compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'],  ['stdc++']
+compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'], ['stdc++']
 if platform.system() == 'Darwin':
     compile_flags += ['--stdlib=libc++']
     cpplib = ['c++']
-elif platform.system() =="Windows":
-    compile_flags =["-DNBUILD", "-DNLGLYALSAT" , "/DINCREMENTAL", "-DNLGLOG", "-DNDEBUG", "-DNCHKSOL", "-DNLGLFILES", "-DNLGLDEMA", "/experimental:preprocessor", "-I./zlib"]
 
 # C extensions: pycard and pysolvers
 #==============================================================================
@@ -112,30 +91,14 @@ pycard_ext = Extension('pycard',
     library_dirs=[]
 )
 
-sources=["solvers/pysolvers.cc"]
-
-if platform.system()=="Windows":
-    with chdir("solvers"):
-        for solver in to_install:
-            with chdir(solver):
-                for fileName in glob.glob("*.c*"):
-                    sources+=["solvers/%s/%s" % (solver, fileName)]
-                for fileName in glob.glob("*/*.c*"):
-                    sources+=["solvers/%s/%s" % (solver, fileName)]
-    libraries=cpplib
-    library_dirs= []
-else:
-    libraries=to_install+cpplib
-    library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
-
 pysolvers_ext = Extension('pysolvers',
-    sources = sources,
+    sources = ['solvers/pysolvers.cc'],
     extra_compile_args=compile_flags + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
     include_dirs = ['solvers'],
     language = 'c++',
-    libraries = libraries,
-    library_dirs=library_dirs
+    libraries = to_install + cpplib,
+    library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
 )
 
 
