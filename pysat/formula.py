@@ -1370,7 +1370,7 @@ class CNFPlus(CNF, object):
             line = line.strip()
             if line:
                 if line[0] not in comment_lead:
-                    if line[-1] == '0':  # normal clause
+                    if int(line.rsplit(' ', 1)[-1]) == 0:  # normal clause
                         cl = [int(l) for l in line.split()[:-1]]
                         self.nv = max([abs(l) for l in cl] + [self.nv])
 
