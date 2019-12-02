@@ -17,6 +17,7 @@ import shutil
 import sys
 import tarfile
 import zipfile
+import platform
 
 try:  # Python 2
     from urllib import urlopen
@@ -257,7 +258,8 @@ to_remove = {
         'configure',
         'scripts',
         'src',
-        'test'
+        'test',
+        'mobical.cpp'
     ],
     'glucose30': [
         'core/Dimacs.h',
@@ -418,8 +420,8 @@ def do(to_install):
         extract_archive(sources[solver][-1], solver)
         adapt_files(solver)
         patch_solver(solver)
-        compile_solver(solver)
-
+        if platform.system()!="Windows":
+            compile_solver(solver)
 
 #
 #==============================================================================
@@ -547,7 +549,10 @@ def patch_solver(solver):
     """
 
     print('patching {0}'.format(solver))
-    os.system('patch -p0 < solvers/patches/{0}.patch'.format(solver))
+    if platform.system()=="Windows":
+        os.system('wsl patch -p0 < solvers/patches/{0}.patch'.format(solver))
+    else:
+        os.system('patch -p0 < solvers/patches/{0}.patch'.format(solver))
 
 
 #

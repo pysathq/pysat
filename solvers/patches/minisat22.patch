@@ -1,6 +1,6 @@
-diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
---- solvers/minisat22/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/m22/Makefile	2018-08-10 14:03:02.000000000 +0100
+diff -Naur build/solvers/minisat22/Makefile solvers/minisat22/Makefile
+--- build/solvers/minisat22/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/minisat22/Makefile	2019-11-28 15:13:08.530973600 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -41,9 +41,9 @@ diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
---- solvers/minisat22/core/Solver.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.cc	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/core/Solver.cc solvers/minisat22/core/Solver.cc
+--- build/solvers/minisat22/core/Solver.cc	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/core/Solver.cc	2019-11-28 15:13:08.544635500 +0100
 @@ -20,10 +20,10 @@
  
  #include <math.h>
@@ -302,9 +302,9 @@ diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
                 ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
      to.moveTo(ca);
  }
-diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
---- solvers/minisat22/core/Solver.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/Solver.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/core/Solver.h solvers/minisat22/core/Solver.h
+--- build/solvers/minisat22/core/Solver.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/core/Solver.h	2019-11-28 15:13:08.567083200 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -378,9 +378,9 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
---- solvers/minisat22/core/SolverTypes.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/core/SolverTypes.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/core/SolverTypes.h solvers/minisat22/core/SolverTypes.h
+--- build/solvers/minisat22/core/SolverTypes.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/core/SolverTypes.h	2019-11-28 15:13:08.585626100 +0100
 @@ -19,18 +19,18 @@
  **************************************************************************************************/
  
@@ -442,9 +442,9 @@ diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
          // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
          to[cr].mark(c.mark());
          if (to[cr].learnt())         to[cr].activity() = c.activity();
-diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
---- solvers/minisat22/mtl/Alg.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Alg.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Alg.h solvers/minisat22/mtl/Alg.h
+--- build/solvers/minisat22/mtl/Alg.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Alg.h	2019-11-28 15:13:08.594411100 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -462,9 +462,9 @@ diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
  
  //=================================================================================================
  // Useful functions on vector-like types:
-diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
---- solvers/minisat22/mtl/Alloc.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Alloc.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Alloc.h solvers/minisat22/mtl/Alloc.h
+--- build/solvers/minisat22/mtl/Alloc.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Alloc.h	2019-11-28 15:13:08.604170500 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -484,9 +484,9 @@ diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
  
  //=================================================================================================
  // Simple Region-based memory allocator:
-diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
---- solvers/minisat22/mtl/Heap.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Heap.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Heap.h solvers/minisat22/mtl/Heap.h
+--- build/solvers/minisat22/mtl/Heap.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Heap.h	2019-11-28 15:13:08.609050800 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -504,9 +504,9 @@ diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
  
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
-diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
---- solvers/minisat22/mtl/IntTypes.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/IntTypes.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/IntTypes.h solvers/minisat22/mtl/IntTypes.h
+--- build/solvers/minisat22/mtl/IntTypes.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/IntTypes.h	2019-11-28 15:13:08.612954600 +0100
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -532,9 +532,9 @@ diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
  #   include <inttypes.h>
  
  #endif
-diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
---- solvers/minisat22/mtl/Map.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Map.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Map.h solvers/minisat22/mtl/Map.h
+--- build/solvers/minisat22/mtl/Map.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Map.h	2019-11-28 15:13:08.621739400 +0100
 @@ -17,28 +17,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -577,9 +577,9 @@ diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
  
  
  //=================================================================================================
-diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
---- solvers/minisat22/mtl/Queue.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Queue.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Queue.h solvers/minisat22/mtl/Queue.h
+--- build/solvers/minisat22/mtl/Queue.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Queue.h	2019-11-28 15:13:08.626618800 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -597,9 +597,9 @@ diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
  
  //=================================================================================================
  
-diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
---- solvers/minisat22/mtl/Sort.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Sort.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Sort.h solvers/minisat22/mtl/Sort.h
+--- build/solvers/minisat22/mtl/Sort.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Sort.h	2019-11-28 15:13:08.631498800 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -621,9 +621,9 @@ diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
  
  template<class T>
  struct LessThan_default {
-diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
---- solvers/minisat22/mtl/Vec.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/Vec.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/Vec.h solvers/minisat22/mtl/Vec.h
+--- build/solvers/minisat22/mtl/Vec.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/Vec.h	2019-11-28 15:13:08.636379700 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -655,9 +655,9 @@ diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
          throw OutOfMemoryException();
   }
  
-diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
---- solvers/minisat22/mtl/XAlloc.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/mtl/XAlloc.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/mtl/XAlloc.h solvers/minisat22/mtl/XAlloc.h
+--- build/solvers/minisat22/mtl/XAlloc.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/mtl/XAlloc.h	2019-11-28 15:13:08.641258800 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -675,9 +675,9 @@ diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
  
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
-diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
---- solvers/minisat22/utils/Options.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/Options.cc	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/utils/Options.cc solvers/minisat22/utils/Options.cc
+--- build/solvers/minisat22/utils/Options.cc	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/utils/Options.cc	2019-11-28 15:13:08.645163700 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -724,9 +724,9 @@ diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
-diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
---- solvers/minisat22/utils/Options.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/Options.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/utils/Options.h solvers/minisat22/utils/Options.h
+--- build/solvers/minisat22/utils/Options.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/utils/Options.h	2019-11-28 15:13:08.655898500 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -781,9 +781,9 @@ diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
          if (verbose){
              fprintf(stderr, "\n        %s\n", description);
              fprintf(stderr, "\n");
-diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
---- solvers/minisat22/utils/ParseUtils.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/ParseUtils.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/utils/ParseUtils.h solvers/minisat22/utils/ParseUtils.h
+--- build/solvers/minisat22/utils/ParseUtils.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/utils/ParseUtils.h	2019-11-28 15:13:08.664683400 +0100
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -803,9 +803,9 @@ diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
  
  //-------------------------------------------------------------------------------------------------
  // A simple buffered character stream class:
-diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
---- solvers/minisat22/utils/System.cc	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/System.cc	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/utils/System.cc solvers/minisat22/utils/System.cc
+--- build/solvers/minisat22/utils/System.cc	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/utils/System.cc	2019-11-28 15:13:08.669562600 +0100
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -865,9 +865,9 @@ diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
 +double Minisat22::memUsedPeak(void) { return memUsed(); }
 +
  #endif
-diff -Naur solvers/minisat22/utils/System.h solvers/m22/utils/System.h
---- solvers/minisat22/utils/System.h	2010-07-10 17:07:36.000000000 +0100
-+++ solvers/m22/utils/System.h	2018-08-10 13:59:21.000000000 +0100
+diff -Naur build/solvers/minisat22/utils/System.h solvers/minisat22/utils/System.h
+--- build/solvers/minisat22/utils/System.h	2010-07-10 18:07:36.000000000 +0200
++++ solvers/minisat22/utils/System.h	2019-11-28 15:13:08.674443000 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
