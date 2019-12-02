@@ -1,6 +1,6 @@
 diff -Naur build/solvers/minisatgh/Makefile solvers/minisatgh/Makefile
 --- build/solvers/minisatgh/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/minisatgh/Makefile	2019-11-28 15:13:08.831579900 +0100
++++ solvers/minisatgh/Makefile	2019-12-02 08:41:20.095834900 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -42,8 +42,8 @@ diff -Naur build/solvers/minisatgh/Makefile solvers/minisatgh/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur build/solvers/minisatgh/core/Solver.cc solvers/minisatgh/core/Solver.cc
---- build/solvers/minisatgh/core/Solver.cc	2019-12-01 20:49:51.920184100 +0100
-+++ solvers/minisatgh/core/Solver.cc	2019-11-28 15:13:08.844266300 +0100
+--- build/solvers/minisatgh/core/Solver.cc	2019-12-02 23:44:45.020747400 +0100
++++ solvers/minisatgh/core/Solver.cc	2019-12-02 08:41:20.112426500 +0100
 @@ -20,12 +20,12 @@
  
  #include <math.h>
@@ -606,8 +606,8 @@ diff -Naur build/solvers/minisatgh/core/Solver.cc solvers/minisatgh/core/Solver.
      to.moveTo(ca);
  }
 diff -Naur build/solvers/minisatgh/core/Solver.h solvers/minisatgh/core/Solver.h
---- build/solvers/minisatgh/core/Solver.h	2019-12-01 20:49:51.922144800 +0100
-+++ solvers/minisatgh/core/Solver.h	2019-11-28 15:13:08.865741800 +0100
+--- build/solvers/minisatgh/core/Solver.h	2019-12-02 23:44:45.023675100 +0100
++++ solvers/minisatgh/core/Solver.h	2019-12-02 08:41:20.134874900 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -733,8 +733,8 @@ diff -Naur build/solvers/minisatgh/core/Solver.h solvers/minisatgh/core/Solver.h
  
  inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
 diff -Naur build/solvers/minisatgh/core/SolverTypes.h solvers/minisatgh/core/SolverTypes.h
---- build/solvers/minisatgh/core/SolverTypes.h	2019-12-01 20:49:51.924088200 +0100
-+++ solvers/minisatgh/core/SolverTypes.h	2019-11-28 15:13:08.882330600 +0100
+--- build/solvers/minisatgh/core/SolverTypes.h	2019-12-02 23:44:45.024651300 +0100
++++ solvers/minisatgh/core/SolverTypes.h	2019-12-02 08:41:20.152445100 +0100
 @@ -19,19 +19,20 @@
  **************************************************************************************************/
  
@@ -811,8 +811,8 @@ diff -Naur build/solvers/minisatgh/core/SolverTypes.h solvers/minisatgh/core/Sol
  
  
 diff -Naur build/solvers/minisatgh/mtl/Alg.h solvers/minisatgh/mtl/Alg.h
---- build/solvers/minisatgh/mtl/Alg.h	2019-12-01 20:49:51.925064100 +0100
-+++ solvers/minisatgh/mtl/Alg.h	2019-11-28 15:13:08.891115400 +0100
+--- build/solvers/minisatgh/mtl/Alg.h	2019-12-02 23:44:45.027579900 +0100
++++ solvers/minisatgh/mtl/Alg.h	2019-12-02 08:41:20.170010400 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -831,8 +831,8 @@ diff -Naur build/solvers/minisatgh/mtl/Alg.h solvers/minisatgh/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur build/solvers/minisatgh/mtl/Alloc.h solvers/minisatgh/mtl/Alloc.h
---- build/solvers/minisatgh/mtl/Alloc.h	2019-12-01 20:49:51.926040800 +0100
-+++ solvers/minisatgh/mtl/Alloc.h	2019-11-28 15:13:08.895994400 +0100
+--- build/solvers/minisatgh/mtl/Alloc.h	2019-12-02 23:44:45.029533400 +0100
++++ solvers/minisatgh/mtl/Alloc.h	2019-12-02 08:41:20.181722000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -853,8 +853,8 @@ diff -Naur build/solvers/minisatgh/mtl/Alloc.h solvers/minisatgh/mtl/Alloc.h
  //=================================================================================================
  // Simple Region-based memory allocator:
 diff -Naur build/solvers/minisatgh/mtl/Heap.h solvers/minisatgh/mtl/Heap.h
---- build/solvers/minisatgh/mtl/Heap.h	2019-12-01 20:49:51.927993500 +0100
-+++ solvers/minisatgh/mtl/Heap.h	2019-11-28 15:13:08.910634400 +0100
+--- build/solvers/minisatgh/mtl/Heap.h	2019-12-02 23:44:45.030507200 +0100
++++ solvers/minisatgh/mtl/Heap.h	2019-12-02 08:41:20.194410400 +0100
 @@ -18,13 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -875,8 +875,8 @@ diff -Naur build/solvers/minisatgh/mtl/Heap.h solvers/minisatgh/mtl/Heap.h
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
 diff -Naur build/solvers/minisatgh/mtl/IntMap.h solvers/minisatgh/mtl/IntMap.h
---- build/solvers/minisatgh/mtl/IntMap.h	2019-12-01 20:49:51.928973900 +0100
-+++ solvers/minisatgh/mtl/IntMap.h	2019-11-28 15:13:08.915515700 +0100
+--- build/solvers/minisatgh/mtl/IntMap.h	2019-12-02 23:44:45.032459700 +0100
++++ solvers/minisatgh/mtl/IntMap.h	2019-12-02 08:41:20.205146700 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -895,8 +895,8 @@ diff -Naur build/solvers/minisatgh/mtl/IntMap.h solvers/minisatgh/mtl/IntMap.h
      template<class T> struct MkIndexDefault {
          typename vec<T>::Size operator()(T t) const { return (typename vec<T>::Size)t; }
 diff -Naur build/solvers/minisatgh/mtl/IntTypes.h solvers/minisatgh/mtl/IntTypes.h
---- build/solvers/minisatgh/mtl/IntTypes.h	2019-12-01 20:49:51.929944600 +0100
-+++ solvers/minisatgh/mtl/IntTypes.h	2019-11-28 15:13:08.919419100 +0100
+--- build/solvers/minisatgh/mtl/IntTypes.h	2019-12-02 23:44:45.033436000 +0100
++++ solvers/minisatgh/mtl/IntTypes.h	2019-12-02 08:41:20.211978800 +0100
 @@ -17,8 +17,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -911,8 +911,8 @@ diff -Naur build/solvers/minisatgh/mtl/IntTypes.h solvers/minisatgh/mtl/IntTypes
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur build/solvers/minisatgh/mtl/Map.h solvers/minisatgh/mtl/Map.h
---- build/solvers/minisatgh/mtl/Map.h	2019-12-01 20:49:51.930920500 +0100
-+++ solvers/minisatgh/mtl/Map.h	2019-11-28 15:13:08.933844200 +0100
+--- build/solvers/minisatgh/mtl/Map.h	2019-12-02 23:44:45.035386900 +0100
++++ solvers/minisatgh/mtl/Map.h	2019-12-02 08:41:20.216858900 +0100
 @@ -17,13 +17,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -948,8 +948,8 @@ diff -Naur build/solvers/minisatgh/mtl/Map.h solvers/minisatgh/mtl/Map.h
  
  //=================================================================================================
 diff -Naur build/solvers/minisatgh/mtl/Queue.h solvers/minisatgh/mtl/Queue.h
---- build/solvers/minisatgh/mtl/Queue.h	2019-12-01 20:49:51.932876300 +0100
-+++ solvers/minisatgh/mtl/Queue.h	2019-11-28 15:13:08.939699800 +0100
+--- build/solvers/minisatgh/mtl/Queue.h	2019-12-02 23:44:45.039291800 +0100
++++ solvers/minisatgh/mtl/Queue.h	2019-12-02 08:41:20.220762800 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -968,8 +968,8 @@ diff -Naur build/solvers/minisatgh/mtl/Queue.h solvers/minisatgh/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur build/solvers/minisatgh/mtl/Rnd.h solvers/minisatgh/mtl/Rnd.h
---- build/solvers/minisatgh/mtl/Rnd.h	2019-12-01 20:49:51.933848200 +0100
-+++ solvers/minisatgh/mtl/Rnd.h	2019-11-28 15:13:08.943603100 +0100
+--- build/solvers/minisatgh/mtl/Rnd.h	2019-12-02 23:44:45.041273800 +0100
++++ solvers/minisatgh/mtl/Rnd.h	2019-12-02 08:41:20.231499200 +0100
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -988,8 +988,8 @@ diff -Naur build/solvers/minisatgh/mtl/Rnd.h solvers/minisatgh/mtl/Rnd.h
  // Generate a random double:
  static inline double drand(double& seed)
 diff -Naur build/solvers/minisatgh/mtl/Sort.h solvers/minisatgh/mtl/Sort.h
---- build/solvers/minisatgh/mtl/Sort.h	2019-12-01 20:49:51.935800400 +0100
-+++ solvers/minisatgh/mtl/Sort.h	2019-11-28 15:13:08.948484000 +0100
+--- build/solvers/minisatgh/mtl/Sort.h	2019-12-02 23:44:45.042219200 +0100
++++ solvers/minisatgh/mtl/Sort.h	2019-12-02 08:41:20.236378800 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1012,8 +1012,8 @@ diff -Naur build/solvers/minisatgh/mtl/Sort.h solvers/minisatgh/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur build/solvers/minisatgh/mtl/Vec.h solvers/minisatgh/mtl/Vec.h
---- build/solvers/minisatgh/mtl/Vec.h	2019-12-01 20:49:51.936776400 +0100
-+++ solvers/minisatgh/mtl/Vec.h	2019-11-28 15:13:08.953374500 +0100
+--- build/solvers/minisatgh/mtl/Vec.h	2019-12-02 23:44:45.044170900 +0100
++++ solvers/minisatgh/mtl/Vec.h	2019-12-02 08:41:20.246138900 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1038,8 +1038,8 @@ diff -Naur build/solvers/minisatgh/mtl/Vec.h solvers/minisatgh/mtl/Vec.h
  //=================================================================================================
  // Automatically resizable arrays
 diff -Naur build/solvers/minisatgh/mtl/XAlloc.h solvers/minisatgh/mtl/XAlloc.h
---- build/solvers/minisatgh/mtl/XAlloc.h	2019-12-01 20:49:51.937751900 +0100
-+++ solvers/minisatgh/mtl/XAlloc.h	2019-11-28 15:13:08.958247700 +0100
+--- build/solvers/minisatgh/mtl/XAlloc.h	2019-12-02 23:44:45.046122700 +0100
++++ solvers/minisatgh/mtl/XAlloc.h	2019-12-02 08:41:20.251018700 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1058,8 +1058,8 @@ diff -Naur build/solvers/minisatgh/mtl/XAlloc.h solvers/minisatgh/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur build/solvers/minisatgh/utils/Options.cc solvers/minisatgh/utils/Options.cc
---- build/solvers/minisatgh/utils/Options.cc	2019-12-01 20:49:51.943608900 +0100
-+++ solvers/minisatgh/utils/Options.cc	2019-11-28 15:13:08.963124100 +0100
+--- build/solvers/minisatgh/utils/Options.cc	2019-12-02 23:44:45.053931000 +0100
++++ solvers/minisatgh/utils/Options.cc	2019-12-02 08:41:20.263707000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1093,8 +1093,8 @@ diff -Naur build/solvers/minisatgh/utils/Options.cc solvers/minisatgh/utils/Opti
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur build/solvers/minisatgh/utils/Options.h solvers/minisatgh/utils/Options.h
---- build/solvers/minisatgh/utils/Options.h	2019-12-01 20:49:51.945560200 +0100
-+++ solvers/minisatgh/utils/Options.h	2019-11-28 15:13:08.987523800 +0100
+--- build/solvers/minisatgh/utils/Options.h	2019-12-02 23:44:45.054906700 +0100
++++ solvers/minisatgh/utils/Options.h	2019-12-02 08:41:20.277370900 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1150,8 +1150,8 @@ diff -Naur build/solvers/minisatgh/utils/Options.h solvers/minisatgh/utils/Optio
  
      operator      const char*  (void) const     { return value; }
 diff -Naur build/solvers/minisatgh/utils/ParseUtils.h solvers/minisatgh/utils/ParseUtils.h
---- build/solvers/minisatgh/utils/ParseUtils.h	2019-12-01 20:49:51.946536400 +0100
-+++ solvers/minisatgh/utils/ParseUtils.h	2019-11-28 15:13:09.008019800 +0100
+--- build/solvers/minisatgh/utils/ParseUtils.h	2019-12-02 23:44:45.056859300 +0100
++++ solvers/minisatgh/utils/ParseUtils.h	2019-12-02 08:41:20.289082400 +0100
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1175,8 +1175,8 @@ diff -Naur build/solvers/minisatgh/utils/ParseUtils.h solvers/minisatgh/utils/Pa
  //-------------------------------------------------------------------------------------------------
  // A simple buffered character stream class:
 diff -Naur build/solvers/minisatgh/utils/System.cc solvers/minisatgh/utils/System.cc
---- build/solvers/minisatgh/utils/System.cc	2019-12-01 20:49:51.948488300 +0100
-+++ solvers/minisatgh/utils/System.cc	2019-11-28 15:13:09.022659200 +0100
+--- build/solvers/minisatgh/utils/System.cc	2019-12-02 23:44:45.057836000 +0100
++++ solvers/minisatgh/utils/System.cc	2019-12-02 08:41:20.302746500 +0100
 @@ -21,13 +21,13 @@
  #include <signal.h>
  #include <stdio.h>
@@ -1286,8 +1286,8 @@ diff -Naur build/solvers/minisatgh/utils/System.cc solvers/minisatgh/utils/Syste
      signal(SIGINT, handler);
      signal(SIGTERM,handler);
 diff -Naur build/solvers/minisatgh/utils/System.h solvers/minisatgh/utils/System.h
---- build/solvers/minisatgh/utils/System.h	2019-12-01 20:49:51.950440600 +0100
-+++ solvers/minisatgh/utils/System.h	2019-11-28 15:13:09.027539600 +0100
+--- build/solvers/minisatgh/utils/System.h	2019-12-02 23:44:45.059787600 +0100
++++ solvers/minisatgh/utils/System.h	2019-12-02 08:41:20.314461000 +0100
 @@ -18,23 +18,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

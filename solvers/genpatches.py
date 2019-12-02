@@ -3,6 +3,7 @@ import os
 import contextlib
 import platform
 import shutil
+import glob
 
 import prepare
 
@@ -31,6 +32,13 @@ def main():
     parms=parser.parse_args()
 
     shutil.rmtree("build/solvers", ignore_errors=True )
+
+    with chdir("solvers"):
+        for solver in to_install:
+            with chdir(solver):
+                for fileName in glob.glob("*.obj"):
+                    os.unlink(fileName)
+
     shutil.copytree("solvers", "build/solvers")
 
     for solver in to_install:
