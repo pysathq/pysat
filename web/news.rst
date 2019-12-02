@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+02.12.2019 (*0.1.4.dev25*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed the parser of :class:`pysat.formula.WCNFPlus` formulas.
+- Fixed a bug in method :meth:`append_formula` for
+  :class:`pysat.solvers.Minicard`.
+
 28.11.2019 (*0.1.4.dev24*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
