@@ -41,7 +41,7 @@ diff -Naur build/solvers/lingeling/Makefile solvers/lingeling/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
---- build/solvers/lingeling/druplig.c	2019-12-02 23:44:42.492909700 +0100
+--- build/solvers/lingeling/druplig.c	2019-12-03 22:14:22.963962500 +0100
 +++ solvers/lingeling/druplig.c	2019-12-02 08:41:17.825662400 +0100
 @@ -15,9 +15,14 @@
  
@@ -112,7 +112,7 @@ diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
  typedef struct Prof { char * name; long long calls; double time; } Prof;
  
 diff -Naur build/solvers/lingeling/druplig.h solvers/lingeling/druplig.h
---- build/solvers/lingeling/druplig.h	2019-12-02 23:44:42.495840100 +0100
+--- build/solvers/lingeling/druplig.h	2019-12-03 22:14:22.965917300 +0100
 +++ solvers/lingeling/druplig.h	2019-12-02 08:41:17.839327800 +0100
 @@ -10,6 +10,10 @@
  

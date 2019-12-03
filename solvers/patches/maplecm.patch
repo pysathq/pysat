@@ -42,7 +42,7 @@ diff -Naur build/solvers/maplecm/Makefile solvers/maplecm/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur build/solvers/maplecm/core/Solver.cc solvers/maplecm/core/Solver.cc
---- build/solvers/maplecm/core/Solver.cc	2019-12-02 23:44:43.258093300 +0100
+--- build/solvers/maplecm/core/Solver.cc	2019-12-03 22:14:23.885306100 +0100
 +++ solvers/maplecm/core/Solver.cc	2019-12-02 08:41:18.511788800 +0100
 @@ -1,12 +1,12 @@
  /***************************************************************************************[Solver.cc]
@@ -1902,7 +1902,7 @@ diff -Naur build/solvers/maplecm/core/Solver.cc solvers/maplecm/core/Solver.cc
  }
  
 diff -Naur build/solvers/maplecm/core/Solver.h solvers/maplecm/core/Solver.h
---- build/solvers/maplecm/core/Solver.h	2019-12-02 23:44:43.255366400 +0100
+--- build/solvers/maplecm/core/Solver.h	2019-12-03 22:14:23.882377600 +0100
 +++ solvers/maplecm/core/Solver.h	2019-12-02 08:41:18.531309300 +0100
 @@ -6,9 +6,9 @@
  
@@ -2143,7 +2143,7 @@ diff -Naur build/solvers/maplecm/core/Solver.h solvers/maplecm/core/Solver.h
  inline bool     Solver::okay          ()      const   { return ok; }
  
 diff -Naur build/solvers/maplecm/core/SolverTypes.h solvers/maplecm/core/SolverTypes.h
---- build/solvers/maplecm/core/SolverTypes.h	2019-12-02 23:44:43.252237300 +0100
+--- build/solvers/maplecm/core/SolverTypes.h	2019-12-03 22:14:23.879451100 +0100
 +++ solvers/maplecm/core/SolverTypes.h	2019-12-02 08:41:18.547899900 +0100
 @@ -6,9 +6,9 @@
  
@@ -2326,7 +2326,7 @@ diff -Naur build/solvers/maplecm/core/SolverTypes.h solvers/maplecm/core/SolverT
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
 diff -Naur build/solvers/maplecm/mtl/Alg.h solvers/maplecm/mtl/Alg.h
---- build/solvers/maplecm/mtl/Alg.h	2019-12-02 23:44:43.285452500 +0100
+--- build/solvers/maplecm/mtl/Alg.h	2019-12-03 22:14:23.915561800 +0100
 +++ solvers/maplecm/mtl/Alg.h	2019-12-02 08:41:18.556685100 +0100
 @@ -1,7 +1,7 @@
  /*******************************************************************************************[Alg.h]
@@ -2355,7 +2355,7 @@ diff -Naur build/solvers/maplecm/mtl/Alg.h solvers/maplecm/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur build/solvers/maplecm/mtl/Alloc.h solvers/maplecm/mtl/Alloc.h
---- build/solvers/maplecm/mtl/Alloc.h	2019-12-02 23:44:43.275661400 +0100
+--- build/solvers/maplecm/mtl/Alloc.h	2019-12-03 22:14:23.904826300 +0100
 +++ solvers/maplecm/mtl/Alloc.h	2019-12-02 08:41:18.560589100 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -2403,7 +2403,7 @@ diff -Naur build/solvers/maplecm/mtl/Alloc.h solvers/maplecm/mtl/Alloc.h
      if (sz < prev_sz)
          throw OutOfMemoryException();
 diff -Naur build/solvers/maplecm/mtl/Heap.h solvers/maplecm/mtl/Heap.h
---- build/solvers/maplecm/mtl/Heap.h	2019-12-02 23:44:43.282493400 +0100
+--- build/solvers/maplecm/mtl/Heap.h	2019-12-03 22:14:23.911702100 +0100
 +++ solvers/maplecm/mtl/Heap.h	2019-12-02 08:41:18.565468500 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2465,7 +2465,7 @@ diff -Naur build/solvers/maplecm/mtl/Heap.h solvers/maplecm/mtl/Heap.h
  };
  
 diff -Naur build/solvers/maplecm/mtl/IntTypes.h solvers/maplecm/mtl/IntTypes.h
---- build/solvers/maplecm/mtl/IntTypes.h	2019-12-02 23:44:43.271758000 +0100
+--- build/solvers/maplecm/mtl/IntTypes.h	2019-12-03 22:14:23.901897600 +0100
 +++ solvers/maplecm/mtl/IntTypes.h	2019-12-02 08:41:18.569372200 +0100
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2479,7 +2479,7 @@ diff -Naur build/solvers/maplecm/mtl/IntTypes.h solvers/maplecm/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur build/solvers/maplecm/mtl/Map.h solvers/maplecm/mtl/Map.h
---- build/solvers/maplecm/mtl/Map.h	2019-12-02 23:44:43.280685700 +0100
+--- build/solvers/maplecm/mtl/Map.h	2019-12-03 22:14:23.909706600 +0100
 +++ solvers/maplecm/mtl/Map.h	2019-12-02 08:41:18.578157500 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2528,7 +2528,7 @@ diff -Naur build/solvers/maplecm/mtl/Map.h solvers/maplecm/mtl/Map.h
      }
  
 diff -Naur build/solvers/maplecm/mtl/Queue.h solvers/maplecm/mtl/Queue.h
---- build/solvers/maplecm/mtl/Queue.h	2019-12-02 23:44:43.286396600 +0100
+--- build/solvers/maplecm/mtl/Queue.h	2019-12-03 22:14:23.916539200 +0100
 +++ solvers/maplecm/mtl/Queue.h	2019-12-02 08:41:18.582061600 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2548,7 +2548,7 @@ diff -Naur build/solvers/maplecm/mtl/Queue.h solvers/maplecm/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur build/solvers/maplecm/mtl/Sort.h solvers/maplecm/mtl/Sort.h
---- build/solvers/maplecm/mtl/Sort.h	2019-12-02 23:44:43.273931700 +0100
+--- build/solvers/maplecm/mtl/Sort.h	2019-12-03 22:14:23.902875900 +0100
 +++ solvers/maplecm/mtl/Sort.h	2019-12-02 08:41:18.590844400 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2572,7 +2572,7 @@ diff -Naur build/solvers/maplecm/mtl/Sort.h solvers/maplecm/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur build/solvers/maplecm/mtl/Vec.h solvers/maplecm/mtl/Vec.h
---- build/solvers/maplecm/mtl/Vec.h	2019-12-02 23:44:43.277391800 +0100
+--- build/solvers/maplecm/mtl/Vec.h	2019-12-03 22:14:23.906953700 +0100
 +++ solvers/maplecm/mtl/Vec.h	2019-12-02 08:41:18.599628800 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2615,7 +2615,7 @@ diff -Naur build/solvers/maplecm/mtl/Vec.h solvers/maplecm/mtl/Vec.h
   }
  
 diff -Naur build/solvers/maplecm/mtl/XAlloc.h solvers/maplecm/mtl/XAlloc.h
---- build/solvers/maplecm/mtl/XAlloc.h	2019-12-02 23:44:43.287656500 +0100
+--- build/solvers/maplecm/mtl/XAlloc.h	2019-12-03 22:14:23.918490000 +0100
 +++ solvers/maplecm/mtl/XAlloc.h	2019-12-02 08:41:18.603532000 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
@@ -2635,7 +2635,7 @@ diff -Naur build/solvers/maplecm/mtl/XAlloc.h solvers/maplecm/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur build/solvers/maplecm/utils/Options.cc solvers/maplecm/utils/Options.cc
---- build/solvers/maplecm/utils/Options.cc	2019-12-02 23:44:43.250624400 +0100
+--- build/solvers/maplecm/utils/Options.cc	2019-12-03 22:14:23.876522700 +0100
 +++ solvers/maplecm/utils/Options.cc	2019-12-02 08:41:18.612316600 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2692,7 +2692,7 @@ diff -Naur build/solvers/maplecm/utils/Options.cc solvers/maplecm/utils/Options.
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur build/solvers/maplecm/utils/Options.h solvers/maplecm/utils/Options.h
---- build/solvers/maplecm/utils/Options.h	2019-12-02 23:44:43.239548500 +0100
+--- build/solvers/maplecm/utils/Options.h	2019-12-03 22:14:23.868714700 +0100
 +++ solvers/maplecm/utils/Options.h	2019-12-02 08:41:18.625980900 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2898,7 +2898,7 @@ diff -Naur build/solvers/maplecm/utils/Options.h solvers/maplecm/utils/Options.h
              bool b = !match(span, "no-");
  
 diff -Naur build/solvers/maplecm/utils/ParseUtils.h solvers/maplecm/utils/ParseUtils.h
---- build/solvers/maplecm/utils/ParseUtils.h	2019-12-02 23:44:43.247548500 +0100
+--- build/solvers/maplecm/utils/ParseUtils.h	2019-12-03 22:14:23.873784400 +0100
 +++ solvers/maplecm/utils/ParseUtils.h	2019-12-02 08:41:18.635741100 +0100
 @@ -18,19 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2934,7 +2934,7 @@ diff -Naur build/solvers/maplecm/utils/ParseUtils.h solvers/maplecm/utils/ParseU
  
  // String matching: consumes characters eagerly, but does not require random access iterator.
 diff -Naur build/solvers/maplecm/utils/System.cc solvers/maplecm/utils/System.cc
---- build/solvers/maplecm/utils/System.cc	2019-12-02 23:44:43.237596700 +0100
+--- build/solvers/maplecm/utils/System.cc	2019-12-03 22:14:23.866761300 +0100
 +++ solvers/maplecm/utils/System.cc	2019-12-02 08:41:18.645500300 +0100
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -2989,7 +2989,7 @@ diff -Naur build/solvers/maplecm/utils/System.cc solvers/maplecm/utils/System.cc
      return 0; }
  #endif
 diff -Naur build/solvers/maplecm/utils/System.h solvers/maplecm/utils/System.h
---- build/solvers/maplecm/utils/System.h	2019-12-02 23:44:43.235820700 +0100
+--- build/solvers/maplecm/utils/System.h	2019-12-03 22:14:23.864809100 +0100
 +++ solvers/maplecm/utils/System.h	2019-12-02 08:41:18.649404700 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
