@@ -3369,15 +3369,16 @@ class Minicard(object):
         if self.minicard:
             res = None
 
-            for clause in formula.clauses:
+            for clause in formula:
                 res = self.add_clause(clause, no_return)
                 if not no_return and res == False:
                     return res
 
-            for atmost in formula.atmosts:
-                res = self.add_atmost(atmost[0], atmost[1], no_return)
-                if not no_return and res == False:
-                    return res
+            if type(formula) == CNFPlus:
+                for atmost in formula.atmosts:
+                    res = self.add_atmost(atmost[0], atmost[1], no_return)
+                    if not no_return and res == False:
+                        return res
 
             if not no_return:
                 return res
