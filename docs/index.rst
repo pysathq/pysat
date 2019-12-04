@@ -39,5 +39,6 @@ Supplementary :mod:`.examples` package
     api/examples/lbx
     api/examples/lsu
     api/examples/mcsls
+    api/examples/models
     api/examples/musx
     api/examples/rc2

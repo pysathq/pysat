@@ -73,7 +73,7 @@ to_install = ['cadical', 'glucose30', 'glucose41', 'lingeling', 'maplechrono',
 
 # example scripts to install as standalone executables
 #==============================================================================
-scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'musx', 'rc2']
+scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx', 'rc2']
 
 
 # we need to redefine the build command to
