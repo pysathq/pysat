@@ -144,7 +144,11 @@ from pysat.formula import CNFPlus
 import pysolvers
 import signal
 import tempfile
-import time
+
+try:  # for Python < 3.8
+    from time import clock as process_time
+except ImportError:  # for Python >= 3.8
+    from time import process_time
 
 
 #
@@ -1061,7 +1065,7 @@ class Cadical(object):
 
         if self.cadical:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1075,7 +1079,7 @@ class Cadical(object):
                 self.status = pysolvers.cadical_solve(self.cadical, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             self.prev_assumps = assumptions
@@ -1333,7 +1337,7 @@ class Glucose3(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1347,7 +1351,7 @@ class Glucose3(object):
                 self.status = pysolvers.glucose3_solve(self.glucose, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -1360,7 +1364,7 @@ class Glucose3(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1374,7 +1378,7 @@ class Glucose3(object):
                 self.status = pysolvers.glucose3_solve_lim(self.glucose, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -1418,7 +1422,7 @@ class Glucose3(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1432,7 +1436,7 @@ class Glucose3(object):
                 st, props = pysolvers.glucose3_propagate(self.glucose, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -1647,7 +1651,7 @@ class Glucose4(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1661,7 +1665,7 @@ class Glucose4(object):
                 self.status = pysolvers.glucose41_solve(self.glucose, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -1674,7 +1678,7 @@ class Glucose4(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1688,7 +1692,7 @@ class Glucose4(object):
                 self.status = pysolvers.glucose41_solve_lim(self.glucose, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -1732,7 +1736,7 @@ class Glucose4(object):
 
         if self.glucose:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1746,7 +1750,7 @@ class Glucose4(object):
                 st, props = pysolvers.glucose41_propagate(self.glucose, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -1958,7 +1962,7 @@ class Lingeling(object):
 
         if self.lingeling:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -1972,7 +1976,7 @@ class Lingeling(object):
                 self.status = pysolvers.lingeling_solve(self.lingeling, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             self.prev_assumps = assumptions
@@ -2214,7 +2218,7 @@ class MapleChrono(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2228,7 +2232,7 @@ class MapleChrono(object):
                 self.status = pysolvers.maplechrono_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2241,7 +2245,7 @@ class MapleChrono(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2255,7 +2259,7 @@ class MapleChrono(object):
                 self.status = pysolvers.maplechrono_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2299,7 +2303,7 @@ class MapleChrono(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2313,7 +2317,7 @@ class MapleChrono(object):
                 st, props = pysolvers.maplechrono_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -2525,7 +2529,7 @@ class MapleCM(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2539,7 +2543,7 @@ class MapleCM(object):
                 self.status = pysolvers.maplecm_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2552,7 +2556,7 @@ class MapleCM(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2566,7 +2570,7 @@ class MapleCM(object):
                 self.status = pysolvers.maplecm_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2610,7 +2614,7 @@ class MapleCM(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2624,7 +2628,7 @@ class MapleCM(object):
                 st, props = pysolvers.maplecm_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -2836,7 +2840,7 @@ class Maplesat(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2850,7 +2854,7 @@ class Maplesat(object):
                 self.status = pysolvers.maplesat_solve(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2863,7 +2867,7 @@ class Maplesat(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2877,7 +2881,7 @@ class Maplesat(object):
                 self.status = pysolvers.maplesat_solve_lim(self.maplesat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -2921,7 +2925,7 @@ class Maplesat(object):
 
         if self.maplesat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -2935,7 +2939,7 @@ class Maplesat(object):
                 st, props = pysolvers.maplesat_propagate(self.maplesat, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -3139,7 +3143,7 @@ class Minicard(object):
 
         if self.minicard:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3153,7 +3157,7 @@ class Minicard(object):
                 self.status = pysolvers.minicard_solve(self.minicard, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3166,7 +3170,7 @@ class Minicard(object):
 
         if self.minicard:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3180,7 +3184,7 @@ class Minicard(object):
                 self.status = pysolvers.minicard_solve_lim(self.minicard, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3224,7 +3228,7 @@ class Minicard(object):
 
         if self.minicard:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3238,7 +3242,7 @@ class Minicard(object):
                 st, props = pysolvers.minicard_propagate(self.minicard, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -3448,7 +3452,7 @@ class Minisat22(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3462,7 +3466,7 @@ class Minisat22(object):
                 self.status = pysolvers.minisat22_solve(self.minisat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3475,7 +3479,7 @@ class Minisat22(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3489,7 +3493,7 @@ class Minisat22(object):
                 self.status = pysolvers.minisat22_solve_lim(self.minisat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3533,7 +3537,7 @@ class Minisat22(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3547,7 +3551,7 @@ class Minisat22(object):
                 st, props = pysolvers.minisat22_propagate(self.minisat, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []
@@ -3745,7 +3749,7 @@ class MinisatGH(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3759,7 +3763,7 @@ class MinisatGH(object):
                 self.status = pysolvers.minisatgh_solve(self.minisat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3772,7 +3776,7 @@ class MinisatGH(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3786,7 +3790,7 @@ class MinisatGH(object):
                 self.status = pysolvers.minisatgh_solve_lim(self.minisat, assumptions, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return self.status
@@ -3830,7 +3834,7 @@ class MinisatGH(object):
 
         if self.minisat:
             if self.use_timer:
-                 start_time = time.clock()
+                 start_time = time.process_time()
 
             if MainThread.check() == True:
                 # saving default SIGINT handler
@@ -3844,7 +3848,7 @@ class MinisatGH(object):
                 st, props = pysolvers.minisatgh_propagate(self.minisat, assumptions, phase_saving, 0)
 
             if self.use_timer:
-                self.call_time = time.clock() - start_time
+                self.call_time = time.process_time() - start_time
                 self.accu_time += self.call_time
 
             return bool(st), props if props != None else []

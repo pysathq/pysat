@@ -105,7 +105,7 @@ elif platform.system() == 'Windows':
     compile_flags = ['-DNBUILD', '-DNLGLYALSAT' , '/DINCREMENTAL', '-DNLGLOG',
             '-DNDEBUG', '-DNCHKSOL', '-DNLGLFILES', '-DNLGLDEMA',
             '/experimental:preprocessor', '-I./zlib']
-    cpplib=[]
+    cpplib = []
 
 
 # C extensions: pycard and pysolvers
