@@ -105,6 +105,7 @@ elif platform.system() == 'Windows':
     compile_flags = ['-DNBUILD', '-DNLGLYALSAT' , '/DINCREMENTAL', '-DNLGLOG',
             '-DNDEBUG', '-DNCHKSOL', '-DNLGLFILES', '-DNLGLDEMA',
             '/experimental:preprocessor', '-I./zlib']
+    cpplib=[]
 
 
 # C extensions: pycard and pysolvers
@@ -128,7 +129,7 @@ if platform.system() == 'Windows':
                     sources += ['solvers/%s/%s' % (solver, filename)]
                 for filename in glob.glob('*/*.c*'):
                     sources += ['solvers/%s/%s' % (solver, filename)]
-    libraries = cpplib
+    libraries = []
     library_dirs = []
 else:
     libraries = to_install + cpplib
