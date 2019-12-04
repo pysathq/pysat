@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.12.2019 (*0.1.5.dev2*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed yet another issue related to :class:`pysat.formula.CNFPlus` and
+  :class:`pysat.solvers.Minicard`.
+- Replaced :meth:`time.clock()` with :meth:`time.process_time()` for Python
+  3.8 and newer.
+
 04.12.2019 (*0.1.5.dev1*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
