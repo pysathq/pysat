@@ -22,10 +22,8 @@ except ImportError:
     from distutils.core import setup, Extension
     HAVE_SETUPTOOLS = False
 
-
 import distutils.command.build
 import distutils.command.install
-#from distutils.core import setup, Extension
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
@@ -34,14 +32,18 @@ import prepare
 
 from pysat import __version__
 
+
+#
+#==============================================================================
 @contextlib.contextmanager
-def chdir(newDir):
-    oldDir=os.getcwd()
+def chdir(new_dir):
+    old_dir = os.getcwd()
     try:
-        os.chdir(newDir)
+        os.chdir(new_dir)
         yield
     finally:
-        os.chdir(oldDir)
+        os.chdir(old_dir)
+
 
 #
 #==============================================================================
@@ -62,10 +64,12 @@ with the (potentially multiple) use of a SAT oracle.
 Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`__.
 """
 
+
 # solvers to install
 #==============================================================================
 to_install = ['cadical', 'glucose30', 'glucose41', 'lingeling', 'maplechrono',
         'maplecm', 'maplesat', 'minicard', 'minisat22', 'minisatgh']
+
 
 # example scripts to install as standalone executables
 #==============================================================================
@@ -93,13 +97,15 @@ class build(distutils.command.build.build):
 
 # compilation flags for C extensions
 #==============================================================================
-
 compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'],  ['stdc++']
 if platform.system() == 'Darwin':
     compile_flags += ['--stdlib=libc++']
     cpplib = ['c++']
-elif platform.system() =="Windows":
-    compile_flags =["-DNBUILD", "-DNLGLYALSAT" , "/DINCREMENTAL", "-DNLGLOG", "-DNDEBUG", "-DNCHKSOL", "-DNLGLFILES", "-DNLGLDEMA", "/experimental:preprocessor", "-I./zlib"]
+elif platform.system() == 'Windows':
+    compile_flags = ['-DNBUILD', '-DNLGLYALSAT' , '/DINCREMENTAL', '-DNLGLOG',
+            '-DNDEBUG', '-DNCHKSOL', '-DNLGLFILES', '-DNLGLDEMA',
+            '/experimental:preprocessor', '-I./zlib']
+
 
 # C extensions: pycard and pysolvers
 #==============================================================================
@@ -112,29 +118,29 @@ pycard_ext = Extension('pycard',
     library_dirs=[]
 )
 
-sources=["solvers/pysolvers.cc"]
+sources = ['solvers/pysolvers.cc']
 
-if platform.system()=="Windows":
-    with chdir("solvers"):
+if platform.system() == 'Windows':
+    with chdir('solvers'):
         for solver in to_install:
             with chdir(solver):
-                for fileName in glob.glob("*.c*"):
-                    sources+=["solvers/%s/%s" % (solver, fileName)]
-                for fileName in glob.glob("*/*.c*"):
-                    sources+=["solvers/%s/%s" % (solver, fileName)]
-    libraries=cpplib
-    library_dirs= []
+                for filename in glob.glob('*.c*'):
+                    sources += ['solvers/%s/%s' % (solver, filename)]
+                for filename in glob.glob('*/*.c*'):
+                    sources += ['solvers/%s/%s' % (solver, filename)]
+    libraries = cpplib
+    library_dirs = []
 else:
-    libraries=to_install+cpplib
+    libraries = to_install + cpplib
     library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
 
 pysolvers_ext = Extension('pysolvers',
-    sources = sources,
+    sources=sources,
     extra_compile_args=compile_flags + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
-    include_dirs = ['solvers'],
-    language = 'c++',
-    libraries = libraries,
+    include_dirs=['solvers'],
+    language='c++',
+    libraries=libraries,
     library_dirs=library_dirs
 )
 
@@ -155,8 +161,9 @@ setup(name='python-sat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in scripts],
     cmdclass={'build': build},
-    install_requires=['pypblib>=0.0.3', 'six'],
+    install_requires=['six'],
     extras_require = {
-        'aiger': ['py-aiger-cnf>=2.0.0',],
-    },
+        'aiger': ['py-aiger-cnf>=2.0.0'],
+        'pblib': ['pypblib>=0.0.3']
+    }
 )

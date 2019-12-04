@@ -140,6 +140,7 @@
 #
 #==============================================================================
 from pysat._utils import MainThread
+from pysat.formula import CNFPlus
 import pysolvers
 import signal
 import tempfile
@@ -3113,6 +3114,10 @@ class Minicard(object):
             if bootstrap_with:
                 for clause in bootstrap_with:
                     self.add_clause(clause)
+
+                if type(bootstrap_with) == CNFPlus:
+                    for atmost in bootstrap_with.atmosts:
+                        self.add_atmost(*atmost)
 
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle

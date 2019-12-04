@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.12.2019 (*0.1.5.dev1*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added Windows support (**many** thanks to `Rüdiger Jungbeck
+  <https://github.com/rjungbeck>`__!).
+- Fixed a few more issues related to :class:`pysat.formula.CNFPlus` and
+  :class:`pysat.formula.WCNFPlus`.
+
 02.12.2019 (*0.1.4.dev25*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -600,6 +600,7 @@ class CNF(object):
                 >>> print(['{0} <-> {1}'.format(v, cnf.vpool.obj(v)) for v in cnf.outs])
                 ['5 <-> 6c454aea-c9e1-11e9-bbe3-3af9d34370a9']
         """
+
         assert aiger_present, 'Package \'py-aiger-cnf\' is unavailable. Check your installation.'
 
         # creating a pool of variable IDs if necessary
@@ -814,7 +815,7 @@ class CNF(object):
         wcnf.hard = []
         wcnf.soft = copy.deepcopy(self.clauses)
         wcnf.wght = [1 for cl in wcnf.soft]
-        self.topw = len(wcnf.wght) + 1
+        wcnf.topw = len(wcnf.wght) + 1
         wcnf.comments = self.comments[:]
 
         return wcnf
@@ -1386,7 +1387,7 @@ class CNFPlus(CNF, object):
                             rhs = len(lits) - rhs
 
                         self.atmosts.append([lits, rhs])
-                elif not line.startswith('p cnf+ '):
+                elif not line.startswith('p cnf'):  # cnf is allowed here
                     self.comments.append(line)
 
     def to_fp(self, file_pointer, comments=None):
@@ -1468,6 +1469,50 @@ class CNFPlus(CNF, object):
             self.nv = max([abs(l) for l in clause[0]] + [self.nv])
             self.atmosts.append(clause)
 
+    def weighted(self):
+        """
+            This method creates a weighted copy of the internal formula. As a
+            result, an object of class :class:`WCNFPlus` is returned. Every
+            clause of the CNFPlus formula is *soft* in the new WCNFPlus
+            formula and its weight is equal to ``1``. The set of hard clauses
+            of the new formula is empty. The set of cardinality constraints
+            remains unchanged.
+
+            :return: an object of class :class:`WCNFPlus`.
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNFPlus
+                >>> cnf = CNFPlus()
+                >>> cnf.append([-1, 2])
+                >>> cnf.append([3, 4])
+                >>> cnf.append([[1, 2], 1], is_atmost=True)
+                >>>
+                >>> wcnf = cnf.weighted()
+                >>> print wcnf.hard
+                []
+                >>> print wcnf.soft
+                [[-1, 2], [3, 4]]
+                >>> print wcnf.wght
+                [1, 1]
+                >>> print wcnf.atms
+                [[[1, 2], 1]]
+        """
+
+        wcnf = WCNFPlus()
+
+        wcnf.nv = self.nv
+        wcnf.hard = []
+        wcnf.soft = copy.deepcopy(self.clauses)
+        wcnf.atms = copy.deepcopy(self.atmosts)
+        wcnf.wght = [1 for cl in wcnf.soft]
+        wcnf.topw = len(wcnf.wght) + 1
+        wcnf.comments = self.comments[:]
+
+        return wcnf
+
 
 #
 #==============================================================================
@@ -1493,8 +1538,8 @@ class WCNFPlus(WCNF, object):
             10 4 5 6 -7 >= 2
             5 3 5 7 0
 
-        **Note** that every cardinality constraint is assumed to be hard, i.e.
-        soft cardinality constraints are currently *not supported*.
+        **Note** that every cardinality constraint is assumed to be *hard*,
+        i.e. soft cardinality constraints are currently *not supported*.
 
         Each AtLeastK constraint is translated into an AtMostK constraint in
         the standard way: :math:`\sum_{i=1}^{n}{x_i}\geq k \leftrightarrow
@@ -1572,7 +1617,7 @@ class WCNFPlus(WCNF, object):
             line = line.strip()
             if line:
                 if line[0] not in comment_lead:
-                    if line[-1] == '0':  # normal clause
+                    if int(line.rsplit(' ', 1)[-1]) == 0:  # normal clause
                         cl = [int(l) for l in line.split()[:-1]]
                         w = cl.pop(0)
                         self.nv = max([abs(l) for l in cl] + [self.nv])
@@ -1593,7 +1638,7 @@ class WCNFPlus(WCNF, object):
                             rhs = len(lits) - rhs
 
                         self.atms.append([lits, rhs])
-                elif not line.startswith('p wcnf+ '):
+                elif not line.startswith('p wcnf'):  # wcnf is allowed here
                     self.comments.append(line)
                 else:  # expecting the preamble
                     self.topw = int(line.rsplit(' ', 1)[1])
@@ -1701,3 +1746,42 @@ class WCNFPlus(WCNF, object):
         else:
             self.nv = max([abs(l) for l in clause[0]] + [self.nv])
             self.atms.append(clause)
+
+    def unweighted(self):
+        """
+            This method creates a *plain* (unweighted) copy of the internal
+            formula. As a result, an object of class :class:`CNFPlus` is
+            returned. Every clause (both hard or soft) of the original
+            WCNFPlus formula is copied to the ``clauses`` variable of the
+            resulting plain formula, i.e. all weights are discarded.
+
+            Note that the cardinality constraints of the original (weighted)
+            formula remain unchanged in the new (plain) formula.
+
+            :return: an object of class :class:`CNFPlus`.
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import WCNF
+                >>> wcnf = WCNFPlus()
+                >>> wcnf.extend([[-3, 4], [5, 6]])
+                >>> wcnf.extend([[3], [-4], [-5], [-6]], weights=[1, 5, 3, 4])
+                >>> wcnf.append([[1, 2, 3], 1], is_atmost=True)
+                >>>
+                >>> cnf = wcnf.unweighted()
+                >>> print cnf.clauses
+                [[-3, 4], [5, 6], [3], [-4], [-5], [-6]]
+                >>> print cnf.atmosts
+                [[[1, 2, 3], 1]]
+        """
+
+        cnf = CNFPlus()
+
+        cnf.nv = self.nv
+        cnf.clauses = copy.deepcopy(self.hard) + copy.deepcopy(self.soft)
+        cnf.atmosts = copy.deepcopy(self.atms)
+        cnf.commends = self.comments[:]
+
+        return cnf

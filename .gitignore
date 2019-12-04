@@ -1,6 +1,7 @@
 *.pyc
 *.zip
 *.tar.gz
+*.swp
 build
 dist
 solvers/cadical
