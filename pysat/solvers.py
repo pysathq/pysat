@@ -250,14 +250,14 @@ class Solver(object):
             >>> s.add_clause([-1, -2])
             >>> s.solve()
             True
-            >>> print s.get_model()
+            >>> print(s.get_model())
             [-1, -2]
             >>> s.delete()
             >>>
             >>> with Minisat22(bootstrap_with=[[-1, 2], [-1, -2]]) as m:
             ...     m.solve()
             True
-            ...     print m.get_model()
+            ...     print(m.get_model())
             [-1, -2]
 
         Note that while all explicit solver classes necessarily have default
@@ -488,7 +488,7 @@ class Solver(object):
                 >>> m = MinisatGH(bootstrap_with=cnf.clauses)
                 >>>
                 >>> m.conf_budget(2000)  # getting at most 2000 conflicts
-                >>> print m.solve_limited()  # making a limited oracle call
+                >>> print(m.solve_limited())  # making a limited oracle call
                 None
                 >>> m.delete()
         """
@@ -518,7 +518,7 @@ class Solver(object):
                 >>> m = MinisatGH(bootstrap_with=cnf.clauses)
                 >>>
                 >>> m.prop_budget(100000)  # doing at most 100000 propagations
-                >>> print m.solve_limited()  # making a limited oracle call
+                >>> print(m.solve_limited())  # making a limited oracle call
                 None
                 >>> m.delete()
         """
@@ -553,7 +553,7 @@ class Solver(object):
                 >>> timer = Timer(10, interrupt, [m])
                 >>> timer.start()
                 >>>
-                >>> print m.solve_limited()
+                >>> print(m.solve_limited())
                 None
                 >>> m.delete()
         """
@@ -693,7 +693,7 @@ class Solver(object):
                 >>> s.add_clause([1, -2])
                 >>> s.solve()
                 True
-                >>> print s.get_model()
+                >>> print(s.get_model())
                 [-1, -2]
                 >>> s.delete()
         """
@@ -722,7 +722,7 @@ class Solver(object):
                 >>> m.add_clause([-3, 4])
                 >>> m.solve(assumptions=[1, 2, 3, -4])
                 False
-                >>> print m.get_core()  # literals 2 and 3 are not in the core
+                >>> print(m.get_core())  # literals 2 and 3 are not in the core
                 [-4, 1]
                 >>> m.delete()
         """
@@ -749,7 +749,7 @@ class Solver(object):
                 ...     g.append_formula(cnf.clauses)
                 ...     g.solve()
                 False
-                ...     print g.get_proof()
+                ...     print(g.get_proof())
                 ['-8 4 1 0', '-10 0', '-2 0', '-4 0', '-8 0', '-6 0', '0']
         """
 
@@ -774,9 +774,9 @@ class Solver(object):
                 >>>
                 >>> cnf = PHP(nof_holes=10)
                 >>> with Solver(bootstrap_with=cnf.clauses, use_timer=True) as s:
-                ...     print s.solve()
+                ...     print(s.solve())
                 False
-                ...     print '{0:.2f}s'.format(s.time())
+                ...     print('{0:.2f}s'.format(s.time()))
                 150.16s
         """
 
@@ -801,15 +801,15 @@ class Solver(object):
                 >>>
                 >>> cnf = PHP(nof_holes=10)
                 >>> with Solver(bootstrap_with=cnf.clauses, use_timer=True) as s:
-                ...     print s.solve(assumptions=[1])
+                ...     print(s.solve(assumptions=[1]))
                 False
-                ...     print '{0:.2f}s'.format(s.time())
+                ...     print('{0:.2f}s'.format(s.time()))
                 1.76s
-                ...     print s.solve(assumptions=[-1])
+                ...     print(s.solve(assumptions=[-1]))
                 False
-                ...     print '{0:.2f}s'.format(s.time())
+                ...     print('{0:.2f}s'.format(s.time()))
                 113.58s
-                ...     print '{0:.2f}s'.format(s.time_accum())
+                ...     print('{0:.2f}s'.format(s.time_accum()))
                 115.34s
         """
 
@@ -872,7 +872,7 @@ class Solver(object):
 
                 >>> with Solver(bootstrap_with=[[-1, 2], [-2, 3]]) as s:
                 ...     for m in s.enum_models():
-                ...         print m
+                ...         print(m)
                 [-1, -2, -3]
                 [-1, -2, 3]
                 [-1, 2, 3]
@@ -880,7 +880,7 @@ class Solver(object):
                 >>>
                 >>> with Solver(bootstrap_with=[[-1, 2], [-2, 3]]) as s:
                 ...     for m in s.enum_models(assumptions=[1]):
-                ...         print m
+                ...         print(m)
                 [1, 2, 3]
         """
 

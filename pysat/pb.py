@@ -182,10 +182,10 @@ class PBEnc(object):
 
             >>> from pysat.pb import *
             >>> cnf = PBEnc.atmost(lits=[1, 2, 3], weights=[1, 2, 3], bound=3)
-            >>> print cnf.clauses
+            >>> print(cnf.clauses)
             [[4], [-1, -5], [-2, -5], [5, -3, -6], [6]]
             >>> cnf = PBEnc.equals(lits=[1, 2, 3], weights=[1, 2, 3], bound=3, encoding=EncType.bdd)
-            >>> print cnf.clauses
+            >>> print(cnf.clauses)
             [[4], [-5, -2], [-5, 2, -1], [-5, -1], [-6, 1], [-7, -2, 6], [-7, 2], [-7, 6], [-8, -3, 5], [-8, 3, 7], [-8, 5, 7], [8]]
     """
 

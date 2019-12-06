@@ -72,7 +72,7 @@
         >>> lbx = LBX(wcnf, use_cld=True, solver_name='g3')
         >>> for mcs in lbx.enumerate():
         ...     lbx.block(mcs)
-        ...     print mcs
+        ...     print(mcs)
         [1, 3]
         [2, 3]
         [1, 2]

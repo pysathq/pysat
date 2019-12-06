@@ -60,7 +60,7 @@
 
     .. code-block:: python
 
-        >>> print cnf.clauses
+        >>> print(cnf.clauses)
         [[-1, 2], [-2 ,3]]
 
     The number of variables in a CNF formula, i.e. the *largest variable
@@ -68,7 +68,7 @@
 
     .. code-block:: python
 
-        >>> print cnf.nv
+        >>> print(cnf.nv)
         3
 
     Class :class:`CNF` has a few methods to read and write a CNF formula into a
@@ -105,9 +105,9 @@
         ...     f2.to_fp(fp)  # writing to a file pointer
         >>>
         >>> f3 = CNF(from_string='p cnf 3 3\\n-1 2 0\\n-2 3 0\\n-3 0\\n')
-        >>> print f3.clauses
+        >>> print(f3.clauses)
         [[-1, 2], [-2, 3], [-3]]
-        >>> print f3.nv
+        >>> print(f3.nv)
         3
 
     Besides plain CNF formulas, the :mod:`pysat.formula` module implements an
@@ -141,11 +141,11 @@
         >>> wcnf.append([1], weight=1)
         >>> wcnf.append([2], weight=3)  # the formula becomes unsatisfiable
         >>>
-        >>> print wcnf.hard
+        >>> print(wcnf.hard)
         [[-1, -2]]
-        >>> print wcnf.soft
+        >>> print(wcnf.soft)
         [[1], [2]]
-        >>> print wcnf.wght
+        >>> print(wcnf.wght)
         [1, 3]
 
     A properly constructed WCNF formula must have a *top weight*, which should
@@ -155,7 +155,7 @@
     .. code-block:: python
 
         >>> wcnf.topw = sum(wcnf.wght) + 1  # (1 + 3) + 1
-        >>> print wcnf.topw
+        >>> print(wcnf.topw)
         5
 
     Additionally to classes :class:`CNF` and :class:`WCNF`, the module provides
@@ -291,7 +291,7 @@ class IDPool(object):
                 >>>
                 >>> # creating 5 unique variables for the following strings
                 >>> for i in range(5):
-                ...    print vpool.id('v{0}'.format(i + 1))
+                ...    print(vpool.id('v{0}'.format(i + 1)))
                 1
                 2
                 11
@@ -515,13 +515,13 @@ class CNF(object):
                 >>> from pysat.formula import CNF
                 >>> cnf1 = CNF()
                 >>> cnf1.from_string(='p cnf 2 2\\n-1 2 0\\n1 -2 0')
-                >>> print cnf1.clauses
+                >>> print(cnf1.clauses)
                 [[-1, 2], [1, -2]]
                 >>>
                 >>> cnf2 = CNF(from_string='p cnf 3 3\\n-1 2 0\\n-2 3 0\\n-3 0\\n')
-                >>> print cnf2.clauses
+                >>> print(cnf2.clauses)
                 [[-1, 2], [-2, 3], [-3]]
-                >>> print cnf2.nv
+                >>> print(cnf2.nv)
                 3
         """
 
@@ -540,9 +540,9 @@ class CNF(object):
 
                 >>> from pysat.formula import CNF
                 >>> cnf = CNF(from_clauses=[[-1, 2], [1, -2], [5]])
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-1, 2], [1, -2], [5]]
-                >>> print cnf.nv
+                >>> print(cnf.nv)
                 5
         """
 
@@ -643,9 +643,9 @@ class CNF(object):
 
                 >>> cnf1 = CNF(from_clauses=[[-1, 2], [1]])
                 >>> cnf2 = cnf1.copy()
-                >>> print cnf2.clauses
+                >>> print(cnf2.clauses)
                 [[-1, 2], [1]]
-                >>> print cnf2.nv
+                >>> print(cnf2.nv)
                 2
         """
 
@@ -746,7 +746,7 @@ class CNF(object):
                 >>> from pysat.formula import CNF
                 >>> cnf = CNF(from_clauses=[[-1, 2], [3]])
                 >>> cnf.append([-3, 4])
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-1, 2], [3], [-3, 4]]
         """
 
@@ -769,7 +769,7 @@ class CNF(object):
                 >>> from pysat.formula import CNF
                 >>> cnf = CNF(from_clauses=[[-1, 2], [3]])
                 >>> cnf.extend([[-3, 4], [5, 6]])
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-1, 2], [3], [-3, 4], [5, 6]]
         """
 
@@ -801,11 +801,11 @@ class CNF(object):
                 >>> cnf = CNF(from_clauses=[[-1, 2], [3, 4]])
                 >>>
                 >>> wcnf = cnf.weighted()
-                >>> print wcnf.hard
+                >>> print(wcnf.hard)
                 []
-                >>> print wcnf.soft
+                >>> print(wcnf.soft)
                 [[-1, 2], [3, 4]]
-                >>> print wcnf.wght
+                >>> print(wcnf.wght)
                 [1, 1]
         """
 
@@ -846,9 +846,9 @@ class CNF(object):
                 >>> from pysat.formula import CNF
                 >>> pos = CNF(from_clauses=[[-1, 2], [3]])
                 >>> neg = pos.negate()
-                >>> print neg.clauses
+                >>> print(neg.clauses)
                 [[1, -4], [-2, -4], [-1, 2, 4], [4, -3]]
-                >>> print neg.auxvars
+                >>> print(neg.auxvars)
                 [4, -3]
         """
 
@@ -1029,17 +1029,17 @@ class WCNF(object):
                 >>> from pysat.formula import WCNF
                 >>> cnf1 = WCNF()
                 >>> cnf1.from_string(='p wcnf 2 2 2\\n 2 -1 2 0\\n1 1 -2 0')
-                >>> print cnf1.hard
+                >>> print(cnf1.hard)
                 [[-1, 2]]
-                >>> print cnf1.soft
+                >>> print(cnf1.soft)
                 [[1, 2]]
                 >>>
                 >>> cnf2 = WCNF(from_string='p wcnf 3 3 2\\n2 -1 2 0\\n2 -2 3 0\\n1 -3 0\\n')
-                >>> print cnf2.hard
+                >>> print(cnf2.hard)
                 [[-1, 2], [-2, 3]]
-                >>> print cnf2.soft
+                >>> print(cnf2.soft)
                 [[-3]]
-                >>> print cnf2.nv
+                >>> print(cnf2.nv)
                 3
         """
 
@@ -1062,13 +1062,13 @@ class WCNF(object):
                 >>> cnf1.append([1], weight=10)
                 >>>
                 >>> cnf2 = cnf1.copy()
-                >>> print cnf2.hard
+                >>> print(cnf2.hard)
                 [[-1, 2]]
-                >>> print cnf2.soft
+                >>> print(cnf2.soft)
                 [[1]]
-                >>> print cnf2.wght
+                >>> print(cnf2.wght)
                 [10]
-                >>> print cnf2.nv
+                >>> print(cnf2.nv)
                 2
         """
 
@@ -1185,11 +1185,11 @@ class WCNF(object):
                 >>> cnf.append([-1, 2])
                 >>> cnf.append([1], weight=10)
                 >>> cnf.append([-2], weight=20)
-                >>> print cnf.hard
+                >>> print(cnf.hard)
                 [[-1, 2]]
-                >>> print cnf.soft
+                >>> print(cnf.soft)
                 [[1], [-2]]
-                >>> print cnf.wght
+                >>> print(cnf.wght)
                 [10, 20]
         """
 
@@ -1227,11 +1227,11 @@ class WCNF(object):
                 >>> cnf = WCNF()
                 >>> cnf.extend([[-3, 4], [5, 6]])
                 >>> cnf.extend([[3], [-4], [-5], [-6]], weights=[1, 5, 3, 4])
-                >>> print cnf.hard
+                >>> print(cnf.hard)
                 [[-3, 4], [5, 6]]
-                >>> print cnf.soft
+                >>> print(cnf.soft)
                 [[3], [-4], [-5], [-6]]
-                >>> print cnf.wght
+                >>> print(cnf.wght)
                 [1, 5, 3, 4]
         """
 
@@ -1264,7 +1264,7 @@ class WCNF(object):
                 >>> wcnf.extend([[3], [-4], [-5], [-6]], weights=[1, 5, 3, 4])
                 >>>
                 >>> cnf = wcnf.unweighted()
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-3, 4], [5, 6], [3], [-4], [-5], [-6]]
         """
 
@@ -1313,11 +1313,11 @@ class CNFPlus(CNF, object):
 
             >>> from pysat.formula import CNFPlus
             >>> cnf = CNFPlus(from_string='p cnf+ 7 3\\n1 -2 3 5 -7 <= 3\\n4 5 6 -7 >= 2\\n 3 5 7 0\\n')
-            >>> print cnf.clauses
+            >>> print(cnf.clauses)
             [[3, 5, 7]]
-            >>> print cnf.atmosts
+            >>> print(cnf.atmosts)
             [[[1, -2, 3, 5, -7], 3], [[-4, -5, -6, 7], 2]]
-            >>> print cnf.nv
+            >>> print(cnf.nv)
             7
 
         For details on the functionality, see :class:`CNF`.
@@ -1456,9 +1456,9 @@ class CNFPlus(CNF, object):
                 >>> cnf = CNFPlus()
                 >>> cnf.append([-3, 4])
                 >>> cnf.append([[1, 2, 3], 1], is_atmost=True)
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-3, 4]]
-                >>> print cnf.atmosts
+                >>> print(cnf.atmosts)
                 [[1, 2, 3], 1]
         """
 
@@ -1491,13 +1491,13 @@ class CNFPlus(CNF, object):
                 >>> cnf.append([[1, 2], 1], is_atmost=True)
                 >>>
                 >>> wcnf = cnf.weighted()
-                >>> print wcnf.hard
+                >>> print(wcnf.hard)
                 []
-                >>> print wcnf.soft
+                >>> print(wcnf.soft)
                 [[-1, 2], [3, 4]]
-                >>> print wcnf.wght
+                >>> print(wcnf.wght)
                 [1, 1]
-                >>> print wcnf.atms
+                >>> print(wcnf.atms)
                 [[[1, 2], 1]]
         """
 
@@ -1553,15 +1553,15 @@ class WCNFPlus(WCNF, object):
 
             >>> from pysat.formula import WCNFPlus
             >>> cnf = WCNFPlus(from_string='p wcnf+ 7 3 10\\n10 1 -2 3 5 -7 <= 3\\n10 4 5 6 -7 >= 2\\n5 3 5 7 0\\n')
-            >>> print cnf.soft
+            >>> print(cnf.soft)
             [[3, 5, 7]]
-            >>> print cnf.wght
+            >>> print(cnf.wght)
             [5]
-            >>> print cnf.hard
+            >>> print(cnf.hard)
             []
-            >>> print cnf.atms
+            >>> print(cnf.atms)
             [[[1, -2, 3, 5, -7], 3], [[-4, -5, -6, 7], 2]]
-            >>> print cnf.nv
+            >>> print(cnf.nv)
             7
 
         For details on the functionality, see :class:`WCNF`.
@@ -1723,13 +1723,13 @@ class WCNFPlus(WCNF, object):
                 >>> cnf.append([-3, 4])
                 >>> cnf.append([[1, 2, 3], 1], is_atmost=True)
                 >>> cnf.append([-1, -2], weight=35)
-                >>> print cnf.hard
+                >>> print(cnf.hard)
                 [[-3, 4]]
-                >>> print cnf.atms
+                >>> print(cnf.atms)
                 [[1, 2, 3], 1]
-                >>> print cnf.soft
+                >>> print(cnf.soft)
                 [[-1, -2]]
-                >>> print cnf.wght
+                >>> print(cnf.wght)
                 [35]
         """
 
@@ -1771,9 +1771,9 @@ class WCNFPlus(WCNF, object):
                 >>> wcnf.append([[1, 2, 3], 1], is_atmost=True)
                 >>>
                 >>> cnf = wcnf.unweighted()
-                >>> print cnf.clauses
+                >>> print(cnf.clauses)
                 [[-3, 4], [5, 6], [3], [-4], [-5], [-6]]
-                >>> print cnf.atmosts
+                >>> print(cnf.atmosts)
                 [[[1, 2, 3], 1]]
         """
 

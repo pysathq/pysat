@@ -108,7 +108,7 @@
         >>>
         >>> with RC2(wcnf) as rc2:
         ...     for m in rc2.enumerate():
-        ...         print 'model {0} has cost {1}'.format(m, rc2.cost)
+        ...         print('model {0} has cost {1}'.format(m, rc2.cost))
         model [-1, -2, 3] has cost 2
         model [1, -2, -3] has cost 2
         model [-1, 2, -3] has cost 2
@@ -355,12 +355,12 @@ class RC2(object):
                 >>> with RC2(wcnf) as rc2:
                 ...     rc2.compute()  # solving the MaxSAT problem
                 [-1, 2, 3]
-                ...     print rc2.cost
+                ...     print(rc2.cost)
                 1
                 ...     rc2.add_clause([-2, -3])  # adding one more hard clause
                 ...     rc2.compute()  # computing another model
                 [-1, -2, 3]
-                ...     print rc2.cost
+                ...     print(rc2.cost)
                 2
         """
 
@@ -448,9 +448,9 @@ class RC2(object):
                 >>> rc2.add_clause([3], weight=1)
                 >>>
                 >>> model = rc2.compute()
-                >>> print model
+                >>> print(model)
                 [-1, -2, 3]
-                >>> print rc2.cost
+                >>> print(rc2.cost)
                 2
                 >>> rc2.delete()
         """
@@ -492,7 +492,7 @@ class RC2(object):
                 >>> rc2.add_clause([3], weight=1)
                 >>>
                 >>> for model in rc2.enumerate():
-                ...     print model, rc2.cost
+                ...     print(model, rc2.cost)
                 [-1, -2, 3] 2
                 [1, -2, -3] 2
                 [-1, 2, -3] 2

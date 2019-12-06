@@ -80,9 +80,9 @@
         >>> fm = FM(wcnf, verbose=0)
         >>> fm.compute()  # set of hard clauses should be satisfiable
         True
-        >>> print fm.cost # cost of MaxSAT solution should be 2
+        >>> print(fm.cost) # cost of MaxSAT solution should be 2
         >>> 2
-        >>> print fm.model
+        >>> print(fm.model)
         [-1, -2, 3]
 
     ==============

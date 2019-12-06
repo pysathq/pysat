@@ -137,8 +137,8 @@ The following is a trivial example of PySAT usage:
     >>> g = Glucose3()
     >>> g.add_clause([-1, 2])
     >>> g.add_clause([-2, 3])
-    >>> print g.solve()
-    >>> print g.get_model()
+    >>> print(g.solve())
+    >>> print(g.get_model())
     ...
     True
     [-1, -2, -3]
@@ -151,8 +151,8 @@ solver given an unsatisfiable set of clauses:
     >>> from pysat.solvers import Minisat22
     >>>
     >>> with Minisat22(bootstrap_with=[[-1, 2], [-2, 3]]) as m:
-    ...     print m.solve(assumptions=[1, -3])
-    ...     print m.get_core()
+    ...     print(m.solve(assumptions=[1, -3]))
+    ...     print(m.get_core())
     ...
     False
     [-3, 1]
@@ -219,7 +219,7 @@ accessed internally in Python:
     >>> mcsls = LBX(formula)
     >>>
     >>> for mcs in mcsls.enumerate():
-    ...     print mcs
+    ...     print(mcs)
 
 Alternatively, they can be used as standalone executables, e.g. like this:
 

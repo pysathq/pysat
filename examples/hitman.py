@@ -108,7 +108,7 @@
         >>> sets = [[1, 2, 3], [1, 4], [5, 6, 7]]
         >>> with Hitman(bootstrap_with=sets, htype='sorted') as hitman:
         ...     for hs in hitman.enumerate():
-        ...         print hs
+        ...         print(hs)
         ...
         [1, 5]
         [1, 6]
@@ -141,8 +141,8 @@
         ...     ts = set(sels).difference(set(hs))  # soft clauses to try
         ...
         ...     if oracle.solve(assumptions=ts):
-        ...         print 's OPTIMUM FOUND'
-        ...         print 'o', len(hs)
+        ...         print('s OPTIMUM FOUND')
+        ...         print('o', len(hs))
         ...         break
         ...     else:
         ...         core = oracle.get_core()

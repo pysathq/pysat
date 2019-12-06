@@ -119,16 +119,16 @@ pycard_ext = Extension('pycard',
     library_dirs=[]
 )
 
-sources = ['solvers/pysolvers.cc']
+pysolvers_sources = ['solvers/pysolvers.cc']
 
 if platform.system() == 'Windows':
     with chdir('solvers'):
         for solver in to_install:
             with chdir(solver):
                 for filename in glob.glob('*.c*'):
-                    sources += ['solvers/%s/%s' % (solver, filename)]
+                    pysolvers_sources += ['solvers/%s/%s' % (solver, filename)]
                 for filename in glob.glob('*/*.c*'):
-                    sources += ['solvers/%s/%s' % (solver, filename)]
+                    pysolvers_sources += ['solvers/%s/%s' % (solver, filename)]
     libraries = []
     library_dirs = []
 else:
@@ -136,7 +136,7 @@ else:
     library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
 
 pysolvers_ext = Extension('pysolvers',
-    sources=sources,
+    sources=pysolvers_sources,
     extra_compile_args=compile_flags + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
     include_dirs=['solvers'],
@@ -146,7 +146,7 @@ pysolvers_ext = Extension('pysolvers',
 )
 
 
-# finally, calling standard distutils.core.setup()
+# finally, calling standard setuptools.setup() (or distutils.core.setup())
 #==============================================================================
 setup(name='python-sat',
     packages=['pysat', 'pysat.examples'],

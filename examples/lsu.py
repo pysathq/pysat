@@ -72,9 +72,9 @@
         >>> lsu = LSU(wcnf, verbose=0)
         >>> lsu.solve()  # set of hard clauses should be satisfiable
         True
-        >>> print lsu.cost # cost of MaxSAT solution should be 2
+        >>> print(lsu.cost) # cost of MaxSAT solution should be 2
         >>> 2
-        >>> print lsu.model
+        >>> print(lsu.model)
         [-1, -2, 3]
 
     ==============
