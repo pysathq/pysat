@@ -17,7 +17,6 @@
         :nosignatures:
 
         MCSls
-        MCSlsPlus
 
     ==================
     Module description
@@ -73,7 +72,7 @@
         >>> mcsls = MCSls(wcnf, use_cld=True, solver_name='g3')
         >>> for mcs in mcsls.enumerate():
         ...     mcsls.block(mcs)
-        ...     print mcs
+        ...     print(mcs)
         [1, 3]
         [2, 3]
         [1, 2]
@@ -90,8 +89,8 @@ import collections
 import getopt
 from math import copysign
 import os
-from pysat.formula import CNF, WCNF, WCNFPlus
-from pysat.solvers import Solver
+from pysat.formula import CNFPlus, WCNFPlus
+from pysat.solvers import Solver, SolverNames
 import re
 import sys
 
@@ -132,6 +131,16 @@ class MCSls(object):
         # bootstrapping the solver with hard clauses
         self.oracle = Solver(name=solver_name, bootstrap_with=formula.hard,
                 use_timer=use_timer)
+        self.solver = solver_name
+
+        # adding native cardinality constraints (if any) as hard clauses
+        # this can be done only if the Minicard solver is in use
+        if isinstance(formula, WCNFPlus) and formula.atms:
+            assert solver_name in SolverNames.minicard, \
+                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+
+            for atm in formula.atms:
+                self.oracle.add_atmost(*atm)
 
         self.topv = formula.nv  # top variable id
         self.sels = []
@@ -213,11 +222,19 @@ class MCSls(object):
 
         # first, map external literals to internal literals
         # introduce new variables if necessary
-        cl = list(map(lambda l: self._map_extlit(l), clause))
+        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) == list else clause[0]))
 
         if not soft:
-            # the clause is hard, and so we simply add it to the SAT oracle
-            self.oracle.add_clause(cl)
+            if not len(clause) == 2 or not type(clause[0]) == list:
+                # the clause is hard, and so we simply add it to the SAT oracle
+                self.oracle.add_clause(cl)
+            else:
+                # this should be a native cardinality constraint,
+                # which can be used only together with Minicard
+                assert self.solver in SolverNames.minicard, \
+                        'Only Minicard supports native cardinality constraints.'
+
+                self.oracle.add_atmost(cl, clause[1])
         else:
             # soft clauses should be augmented with a selector
             sel = cl[0]
@@ -448,27 +465,6 @@ class MCSls(object):
 
 #
 #==============================================================================
-class MCSlsPlus(MCSls, object):
-    """
-        Extension of the algorithm for :class:`.WCNFPlus` formulas (using
-        Minicard).
-    """
-
-    def __init__(self, formula, use_cld=False, solver_name=None, use_timer=False):
-        """
-            Constructor.
-        """
-
-        super(MCSlsPlus, self).__init__(formula, use_cld=use_cld,
-                solver_name='mc', use_timer=use_timer)
-
-        # adding atmost constraints
-        for am in formula.atms:
-            self.oracle.add_atmost(*am)
-
-
-#
-#==============================================================================
 def parse_options():
     """
         Parses command-line options.
@@ -539,21 +535,14 @@ if __name__ == '__main__':
         to_enum = 0
 
     if files:
-        # reading standard CNF or WCNF
-        if re.search('cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-            if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-                formula = WCNF(from_file=files[0])
-            else:  # expecting '*.cnf'
-                formula = CNF(from_file=files[0]).weighted()
+        # reading standard CNF, WCNF, or (W)CNF+
+        if re.search('cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+                formula = WCNFPlus(from_file=files[0])
+            else:  # expecting '*.cnf[,p,+].*'
+                formula = CNFPlus(from_file=files[0]).weighted()
 
-            MCSEnum = MCSls
-
-        # reading WCNF+
-        elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
-            formula = WCNFPlus(from_file=files[0])
-            MCSEnum = MCSlsPlus
-
-        with MCSEnum(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
+        with MCSls(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
             for i, mcs in enumerate(mcsls.enumerate()):
                 if verbose:
                     print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')

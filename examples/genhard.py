@@ -97,7 +97,7 @@
         >>> from pysat.examples.genhard import PHP
         >>>
         >>> cnf = PHP(3)
-        >>> print cnf.nv, len(cnf.clauses)
+        >>> print(cnf.nv, len(cnf.clauses))
         12 22
 
     Given this example, observe that classes :class:`PHP`, :class:`GT`,

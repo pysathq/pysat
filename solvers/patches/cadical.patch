@@ -1,6 +1,6 @@
-diff -Naur solvers/cadical/Makefile solvers/cdc/Makefile
---- solvers/cadical/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/cdc/Makefile	2019-08-21 19:47:23.000000000 +0100
+diff -Naur build/solvers/cadical/Makefile solvers/cadical/Makefile
+--- build/solvers/cadical/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/cadical/Makefile	2019-12-03 22:13:49.525556200 +0100
 @@ -0,0 +1,42 @@
 +### Makefile ---
 +
@@ -15,7 +15,7 @@ diff -Naur solvers/cadical/Makefile solvers/cdc/Makefile
 +CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
 +INCLUDES := -I.
 +LIBS     := -L.
-+SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backtrack.cpp backward.cpp bins.cpp block.cpp ccadical.cpp checker.cpp clause.cpp collect.cpp compact.cpp config.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp elim.cpp ema.cpp extend.cpp external.cpp file.cpp flags.cpp format.cpp gates.cpp instantiate.cpp internal.cpp ipasir.cpp limit.cpp logging.cpp lucky.cpp message.cpp minimize.cpp mobical.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp signal.cpp solution.cpp solver.cpp stats.cpp subsume.cpp terminal.cpp ternary.cpp tracer.cpp transred.cpp util.cpp var.cpp version.cpp vivify.cpp walk.cpp watch.cpp
++SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backtrack.cpp backward.cpp bins.cpp block.cpp ccadical.cpp checker.cpp clause.cpp collect.cpp compact.cpp config.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp elim.cpp ema.cpp extend.cpp external.cpp file.cpp flags.cpp format.cpp gates.cpp instantiate.cpp internal.cpp ipasir.cpp limit.cpp logging.cpp lucky.cpp message.cpp minimize.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp signal.cpp solution.cpp solver.cpp stats.cpp subsume.cpp terminal.cpp ternary.cpp tracer.cpp transred.cpp util.cpp var.cpp version.cpp vivify.cpp walk.cpp watch.cpp
 +OBJECTS  := $(SOURCES:.cpp=.o)
 +TRGT     := cadical
 +
@@ -44,16 +44,67 @@ diff -Naur solvers/cadical/Makefile solvers/cdc/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur solvers/cadical/build.hpp solvers/cdc/build.hpp
---- solvers/cadical/build.hpp	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/cdc/build.hpp	2019-07-11 10:16:56.000000000 +0100
+diff -Naur build/solvers/cadical/build.hpp solvers/cadical/build.hpp
+--- build/solvers/cadical/build.hpp	1970-01-01 01:00:00.000000000 +0100
++++ solvers/cadical/build.hpp	2019-12-02 08:41:16.201635400 +0100
 @@ -0,0 +1,3 @@
 +#define VERSION "1.0.2"
 +#define IDENTIFIER "93cea3a86d42697a35af7ea477ef5214332f059f"
 +#define DATE "Thu Jul 11 10:16:56 WEST 2019 Darwin antares.local 18.6.0 x86_64"
-diff -Naur solvers/cadical/make-build-header.sh solvers/cdc/make-build-header.sh
---- solvers/cadical/make-build-header.sh	2019-07-01 17:53:57.000000000 +0100
-+++ solvers/cdc/make-build-header.sh	2019-07-11 11:27:30.000000000 +0100
+diff -Naur build/solvers/cadical/contract.hpp solvers/cadical/contract.hpp
+--- build/solvers/cadical/contract.hpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/contract.hpp	2019-12-02 08:41:16.269955000 +0100
+@@ -1,6 +1,10 @@
+ #ifndef _contract_hpp_INCLUDED
+ #define _contract_hpp_INCLUDED
+ 
++#ifdef _MSC_VER
++#define __PRETTY_FUNCTION__ __FUNCTION__
++#endif
++
+ /*------------------------------------------------------------------------*/
+ 
+ // If the user violates API contracts while calling functions declared in
+diff -Naur build/solvers/cadical/file.cpp solvers/cadical/file.cpp
+--- build/solvers/cadical/file.cpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/file.cpp	2019-12-02 08:41:16.375326400 +0100
+@@ -19,6 +19,19 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
++#ifdef _MSC_VER
++#ifndef S_ISDIR
++#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
++#endif
++
++#ifndef S_ISREG
++#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
++#endif
++
++#define popen _popen
++#define pclose _pclose
++#endif
++
+ // Private constructor.
+ 
+ File::File (Internal *i, bool w, int c, FILE * f, const char * n)
+diff -Naur build/solvers/cadical/file.hpp solvers/cadical/file.hpp
+--- build/solvers/cadical/file.hpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/file.hpp	2019-12-02 08:41:16.385087600 +0100
+@@ -9,6 +9,10 @@
+ #include <climits>
+ #endif
+ 
++#ifdef _MSC_VER
++#define NUNLOCKED
++#endif
++
+ /*------------------------------------------------------------------------*/
+ #ifndef NUNLOCKED
+ #define cadical_putc_unlocked putc_unlocked
+diff -Naur build/solvers/cadical/make-build-header.sh solvers/cadical/make-build-header.sh
+--- build/solvers/cadical/make-build-header.sh	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/make-build-header.sh	2019-12-02 08:41:16.480734900 +0100
 @@ -19,17 +19,9 @@
  }
  
@@ -110,3 +161,230 @@ diff -Naur solvers/cadical/make-build-header.sh solvers/cdc/make-build-header.sh
  if [ x"$FLAGS" = x ]
  then
    warning "could not determine 'FLAGS' ('CXXFLAGS')"
+diff -Naur build/solvers/cadical/resources.cpp solvers/cadical/resources.cpp
+--- build/solvers/cadical/resources.cpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/resources.cpp	2019-12-02 08:41:16.629094100 +0100
+@@ -6,8 +6,15 @@
+ // TODO: port these functions to different OS.
+ 
+ extern "C" {
++#ifndef _MSC_VER
+ #include <sys/time.h>
+ #include <sys/resource.h>
++#else
++#include <time.h>
++#include <windows.h>
++#include <psapi.h>
++#endif
++
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <string.h>
+@@ -15,6 +22,39 @@
+ 
+ namespace CaDiCaL {
+ 
++#ifdef _MSC_VER
++#define WIN32_LEAN_AND_MEAN
++
++#include <stdint.h> // portable: uint64_t   MSVC: __int64
++
++// MSVC defines this in winsock2.h!?
++typedef struct timeval {
++    long tv_sec;
++    long tv_usec;
++} timeval;
++
++int gettimeofday(struct timeval * tp, struct timezone * tzp)
++{
++    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
++    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
++    // until 00:00:00 January 1, 1970
++    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
++
++    SYSTEMTIME  system_time;
++    FILETIME    file_time;
++    uint64_t    time;
++
++    GetSystemTime( &system_time );
++    SystemTimeToFileTime( &system_time, &file_time );
++    time =  ((uint64_t)file_time.dwLowDateTime )      ;
++    time += ((uint64_t)file_time.dwHighDateTime) << 32;
++
++    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
++    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
++    return 0;
++}
++#endif
++
+ double absolute_real_time () {
+   struct timeval tv;
+   if (gettimeofday (&tv, 0)) return 0;
+@@ -32,12 +72,28 @@
+ // etc.  For different variants of Unix not all fields are meaningful.
+ 
+ double absolute_process_time () {
++#ifndef _MSC_VER
+   struct rusage u;
+   double res;
+   if (getrusage (RUSAGE_SELF, &u)) return 0;
+   res = u.ru_utime.tv_sec + 1e-6 * u.ru_utime.tv_usec;  // user time
+   res += u.ru_stime.tv_sec + 1e-6 * u.ru_stime.tv_usec; // + system time
+   return res;
++#else
++HANDLE hProcess;
++FILETIME creationTime;
++FILETIME exitTime;
++FILETIME kernelTime;
++FILETIME userTime;
++ULARGE_INTEGER wrkTime;
++hProcess=GetCurrentProcess();
++if (GetProcessTimes(hProcess,  &creationTime, &exitTime, &kernelTime, &userTime)) {
++    wrkTime.LowPart = userTime.dwLowDateTime;
++    wrkTime.HighPart = userTime.dwHighDateTime;
++    return wrkTime.QuadPart / 10000000.0;
++    }
++return 0;
++#endif
+ }
+ 
+ double Internal::process_time () {
+@@ -49,9 +105,20 @@
+ // This seems to work on Linux (man page says since Linux 2.6.32).
+ 
+ size_t maximum_resident_set_size () {
++#ifndef _MSC_VER
+   struct rusage u;
+   if (getrusage (RUSAGE_SELF, &u)) return 0;
+   return ((size_t) u.ru_maxrss) << 10;
++#else
++HANDLE hProcess;
++PROCESS_MEMORY_COUNTERS processMemoryCounters;
++
++hProcess=GetCurrentProcess();
++if (GetProcessMemoryInfo(hProcess,  &processMemoryCounters, sizeof(processMemoryCounters))) {
++    return processMemoryCounters.PeakWorkingSetSize;
++    }
++return 0;
++#endif
+ }
+ 
+ // Unfortunately 'getrusage' on Linux does not support current resident set
+@@ -62,6 +129,7 @@
+ // '_SC_PAGESIZE' are available).
+ 
+ size_t current_resident_set_size () {
++#ifndef _MSC_VER
+   char path[40];
+   sprintf (path, "/proc/%" PRId64 "/statm", (int64_t) getpid ());
+   FILE * file = fopen (path, "r");
+@@ -70,6 +138,16 @@
+   int scanned = fscanf (file, "%" PRId64 " %" PRId64 "", &dummy, &rss);
+   fclose (file);
+   return scanned == 2 ? rss * sysconf (_SC_PAGESIZE) : 0;
++#else
++HANDLE hProcess;
++PROCESS_MEMORY_COUNTERS processMemoryCounters;
++
++hProcess=GetCurrentProcess();
++if (GetProcessMemoryInfo(hProcess,  &processMemoryCounters, sizeof(processMemoryCounters))) {
++    return processMemoryCounters.WorkingSetSize;
++    }
++return 0;
++#endif
+ }
+ 
+ }
+diff -Naur build/solvers/cadical/signal.cpp solvers/cadical/signal.cpp
+--- build/solvers/cadical/signal.cpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/signal.cpp	2019-12-02 08:41:16.664222200 +0100
+@@ -25,8 +25,12 @@
+ static int alarm_time = -1;
+ static Handler * signal_handler;
+ 
+-void Handler::catch_alarm () { catch_signal (SIGALRM); }
+-
++void Handler::catch_alarm () {
++#ifndef _MSC_VER
++catch_signal (SIGALRM);
++#endif
++}
++#ifndef _MSC_VER
+ #define SIGNALS \
+ SIGNAL(SIGABRT) \
+ SIGNAL(SIGBUS) \
+@@ -34,6 +38,14 @@
+ SIGNAL(SIGSEGV) \
+ SIGNAL(SIGTERM) \
+ 
++#else
++#define SIGNALS \
++SIGNAL(SIGABRT) \
++SIGNAL(SIGINT) \
++SIGNAL(SIGSEGV) \
++SIGNAL(SIGTERM) \
++
++#endif
+ #define SIGNAL(SIG) \
+ static void (*SIG ## _handler)(int);
+ SIGNALS
+@@ -42,7 +54,9 @@
+ 
+ void Signal::reset_alarm () {
+   if (!alarm_set) return;
++#ifndef _MSC_VER
+   (void) signal (SIGALRM, SIGALRM_handler);
++#endif
+   SIGALRM_handler = 0;
+   caught_alarm = false;
+   alarm_set = false;
+@@ -65,7 +79,9 @@
+   if (sig == SIG) return # SIG;
+   SIGNALS
+ #undef SIGNAL
++#ifndef _MSC_VER
+   if (sig == SIGALRM) return "SIGALRM";
++#endif
+   return "UNKNOWN";
+ }
+ 
+@@ -76,6 +92,7 @@
+ // exclusive access to.  All these solutions are painful and not elegant.
+ 
+ static void catch_signal (int sig) {
++#ifndef _MSC_VER
+   if (sig == SIGALRM && absolute_real_time () >= alarm_time) {
+     if (!caught_alarm) {
+       caught_alarm = true;
+@@ -83,13 +100,16 @@
+     }
+     Signal::reset_alarm ();
+   } else {
++#endif
+     if (!caught_signal) {
+       caught_signal = true;
+       if (signal_handler) signal_handler->catch_signal (sig);
+     }
+     Signal::reset ();
+     ::raise (sig);
++#ifndef _MSC_VER
+   }
++#endif
+ }
+ 
+ void Signal::set (Handler * h) {
+@@ -104,10 +124,14 @@
+   assert (seconds >= 0);
+   assert (!alarm_set);
+   assert (alarm_time < 0);
++#ifndef _MSC_VER
+   SIGALRM_handler = signal (SIGALRM, catch_signal);
++#endif
+   alarm_set = true;
+   alarm_time = absolute_real_time () + seconds;
++#ifndef _MSC_VER
+   ::alarm (seconds);
++#endif
+ }
+ 
+ }

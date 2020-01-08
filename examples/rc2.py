@@ -108,7 +108,7 @@
         >>>
         >>> with RC2(wcnf) as rc2:
         ...     for m in rc2.enumerate():
-        ...         print 'model {0} has cost {1}'.format(m, rc2.cost)
+        ...         print('model {0} has cost {1}'.format(m, rc2.cost))
         model [-1, -2, 3] has cost 2
         model [1, -2, -3] has cost 2
         model [-1, 2, -3] has cost 2
@@ -131,9 +131,9 @@ import getopt
 import itertools
 from math import copysign
 import os
-from pysat.formula import CNF, WCNF
+from pysat.formula import CNFPlus, WCNFPlus
 from pysat.card import ITotalizer
-from pysat.solvers import Solver
+from pysat.solvers import Solver, SolverNames
 import re
 import six
 from six.moves import range
@@ -275,6 +275,16 @@ class RC2(object):
         self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
                 incr=incr, use_timer=True)
 
+        # adding native cardinality constraints (if any) as hard clauses
+        # this can be done only if the Minicard solver is in use
+        # this cannot be done if RC2 is run from the command line
+        if isinstance(formula, WCNFPlus) and formula.atms:
+            assert self.solver in SolverNames.minicard, \
+                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+
+            for atm in formula.atms:
+                self.oracle.add_atmost(*atm)
+
         # adding soft clauses to oracle
         for i, cl in enumerate(formula.soft):
             selv = cl[0]  # if clause is unit, selector variable is its literal
@@ -345,22 +355,30 @@ class RC2(object):
                 >>> with RC2(wcnf) as rc2:
                 ...     rc2.compute()  # solving the MaxSAT problem
                 [-1, 2, 3]
-                ...     print rc2.cost
+                ...     print(rc2.cost)
                 1
                 ...     rc2.add_clause([-2, -3])  # adding one more hard clause
                 ...     rc2.compute()  # computing another model
                 [-1, -2, 3]
-                ...     print rc2.cost
+                ...     print(rc2.cost)
                 2
         """
 
         # first, map external literals to internal literals
         # introduce new variables if necessary
-        cl = list(map(lambda l: self._map_extlit(l), clause))
+        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) == list else clause[0]))
 
         if not weight:
-            # the clause is hard, and so we simply add it to the SAT oracle
-            self.oracle.add_clause(cl)
+            if not len(clause) == 2 or not type(clause[0]) == list:
+                # the clause is hard, and so we simply add it to the SAT oracle
+                self.oracle.add_clause(cl)
+            else:
+                # this should be a native cardinality constraint,
+                # which can be used only together with Minicard
+                assert self.solver in SolverNames.minicard, \
+                        'Only Minicard supports native cardinality constraints.'
+
+                self.oracle.add_atmost(cl, clause[1])
         else:
             # soft clauses should be augmented with a selector
             selv = cl[0]  # for a unit clause, no selector is needed
@@ -393,7 +411,7 @@ class RC2(object):
             self.oracle.delete()
             self.oracle = None
 
-            if self.solver != 'mc':  # for minicard, there is nothing to free
+            if self.solver not in SolverNames.minicard:  # for minicard, there is nothing to free
                 for t in six.itervalues(self.tobj):
                     t.delete()
 
@@ -430,9 +448,9 @@ class RC2(object):
                 >>> rc2.add_clause([3], weight=1)
                 >>>
                 >>> model = rc2.compute()
-                >>> print model
+                >>> print(model)
                 [-1, -2, 3]
-                >>> print rc2.cost
+                >>> print(rc2.cost)
                 2
                 >>> rc2.delete()
         """
@@ -474,7 +492,7 @@ class RC2(object):
                 >>> rc2.add_clause([3], weight=1)
                 >>>
                 >>> for model in rc2.enumerate():
-                ...     print model, rc2.cost
+                ...     print(model, rc2.cost)
                 [-1, -2, 3] 2
                 [1, -2, -3] 2
                 [-1, 2, -3] 2
@@ -958,7 +976,7 @@ class RC2(object):
             :class:`.ITotalizer`.
         """
 
-        if self.solver != 'mc':  # standard totalizer-based encoding
+        if self.solver not in SolverNames.minicard:  # standard totalizer-based encoding
             # new totalizer sum
             t = ITotalizer(lits=self.rels, ubound=bound, top_id=self.topv)
 
@@ -1021,7 +1039,7 @@ class RC2(object):
         # increment the current bound
         b = self.bnds[assump] + 1
 
-        if self.solver != 'mc':  # the case of standard totalizer encoding
+        if self.solver not in SolverNames.minicard:  # the case of standard totalizer encoding
             # increasing its bound
             t.increase(ubound=b, top_id=self.topv)
 
@@ -1558,10 +1576,10 @@ if __name__ == '__main__':
 
     if files:
         # parsing the input formula
-        if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-            formula = WCNF(from_file=files[0])
-        else:  # expecting '*.cnf'
-            formula = CNF(from_file=files[0]).weighted()
+        if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNFPlus(from_file=files[0])
+        else:  # expecting '*.cnf[,p,+].*'
+            formula = CNFPlus(from_file=files[0]).weighted()
 
         # enabling the competition mode
         if cmode:

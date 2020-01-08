@@ -11,6 +11,45 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.12.2019 (*0.1.5.dev2*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed yet another issue related to :class:`pysat.formula.CNFPlus` and
+  :class:`pysat.solvers.Minicard`.
+- Replaced :meth:`time.clock()` with :meth:`time.process_time()` for Python
+  3.8 and newer.
+
+04.12.2019 (*0.1.5.dev1*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added Windows support (**many** thanks to `Rüdiger Jungbeck
+  <https://github.com/rjungbeck>`__!).
+- Fixed a few more issues related to :class:`pysat.formula.CNFPlus` and
+  :class:`pysat.formula.WCNFPlus`.
+
+02.12.2019 (*0.1.4.dev25*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed the parser of :class:`pysat.formula.WCNFPlus` formulas.
+- Fixed a bug in method :meth:`append_formula` for
+  :class:`pysat.solvers.Minicard`.
+
+28.11.2019 (*0.1.4.dev24*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed signal handling in the multithreaded use of PySAT. Multiple oracles
+  can be used at a time now.
+
+14.11.2019 (*0.1.4.dev23*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug in :mod:`pysat.examples.lsu`.
+
+07.11.2019 (*0.1.4.dev22*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A minor fix in :mod:`pysat.formula` related to importing py-aiger-cnf.
+
 30.10.2019 (*0.1.4.dev21*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

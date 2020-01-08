@@ -99,8 +99,8 @@
 from __future__ import print_function
 import getopt
 import os
-from pysat.formula import CNF, WCNF
-from pysat.solvers import Solver
+from pysat.formula import CNFPlus, WCNFPlus
+from pysat.solvers import Solver, SolverNames
 import re
 import sys
 
@@ -143,6 +143,13 @@ class MUSX(object):
         # constructing the oracle
         self.oracle = Solver(name=solver, bootstrap_with=formula.hard,
                 use_timer=True)
+
+        if isinstance(formula, WCNFPlus) and formula.atms:
+            assert solver in SolverNames.minicard, \
+                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+
+            for atm in formula.atms:
+                self.oracle.add_atmost(*atm)
 
         # relaxing soft clauses and adding them to the oracle
         for i, cl in enumerate(formula.soft):
@@ -309,10 +316,11 @@ if __name__ == '__main__':
     solver, verbose, files = parse_options()
 
     if files:
-        if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-            formula = WCNF(from_file=files[0])
-        else:  # expecting '*.cnf'
-            formula = CNF(from_file=files[0]).weighted()
+        # parsing the input formula
+        if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNFPlus(from_file=files[0])
+        else:  # expecting '*.cnf[,p,+].*'
+            formula = CNFPlus(from_file=files[0]).weighted()
 
         with MUSX(formula, solver=solver, verbosity=verbose) as musx:
             mus = musx.compute()

@@ -232,19 +232,23 @@ static bool pyiter_to_vector(PyObject *obj, vector<int>& vect)
 //=============================================================================
 static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *lhs_obj;
 	int rhs;
 	int top;
 	int enc;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &enc))
+	if (!PyArg_ParseTuple(args, "Oiiii", &lhs_obj, &rhs, &top, &enc,
+				&main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	vector<int> lhs;
@@ -283,19 +287,23 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 //=============================================================================
 static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *lhs_obj;
 	int rhs;
 	int top;
 	int enc;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &enc))
+	if (!PyArg_ParseTuple(args, "Oiiii", &lhs_obj, &rhs, &top, &enc,
+				&main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	vector<int> lhs;
@@ -336,18 +344,21 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 //=============================================================================
 static PyObject *py_itot_new(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *lhs_obj;
 	int rhs;
 	int top;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "Oii", &lhs_obj, &rhs, &top))
+	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	vector<int> lhs;
@@ -390,18 +401,21 @@ static PyObject *py_itot_new(PyObject *self, PyObject *args)
 //=============================================================================
 static PyObject *py_itot_inc(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *t_obj;
 	int rhs;
 	int top;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "Oii", &t_obj, &rhs, &top))
+	if (!PyArg_ParseTuple(args, "Oiii", &t_obj, &rhs, &top, &main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	// get pointer to tree
@@ -442,19 +456,23 @@ static PyObject *py_itot_inc(PyObject *self, PyObject *args)
 //=============================================================================
 static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *t_obj;
 	PyObject *lhs_obj;
 	int rhs;
 	int top;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "OOii", &t_obj, &lhs_obj, &rhs, &top))
+	if (!PyArg_ParseTuple(args, "OOiii", &t_obj, &lhs_obj, &rhs, &top,
+				&main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	vector<int> lhs;
@@ -500,19 +518,23 @@ static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 //=============================================================================
 static PyObject *py_itot_mrg(PyObject *self, PyObject *args)
 {
-	signal(SIGINT, sigint_handler);
-
 	PyObject *t1_obj;
 	PyObject *t2_obj;
 	int rhs;
 	int top;
+	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "OOii", &t1_obj, &t2_obj, &rhs, &top))
+	if (!PyArg_ParseTuple(args, "OOiii", &t1_obj, &t2_obj, &rhs, &top,
+				&main_thread))
 		return NULL;
 
-	if (setjmp(env) != 0) {
-		PyErr_SetString(CardError, "Caught keyboard interrupt");
-		return NULL;
+	if (main_thread) {
+		signal(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
 	}
 
 	// get pointer to tree

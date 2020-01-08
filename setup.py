@@ -10,9 +10,20 @@
 
 #
 #==============================================================================
+import os
+import os.path
+import contextlib
+import glob
+
+try:
+    from setuptools import setup, Extension
+    HAVE_SETUPTOOLS = True
+except ImportError:
+    from distutils.core import setup, Extension
+    HAVE_SETUPTOOLS = False
+
 import distutils.command.build
 import distutils.command.install
-from distutils.core import setup, Extension
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
@@ -20,6 +31,19 @@ import platform
 import prepare
 
 from pysat import __version__
+
+
+#
+#==============================================================================
+@contextlib.contextmanager
+def chdir(new_dir):
+    old_dir = os.getcwd()
+    try:
+        os.chdir(new_dir)
+        yield
+    finally:
+        os.chdir(old_dir)
+
 
 #
 #==============================================================================
@@ -40,14 +64,16 @@ with the (potentially multiple) use of a SAT oracle.
 Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`__.
 """
 
+
 # solvers to install
 #==============================================================================
 to_install = ['cadical', 'glucose30', 'glucose41', 'lingeling', 'maplechrono',
         'maplecm', 'maplesat', 'minicard', 'minisat22', 'minisatgh']
 
+
 # example scripts to install as standalone executables
 #==============================================================================
-scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'musx', 'rc2']
+scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx', 'rc2']
 
 
 # we need to redefine the build command to
@@ -62,7 +88,6 @@ class build(distutils.command.build.build):
         """
             Download, patch and compile SAT solvers before building.
         """
-
         # download and compile solvers
         prepare.do(to_install)
 
@@ -72,10 +97,16 @@ class build(distutils.command.build.build):
 
 # compilation flags for C extensions
 #==============================================================================
-compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'], ['stdc++']
+compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'],  ['stdc++']
 if platform.system() == 'Darwin':
     compile_flags += ['--stdlib=libc++']
     cpplib = ['c++']
+elif platform.system() == 'Windows':
+    compile_flags = ['-DNBUILD', '-DNLGLYALSAT' , '/DINCREMENTAL', '-DNLGLOG',
+            '-DNDEBUG', '-DNCHKSOL', '-DNLGLFILES', '-DNLGLDEMA',
+            '/experimental:preprocessor', '-I./zlib']
+    cpplib = []
+
 
 # C extensions: pycard and pysolvers
 #==============================================================================
@@ -88,18 +119,34 @@ pycard_ext = Extension('pycard',
     library_dirs=[]
 )
 
+pysolvers_sources = ['solvers/pysolvers.cc']
+
+if platform.system() == 'Windows':
+    with chdir('solvers'):
+        for solver in to_install:
+            with chdir(solver):
+                for filename in glob.glob('*.c*'):
+                    pysolvers_sources += ['solvers/%s/%s' % (solver, filename)]
+                for filename in glob.glob('*/*.c*'):
+                    pysolvers_sources += ['solvers/%s/%s' % (solver, filename)]
+    libraries = []
+    library_dirs = []
+else:
+    libraries = to_install + cpplib
+    library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
+
 pysolvers_ext = Extension('pysolvers',
-    sources = ['solvers/pysolvers.cc'],
+    sources=pysolvers_sources,
     extra_compile_args=compile_flags + \
         list(map(lambda x: '-DWITH_{0}'.format(x.upper()), to_install)),
-    include_dirs = ['solvers'],
-    language = 'c++',
-    libraries = to_install + cpplib,
-    library_dirs = list(map(lambda x: os.path.join('solvers', x), to_install))
+    include_dirs=['solvers'],
+    language='c++',
+    libraries=libraries,
+    library_dirs=library_dirs
 )
 
 
-# finally, calling standard distutils.core.setup()
+# finally, calling standard setuptools.setup() (or distutils.core.setup())
 #==============================================================================
 setup(name='python-sat',
     packages=['pysat', 'pysat.examples'],
@@ -115,8 +162,9 @@ setup(name='python-sat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in scripts],
     cmdclass={'build': build},
-    install_requires=['pypblib>=0.0.3', 'six'],
+    install_requires=['six'],
     extras_require = {
-        'aiger': ['py-aiger-cnf>=2.0.0',],
-    },
+        'aiger': ['py-aiger-cnf>=2.0.0'],
+        'pblib': ['pypblib>=0.0.3']
+    }
 )

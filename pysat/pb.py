@@ -23,6 +23,15 @@
     Module description
     ==================
 
+    .. note::
+
+        Functionality of this module is available only if the `PyPBLib`
+        package is installed, e.g. from PyPI:
+
+        .. code-block::
+
+            $ pip install pypblib
+
     This module provides access to the basic functionality of the `PyPBLib
     library <https://pypi.org/project/pypblib/>`__ developed by the `Logic
     Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
@@ -78,8 +87,14 @@
 #
 #==============================================================================
 import math
-from pypblib import pblib
 from pysat.formula import CNF
+
+# checking whether or not pypblib is available and working as expected
+pblib_present = True
+try:
+    from pypblib import pblib
+except ImportError:
+    pblib_present = False
 
 
 #
@@ -167,10 +182,10 @@ class PBEnc(object):
 
             >>> from pysat.pb import *
             >>> cnf = PBEnc.atmost(lits=[1, 2, 3], weights=[1, 2, 3], bound=3)
-            >>> print cnf.clauses
+            >>> print(cnf.clauses)
             [[4], [-1, -5], [-2, -5], [5, -3, -6], [6]]
             >>> cnf = PBEnc.equals(lits=[1, 2, 3], weights=[1, 2, 3], bound=3, encoding=EncType.bdd)
-            >>> print cnf.clauses
+            >>> print(cnf.clauses)
             [[4], [-5, -2], [-5, 2, -1], [-5, -1], [-6, 1], [-7, -2, 6], [-7, 2], [-7, 6], [-8, -3, 5], [-8, 3, 7], [-8, 5, 7], [8]]
     """
 
@@ -241,6 +256,8 @@ class PBEnc(object):
 
             :rtype: :class:`pysat.formula.CNF`
         """
+
+        assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
 
         if encoding < 0 or encoding > 5:
             raise(NoSuchEncodingError(encoding))

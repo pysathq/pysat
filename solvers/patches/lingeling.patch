@@ -1,6 +1,6 @@
-diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
---- solvers/lingeling/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/lgl/Makefile	2019-03-16 12:30:32.000000000 +0000
+diff -Naur build/solvers/lingeling/Makefile solvers/lingeling/Makefile
+--- build/solvers/lingeling/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/lingeling/Makefile	2019-12-02 08:41:17.809069600 +0100
 @@ -0,0 +1,38 @@
 +### Makefile ---
 +
@@ -40,9 +40,80 @@ diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
---- solvers/lingeling/druplig.h	2019-03-16 12:30:54.000000000 +0000
-+++ solvers/lgl/druplig.h	2019-03-16 12:30:32.000000000 +0000
+diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
+--- build/solvers/lingeling/druplig.c	2019-12-03 22:14:22.963962500 +0100
++++ solvers/lingeling/druplig.c	2019-12-02 08:41:17.825662400 +0100
+@@ -15,9 +15,14 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
++#ifdef _MSC_VER
++#include <time.h>
++#include <windows.h>
++
++#else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+-
++#endif
+ /*------------------------------------------------------------------------*/
+ 
+ #define INC(BYTES) \
+@@ -196,12 +201,28 @@
+ /*------------------------------------------------------------------------*/
+ 
+ static double druplig_time (void) {
++#ifndef _MSC_VER
+   struct rusage u;
+   double res;
+   if (getrusage (RUSAGE_SELF, &u)) return 0;
+   res = u.ru_utime.tv_sec + 1e-6 * u.ru_utime.tv_usec;
+   res += u.ru_stime.tv_sec + 1e-6 * u.ru_stime.tv_usec;
+   return res;
++#else
++HANDLE hProcess;
++FILETIME creationTime;
++FILETIME exitTime;
++FILETIME kernelTime;
++FILETIME userTime;
++ULARGE_INTEGER wrkTime;
++hProcess=GetCurrentProcess();
++if (GetProcessTimes(hProcess,  &creationTime, &exitTime, &kernelTime, &userTime)) {
++    wrkTime.LowPart = userTime.dwLowDateTime;
++    wrkTime.HighPart = userTime.dwHighDateTime;
++    return wrkTime.QuadPart / 10000000.0;
++    }
++return 0;
++#endif
+ }
+ 
+ static void druplig_start (Druplig * druplig, double * phase) {
+@@ -248,6 +269,10 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
++#ifndef VERSION
++#define VERSION "0.00"
++#endif
++
+ void druplig_banner (FILE * file) {
+   fprintf (file,
+     "c [druplig] Druplig Proof Checker and Tracer Version %s\n",
+@@ -960,8 +985,9 @@
+   return b ? 100.0 * a / b : 0;
+ }
+ 
+-#define PRT(FMT,ARGS...) \
+-  fprintf (file, "c [druplig] " FMT "\n", ##ARGS)
++
++#define PRT(FMT,...) \
++  fprintf (file, "c [druplig] " FMT "\n", __VA_ARGS__)
+ 
+ typedef struct Prof { char * name; long long calls; double time; } Prof;
+ 
+diff -Naur build/solvers/lingeling/druplig.h solvers/lingeling/druplig.h
+--- build/solvers/lingeling/druplig.h	2019-12-03 22:14:22.965917300 +0100
++++ solvers/lingeling/druplig.h	2019-12-02 08:41:17.839327800 +0100
 @@ -10,6 +10,10 @@
  
  typedef struct Druplig Druplig;
@@ -63,10 +134,207 @@ diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
 +#endif
 +
  #endif
-diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
---- solvers/lingeling/lglib.c	2016-07-07 09:21:31.000000000 +0100
-+++ solvers/lgl/lglib.c	2019-03-16 12:30:32.000000000 +0000
-@@ -543,8 +543,8 @@
+diff -Naur build/solvers/lingeling/lglib.c solvers/lingeling/lglib.c
+--- build/solvers/lingeling/lglib.c	2016-07-07 10:21:31.000000000 +0200
++++ solvers/lingeling/lglib.c	2019-12-02 08:41:17.883244900 +0100
+@@ -20,11 +20,43 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#ifndef _MSC_VER
+ #include <sys/resource.h>
+ #include <sys/time.h>
++#else
++#include <time.h>
++#endif
+ #include <unistd.h>
+ #include <stddef.h>
+ 
++#ifndef _MSC_VER
++#define VA_ARGS(...) ,##__VA_ARGS__
++#else
++
++#include <windows.h>
++#undef SHORT
++#undef small
++#define sleep _sleep
++#define popen _popen
++#define pclose _pclose
++#define VA_ARGS(...) ,__VA_ARGS__
++
++void usleep(__int64 usec)
++{
++    HANDLE timer;
++    LARGE_INTEGER ft;
++
++    ft.QuadPart = -(10*usec); // Convert to 100 nanosecond interval, negative value indicates relative time
++
++    timer = CreateWaitableTimer(NULL, TRUE, NULL);
++    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
++    WaitForSingleObject(timer, INFINITE);
++    CloseHandle(timer);
++}
++
++
++#endif
++
+ /*-------------------------------------------------------------------------*/
+ 
+ #ifndef NLGLYALSAT
+@@ -41,47 +73,47 @@
+ 
+ #define MAPLOGLEVEL(LEVEL) (LEVEL)
+ 
+-#define LOG(LEVEL,FMT,ARGS...) \
++#define LOG(LEVEL,FMT,...) \
+ do { \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGCLS(LEVEL,CLS,FMT,ARGS...) \
++#define LOGCLS(LEVEL,CLS,FMT,...) \
+ do { \
+   const int * P; \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   for (P = (CLS); *P; P++) fprintf (lgl->out, " %d", *P); \
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGMCLS(LEVEL,CLS,FMT,ARGS...) \
++#define LOGMCLS(LEVEL,CLS,FMT,...) \
+ do { \
+   const int * P; \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   for (P = (CLS); *P; P++) fprintf (lgl->out, " %d", lglm2i (lgl, *P)); \
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGRESOLVENT(LEVEL,FMT,ARGS...) \
++#define LOGRESOLVENT(LEVEL,FMT,...) \
+ do { \
+   const int * P; \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   for (P = lgl->resolvent.start; P < lgl->resolvent.top; P++) \
+     fprintf (lgl->out, " %d", *P); \
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGREASON(LEVEL,LIT,REASON0,REASON1,FMT,ARGS...) \
++#define LOGREASON(LEVEL,LIT,REASON0,REASON1,FMT,...) \
+ do { \
+   int TAG, TMP, RED, G; \
+   const int * C, * P; \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   TMP = ((REASON0) >> RMSHFT); \
+   RED = ((REASON0) & REDCS); \
+   TAG = ((REASON0) & MASKCS); \
+@@ -111,19 +143,19 @@
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGDSCHED(LEVEL,LIT,FMT,ARGS...) \
++#define LOGDSCHED(LEVEL,LIT,FMT,...) \
+   do { \
+     int POS; \
+     if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+     POS = *lgldpos (lgl, LIT); \
+     lglogstart (lgl, MAPLOGLEVEL(LEVEL), "dsched[%d] = %d ", POS, LIT); \
+-    fprintf (lgl->out, FMT, ##ARGS); \
++    fprintf (lgl->out, FMT VA_ARGS(__VA_ARGS__)); \
+     fprintf (lgl->out, \
+       " score %s", lglscr2str (lgl, lglqvar (lgl, LIT)->score)); \
+     lglogend (lgl); \
+   } while (0)
+ 
+-#define LOGESCHED(LEVEL,LIT,FMT,ARGS...) \
++#define LOGESCHED(LEVEL,LIT,FMT,...) \
+ do { \
+   int POS; \
+   EVar * EV; \
+@@ -131,17 +163,17 @@
+   POS = *lglepos (lgl, LIT); \
+   EV = lglevar (lgl, LIT); \
+   lglogstart (lgl, MAPLOGLEVEL(LEVEL), "esched[%d] = %d ", POS, LIT); \
+-  fprintf (lgl->out, FMT, ##ARGS); \
++  fprintf (lgl->out, FMT VA_ARGS(__VA_ARGS__)); \
+   fprintf (lgl->out, " score"); \
+   fprintf (lgl->out, " occ %d %d", EV->occ[0], EV->occ[1]); \
+   lglogend (lgl); \
+ } while (0)
+ 
+-#define LOGEQN(LEVEL,EQN,FMT,ARGS...) \
++#define LOGEQN(LEVEL,EQN,FMT,...) \
+ do { \
+   const int * P, * START; \
+   if (MAPLOGLEVEL(LEVEL) > lgl->opts->log.val) break; \
+-  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT, ##ARGS); \
++  lglogstart (lgl, MAPLOGLEVEL(LEVEL), FMT VA_ARGS(__VA_ARGS__)); \
+   START = lgl->gauss->xors.start + (EQN); \
+   assert (START < lgl->gauss->xors.top); \
+   for (P = START; *P > 1; P++) fprintf (lgl->out, " %d", *P); \
+@@ -153,27 +185,27 @@
+ #else /* end of then start of else part of 'ifndef NLGLOG' */
+ /*------------------------------------------------------------------------*/
+ 
+-#define LOG(ARGS...) do { } while (0)
+-#define LOGCLS(ARGS...) do { } while (0)
+-#define LOGMCLS(ARGS...) do { } while (0)
+-#define LOGRESOLVENT(ARGS...) do { } while (0)
+-#define LOGREASON(ARGS...) do { } while (0)
+-#define LOGDSCHED(ARGS...) do { } while (0)
+-#define LOGESCHED(ARGS...) do { } while (0)
+-#define LOGEQN(ARGS...) do { } while (0)
++#define LOG(...) do { } while (0)
++#define LOGCLS(...) do { } while (0)
++#define LOGMCLS(...) do { } while (0)
++#define LOGRESOLVENT(...) do { } while (0)
++#define LOGREASON(...) do { } while (0)
++#define LOGDSCHED(...) do { } while (0)
++#define LOGESCHED(...) do { } while (0)
++#define LOGEQN(...) do { } while (0)
+ 
+ /*------------------------------------------------------------------------*/
+ #endif /* end of else part of 'ifndef NLGLOG' */
+ /*------------------------------------------------------------------------*/
+ 
+-#define ABORTIF(COND,FMT,ARGS...) \
++#define ABORTIF(COND,FMT,...) \
+ do { \
+   if (!(COND)) break; \
+   fprintf (stderr, "*** API usage error of '%s' in '%s'", \
+ 	   __FILE__, __FUNCTION__); \
+   if (lgl && lgl->tid >= 0) fprintf (stderr, " (tid %d)", lgl->tid); \
+   fputs (": ", stderr); \
+-  fprintf (stderr, FMT, ##ARGS); \
++  fprintf (stderr, FMT VA_ARGS(__VA_ARGS__)); \
+   fputc ('\n', stderr); \
+   fflush (stderr); \
+   lglabort (lgl); \
+@@ -243,10 +275,10 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-#define TRAPI(MSG,ARGS...) \
++#define TRAPI(MSG,...) \
+ do { \
+   if (!lgl->apitrace) break; \
+-  lgltrapi (lgl, MSG, ##ARGS); \
++  lgltrapi (lgl, MSG VA_ARGS(__VA_ARGS__)); \
+ } while (0)
+ 
+ #define LGLCHKACT(ACT) \
+@@ -543,8 +575,8 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -77,7 +345,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    unsigned used : 2;
    unsigned used2 : 2;
  } Ctr;
-@@ -564,7 +564,7 @@
+@@ -564,7 +596,7 @@
  
  typedef struct TD {
    signed int level:30;
@@ -86,7 +354,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    int rsn[2];
  } TD;
  
-@@ -677,7 +677,7 @@
+@@ -677,7 +709,7 @@
    struct { int count, clauses, lits, pure; int64_t res, steps; } blk;
    struct {
      struct { int count, failed, eqs; int64_t probed, steps; } simple;
@@ -95,7 +363,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
               int64_t probed, steps, lastate;
  	     struct { int trnr, lrg, count; } ate; } basic;
      struct { int count, failed, lifted; int64_t probed, steps; } treelook;
-@@ -704,7 +704,7 @@
+@@ -704,7 +736,7 @@
      struct { int64_t irr, red, bin, trn, lrg; } sub, str;
      int64_t driving, restarting, total; } otfs;
    struct { int64_t nonmin, learned; } lits;
@@ -104,7 +372,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      int64_t learned, glue, realglue, nonmaxglue, scglue;
      struct { int64_t count, kept; } maxglue;
    } clauses;
-@@ -718,16 +718,16 @@
+@@ -718,16 +750,16 @@
      int count;
      struct { int confs, irr, vars, its, bin, trn; } limhit;
    } simp;
@@ -124,7 +392,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      int count, units, expam1, resched;
      int64_t steps, eliminated, resolved, subsumed;
      struct {
-@@ -740,9 +740,9 @@
+@@ -740,9 +772,9 @@
      } card;
    struct { int64_t bin, trn; } moved;
    struct { int count; int64_t added, skipped, steps; } bca;
@@ -136,7 +404,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        struct { int64_t actual, tried, calls; } consumed;
      } cls, units;
    } sync;
-@@ -819,7 +819,7 @@
+@@ -819,7 +851,7 @@
      trd, unhd, ternres, quatres, cce, card, sweep;
    struct { int pen; Del del; struct { int64_t extr, elim; } steps; } gauss;
    struct { int64_t confs; } restart;
@@ -145,7 +413,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
             struct { int pen; Del del; } simple, basic, treelook; } prb;
    struct {
      int64_t confs, hard, vars, its, bin, trn;
-@@ -878,15 +878,15 @@
+@@ -878,15 +910,15 @@
  
  typedef struct SPE { signed int count : 31; unsigned mark : 1, sum; } SPE;
  
@@ -165,7 +433,69 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  } Gauss;
  
  typedef struct CCE {
-@@ -1483,7 +1483,7 @@
+@@ -1279,12 +1311,28 @@
+ /*------------------------------------------------------------------------*/
+ 
+ double lglprocesstime (void) {
++#ifndef _MSC_VER
+   struct rusage u;
+   double res;
+   if (getrusage (RUSAGE_SELF, &u)) return 0;
+   res = u.ru_utime.tv_sec + 1e-6 * u.ru_utime.tv_usec;
+   res += u.ru_stime.tv_sec + 1e-6 * u.ru_stime.tv_usec;
+   return res;
++#else
++HANDLE hProcess;
++FILETIME creationTime;
++FILETIME exitTime;
++FILETIME kernelTime;
++FILETIME userTime;
++ULARGE_INTEGER wrkTime;
++hProcess=GetCurrentProcess();
++if (GetProcessTimes(hProcess,  &creationTime, &exitTime, &kernelTime, &userTime)) {
++    wrkTime.LowPart = userTime.dwLowDateTime;
++    wrkTime.HighPart = userTime.dwHighDateTime;
++    return wrkTime.QuadPart / 10000000.0;
++    }
++return 0;
++#endif
+ }
+ 
+ static double lglgetime (LGL * lgl) {
+@@ -1408,22 +1456,22 @@
+   else free (ptr);
+ }
+ 
+-static void * lglrsz (LGL * lgl, void * ptr, size_t old, size_t new) {
++static void * lglrsz (LGL * lgl, void * ptr, size_t old, size_t newSize) {
+   void * res;
+   assert (!ptr == !old);
+-  if (!ptr) return lglnew (lgl, new);
+-  if (!new) { lgldel (lgl, ptr, old); return 0; }
+-  if (old == new) return ptr;
++  if (!ptr) return lglnew (lgl, newSize);
++  if (!newSize) { lgldel (lgl, ptr, old); return 0; }
++  if (old == newSize) return ptr;
+   lgldec (lgl, old);
+   if (lgl->mem->realloc)
+-    res = lgl->mem->realloc (lgl->mem->state, ptr, old, new);
+-  else res = realloc (ptr, new);
++    res = lgl->mem->realloc (lgl->mem->state, ptr, old, newSize);
++  else res = realloc (ptr, newSize);
+   if (!res)
+-    lgldie (lgl, "out of memory reallocating %ld to %ld bytes", old, new);
++    lgldie (lgl, "out of memory reallocating %ld to %ld bytes", old, newSize);
+   assert (res);
+-  LOG (5, "reallocating %p to %p from %ld to %ld bytes", ptr, res, old, new);
+-  lglinc (lgl, new);
+-  if (new > old) memset (res + old, 0, new - old);
++  LOG (5, "reallocating %p to %p from %ld to %ld bytes", ptr, res, old, newSize);
++  lglinc (lgl, newSize);
++  if (newSize > old) memset ((unsigned char *)res + old, 0, newSize - old);
+   return res;
+ }
+ 
+@@ -1483,7 +1531,7 @@
    lgl->cbs->units.consumed.state = state;
  }
  
@@ -174,7 +504,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
                         void (*fun) (void*, int *, int), void * state) {
    REQINITNOTFORKED ();
    lglinitcbs (lgl);
-@@ -2242,8 +2242,8 @@
+@@ -2242,8 +2290,8 @@
  	o->max);
      }
      printf ("[%d]", o->dflt);
@@ -185,7 +515,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      printf (" # %s\n",o->descrp);
    }
  }
-@@ -4074,7 +4074,7 @@
+@@ -4074,7 +4122,7 @@
      if ((idx = *p)) {
        assert (1 < idx), assert (idx < lgl->elm->touched.nvars);
        pos[idx] = newpos++;
@@ -194,7 +524,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      } else mt++;
    }
    LOG (2, "flushed %d empty entries on touched stack kept %d", mt, newpos);
-@@ -4298,7 +4298,7 @@
+@@ -4298,7 +4346,7 @@
     0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91, 105, 120
  };
  
@@ -203,7 +533,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  {
  // 0  1  2  3   4   5   6   7   8   9  10  11    12   13   14   15
     0, 1, 2, 5, 10, 17, 26, 37, 50, 65, 82, 101, 122, 145, 170, 197
-@@ -4555,7 +4555,7 @@
+@@ -4555,7 +4603,7 @@
        lgl->stats->clauses.maxglue.kept++;
        scaledglue = MAXGLUE-1;
        LOG (2,
@@ -212,7 +542,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	MAXGLUE, scaledglue);
      }
      lgl->stats->clauses.scglue += scaledglue;
-@@ -6238,13 +6238,13 @@
+@@ -6238,13 +6286,13 @@
  	if (act <= NOTALIT + 1) { act = NOTALIT; ready++; } else act--;
  	assert (lglisact (act));
  	*p++ = act;
@@ -228,7 +558,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        while (*p) p++;
      }
    }
-@@ -6394,7 +6394,7 @@
+@@ -6394,7 +6442,7 @@
        for (p = c; (lit = *p); p++)
  	if (lgliphase (lgl, lit) >= 0) psm++;
        size = p - c;
@@ -237,7 +567,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
           "clause red[%d][%d] has: psm %d, act %d, size %d",
  	 glue, lidx, psm, act, size);
  
-@@ -6439,7 +6439,7 @@
+@@ -6439,7 +6487,7 @@
      assert (lidx/6 < sizes[glue]);
      maps[glue][lidx/6] = -1;
      nkeep++;
@@ -246,7 +576,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "marked clause red[%d][%d] to keep with psm %d, act %d, size %d",
        glue, lidx, pagsl->psm, pagsl->act, pagsl->size);
    }
-@@ -6506,7 +6506,7 @@
+@@ -6506,7 +6554,7 @@
      lglfitlir  (lgl, lir);
    }
    lglprt (lgl, 2,
@@ -255,7 +585,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lgl->stats->reduced.count,
      sumcollected, lglpcnt (sumcollected, lgl->stats->red.lrg),
      sumretired, lglpcnt (sumretired, lgl->stats->red.lrg));
-@@ -6823,7 +6823,7 @@
+@@ -6823,7 +6871,7 @@
  #ifndef NLGLOG
      if (red)
         LOG (4,
@@ -264,7 +594,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
           (lidx & GLUEMASK), (LGLL) trimmed);
      else LOG (4, "trimmed 'irr' by %lld", (LGLL) trimmed);
  #endif
-@@ -6881,7 +6881,7 @@
+@@ -6881,7 +6929,7 @@
      other = (r0 >> RMSHFT), other2 = r1;
      lgldrupligdelclsarg (lgl, lit, other, other2, 0);
      lglrmtcls (lgl, lit, other, other2, red);
@@ -273,7 +603,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      assert (tag == LRGCS);
      lgl->stats->otfs.sub.lrg++;
      c = lglidx2lits (lgl, red, r1);
-@@ -7068,7 +7068,7 @@
+@@ -7068,7 +7116,7 @@
    lgl->stats->mincls.min++;
    q = lgl->clause.start;
    minimized = 0;
@@ -282,7 +612,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
            glue > lgl->opts->minrecgluelim.val ||
            origsize > lgl->opts->minrecsizelim.val;
    assert (lglmtstk (&lgl->poisoned));
-@@ -7300,7 +7300,7 @@
+@@ -7300,7 +7348,7 @@
  }
  
  static void lgldrive (
@@ -291,7 +621,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    int * glueptr, int * realglueptr, int * jlevelptr) {
    int lit, jlevel, level, minlevel, maxlevel, glue, realglue, forced;
    const int * p, * soc = lgl->clause.start, * eoc = lgl->clause.top - 1;
-@@ -7356,7 +7356,7 @@
+@@ -7356,7 +7404,7 @@
           glue++;
         }
         c->used2 = 0;
@@ -300,7 +630,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        assert (realglue >= 0);
        assert (glue >= 0);
      } else {
-@@ -7990,7 +7990,7 @@
+@@ -7990,7 +8038,7 @@
    }
  
    lgldrive (lgl, "final", &uip, &glue, &realglue, &jlevel);
@@ -309,7 +639,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    if (uip && lglrsn (lgl, uip)[0]) lgl->stats->uips++;
    else if (jlevel + 1 == lgl->level) lgl->stats->decflipped++;
  
-@@ -8086,7 +8086,7 @@
+@@ -8086,7 +8134,7 @@
           for (p = q + 3; p < lgl->learned.top; p++) *q++ = *p;
           lgl->learned.top = q;
         }
@@ -318,7 +648,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        p = lgl->clause.start;
        while ((lit = *p++)) lglunmark (lgl, lit);
      }
-@@ -8102,7 +8102,7 @@
+@@ -8102,7 +8150,7 @@
        lglpushstk (lgl, &lgl->eclause, lglexport (lgl, *p));
      lglpushstk (lgl, &lgl->eclause, 0);
      LOGCLS (2, lgl->eclause.start,
@@ -327,7 +657,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        glue, lglcntstk (&lgl->clause) -1);
      lgl->stats->sync.cls.produced++;
      lgl->cbs->cls.produce.fun (lgl->cbs->cls.produce.state,
-@@ -8615,7 +8615,7 @@
+@@ -8615,7 +8663,7 @@
      if (druplig && (satisfied || eliminated || size < 2))
        lgldrupligdelclsarg (lgl, p[0], p[1], 0);
    }
@@ -336,7 +666,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      2 - (nmt || nunits),
      "[gc-%d] reconnected %d binary clauses (produced %d empty %d units)",
      lgl->stats->gcs, lglcntstk (&lgl->saved.bin)/2, nmt, nunits);
-@@ -8688,7 +8688,7 @@
+@@ -8688,7 +8736,7 @@
      if (druplig && (satisfied || eliminated || size < 3))
        lgldrupligdelclsarg (lgl, p[0], p[1], p[2], 0);
    }
@@ -345,7 +675,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      2 - (nmt || nunits), // || nbins), // NOTE would be too verbose ...
      "[gc-%d] reconnected %d ternary clauses "
      " (produced %d empty %d units %d binary)",
-@@ -8957,7 +8957,7 @@
+@@ -8957,7 +9005,7 @@
    av->bias = bias;
    lgl->stats->phase.set++;
    if (bias > 0) lgl->stats->phase.pos++; else lgl->stats->phase.neg++;
@@ -354,7 +684,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
         bias * idx, lglflt2str (lgl, pos), lglflt2str (lgl, neg));
    return bias;
  }
-@@ -9090,7 +9090,7 @@
+@@ -9090,7 +9138,7 @@
  	"[phase-count-%d] non-pos/non-neg = %d/%d = %.2f >= %.2f = %d/100",
  	lgl->stats->phase.count,
  	posrest, negrest, posrest/(double)negrest, fac/100.0, fac);
@@ -363,7 +693,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
                 posrest <= negrest &&
                 negrest/fac >= posrest/100) {
        res = 1;
-@@ -9267,7 +9267,7 @@
+@@ -9267,7 +9315,7 @@
    DEL (lgl->jwh, 2*lgl->szvars);
    lgl->jwh = jwh;
  
@@ -372,7 +702,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    for (i = 2; i < oldnvars; i++)
      if (lglisfree (lgl, i))
        avars[map[i]] = lgl->avars[i];
-@@ -9467,7 +9467,7 @@
+@@ -9467,7 +9515,7 @@
  
  static int lglmapsize (LGL * lgl) {
    int size = 0, idx;
@@ -381,7 +711,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      if (lglisfree (lgl, idx)) size++;
    LOG (1, "mapping %d remaining variables", size);
    return size;
-@@ -10201,7 +10201,7 @@
+@@ -10201,7 +10249,7 @@
      if (lglifrozen (lgl, ilit)) frozen++; else melted++;
    }
    lgl->allfrozen = !melted;
@@ -390,7 +720,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lglprt (lgl, 1, "[freezer] all %d free variables frozen", frozen);
    else
      lglprt (lgl, 1,
-@@ -11026,7 +11026,7 @@
+@@ -11026,7 +11074,7 @@
        res = !other;
      }
    }
@@ -399,7 +729,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lglunmark (lgl, *p);
    return res;
  }
-@@ -11380,7 +11380,7 @@
+@@ -11380,7 +11428,7 @@
      other = blit >> RMSHFT;
      if (lglsignedmarked (lgl, other)) continue;
      lglsignedmarknpushseen (lgl, other);
@@ -408,7 +738,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
           root, level, other);
      if (level > 1) lglsimpleliftmark (lgl, -other, level-1);
    }
-@@ -11410,7 +11410,7 @@
+@@ -11410,7 +11458,7 @@
        LOG (2, "found equivalent literals %d and %d", root, other);
        lglpushstk (lgl, &lgl->sprb->eqs, root);
        lglpushstk (lgl, &lgl->sprb->eqs, other);
@@ -417,7 +747,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      if (level > 1) lglsimpleliftcollect (lgl, root, -other, level-1);
    }
  }
-@@ -11426,7 +11426,7 @@
+@@ -11426,7 +11474,7 @@
    lglsignedmarknpushseen (lgl, -root);
    lglsimpleliftmark (lgl, root, lgl->opts->prbsimpleliftdepth.val);
    count = lglcntstk (&lgl->seen);
@@ -426,7 +756,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
         count, root);
    if (!count) return;
    lglsimpleliftcollect (lgl, root, -root, lgl->opts->prbsimpleliftdepth.val);
-@@ -11562,11 +11562,11 @@
+@@ -11562,11 +11610,11 @@
    if (lgl->opts->prbsimplertc.val || lgl->opts->prbrtc.val) {
      lgl->limits->prb.steps = LLMAX;
      lglprt (lgl, 1,
@@ -440,7 +770,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        limit = lgl->opts->prbsimplemineff.val;
      if (lgl->opts->prbsimplemaxeff.val >= 0 &&
          limit > lgl->opts->prbsimplemaxeff.val)
-@@ -11677,7 +11677,7 @@
+@@ -11677,7 +11725,7 @@
    assert (abs (a) != abs (b));
    assert (!lglval (lgl, a));
    assert (!lglval (lgl, b));
@@ -449,7 +779,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    lglpushstk (lgl, &lgl->clause, a);
    lglpushstk (lgl, &lgl->clause, b);
    lglpushstk (lgl, &lgl->clause, 0);
-@@ -11703,7 +11703,7 @@
+@@ -11703,7 +11751,7 @@
    assert (abs (a) != abs (b));
    assert (abs (a) != abs (c));
    assert (abs (b) != abs (c));
@@ -458,7 +788,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    lglpushstk (lgl, &lgl->clause, a);
    lglpushstk (lgl, &lgl->clause, b);
    lglpushstk (lgl, &lgl->clause, c);
-@@ -11739,7 +11739,7 @@
+@@ -11739,7 +11787,7 @@
    }
    if (wait >= 1 && lgl->opts->block.val && !lgl->blkrtc) {
      if (str)
@@ -467,7 +797,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"[%s-waiting] on blocked clause elimination to be completed", str);
      return 1;
    }
-@@ -12079,8 +12079,8 @@
+@@ -12079,8 +12127,8 @@
    Flt reduced = *reducedptr, inc = lglflt (-size, 1);
    reduced = lgladdflt (reduced, inc);
    LOG (2, "reduced score incremented to %s from %s by %s (size %d)",
@@ -478,7 +808,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
         lglflt2str (lgl, inc),
         size);
    *reducedptr = reduced;
-@@ -12148,7 +12148,7 @@
+@@ -12148,7 +12196,7 @@
  	if (tag == TRNCS) {
  	  other = blit >> RMSHFT;
  	  other2 = *p;
@@ -487,7 +817,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	      lglval (lgl, other2) > 0) skip = 1;
  	  else {
  	    if (lgltlval (lgl, other) > 0 ||
-@@ -12185,8 +12185,8 @@
+@@ -12185,8 +12233,8 @@
  	    size++;
  	    if ((val = lgltlval (lgl, other)) < 0) {
  	      if (reducedptr && -val < litval) firstfalse = 0;
@@ -498,7 +828,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	    }
  	    numnonfalse++;
  	    if (implied == NOTALIT) continue;
-@@ -12196,7 +12196,7 @@
+@@ -12196,7 +12244,7 @@
  	}
  	lglclnstk (&lgl->clause);
  	if (skip) continue;
@@ -507,7 +837,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	  lglincreducedptr (lgl, reducedptr, size);
  	if (trivial) continue;
  	if (!numnonfalse) { assert (!implied); return 0; }
-@@ -12237,7 +12237,7 @@
+@@ -12237,7 +12285,7 @@
      lglpushstk (lgl, a, 0);
      if (lgl->mt || !lglisfree (lgl, lit)) return;
      if (lgltlval (lgl, -lit) > 0 ||
@@ -516,7 +846,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	 !lgltlbcp (lgl, a, r ? &reduced : 0, lit))) {
        int tmp;
        LOG (1, "tree-look failed literal %d", lit);
-@@ -12288,7 +12288,7 @@
+@@ -12288,7 +12336,7 @@
        limit = lgl->opts->treelookmaxeff.val;
      assert (lgl->tlk);
      szpen = lglszpen (lgl);
@@ -525,7 +855,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        lgl->limits->lkhdpen : lgl->limits->prb.treelook.pen;
      limit >>= (pen = szpen + lastpen);
      irrlim = (lgl->stats->irr.clauses.cur/4) >> szpen;
-@@ -12298,12 +12298,12 @@
+@@ -12298,12 +12346,12 @@
      limit *= boost;
      if (lgl->opts->irrlim.val && limit < irrlim) {
        limit = irrlim;
@@ -541,7 +871,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"[treelook-%d] limit %lld penalty %d = %d + %d boost %d",
  	lgl->stats->prb.treelook.count, (LGLL) limit,
  	pen, lastpen, szpen, boost);
-@@ -12538,7 +12538,7 @@
+@@ -12538,7 +12586,7 @@
  	lgl->stats->prb.treelook.count,
  	remvarsall, lglpcnt (remvarsall, lglrem (lgl)));
      } else {
@@ -550,7 +880,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
          "[treelook-%d] fully completed tree based probing%s",
  	lgl->stats->prb.treelook.count, lkhdresptr ? " in look-ahead" : "");
        for (idx = 2; idx < lgl->nvars; idx++)
-@@ -12552,7 +12552,7 @@
+@@ -12552,7 +12600,7 @@
    lglrelftk (lgl, &reduced);
    lglrelstk (lgl, &assignment);
    lglrelstk (lgl, &lgl->tlk->seen);
@@ -559,7 +889,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lgltlsetlkhd (lgl, lkhdresptr, remlits || notfullyscheduled);
    if (lgl->tlk->lkhd) {
      lgl->tlk->lkhd -= lgl->nvars;
-@@ -12650,7 +12650,7 @@
+@@ -12650,7 +12698,7 @@
      ext = lglelit2ext (lgl, elit);
      assert (!ext->eliminated && !ext->blocking);
      lglprt (lgl, 1,
@@ -568,7 +898,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        res, (LGLL) best);
      if (ext->melted) {
        ext->melted = 0;
-@@ -12766,7 +12766,7 @@
+@@ -12766,7 +12814,7 @@
      ext = lglelit2ext (lgl, elit);
      assert (!ext->eliminated && !ext->blocking);
      lglprt (lgl, 1,
@@ -577,7 +907,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        res, (LGLL) best);
      if (ext->melted) {
        ext->melted = 0;
-@@ -12840,7 +12840,7 @@
+@@ -12840,7 +12888,7 @@
    if (lgl->opts->prbasicrtc.val || lgl->opts->prbrtc.val) {
      lgl->limits->prb.steps = LLMAX;
      lglprt (lgl, 1,
@@ -586,7 +916,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        lgl->stats->prb.basic.count);
    } else {
      limit = (lgl->opts->prbasicreleff.val*lglvisearch (lgl))/1000;
-@@ -12947,14 +12947,14 @@
+@@ -12947,14 +12995,14 @@
      if (lgl->stats->prb.basic.steps >= lgl->limits->prb.steps) {
        while (!lglmtstk (&probes))
  	if((idx = lglpopstk (&probes)) && lglisfree (lgl, idx)) remprobes++;
@@ -603,7 +933,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	      lgl->opts->prbasicroundlim.val);
      } else if (lgl->stats->prb.basic.failed > oldfailed ||
                 lgl->stats->prb.basic.lifted > oldlifted ||
-@@ -13955,7 +13955,7 @@
+@@ -13955,7 +14003,7 @@
  	if (lgl->simpleprobing && lgl->opts->prbsimple.val >= 3)
  	  lglwrktouch (lgl, d[0]),
  	  lglwrktouch (lgl, d[1]),
@@ -612,7 +942,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	if (druplig) lgldrupligaddclsarg (lgl, REDCS, d[0], d[1], d[2], 0);
        }
        if (lgl->dense && !red) {
-@@ -15134,7 +15134,7 @@
+@@ -15134,7 +15182,7 @@
  }
  
  static int lgl2manyoccs4elm (LGL * lgl, int lit) {
@@ -621,7 +951,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
             lglfactor (lgl, lgl->opts->elmocclim.val, lgl->stats->elm.count);
  }
  
-@@ -15435,12 +15435,12 @@
+@@ -15435,12 +15483,12 @@
      irrlim = (lgl->stats->irr.clauses.cur/2) >> szpen;
      if (lgl->opts->irrlim.val && limit < irrlim) {
        limit = irrlim;
@@ -636,7 +966,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"[block-%d] limit of %lld steps penalty %d = %d + %d",
  	lgl->stats->blk.count, (LGLL) limit,
  	pen, lgl->limits->blk.pen, szpen);
-@@ -15712,7 +15712,7 @@
+@@ -15712,7 +15760,7 @@
  }
  
  static int lglcceclause (LGL * lgl,
@@ -645,7 +975,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  			 int igntag,
  			 int cce) {
    int other, res, nextala, nextcla, lit, blit, tag, other2, i, j, n;
-@@ -15764,12 +15764,12 @@
+@@ -15764,12 +15812,12 @@
  	    if (c[0] == lit && c[1] == other) continue;
  	    if (c[1] == lit && c[0] == other) continue;
  	  }
@@ -660,7 +990,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	       -other, lit, other);
  	  lglsignedmark (lgl, -other);
  	  lglpushstk (lgl, &lgl->seen, -other);
-@@ -15793,7 +15793,7 @@
+@@ -15793,7 +15841,7 @@
  	    res = 1;
  	  } else {
  	    assert (!lglmarked (lgl, other2));
@@ -669,7 +999,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	         "ALA %d through ternary clause %d %d %d (1st case)",
  		 -other2, lit, other, other2);
  	    lglsignedmark (lgl, -other2);
-@@ -15801,7 +15801,7 @@
+@@ -15801,7 +15849,7 @@
  	  }
  	} else if (lglsignedmarked (lgl, other2)) {
  	  assert (!lglmarked (lgl, other));
@@ -678,7 +1008,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	      "ALA %d through ternary clause %d %d %d (2nd case)",
  	      -other, lit, other, other2);
  	  lglsignedmark (lgl, -other);
-@@ -15872,7 +15872,7 @@
+@@ -15872,7 +15920,7 @@
  	    lglpushstk (lgl, &lgl->cce->cla, other);
  	  if (!lglsignedmarked (lgl, other2))
  	    lglpushstk (lgl, &lgl->cce->cla, other2);
@@ -687,7 +1017,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	  assert (tag == OCCS);
  	  d = lglidx2lits (lgl, 0, other);
  	  assert (d != c);
-@@ -15925,7 +15925,7 @@
+@@ -15925,7 +15973,7 @@
  	}
  	if ((lgl->cce->cla.top = r) == lgl->cce->cla.start + old) break;
        }
@@ -696,7 +1026,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      if (lglcntstk (&lgl->cce->cla) > old) {
        nextcla = 0;
        lglpushstk (lgl, &lgl->cce->extend, lit);
-@@ -15951,7 +15951,7 @@
+@@ -15951,7 +15999,7 @@
      lgl->stats->cce.ate++;
    } else if (lgl->opts->block.val && cce >= 2) {
     for (p = lgl->cce->cla.start; p < lgl->cce->cla.top; p++)
@@ -705,7 +1035,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
         break;
      if (res) {
        LOGCLS (CCELOGLEVEL, c, "ABCE on %d clause", other);
-@@ -16141,7 +16141,7 @@
+@@ -16141,7 +16189,7 @@
    lgldense (lgl, 1);
    oldsteps = lgl->stats->cce.steps;
    elmlarge = 0;
@@ -714,7 +1044,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
           lenlim > 4 &&
  	 !lglterminate (lgl) &&
  	 lgl->limits->cce.steps > lgl->stats->cce.steps) {
-@@ -16173,7 +16173,7 @@
+@@ -16173,7 +16221,7 @@
           p < lidcs.top &&
  	 !lgl->mt &&
  	 !lglterminate (lgl) &&
@@ -723,7 +1053,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	 p++) {
        int lidx = *p;
        c = lgl->irr.start + lidx;
-@@ -16197,7 +16197,7 @@
+@@ -16197,7 +16245,7 @@
        "[cce-%d-%d] completed large round (%s)",
        lgl->stats->cce.count, round, lglcce2str (cce));
    else
@@ -732,7 +1062,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "[cce-%d-%d] incomplete large round (%s)",
        lgl->stats->cce.count, round, lglcce2str (cce));
    deltasteps = lgl->stats->cce.steps - oldsteps;
-@@ -16229,13 +16229,13 @@
+@@ -16229,13 +16277,13 @@
        "[cce-%d-%d] completed small round (%s)",
        lgl->stats->cce.count, round, lglcce2str (cce));
    else
@@ -748,7 +1078,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"[cce-%d-%d] completed small and large (%s)",
  	lgl->stats->cce.count, round, lglcce2str (cce));
      }
-@@ -16744,7 +16744,7 @@
+@@ -16744,7 +16792,7 @@
    }
    lglprt (lgl, 1,
      "[elim-%d-%d] eliminated %d variables %.0f%% in round %d in %lld steps",
@@ -757,7 +1087,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lglpcnt (eliminated, lgl->nvars - 2), lgl->elm->round, (LGLL) steps);
    if (oldonotsched != newdonotsched) lgl->donotsched = newdonotsched;
    lglbackward (lgl, &subsumed, &strengthened, steps, &bkwdcompleted);
-@@ -17710,7 +17710,7 @@
+@@ -17710,7 +17758,7 @@
  		if (val > 0) break;
  		val = lglmarked (lgl, other);
  		if (val < 0) {
@@ -766,7 +1096,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  		  pivot = other;
  		} else if (val > 0) {
  		   if (++pos > 2) break;
-@@ -18589,7 +18589,7 @@
+@@ -18589,7 +18637,7 @@
    if (ntrnred) LOG (2, "unhiding %d tautological ternary clauses", ntrnred);
    if (ntrnstr) LOG (2, "unhiding %d strengthened ternary clauses", ntrnstr);
    if (ntrnunits) LOG (2, "unhiding %d units in ternary clauses", ntrnunits);
@@ -775,7 +1105,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "unhidden %d hyper binary resolution from ternary clauses", ntrnhbrs);
    return 1;
  }
-@@ -19425,9 +19425,9 @@
+@@ -19425,9 +19473,9 @@
    for (p = c; (lit = *p); p++) {
      if ((val = lglval (lgl, lit)) > 0) return 0;
      if (val < 0) continue;
@@ -787,7 +1117,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      }
      if (!max || abs (max) < abs (lit)) max = lit;
      lglpushstk (lgl, &lgl->gauss->xors, lit);
-@@ -19482,7 +19482,7 @@
+@@ -19482,7 +19530,7 @@
  }
  
  static int lglgaussextractxor (LGL * lgl, const int * c) {
@@ -796,7 +1126,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    if (lglgaussextractexactly1 (lgl, c)) res = 1;
    else {
      int old = lglcntstk (&lgl->gauss->xors), res;
-@@ -19497,7 +19497,7 @@
+@@ -19497,7 +19545,7 @@
    int cls[4], blit, tag, other, other2;
    const int * w, * eow, * p;
    HTS * hts;
@@ -805,7 +1135,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      return 0;
    if (lglval (lgl, lit) > 0) return 1;
    hts = lglhts (lgl, lit);
-@@ -19585,7 +19585,7 @@
+@@ -19585,7 +19633,7 @@
        connected++;
      }
    }
@@ -814,7 +1144,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
       "[gauss-%d] connected %d occurrences of %d variables (average %.1f)",
        lgl->stats->gauss.count, connected, vars, lglavg (connected, vars));
  }
-@@ -19650,7 +19650,7 @@
+@@ -19650,7 +19698,7 @@
    start = lgl->gauss->order.start + lgl->gauss->next;
    ADDSTEPS (gauss.steps.elim, rest);
    SORT (int, start, rest, LGLCMPGAUSS);
@@ -823,7 +1153,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
       "[gauss-%d] sorted %d remaining variables",
        lgl->stats->gauss.count, rest);
  }
-@@ -19760,7 +19760,7 @@
+@@ -19760,7 +19808,7 @@
    const int * p;
    if (lgl->gauss->garbage < count/2 + 10000) return;
    lgl->stats->gauss.gcs++;
@@ -832,7 +1162,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
       "[gauss-%d] collecting %d garbage out of %d",
       lgl->stats->gauss.count, lgl->gauss->garbage, count);
    lglgaussdisconnect (lgl);
-@@ -19873,7 +19873,7 @@
+@@ -19873,7 +19921,7 @@
      size = lglcntstk (&lgl->clause);
      if (!size && !rhs) continue;
      if (!size && rhs) {
@@ -841,7 +1171,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
                "gauss exporting inconsistent equation");
        return 0;
      }
-@@ -19902,7 +19902,7 @@
+@@ -19902,7 +19950,7 @@
        exported |= lglgaussexp3 (lgl, -a, b, -c);
        exported |= lglgaussexp3 (lgl, -a, -b, c);
        if (exported) {
@@ -850,7 +1180,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	     a, b, c);
  	lgl->stats->gauss.trneqs++;
        }
-@@ -19979,7 +19979,7 @@
+@@ -19979,7 +20027,7 @@
      lglprt (lgl, 1, "[gauss-%d] proved unsatisfiability",
        lgl->stats->gauss.count);
    else {
@@ -859,7 +1189,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "[gauss-%d] exported %d unary, %d binary and %d ternary equations",
        lgl->stats->gauss.count, units, equivs, trneqs);
    }
-@@ -20120,7 +20120,7 @@
+@@ -20120,7 +20168,7 @@
    return res;
  }
  
@@ -868,7 +1198,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
                         const int * lits,
  		       int bound, int * subsumed_ptr) {
    Card * card = lgl->card;
-@@ -20235,7 +20235,7 @@
+@@ -20235,7 +20283,7 @@
    }
  #endif
    LOG (CARDLOGLEVEL,
@@ -877,7 +1207,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      lglcntstk (&lgl->clause) - elim, elim, div, divsame ? "all" : "some");
    r = lgl->clause.start;
    for (p = r; p < lgl->clause.top; p++) {
-@@ -20285,7 +20285,7 @@
+@@ -20285,7 +20333,7 @@
        "trivial resolved cardinality constraint %d >=", b);
      assert (!addcard);
    } else if (len > cardmaxlen) {
@@ -886,7 +1216,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "length %d exceeds limit %d of resolved cardinality constraint %d >=",
        len, cardmaxlen, b);
    } else {
-@@ -20293,9 +20293,9 @@
+@@ -20293,9 +20341,9 @@
      assert (0 < b);
      LOGCLS (CARDLOGLEVEL, lgl->clause.start,
        "resolved cardinality constraint %d >=", b);
@@ -898,7 +1228,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	   lglfactor (lgl,
  	     lgl->stats->card.count, lgl->opts->cardexpam1.val))) {
        LOGCLS (CARDLOGLEVEL, lgl->clause.start,
-@@ -20386,7 +20386,7 @@
+@@ -20386,7 +20434,7 @@
    Stk * elim;
    lglcardresched (lgl);
    elim = &lgl->card->elim;
@@ -907,7 +1237,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
           !lglmtstk (elim) &&
           !lglterminate (lgl) &&
           lgl->limits->card.steps >= INCSTEPS (card.steps))
-@@ -20476,7 +20476,7 @@
+@@ -20476,7 +20524,7 @@
        card->atmost1.start[j] = other;
      }
  #ifndef NDEBUG
@@ -916,7 +1246,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        assert (lglhts (lgl, -lglpeek (&card->atmost1, j))->count <=
                lglhts (lgl, -lglpeek (&card->atmost1, j+1))->count);
  #endif
-@@ -20577,7 +20577,7 @@
+@@ -20577,7 +20625,7 @@
    if (!ignused) lglcardreloccs (lgl);
  
    if (delta.cnt)
@@ -925,7 +1255,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "[card-%d] found %d at-most-one constraints of average size %.1f",
        lgl->stats->card.count, delta.cnt, lglavg (delta.sum, delta.cnt));
    else
-@@ -20763,7 +20763,7 @@
+@@ -20763,7 +20811,7 @@
    if (!ignused) lglcardreloccs (lgl);
  
    if (delta.cnt)
@@ -934,7 +1264,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "[card-%d] found %d at-most-two constraints of average size %.1f",
        lgl->stats->card.count, delta.cnt, lglavg (delta.sum, delta.cnt));
    else
-@@ -20937,7 +20937,7 @@
+@@ -20937,7 +20985,7 @@
    lglrelstk (lgl, &card->units);
    if (!lgl->mt) {
      if (res)
@@ -943,7 +1273,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"[card-%d] found %d units", lgl->stats->card.count, res);
      else
        lglprt (lgl, 1, "[card-%d] no units found", lgl->stats->card.count);
-@@ -20981,7 +20981,7 @@
+@@ -20981,7 +21029,7 @@
  	"[card-%d] exported %d binary clauses, %.1f per/constraint",
          lgl->stats->card.count, exported, lglavg (exported, genused));
      } else
@@ -952,7 +1282,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
          "[card-%d] no at-most-one constraints generated",
          lgl->stats->card.count);
    }
-@@ -21216,7 +21216,7 @@
+@@ -21216,7 +21264,7 @@
        }
      }
    }
@@ -961,7 +1291,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "[bca-%d] %d out of %d literals in large redundant clauses %.0f%%",
      lgl->stats->bca.count,
      inred, 2*(lgl->nvars-1), lglpcnt (inred, 2*(lgl->nvars-1)));
-@@ -21228,7 +21228,7 @@
+@@ -21228,7 +21276,7 @@
      av = lglavar (lgl, idx);
      for (bit = 1; bit <= 2; bit++) if (!(av->inred & bit)) usable++;
    }
@@ -970,7 +1300,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "[bca-%d] %d out of %d literals actually usable %.0f%%",
      lgl->stats->bca.count,
      usable, 2*(lgl->nvars-1), lglpcnt (usable, 2*(lgl->nvars-1)));
-@@ -21247,7 +21247,7 @@
+@@ -21247,7 +21295,7 @@
  DONE:
    added = lgl->stats->bca.added - oldadded;
    lglprt (lgl, 1, "[bca-%d] added %d blocked clauses in %lld steps",
@@ -979,7 +1309,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	  (LGLL) lgl->stats->bca.steps - oldsteps);
    assert (lgl->bcaing);
    lgl->bcaing = 0;
-@@ -21265,7 +21265,7 @@
+@@ -21265,7 +21313,7 @@
    return lgl->opts->transred.val;
  }
  
@@ -988,7 +1318,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    if (lgldelaying (lgl, "unhide", &lgl->limits->unhd.del.rem)) return 0;
    if (lglwaiting (lgl, "unhide", lgl->opts->unhidewait.val)) return 0;
    return lgl->opts->unhide.val;
-@@ -21279,7 +21279,7 @@
+@@ -21279,7 +21327,7 @@
    if (lgldelaying (lgl, "block", &lgl->limits->blk.del.rem)) return 0;
    if (lgl->opts->blockwait.val && lgl->wait &&
        (!lgl->opts->elim.val || !lgl->elmrtc)) {
@@ -997,7 +1327,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "[block-waiting] for bounded variable elimination to be completed");
      return 0;
    }
-@@ -21444,19 +21444,19 @@
+@@ -21444,19 +21492,19 @@
    return 1;
  }
  
@@ -1020,7 +1350,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    if (lgldelaying (lgl, "gauss", &lgl->limits->gauss.del.rem)) return 0;
    if (lglwaiting (lgl, "gauss", lgl->opts->gausswait.val)) return 0;
    if (!lglsmallirr (lgl)) return 0;
-@@ -21641,7 +21641,7 @@
+@@ -21641,7 +21689,7 @@
        lgl->stats->locs.count);
    } else {
      limit = (lgl->opts->locsreleff.val*lglvisearch (lgl))/100;
@@ -1029,7 +1359,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        limit = lgl->opts->locsmineff.val;
      if (lgl->opts->locsmaxeff.val >= 0 &&
          limit > lgl->opts->locsmaxeff.val)
-@@ -22016,7 +22016,7 @@
+@@ -22016,7 +22064,7 @@
  	lgl->stats->sweep.decs++;
  	continue;
        }
@@ -1038,7 +1368,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"sweep typed %d assumption %d score %s",
  	lgl->swp->type, a, lglscr2str (lgl, lglqvar (lgl, a)->score));
        if (!bval) {
-@@ -22026,7 +22026,7 @@
+@@ -22026,7 +22074,7 @@
  	lgl->stats->sweep.decs++;
  	continue;
        }
@@ -1047,7 +1377,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	"sweep typed %d assumption %d score %s",
  	lgl->swp->type, b, lglscr2str (lgl, lglqvar (lgl, b)->score));
        assert (lglval (lgl, a) > 0), assert (lglval (lgl, b) < 0);
-@@ -22274,7 +22274,7 @@
+@@ -22274,7 +22322,7 @@
    if (lgl->opts->sweeprtc.val > 1) {
      lgl->limits->sweep.steps = LLMAX;
      lglprt (lgl, 1,
@@ -1056,7 +1386,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        lgl->stats->sweep.count);
    } else if (lgl->opts->sweeprtc.val ||
  	     lgl->opts->prbrtc.val ||
-@@ -22284,7 +22284,7 @@
+@@ -22284,7 +22332,7 @@
      limit = 4000000000ll;
      lgl->limits->sweep.steps = lgl->stats->sweep.steps + limit;
      lglprt (lgl, 1,
@@ -1065,7 +1395,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        lgl->stats->sweep.count, (LGLL) limit);
    } else {
      limit = (lgl->opts->sweepreleff.val*lglvisearch (lgl))/1000;
-@@ -22371,7 +22371,7 @@
+@@ -22371,7 +22419,7 @@
    round = 0;
    forgive = lgl->opts->sweepforgive.val;
  RESTART:
@@ -1074,7 +1404,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    lgl->stats->sweep.rounds++;
    oldrem = lglrem (lgl);
    oldfailed = lgl->stats->sweep.failed;
-@@ -22520,7 +22520,7 @@
+@@ -22520,7 +22568,7 @@
      else pos++;
      scores[sum++] = q->score;
    }
@@ -1083,7 +1413,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "[score-distribution-%d] "
      "%d pos %.2f%%, %d min %.2f%%, %d zero %.2f%%",
      lgl->stats->simp.count,
-@@ -22532,7 +22532,7 @@
+@@ -22532,7 +22580,7 @@
    for (idx = 0; idx < sum; idx++)
      if (!idx || lglscrcmp (lgl, scores[idx-1], scores[idx])) diff++;
    DEL (scores, lgl->nvars);
@@ -1092,7 +1422,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "[score-distribution-%d] "
      "%d different %.2f%% out of total %d variables",
      lgl->stats->simp.count,
-@@ -22597,7 +22597,7 @@
+@@ -22597,7 +22645,7 @@
      else if (len <= 10000) res.c4++;
      else lrg++;
    }
@@ -1101,7 +1431,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
            res.c1 + res.c2 + res.c3 + res.c4 + lrg == res.cc);
    return res;
  }
-@@ -22792,7 +22792,7 @@
+@@ -22792,7 +22840,7 @@
    if (red <= 100) {
      if (red > 0) {
        switch (lgl->opts->simpcintincdiv.val) {
@@ -1110,7 +1440,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  	  if (red >= 50) div = 4;
  	  else if (red >= 20) div = 3;
  	  else if (red >= 10) div = 2;
-@@ -22800,7 +22800,7 @@
+@@ -22800,7 +22848,7 @@
  	case 2: div = red/2 + 1; break;
  	case 1: div = red/1 + 1; break;
  	case 0:
@@ -1119,7 +1449,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
            assert (!lgl->opts->simpcintincdiv.val);
  	  break;
        }
-@@ -23516,7 +23516,7 @@
+@@ -23516,7 +23564,7 @@
    ABORTIF (lgl->mt, "can not clone assignment into inconsistent manager");
    ABORTIF (!from, "uninitialized 'from' solver");
    ABORTIF (!(from->state & (SATISFIED | EXTENDED)),
@@ -1128,7 +1458,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    ABORTIF (from->maxext != lgl->maxext,
      "can not clone assignments for different sets of variables");
    if (!(from->state & EXTENDED)) lglextend (from);
-@@ -23527,7 +23527,7 @@
+@@ -23527,7 +23575,7 @@
      extlgl = lglelit2ext (lgl, eidx);
      if (!extlgl->imported) continue;
      extfrom = lglelit2ext (from, eidx);
@@ -1137,7 +1467,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        "can not clone assignment of literal imported only by 'to'");
      assert (extfrom->val == 1 || extfrom->val == -1);
      lgleassign (lgl, extfrom->val*eidx);
-@@ -23703,7 +23703,7 @@
+@@ -23703,7 +23751,7 @@
    } else {
      decs = lgl->stats->decisions;
      lim->decs = (decs >= LLMAX - dlim) ? LLMAX : decs + dlim;
@@ -1146,7 +1476,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
              (LGLL) lim->decs, (LGLL) decs);
    }
    if ((clim = lgl->opts->clim.val) < 0) {
-@@ -23712,7 +23712,7 @@
+@@ -23712,7 +23760,7 @@
    } else {
      confs = lgl->stats->confs;
      lim->confs = (confs >= LLMAX - clim) ? LLMAX : confs + clim;
@@ -1155,7 +1485,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
              (LGLL) lim->confs, (LGLL) confs);
    }
    if ((plim = lgl->opts->plim.val) < 0) {
-@@ -23723,7 +23723,7 @@
+@@ -23723,7 +23771,7 @@
      props = lgl->stats->props.search;
      lim->props = (props >= LLMAX - plim) ? LLMAX : props + plim;
      lglprt (lgl, 1,
@@ -1164,7 +1494,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
        (LGLL) lim->props, (LGLL) props);
    }
    if ((delay = lgl->opts->simpinitdelay.val) > 0) {
-@@ -23734,9 +23734,9 @@
+@@ -23734,9 +23782,9 @@
        lglprt (lgl, 1,
  	"[limits] simplification delayed by %lld to %lld conflicts (hard %lld)",
  	(LGLL) delay, (LGLL) lgl->limits->simp.confs, (LGLL) lgl->limits->simp.hard);
@@ -1176,7 +1506,50 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
             "[limits] simplification not delayed since 'simpdelay' zero");
  }
  
-@@ -24362,7 +24362,7 @@
+@@ -24200,7 +24248,7 @@
+      sadded, sreduced, sretired, sforcing, sresolved, sconflicts);
+ }
+ 
+-typedef struct TN { double t; const char * n; } TN;
++typedef struct _TN { double t; const char * n; } TN;
+ 
+ static int lglcmptn (const TN * a, const TN * b) {
+   if (a->t > b->t) return -1;
+@@ -24222,7 +24270,7 @@
+   int i, ntns, nimportant, nprint;
+   Times * ts = lgl->times;
+   const int sztns = 100;
+-  TN tns[sztns];
++  TN tns[100];
+   double sum;
+ 
+   ntns = 0;
+@@ -24302,7 +24350,7 @@
+ 
+   assert (lgl->opts->verbose.val >= 0);
+   simp = ts->preprocessing + ts->inprocessing;
+-  if (!lgl->opts->verbose.val || !lgl->opts->profile.val) goto SHORT;
++  if (!lgl->opts->verbose.val || !lgl->opts->profile.val) goto SHORT_;
+ 
+   lglprofsort (lgl);
+ 
+@@ -24334,7 +24382,7 @@
+     lglpcnt (ts->inprocessing, t),
+     lglpcnt (ts->inprocessing, simp));
+   lglprs (lgl, "==================================");
+-SHORT:
++SHORT_:
+   lglprs (lgl, "%8.3f %3.0f%% simplifying", simp, lglpcnt (simp, t));
+   if (lgl->stats->calls.lkhd)
+     lglprs (lgl, "%8.3f %3.0f%% lookahead",
+@@ -24356,13 +24404,13 @@
+   s = lgl->stats;
+   t = lgl->times->all;
+   p = s->props.search + s->props.simp + s->props.lkhd;
+-  if (!lgl->opts->verbose.val) goto SHORT;
++  if (!lgl->opts->verbose.val) goto SHORT_;
+ 
+   lglprs (lgl, "agil: %.2f%% agility",
      100.0 * (s->agility / (double) (1ll << 32)));
  
    sum = s->prb.basic.ate.trnr + s->prb.basic.ate.lrg;
@@ -1185,7 +1558,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      "bate: %lld basic ate = %d trn %.0f%% + %d lrg %.0f%% in %d updates",
      sum, s->prb.basic.ate.trnr, lglpcnt (s->prb.basic.ate.trnr, sum),
      s->prb.basic.ate.lrg, lglpcnt (s->prb.basic.ate.lrg, sum),
-@@ -24472,7 +24472,7 @@
+@@ -24472,7 +24520,7 @@
    lglprs (lgl,
      "deco: %lld decision-only clauses %.0f%%, %.0f%% reduction",
      s->mincls.deco, lglpcnt (s->mincls.deco, s->clauses.learned),
@@ -1194,7 +1567,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  
    lglprs (lgl,
      "decs: %lld total, %lld rnd %.3f%%, %lld heap %.3f%, %lld queue %.3f%%",
-@@ -24664,7 +24664,7 @@
+@@ -24664,7 +24712,7 @@
      (LGLL) s->quatres.self1,
      (LGLL) s->quatres.self2,
      (LGLL) s->quatres.dup);
@@ -1203,7 +1576,7 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    lglprs (lgl,
      "queu: %lld flushed, %lld sorted, %lld decisions %.3f%%",
      (LGLL) s->queue.flushed, (LGLL) s->queue.sorted,
-@@ -24841,7 +24841,7 @@
+@@ -24841,7 +24889,7 @@
  
    lglprs (lgl,
      "tops: %d fixed %.0f%%, %d its, %.2f confs/it",
@@ -1212,10 +1585,19 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
      s->its.count, lglavg (s->confs, s->its.count));
  
    lglprs (lgl,
-diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
---- solvers/lingeling/lglib.h	2016-04-27 21:01:55.000000000 +0100
-+++ solvers/lgl/lglib.h	2019-03-16 12:30:32.000000000 +0000
-@@ -20,6 +20,10 @@
+@@ -24941,7 +24989,7 @@
+   }
+ #endif
+ 
+-SHORT:
++SHORT_:
+   lglprof (lgl);
+   lglprsline (lgl);
+   lglprs (lgl,
+diff -Naur build/solvers/lingeling/lglib.h solvers/lingeling/lglib.h
+--- build/solvers/lingeling/lglib.h	2016-04-27 22:01:55.000000000 +0200
++++ solvers/lingeling/lglib.h	2019-12-02 08:41:17.898861000 +0100
+@@ -20,6 +20,14 @@
  
  //--------------------------------------------------------------------------
  
@@ -1223,10 +1605,14 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
 +extern "C" {
 +#endif
 +
++#ifdef _MSC_VER
++typedef __int64 int64_t;
++#endif
++
  LGL * lglinit (void);				// constructor
  void lglrelease (LGL *);			// destructor
  
-@@ -338,4 +342,8 @@
+@@ -338,4 +346,8 @@
  void lglsetmsglock (LGL *, void (*lock)(void*), void (*unlock)(void*), void*);
  void lglsetime (LGL *, double (*time)(void));
  
@@ -1235,9 +1621,9 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
 +#endif
 +
  #endif
-diff -Naur solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
---- solvers/lingeling/lglopts.h	2016-04-27 21:01:55.000000000 +0100
-+++ solvers/lgl/lglopts.h	2019-03-16 12:30:32.000000000 +0000
+diff -Naur build/solvers/lingeling/lglopts.h solvers/lingeling/lglopts.h
+--- build/solvers/lingeling/lglopts.h	2016-04-27 22:01:55.000000000 +0200
++++ solvers/lingeling/lglopts.h	2019-12-02 08:41:17.981821600 +0100
 @@ -32,8 +32,16 @@
  
  /*------------------------------------------------------------------------*/

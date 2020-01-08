@@ -1,6 +1,6 @@
-diff -Naur solvers/maplechrono/Makefile solvers/chrono/Makefile
---- solvers/maplechrono/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/chrono/Makefile	2019-03-16 09:43:17.000000000 +0000
+diff -Naur build/solvers/maplechrono/Makefile solvers/maplechrono/Makefile
+--- build/solvers/maplechrono/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/maplechrono/Makefile	2019-12-02 08:41:18.170189900 +0100
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -41,9 +41,9 @@ diff -Naur solvers/maplechrono/Makefile solvers/chrono/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
---- solvers/maplechrono/core/Solver.cc	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/core/Solver.cc	2019-03-19 09:31:51.000000000 +0000
+diff -Naur build/solvers/maplechrono/core/Solver.cc solvers/maplechrono/core/Solver.cc
+--- build/solvers/maplechrono/core/Solver.cc	2019-12-03 22:14:23.384618200 +0100
++++ solvers/maplechrono/core/Solver.cc	2019-12-02 08:41:18.182878000 +0100
 @@ -1,14 +1,14 @@
  /***************************************************************************************[Solver.cc]
  MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
@@ -1185,7 +1185,14 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          }
      }
  }
-@@ -2070,14 +2137,14 @@
+@@ -2065,19 +2132,21 @@
+ // NOTE: assumptions passed in member-variable 'assumptions'.
+ lbool Solver::solve_()
+ {
++#ifndef _MSC_VER
+     signal(SIGALRM, SIGALRM_switch);
+     alarm(2500);
++#endif
  
      model.clear();
      conflict.clear();
@@ -1202,7 +1209,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  
      if (verbosity >= 1){
          printf("c ============================[ Search Statistics ]==============================\n");
-@@ -2090,46 +2157,51 @@
+@@ -2090,46 +2159,51 @@
  
      VSIDS = true;
      int init = 10000;
@@ -1280,7 +1287,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          ok = false;
  
      cancelUntil(0);
-@@ -2138,7 +2210,7 @@
+@@ -2138,7 +2212,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -1289,7 +1296,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -2156,7 +2228,7 @@
+@@ -2156,7 +2230,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -1298,7 +1305,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -2192,7 +2264,7 @@
+@@ -2192,7 +2266,7 @@
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
              for (int j = 0; j < c.size(); j++)
@@ -1307,7 +1314,7 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -2202,7 +2274,7 @@
+@@ -2202,7 +2276,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++){
@@ -1316,9 +1323,9 @@ diff -Naur solvers/maplechrono/core/Solver.cc solvers/chrono/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max)+1);
      }
  
-diff -Naur solvers/maplechrono/core/Solver.h solvers/chrono/core/Solver.h
---- solvers/maplechrono/core/Solver.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/core/Solver.h	2019-03-16 23:11:34.000000000 +0000
+diff -Naur build/solvers/maplechrono/core/Solver.h solvers/maplechrono/core/Solver.h
+--- build/solvers/maplechrono/core/Solver.h	2019-12-03 22:14:23.380949100 +0100
++++ solvers/maplechrono/core/Solver.h	2019-12-02 08:41:18.202397000 +0100
 @@ -3,13 +3,13 @@
             Copyright (c) 2007-2010, Niklas Sorensson
  
@@ -1543,9 +1550,9 @@ diff -Naur solvers/maplechrono/core/Solver.h solvers/chrono/core/Solver.h
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
-diff -Naur solvers/maplechrono/core/SolverTypes.h solvers/chrono/core/SolverTypes.h
---- solvers/maplechrono/core/SolverTypes.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/core/SolverTypes.h	2019-03-16 21:16:54.000000000 +0000
+diff -Naur build/solvers/maplechrono/core/SolverTypes.h solvers/maplechrono/core/SolverTypes.h
+--- build/solvers/maplechrono/core/SolverTypes.h	2019-12-03 22:14:23.378762500 +0100
++++ solvers/maplechrono/core/SolverTypes.h	2019-12-02 08:41:18.218988600 +0100
 @@ -1,15 +1,15 @@
  /***********************************************************************************[SolverTypes.h]
  MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
@@ -1698,9 +1705,9 @@ diff -Naur solvers/maplechrono/core/SolverTypes.h solvers/chrono/core/SolverType
  |    Result:
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
-diff -Naur solvers/maplechrono/mtl/Alg.h solvers/chrono/mtl/Alg.h
---- solvers/maplechrono/mtl/Alg.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Alg.h	2019-03-16 10:06:28.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Alg.h solvers/maplechrono/mtl/Alg.h
+--- build/solvers/maplechrono/mtl/Alg.h	2019-12-03 22:14:23.417803300 +0100
++++ solvers/maplechrono/mtl/Alg.h	2019-12-02 08:41:18.232652700 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1718,9 +1725,9 @@ diff -Naur solvers/maplechrono/mtl/Alg.h solvers/chrono/mtl/Alg.h
  
  //=================================================================================================
  // Useful functions on vector-like types:
-diff -Naur solvers/maplechrono/mtl/Alloc.h solvers/chrono/mtl/Alloc.h
---- solvers/maplechrono/mtl/Alloc.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Alloc.h	2019-03-16 10:06:38.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Alloc.h solvers/maplechrono/mtl/Alloc.h
+--- build/solvers/maplechrono/mtl/Alloc.h	2019-12-03 22:14:23.408041900 +0100
++++ solvers/maplechrono/mtl/Alloc.h	2019-12-02 08:41:18.236557700 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1766,9 +1773,9 @@ diff -Naur solvers/maplechrono/mtl/Alloc.h solvers/chrono/mtl/Alloc.h
      // Handle overflow:
      if (sz < prev_sz)
          throw OutOfMemoryException();
-diff -Naur solvers/maplechrono/mtl/Heap.h solvers/chrono/mtl/Heap.h
---- solvers/maplechrono/mtl/Heap.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Heap.h	2019-03-16 10:07:08.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Heap.h solvers/maplechrono/mtl/Heap.h
+--- build/solvers/maplechrono/mtl/Heap.h	2019-12-03 22:14:23.414623900 +0100
++++ solvers/maplechrono/mtl/Heap.h	2019-12-02 08:41:18.241436400 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1828,9 +1835,9 @@ diff -Naur solvers/maplechrono/mtl/Heap.h solvers/chrono/mtl/Heap.h
      }
  };
  
-diff -Naur solvers/maplechrono/mtl/IntTypes.h solvers/chrono/mtl/IntTypes.h
---- solvers/maplechrono/mtl/IntTypes.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/IntTypes.h	2019-03-16 10:07:28.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/IntTypes.h solvers/maplechrono/mtl/IntTypes.h
+--- build/solvers/maplechrono/mtl/IntTypes.h	2019-12-03 22:14:23.403162600 +0100
++++ solvers/maplechrono/mtl/IntTypes.h	2019-12-02 08:41:18.245340200 +0100
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1842,9 +1849,9 @@ diff -Naur solvers/maplechrono/mtl/IntTypes.h solvers/chrono/mtl/IntTypes.h
  
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
-diff -Naur solvers/maplechrono/mtl/Map.h solvers/chrono/mtl/Map.h
---- solvers/maplechrono/mtl/Map.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Map.h	2019-03-16 10:07:56.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Map.h solvers/maplechrono/mtl/Map.h
+--- build/solvers/maplechrono/mtl/Map.h	2019-12-03 22:14:23.412923100 +0100
++++ solvers/maplechrono/mtl/Map.h	2019-12-02 08:41:18.256076000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1891,9 +1898,9 @@ diff -Naur solvers/maplechrono/mtl/Map.h solvers/chrono/mtl/Map.h
          return false;
      }
  
-diff -Naur solvers/maplechrono/mtl/Queue.h solvers/chrono/mtl/Queue.h
---- solvers/maplechrono/mtl/Queue.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Queue.h	2019-03-16 10:08:41.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Queue.h solvers/maplechrono/mtl/Queue.h
+--- build/solvers/maplechrono/mtl/Queue.h	2019-12-03 22:14:23.419754500 +0100
++++ solvers/maplechrono/mtl/Queue.h	2019-12-02 08:41:18.261932300 +0100
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1911,9 +1918,9 @@ diff -Naur solvers/maplechrono/mtl/Queue.h solvers/chrono/mtl/Queue.h
  
  //=================================================================================================
  
-diff -Naur solvers/maplechrono/mtl/Sort.h solvers/chrono/mtl/Sort.h
---- solvers/maplechrono/mtl/Sort.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Sort.h	2019-03-16 10:09:06.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Sort.h solvers/maplechrono/mtl/Sort.h
+--- build/solvers/maplechrono/mtl/Sort.h	2019-12-03 22:14:23.405114100 +0100
++++ solvers/maplechrono/mtl/Sort.h	2019-12-02 08:41:18.265837700 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1935,9 +1942,9 @@ diff -Naur solvers/maplechrono/mtl/Sort.h solvers/chrono/mtl/Sort.h
  
  template<class T>
  struct LessThan_default {
-diff -Naur solvers/maplechrono/mtl/Vec.h solvers/chrono/mtl/Vec.h
---- solvers/maplechrono/mtl/Vec.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/Vec.h	2019-03-16 10:32:13.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/Vec.h solvers/maplechrono/mtl/Vec.h
+--- build/solvers/maplechrono/mtl/Vec.h	2019-12-03 22:14:23.409018400 +0100
++++ solvers/maplechrono/mtl/Vec.h	2019-12-02 08:41:18.271693100 +0100
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1978,9 +1985,9 @@ diff -Naur solvers/maplechrono/mtl/Vec.h solvers/chrono/mtl/Vec.h
          throw OutOfMemoryException();
   }
  
-diff -Naur solvers/maplechrono/mtl/XAlloc.h solvers/chrono/mtl/XAlloc.h
---- solvers/maplechrono/mtl/XAlloc.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/mtl/XAlloc.h	2019-03-16 10:09:45.000000000 +0000
+diff -Naur build/solvers/maplechrono/mtl/XAlloc.h solvers/maplechrono/mtl/XAlloc.h
+--- build/solvers/maplechrono/mtl/XAlloc.h	2019-12-03 22:14:23.420730600 +0100
++++ solvers/maplechrono/mtl/XAlloc.h	2019-12-02 08:41:18.278525900 +0100
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1998,9 +2005,9 @@ diff -Naur solvers/maplechrono/mtl/XAlloc.h solvers/chrono/mtl/XAlloc.h
  
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
-diff -Naur solvers/maplechrono/utils/Options.cc solvers/chrono/utils/Options.cc
---- solvers/maplechrono/utils/Options.cc	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/utils/Options.cc	2019-03-16 11:54:41.000000000 +0000
+diff -Naur build/solvers/maplechrono/utils/Options.cc solvers/maplechrono/utils/Options.cc
+--- build/solvers/maplechrono/utils/Options.cc	2019-12-03 22:14:23.375837400 +0100
++++ solvers/maplechrono/utils/Options.cc	2019-12-02 08:41:18.291213000 +0100
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2055,9 +2062,9 @@ diff -Naur solvers/maplechrono/utils/Options.cc solvers/chrono/utils/Options.cc
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
-diff -Naur solvers/maplechrono/utils/Options.h solvers/chrono/utils/Options.h
---- solvers/maplechrono/utils/Options.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/utils/Options.h	2019-03-16 10:37:24.000000000 +0000
+diff -Naur build/solvers/maplechrono/utils/Options.h solvers/maplechrono/utils/Options.h
+--- build/solvers/maplechrono/utils/Options.h	2019-12-03 22:14:23.370954600 +0100
++++ solvers/maplechrono/utils/Options.h	2019-12-02 08:41:18.301948400 +0100
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2261,9 +2268,9 @@ diff -Naur solvers/maplechrono/utils/Options.h solvers/chrono/utils/Options.h
          if (match(span, "-")){
              bool b = !match(span, "no-");
  
-diff -Naur solvers/maplechrono/utils/ParseUtils.h solvers/chrono/utils/ParseUtils.h
---- solvers/maplechrono/utils/ParseUtils.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/utils/ParseUtils.h	2019-03-16 10:05:07.000000000 +0000
+diff -Naur build/solvers/maplechrono/utils/ParseUtils.h solvers/maplechrono/utils/ParseUtils.h
+--- build/solvers/maplechrono/utils/ParseUtils.h	2019-12-03 22:14:23.372906400 +0100
++++ solvers/maplechrono/utils/ParseUtils.h	2019-12-02 08:41:18.313660600 +0100
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2292,9 +2299,9 @@ diff -Naur solvers/maplechrono/utils/ParseUtils.h solvers/chrono/utils/ParseUtil
  }
  
  // String matching: consumes characters eagerly, but does not require random access iterator.
-diff -Naur solvers/maplechrono/utils/System.cc solvers/chrono/utils/System.cc
---- solvers/maplechrono/utils/System.cc	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/utils/System.cc	2019-03-16 10:03:55.000000000 +0000
+diff -Naur build/solvers/maplechrono/utils/System.cc solvers/maplechrono/utils/System.cc
+--- build/solvers/maplechrono/utils/System.cc	2019-12-03 22:14:23.369106500 +0100
++++ solvers/maplechrono/utils/System.cc	2019-12-02 08:41:18.317565400 +0100
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2349,9 +2356,9 @@ diff -Naur solvers/maplechrono/utils/System.cc solvers/chrono/utils/System.cc
 +double MapleChrono::memUsed() {
      return 0; }
  #endif
-diff -Naur solvers/maplechrono/utils/System.h solvers/chrono/utils/System.h
---- solvers/maplechrono/utils/System.h	2019-03-19 09:32:15.000000000 +0000
-+++ solvers/chrono/utils/System.h	2019-03-16 10:04:33.000000000 +0000
+diff -Naur build/solvers/maplechrono/utils/System.h solvers/maplechrono/utils/System.h
+--- build/solvers/maplechrono/utils/System.h	2019-12-03 22:14:23.367513800 +0100
++++ solvers/maplechrono/utils/System.h	2019-12-02 08:41:18.321469100 +0100
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

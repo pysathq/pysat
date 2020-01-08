@@ -80,9 +80,9 @@
         >>> fm = FM(wcnf, verbose=0)
         >>> fm.compute()  # set of hard clauses should be satisfiable
         True
-        >>> print fm.cost # cost of MaxSAT solution should be 2
+        >>> print(fm.cost) # cost of MaxSAT solution should be 2
         >>> 2
-        >>> print fm.model
+        >>> print(fm.model)
         [-1, -2, 3]
 
     ==============
@@ -97,9 +97,9 @@ import copy
 import getopt
 import gzip
 import os
-from pysat.formula import CNF, WCNF
+from pysat.formula import CNFPlus, WCNFPlus
 from pysat.card import CardEnc, EncType
-from pysat.solvers import Solver
+from pysat.solvers import Solver, SolverNames
 import re
 from six.moves import range
 import sys
@@ -168,7 +168,7 @@ class FM(object):
         self.topv = self.orig_nv = formula.nv
         self.hard = copy.deepcopy(formula.hard)
         self.soft = copy.deepcopy(formula.soft)
-        self.atm1 = []
+        self.atm1 = copy.deepcopy(formula.atms)
         self.wght = formula.wght[:]
         self.cenc = enc
         self.cost = 0
@@ -204,9 +204,13 @@ class FM(object):
 
         self.oracle = Solver(name=self.solver, bootstrap_with=self.hard, use_timer=True)
 
-        # self.atm1 is not empty only in case of minicard
-        for am in self.atm1:
-            self.oracle.add_atmost(*am)
+        if self.atm1:  # this check is needed at the beggining (before iteration 1)
+            assert self.solver in SolverNames.minicard, \
+                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+
+            # self.atm1 is not empty only in case of minicard
+            for am in self.atm1:
+                self.oracle.add_atmost(*am)
 
         if with_soft:
             for cl, cpy in zip(self.soft, self.scpy):
@@ -463,7 +467,7 @@ def parse_options():
     cardenc = encmap[cardenc]
 
     # using minicard's native implementation of AtMost1 constraints
-    if solver in ('mc', 'minicard'):
+    if solver in SolverNames.minicard:
         cardenc = encmap['native']
     else:
         assert cardenc != encmap['native'], 'Only Minicard can handle cardinality constraints natively'
@@ -493,10 +497,11 @@ if __name__ == '__main__':
     solver, cardenc, verbose, files = parse_options()
 
     if files:
-        if re.search('\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-            formula = WCNF(from_file=files[0])
-        else:  # expecting '*.cnf'
-            formula = CNF(from_file=files[0]).weighted()
+        # parsing the input formula
+        if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            formula = WCNFPlus(from_file=files[0])
+        else:  # expecting '*.cnf[,p,+].*'
+            formula = CNFPlus(from_file=files[0]).weighted()
 
         with FM(formula, solver=solver, enc=cardenc, verbose=verbose) as fm:
             res = fm.compute()

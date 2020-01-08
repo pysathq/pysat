@@ -72,9 +72,9 @@
         >>> lsu = LSU(wcnf, verbose=0)
         >>> lsu.solve()  # set of hard clauses should be satisfiable
         True
-        >>> print lsu.cost # cost of MaxSAT solution should be 2
+        >>> print(lsu.cost) # cost of MaxSAT solution should be 2
         >>> 2
-        >>> print lsu.model
+        >>> print(lsu.model)
         [-1, -2, 3]
 
     ==============
@@ -258,7 +258,7 @@ class LSU:
             :rtype: bool
         """
 
-        return self.oracle.get_status is not None
+        return self.oracle.get_status() is not None
 
     def _get_model_cost(self, formula, model):
         """

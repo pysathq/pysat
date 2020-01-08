@@ -1,3 +1,17 @@
 *.pyc
 *.zip
 *.tar.gz
+*.swp
+build
+dist
+solvers/cadical
+solvers/glucose30
+solvers/glucose41
+solvers/lingeling
+solvers/maplechrono
+solvers/maplecm
+solvers/maplesat
+solvers/minicard
+solvers/minisat22
+solvers/minisatgh
+
