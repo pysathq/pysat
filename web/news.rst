@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+08.01.2020 (*0.1.5.dev5*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added support of copying :class:`CNFPlus` and :class:`WCNFPlus` formulas.
+
 04.12.2019 (*0.1.5.dev2*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

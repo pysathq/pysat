@@ -21,7 +21,7 @@ import pysat
 # -- Project information -----------------------------------------------------
 
 project = u'PySAT'
-copyright = u'2018-2019, Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado'
+copyright = u'2018-2020, Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado'
 author = u'Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado'
 
 # The short X.Y version
