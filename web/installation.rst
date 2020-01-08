@@ -35,7 +35,7 @@ using PySAT is to install the latest stable release of the toolkit from `PyPI
     $ pip install python-sat[pblib,aiger]
 
 We encourage you to install the *optional* dependencies `pblib` and `aiger`,
-as in the previous command. However, if it cannot be done (e.g. if their
+as shown in the previous command. However, if it cannot be done (e.g. if their
 installation fails), you can install PySAT with the functionality of `aiger`
 and `pblib` disabled:
 
