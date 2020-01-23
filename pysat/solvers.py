@@ -336,6 +336,12 @@ class Solver(object):
                 name.
         """
 
+        # checking keyword arguments
+        kwallowed = set(['incr', 'with_proof'])
+        for a in kwargs:
+            if a not in kwallowed:
+                raise TypeError('Unexpected keyword argument \'{0}\''.format(a))
+
         if not self.solver:
             name_ = name.lower()
             if name_ in SolverNames.cadical:

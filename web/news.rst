@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+24.01.2020 (*0.1.5.dev6*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug related to unknown keyword arguments passed to the
+  constructor of :class:`Solver`.
+
 08.01.2020 (*0.1.5.dev5*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
