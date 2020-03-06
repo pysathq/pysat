@@ -94,6 +94,8 @@ html_theme_options = {
     'logo': 'pysat.png',
     'github_user': 'pysathq',
     'github_repo': 'pysat',
+    'github_button': True,
+    'github_type': 'star',
     'sidebar_width': '152px',
     'body_text_align': 'justify'
 }
