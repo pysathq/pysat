@@ -617,18 +617,6 @@ class CNF(object):
         self.inps = list(aig_cnf.input2lit.values())
         self.outs = list(aig_cnf.output2lit.values())
 
-        # updating input name to variable mappings
-        for var in self.inps:
-            name = self.vpool.id2obj[var].name
-
-            self.vpool.obj2id[name] = var
-            self.vpool.id2obj[var] = name
-
-        # saving the output in the pool by its name
-        for name, lit in aig_cnf.output2lit.items():
-            self.vpool.obj2id[name] = lit
-            self.vpool.id2obj[lit] = name
-
     def copy(self):
         """
             This method can be used for creating a copy of a CNF object. It
