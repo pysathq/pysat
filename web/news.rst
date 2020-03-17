@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+17.03.2020 (*0.1.5.dev8*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added support of floating point weights in :class:`WCNF` and
+  :class:`WCNFPlus`.
+- Added support of negative weights.
+
 14.03.2020 (*0.1.5.dev7*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

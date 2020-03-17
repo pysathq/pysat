@@ -158,6 +158,14 @@
         >>> print(wcnf.topw)
         5
 
+    .. note::
+
+        Although it is not aligned with the WCNF format description, starting
+        with the 0.1.5.dev8 release, PySAT is able to deal with WCNF formulas
+        having not only integer clause weights but also weights represented as
+        *floating point numbers*. Moreover, *negative weights* are also
+        supported.
+
     Additionally to classes :class:`CNF` and :class:`WCNF`, the module provides
     the extended classes :class:`CNFPlus` and :class:`WCNFPlus`. The only
     difference between ``?CNF`` and ``?CNFPlus`` is the support for *native*
@@ -971,6 +979,10 @@ class WCNF(object):
                 ...     cnf2 = WCNF(from_fp=fp)
         """
 
+        def parse_wght(string):
+            wght = float(string)
+            return int(wght) if wght.is_integer() else wght
+
         self.nv = 0
         self.hard = []
         self.soft = []
@@ -979,15 +991,22 @@ class WCNF(object):
         self.comments = []
         comment_lead = tuple('p') + tuple(comment_lead)
 
+        # soft clauses with negative weights
+        negs = []
+
         for line in file_pointer:
             line = line.strip()
             if line:
                 if line[0] not in comment_lead:
-                    cl = [int(l) for l in line.split()[:-1]]
-                    w = cl.pop(0)
+                    items = line.split()[:-1]
+                    w, cl = parse_wght(items[0]), [int(l) for l in items[1:]]
                     self.nv = max([abs(l) for l in cl] + [self.nv])
 
-                    if w >= self.topw:
+                    if w <= 0:
+                        # this clause has a negative weight
+                        # it will be processed later
+                        negs.append(tuple([cl, -w]))
+                    elif w >= self.topw:
                         self.hard.append(cl)
                     else:
                         self.soft.append(cl)
@@ -995,7 +1014,41 @@ class WCNF(object):
                 elif not line.startswith('p wcnf '):
                     self.comments.append(line)
                 else:  # expecting the preamble
-                    self.topw = int(line.rsplit(' ', 1)[1])
+                    self.topw = parse_wght(line.rsplit(' ', 1)[1])
+
+        # if there is any soft clause with negative weight
+        # normalize it, i.e. transform into a set of clauses
+        # with a positive weight
+        if negs:
+            self.normalize_negatives(negs)
+
+    def normalize_negatives(self, negatives):
+        """
+            Iterate over all soft clauses with negative weights and add their
+            negation either as a hard clause or a soft one.
+
+            :param negatives: soft clauses with their negative weights.
+            :type negatives: list(list(int))
+        """
+
+        for cl, w in negatives:
+            selv = cl[0]
+
+            # tseitin-encoding the clause if it is not unit-size
+            if len(cl) > 1:
+                self.nv += 1
+                selv = self.nv
+
+                for l in cl:
+                    self.hard.append([selv, -l])
+                self.hard.append([-selv] + cl)
+
+            # adding the negation of the clause either as hard or soft
+            if w >= self.topw:
+                self.hard.append([-selv])
+            else:
+                self.soft.append([-selv])
+                self.wght.append(w)
 
     def from_string(self, string, comment_lead=['c']):
         """
@@ -1622,6 +1675,10 @@ class WCNFPlus(WCNF, object):
                 ...     cnf2 = WCNFPlus(from_fp=fp)
         """
 
+        def parse_wght(string):
+            wght = float(string)
+            return int(wght) if wght.is_integer() else wght
+
         self.nv = 0
         self.hard = []
         self.atms = []
@@ -1636,11 +1693,15 @@ class WCNFPlus(WCNF, object):
             if line:
                 if line[0] not in comment_lead:
                     if int(line.rsplit(' ', 1)[-1]) == 0:  # normal clause
-                        cl = [int(l) for l in line.split()[:-1]]
-                        w = cl.pop(0)
+                        items = line.split()[:-1]
+                        w, cl = parse_wght(items[0]), [int(l) for l in items[1:]]
                         self.nv = max([abs(l) for l in cl] + [self.nv])
 
-                        if w >= self.topw:
+                        if w <= 0:
+                            # this clause has a negative weight
+                            # it will be processed later
+                            negs.append(tuple([cl, -w]))
+                        elif w >= self.topw:
                             self.hard.append(cl)
                         else:
                             self.soft.append(cl)
@@ -1659,7 +1720,7 @@ class WCNFPlus(WCNF, object):
                 elif not line.startswith('p wcnf'):  # wcnf is allowed here
                     self.comments.append(line)
                 else:  # expecting the preamble
-                    self.topw = int(line.rsplit(' ', 1)[1])
+                    self.topw = parse_wght(line.rsplit(' ', 1)[1])
 
     def to_fp(self, file_pointer, comments=None):
         """
