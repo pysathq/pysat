@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+19.03.2020 (*0.1.5.dev9*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Minor issue fixed in :class:`RC2Stratified`.
+
 17.03.2020 (*0.1.5.dev8*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

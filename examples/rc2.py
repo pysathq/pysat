@@ -1187,8 +1187,7 @@ class RC2Stratified(RC2, object):
         self.sels = []
 
         # initialize Boolean lexicographic optimization
-        if sum(self.wght.values()) > len(self.bckp):
-            self.init_wstr()
+        self.init_wstr()
 
     def init_wstr(self):
         """
@@ -1280,6 +1279,7 @@ class RC2Stratified(RC2, object):
 
         if self.levl >= len(self.blop):
             self.levl = None
+            return
 
         while self.levl < len(self.blop) - 1:
             # number of selectors with weight less than current weight
