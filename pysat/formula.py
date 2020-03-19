@@ -216,6 +216,7 @@
 from __future__ import print_function
 import collections
 import copy
+import decimal
 import itertools
 import os
 from pysat._fileio import FileObject
@@ -981,7 +982,7 @@ class WCNF(object):
 
         def parse_wght(string):
             wght = float(string)
-            return int(wght) if wght.is_integer() else wght
+            return int(wght) if wght.is_integer() else decimal.Decimal(string)
 
         self.nv = 0
         self.hard = []
@@ -1677,7 +1678,7 @@ class WCNFPlus(WCNF, object):
 
         def parse_wght(string):
             wght = float(string)
-            return int(wght) if wght.is_integer() else wght
+            return int(wght) if wght.is_integer() else decimal.Decimal(string)
 
         self.nv = 0
         self.hard = []

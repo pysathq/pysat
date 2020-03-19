@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+19.03.2020 (*0.1.5.dev10*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Floating point arithmetic is now done through the :mod:`decimal` module to
+  avoid precision issues.
+
 19.03.2020 (*0.1.5.dev9*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
