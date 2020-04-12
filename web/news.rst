@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+12.04.2020 (*0.1.5.dev11*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug in garbage collector of RC2.
+
 19.03.2020 (*0.1.5.dev10*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -1104,6 +1104,8 @@ class RC2(object):
         self.bnds = {l: b for l, b in six.iteritems(self.bnds) if l not in self.garbage}
         self.wght = {l: w for l, w in six.iteritems(self.wght) if l not in self.garbage}
 
+        self.sels_set.difference_update(set(self.garbage))
+
         self.garbage.clear()
 
     def oracle_time(self):
