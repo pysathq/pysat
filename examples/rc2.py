@@ -566,6 +566,10 @@ class RC2(object):
             # and by heuristic minimization
             self.minimize_core()
 
+            # the core may be empty after core minimization
+            if not self.core:
+                return
+
             # core weight
             self.minw = min(map(lambda l: self.wght[l], self.core))
 

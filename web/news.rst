@@ -11,10 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
-12.04.2020 (*0.1.5.dev11*)
+12.04.2020 (*0.1.5.dev12*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Fixed a minor bug in garbage collector of RC2.
+- Fixed an empty-core bug in RC2 appearing in solution enumeration.
 
 19.03.2020 (*0.1.5.dev10*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
