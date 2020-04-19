@@ -420,7 +420,8 @@ def do(to_install):
         extract_archive(sources[solver][-1], solver)
         adapt_files(solver)
         patch_solver(solver)
-        if platform.system()!="Windows":
+
+        if platform.system() != 'Windows':
             compile_solver(solver)
 
 #
@@ -549,10 +550,12 @@ def patch_solver(solver):
     """
 
     print('patching {0}'.format(solver))
-    if platform.system()=="Windows":
-        os.system('wsl patch -p0 < solvers/patches/{0}.patch'.format(solver))
-    else:
-        os.system('patch -p0 < solvers/patches/{0}.patch'.format(solver))
+
+    cmd = 'patch -p0 < solvers/patches/{0}.patch'.format(solver)
+    if platform.system() == 'Windows':
+        cmd = 'wsl ' + cmd
+
+    os.system(cmd)
 
 
 #
