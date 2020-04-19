@@ -89,7 +89,8 @@ class build(distutils.command.build.build):
             Download, patch and compile SAT solvers before building.
         """
         # download and compile solvers
-        prepare.do(to_install)
+        if platform.system() != 'Windows':
+            prepare.do(to_install)
 
         # now, do standard build
         distutils.command.build.build.run(self)
@@ -122,6 +123,7 @@ pycard_ext = Extension('pycard',
 pysolvers_sources = ['solvers/pysolvers.cc']
 
 if platform.system() == 'Windows':
+    prepare.do(to_install)
     with chdir('solvers'):
         for solver in to_install:
             with chdir(solver):
