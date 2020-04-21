@@ -11,11 +11,11 @@
 #
 #==============================================================================
 import argparse
-import sys
 import os
 import platform
 import re
 import requests
+import sys
 
 #
 #==============================================================================
@@ -42,11 +42,11 @@ def pycall(cmd):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dependency installation',
                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--releaseUrl', type=str, default='https://api.github.com/repos/rjungbeck/pypblib/releases/latest',
-                        help='Reelease URL')
-    parms = parser.parse_args()
+    parser.add_argument('--release-url', type=str, default='https://api.github.com/repos/rjungbeck/pypblib/releases/latest',
+                        help='Release URL')
+    params = parser.parse_args()
 
-    req = requests.get(parms.releaseUrl)
+    req = requests.get(params.release_url)
     rsp = req.json()
 
     version = sys.version_info[:2]
@@ -59,4 +59,4 @@ if __name__ == '__main__':
     for asset in rsp['assets']:
         print(asset['name'])
         if suffix in asset['name']:
-            pycall('-m pip install --upgrade %s' % (asset['browser_download_url']))
+            pycall('-m pip install --upgrade {0}'.format(asset['browser_download_url']))
