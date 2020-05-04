@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+05.05.2020 (*0.1.5.dev13*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A few minor issues related to non-deterministic behavior of sets in Python3.
+
 12.04.2020 (*0.1.5.dev12*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -684,7 +684,7 @@ class ITotalizer(object):
         """
 
         # preparing a new list of distinct input literals
-        lits = list(set(lits).difference(set(self.lits)))
+        lits = sorted(set(lits).difference(set(self.lits)))
 
         if not lits:
             # nothing to merge with -> just increase the bound

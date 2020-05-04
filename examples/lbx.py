@@ -360,7 +360,7 @@ class LBX(object):
                     setd = setd.union(set(cl))
 
         if update_setd:
-            self.setd = list(setd)
+            self.setd = sorted(setd)
 
     def _compute(self):
         """
