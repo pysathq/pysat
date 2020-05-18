@@ -206,7 +206,7 @@ class RC2(object):
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
-        self.sels, self.smap = [], {}
+        self.sels, self.smap, self.sall = [], {}, []
 
         # other MaxSAT related stuff
         self.topv = formula.nv
@@ -307,6 +307,7 @@ class RC2(object):
 
         # storing the set of selectors
         self.sels_set = set(self.sels)
+        self.sall = self.sels[:]
 
         # at this point internal and external variables are the same
         for v in range(1, formula.nv + 1):
@@ -399,6 +400,7 @@ class RC2(object):
                 # selector is not new; increment its weight
                 self.wght[selv] += weight
 
+            self.sall.append(selv)
             self.sels_set.add(selv)
 
     def delete(self):
@@ -467,7 +469,7 @@ class RC2(object):
 
             return self.model
 
-    def enumerate(self):
+    def enumerate(self, block_mcses=False):
         """
             Enumerate top MaxSAT solutions (from best to worst). The
             method works as a generator, which iteratively calls
@@ -505,7 +507,14 @@ class RC2(object):
             model = self.compute()
 
             if model != None:
-                self.add_clause([-l for l in model])
+                if block_mcses:
+                    # a little bit low-level stuff goes here
+                    # to block an MCS corresponding to the model
+                    m = set(self.oracle.get_model())
+                    self.oracle.add_clause([-l for l in filter(lambda l: l in m, self.sall)])
+                else:
+                    self.add_clause([-l for l in model])
+
                 yield model
             else:
                 done = True
@@ -1494,15 +1503,17 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ac:e:hilms:t:vx',
-                ['adapt', 'comp=', 'enum=', 'exhaust', 'help', 'incr', 'blo',
-                    'minimize', 'solver=', 'trim=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'abc:e:hilms:t:vx',
+                ['adapt', 'block_mcses', 'comp=', 'enum=', 'exhaust', 'help',
+                    'incr', 'blo', 'minimize', 'solver=', 'trim=', 'verbose',
+                    'vnew'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
         sys.exit(1)
 
     adapt = False
+    block_mcses = False
     exhaust = False
     cmode = None
     to_enum = 1
@@ -1512,10 +1523,13 @@ def parse_options():
     solver = 'g3'
     trim = 0
     verbose = 1
+    vnew = False
 
     for opt, arg in opts:
         if opt in ('-a', '--adapt'):
             adapt = True
+        elif opt in ('-b', '--block-mcses'):
+            block_mcses = True
         elif opt in ('-c', '--comp'):
             cmode = str(arg)
         elif opt in ('-e', '--enum'):
@@ -1539,13 +1553,15 @@ def parse_options():
             trim = int(arg)
         elif opt in ('-v', '--verbose'):
             verbose += 1
+        elif opt == '--vnew':
+            vnew = True
         elif opt in ('-x', '--exhaust'):
             exhaust = True
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, blo, cmode, to_enum, exhaust, incr, minz, solver, trim, \
-            verbose, args
+    return adapt, blo, block_mcses, cmode, to_enum, exhaust, incr, minz, \
+            solver, trim, verbose, vnew, args
 
 
 #
@@ -1558,6 +1574,7 @@ def usage():
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
     print('        -a, --adapt              Try to adapt (simplify) input formula')
+    print('        -b, --block-mcses        When enumerating MaxSAT models, block entire MCSes instead of models')
     print('        -c, --comp=<string>      Enable one of the MSE18 configurations')
     print('                                 Available values: a, b, none (default = none)')
     print('        -e, --enum=<int>         Number of MaxSAT models to compute')
@@ -1571,14 +1588,15 @@ def usage():
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
     print('                                 Available values: [0 .. INT_MAX] (default = 0)')
     print('        -v, --verbose            Be verbose')
+    print('        --vnew                   Print v-line in the new format')
     print('        -x, --exhaust            Exhaust new unsatisfiable cores')
 
 
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, cmode, to_enum, exhaust, incr, minz, solver, trim, verbose, \
-            files = parse_options()
+    adapt, blo, block_mcses, cmode, to_enum, exhaust, incr, minz, solver, \
+    trim, verbose, vnew, files = parse_options()
 
     if files:
         # parsing the input formula
@@ -1614,7 +1632,7 @@ if __name__ == '__main__':
                 incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
 
             optimum_found = False
-            for i, model in enumerate(rc2.enumerate(), 1):
+            for i, model in enumerate(rc2.enumerate(block_mcses=block_mcses), 1):
                 optimum_found = True
 
                 if verbose:
@@ -1623,10 +1641,17 @@ if __name__ == '__main__':
                         print('o {0}'.format(rc2.cost))
 
                     if verbose > 2:
-                        print('v', ' '.join([str(l) for l in model]))
+                        if vnew:  # new format of the v-line
+                            print('v', ''.join(str(int(l > 0)) for l in model))
+                        else:
+                            print('v', ' '.join([str(l) for l in model]))
 
                 if i == to_enum:
                     break
+
+            # needed for MSE'20
+            if to_enum != 1 and block_mcses:
+                print('v')
 
             if verbose:
                 if not optimum_found:

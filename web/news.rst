@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+18.05.2020 (*0.1.5.dev14*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A few minor changes in RC2 addressing a new v-line format and the top-k
+  track.
+
 05.05.2020 (*0.1.5.dev13*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
