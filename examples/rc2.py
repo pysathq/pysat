@@ -206,7 +206,7 @@ class RC2(object):
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
-        self.sels, self.smap, self.sall = [], {}, []
+        self.sels, self.smap, self.sall, self.s2cl = [], {}, [], {}
 
         # other MaxSAT related stuff
         self.topv = formula.nv
@@ -293,6 +293,7 @@ class RC2(object):
                 self.topv += 1
                 selv = self.topv
 
+                self.s2cl[selv] = cl[:]
                 cl.append(-self.topv)
                 self.oracle.add_clause(cl)
 
@@ -388,6 +389,7 @@ class RC2(object):
                 self.topv += 1
                 selv = self.topv
 
+                self.s2cl[selv] = cl[:]
                 cl.append(-self.topv)
                 self.oracle.add_clause(cl)
 
@@ -469,12 +471,22 @@ class RC2(object):
 
             return self.model
 
-    def enumerate(self, block_mcses=False):
+    def enumerate(self, block=0):
         """
             Enumerate top MaxSAT solutions (from best to worst). The
             method works as a generator, which iteratively calls
             :meth:`compute` to compute a MaxSAT model, blocks it
             internally and returns it.
+
+            An optional parameter can be used to enforce computation of MaxSAT
+            models corresponding to different maximal satisfiable subsets
+            (MSSes) or minimal correction subsets (MCSes). To block MSSes, one
+            should set the ``block`` parameter to ``1``. To block MCSes, set
+            it to ``-1``. By the default (for blocking MaxSAT models),
+            ``block`` is set to ``0``.
+
+            :param block: preferred way to block solutions when enumerating
+            :type block: int
 
             :returns: a MaxSAT model
             :rtype: list(int)
@@ -507,12 +519,31 @@ class RC2(object):
             model = self.compute()
 
             if model != None:
-                if block_mcses:
-                    # a little bit low-level stuff goes here
-                    # to block an MCS corresponding to the model
+                if block == 1:
+                    # to block an MSS corresponding to the model, we add
+                    # a clause enforcing at least one of the MSS clauses
+                    # to be falsified next time
+                    m, cl = set(self.oracle.get_model()), []
+
+                    for selv in self.sall:
+                        if selv in m:
+                            # clause is satisfied
+                            cl.append(-selv)
+                        elif selv in self.s2cl:
+                            # clause is falsified and it is not unit size
+                            for il in self.s2cl[selv]:
+                                el = self.vmap.i2e[abs(il)]
+                                model[el - 1] = int(copysign(el, -il))
+
+                    self.oracle.add_clause(cl)
+                elif block == -1:
+                    # a similar (but simpler) piece of code goes here,
+                    # to block the MCS corresponding to the model
+                    # (this blocking is stronger than MSS blocking above)
                     m = set(self.oracle.get_model())
-                    self.oracle.add_clause([-l for l in filter(lambda l: l in m, self.sall)])
+                    self.oracle.add_clause([l for l in filter(lambda l: -l in m, self.sall)])
                 else:
+                    # here, we simply block a previous MaxSAT model
                     self.add_clause([-l for l in model])
 
                 yield model
@@ -1184,7 +1215,7 @@ class RC2Stratified(RC2, object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            incr=False, minz=False, trim=0, verbose=0):
+            incr=False, minz=False, nohard=False, trim=0, verbose=0):
         """
             Constructor.
         """
@@ -1196,6 +1227,9 @@ class RC2Stratified(RC2, object):
 
         self.levl = 0   # initial optimization level
         self.blop = []  # a list of blo levels
+
+        # do clause hardening
+        self.hard = nohard == False
 
         # backing up selectors
         self.bckp, self.bckp_set = self.sels, self.sels_set
@@ -1226,6 +1260,9 @@ class RC2Stratified(RC2, object):
         # diversity parameter for stratification
         self.sdiv = len(self.blop) / 2.0
 
+        # number of finished levels
+        self.done = 0
+
     def compute(self):
         """
             This method solves the MaxSAT problem iteratively. Each
@@ -1237,39 +1274,50 @@ class RC2Stratified(RC2, object):
             :func:`activate_clauses`.
         """
 
-        done = 0  # levels done
+        if self.done == 0:
+            # it is a fresh start of the solver
+            # i.e. no optimization level is finished yet
 
-        # first attempt to get an optimization level
-        self.next_level()
+            # first attempt to get an optimization level
+            self.next_level()
 
-        while self.levl != None and done < len(self.blop):
-            # add more clauses
-            done = self.activate_clauses(done)
+            while self.levl != None and self.done < len(self.blop):
+                # add more clauses
+                self.done = self.activate_clauses(self.done)
 
-            if self.verbose > 1:
-                print('c wght str:', self.blop[self.levl])
+                if self.verbose > 1:
+                    print('c wght str:', self.blop[self.levl])
 
-            # call RC2
+                # call RC2
+                if self.compute_() == False:
+                    return
+
+                # updating the list of distinct weight levels
+                self.blop = sorted([w for w in self.wstr], reverse=True)
+
+                if self.done < len(self.blop):
+                    if self.verbose > 1:
+                        print('c curr opt:', self.cost)
+
+                    # done with this level
+                    if self.hard:
+                        # harden the clauses if necessary
+                        self.finish_level()
+
+                    self.levl += 1
+
+                    # get another level
+                    self.next_level()
+
+                    if self.verbose > 1:
+                        print('c')
+        else:
+            # we seem to be in the model enumeration mode
+            # with the first model being already computed
+            # i.e. all levels are finished and so all clauses are present
+            # thus, we need to simply call RC2 for the next model
             if self.compute_() == False:
                 return
-
-            # updating the list of distinct weight levels
-            self.blop = sorted([w for w in self.wstr], reverse=True)
-
-            if done < len(self.blop):
-                if self.verbose > 1:
-                    print('c curr opt:', self.cost)
-
-                # done with this level
-                self.finish_level()
-
-                self.levl += 1
-
-                # get another level
-                self.next_level()
-
-                if self.verbose > 1:
-                    print('c')
 
         # extracting a model
         self.model = self.oracle.get_model()
@@ -1503,8 +1551,8 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'abc:e:hilms:t:vx',
-                ['adapt', 'block_mcses', 'comp=', 'enum=', 'exhaust', 'help',
+        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hilms:t:vx',
+                ['adapt', 'block=', 'comp=', 'enum=', 'exhaust', 'help',
                     'incr', 'blo', 'minimize', 'solver=', 'trim=', 'verbose',
                     'vnew'])
     except getopt.GetoptError as err:
@@ -1513,7 +1561,7 @@ def parse_options():
         sys.exit(1)
 
     adapt = False
-    block_mcses = False
+    block = 'model'
     exhaust = False
     cmode = None
     to_enum = 1
@@ -1528,8 +1576,8 @@ def parse_options():
     for opt, arg in opts:
         if opt in ('-a', '--adapt'):
             adapt = True
-        elif opt in ('-b', '--block-mcses'):
-            block_mcses = True
+        elif opt in ('-b', '--block'):
+            block = str(arg)
         elif opt in ('-c', '--comp'):
             cmode = str(arg)
         elif opt in ('-e', '--enum'):
@@ -1560,7 +1608,12 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, blo, block_mcses, cmode, to_enum, exhaust, incr, minz, \
+    bmap = {'mcs': -1, 'mcses': -1, 'model': 0, 'models': 0, 'mss': 1, 'msses': 1}
+
+    assert block in bmap, 'Unknown solution blocking'
+    block = bmap[block]
+
+    return adapt, blo, block, cmode, to_enum, exhaust, incr, minz, \
             solver, trim, verbose, vnew, args
 
 
@@ -1574,7 +1627,8 @@ def usage():
     print('Usage:', os.path.basename(sys.argv[0]), '[options] dimacs-file')
     print('Options:')
     print('        -a, --adapt              Try to adapt (simplify) input formula')
-    print('        -b, --block-mcses        When enumerating MaxSAT models, block entire MCSes instead of models')
+    print('        -b, --block=<string>     When enumerating MaxSAT models, how to block previous solutions')
+    print('                                 Available values: mcs, model, mss (default = model)')
     print('        -c, --comp=<string>      Enable one of the MSE18 configurations')
     print('                                 Available values: a, b, none (default = none)')
     print('        -e, --enum=<int>         Number of MaxSAT models to compute')
@@ -1595,8 +1649,8 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, block_mcses, cmode, to_enum, exhaust, incr, minz, solver, \
-    trim, verbose, vnew, files = parse_options()
+    adapt, blo, block, cmode, to_enum, exhaust, incr, minz, solver, trim, \
+            verbose, vnew, files = parse_options()
 
     if files:
         # parsing the input formula
@@ -1622,7 +1676,6 @@ if __name__ == '__main__':
 
         # deciding whether or not to stratify
         if blo and max(formula.wght) > min(formula.wght):
-            assert to_enum == 1, 'Stratified solving is incompatible with model enumeration'
             MXS = RC2Stratified
         else:
             MXS = RC2
@@ -1631,8 +1684,13 @@ if __name__ == '__main__':
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
                 incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
 
+            # disable clause hardening in case we enumerate multiple models
+            if isinstance(rc2, RC2Stratified) and to_enum != 1:
+                print('c hardening is disabled for model enumeration')
+                rc2.hard = False
+
             optimum_found = False
-            for i, model in enumerate(rc2.enumerate(block_mcses=block_mcses), 1):
+            for i, model in enumerate(rc2.enumerate(block=block), 1):
                 optimum_found = True
 
                 if verbose:
@@ -1650,7 +1708,7 @@ if __name__ == '__main__':
                     break
 
             # needed for MSE'20
-            if to_enum != 1 and block_mcses:
+            if to_enum != 1 and block == 1:
                 print('v')
 
             if verbose:
