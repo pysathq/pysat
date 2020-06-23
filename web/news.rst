@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+23.06.2020 (*0.1.5.dev16*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug in top id handling in :mod:`pysat.card` reported by Pedro
+  Bonilla.
+
 15.06.2020 (*0.1.5.dev15*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

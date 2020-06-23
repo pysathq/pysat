@@ -4,8 +4,8 @@
 ## setup.py
 ##
 ##  Created on: Jan 23, 2018
-##      Author: Alexey S. Ignatiev
-##      E-mail: aignatiev@ciencias.ulisboa.pt
+##      Author: Alexey Ignatiev
+##      E-mail: alexey.ignatiev@monash.edu
 ##
 
 #
@@ -177,7 +177,7 @@ setup(name='python-sat',
     long_description_content_type='text/x-rst; charset=UTF-8',
     license='MIT',
     author='Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado',
-    author_email='aignatiev@ciencias.ulisboa.pt, jpms@ciencias.ulisboa.pt, ajmorgado@ciencias.ulisboa.pt',
+    author_email='alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com',
     url='https://github.com/pysathq/pysat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in scripts],

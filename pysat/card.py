@@ -244,8 +244,8 @@ class CardEnc(object):
         if vpool:
             top_id = vpool.top
 
-        if not top_id:
-            top_id = max(map(lambda x: abs(x), lits))
+        # choosing the maximum id among the current top and the list of literals
+        top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
 
         # MiniCard's native representation is handled separately
         if encoding == 9:
@@ -340,8 +340,8 @@ class CardEnc(object):
         if vpool:
             top_id = vpool.top
 
-        if not top_id:
-            top_id = max(map(lambda x: abs(x), lits))
+        # choosing the maximum id among the current top and the list of literals
+        top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
 
         # Minicard's native representation is handled separately
         if encoding == 9:
