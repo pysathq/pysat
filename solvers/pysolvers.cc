@@ -82,6 +82,7 @@ static char     model_docstring[] = "Get a model if formula is SAT.";
 static char     nvars_docstring[] = "Get number of variables used by the solver.";
 static char      ncls_docstring[] = "Get number of clauses used by the solver.";
 static char       del_docstring[] = "Delete a previously created solver object.";
+static char  acc_stat_docstring[] = "Get accumulated stats from the solver.";
 
 static PyObject *SATError;
 static jmp_buf env;
@@ -137,6 +138,7 @@ extern "C" {
 	static PyObject *py_glucose41_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_glucose41_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_del       (PyObject *, PyObject *);
+	static PyObject *py_glucose41_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_LINGELING
 	static PyObject *py_lingeling_new       (PyObject *, PyObject *);
@@ -309,6 +311,7 @@ static PyMethodDef module_methods[] = {
 	{ "glucose41_nof_vars",  py_glucose41_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "glucose41_nof_cls",   py_glucose41_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "glucose41_del",       py_glucose41_del,       METH_VARARGS,       del_docstring },
+	{ "glucose41_acc_stats", py_glucose41_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_LINGELING
 	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,     new_docstring },
@@ -1912,6 +1915,30 @@ static PyObject *py_glucose41_del(PyObject *self, PyObject *args)
 
 	delete s;
 	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Glucose41::Solver *s = (Glucose41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
 }
 #endif  // WITH_GLUCOSE41
 

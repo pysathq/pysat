@@ -377,6 +377,17 @@ class Solver(object):
             self.solver.delete()
             self.solver = None
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This varies between
+            solvers.
+        """
+
+        if self.solver:
+            return self.solver.accum_stats()
+        else:
+            return None
+
     def solve(self, assumptions=[]):
         """
             This method is used to check satisfiability of a CNF formula given
@@ -1649,6 +1660,11 @@ class Glucose4(object):
 
             if self.prfile:
                 self.prfile.close()
+
+    def accum_stats(self):
+
+        if self.glucose:
+            return pysolvers.glucose41_acc_stats(self.glucose)
 
     def solve(self, assumptions=[]):
         """
