@@ -1,6 +1,6 @@
-diff -Naur build/solvers/minicard/Makefile solvers/minicard/Makefile
---- build/solvers/minicard/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/minicard/Makefile	2019-12-02 08:41:19.403851900 +0100
+diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
+--- solvers/minicard/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mc/Makefile	2020-07-04 11:29:34.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -41,9 +41,9 @@ diff -Naur build/solvers/minicard/Makefile solvers/minicard/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur build/solvers/minicard/core/Solver.cc solvers/minicard/core/Solver.cc
---- build/solvers/minicard/core/Solver.cc	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/core/Solver.cc	2019-12-02 08:41:19.423371200 +0100
+diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
+--- solvers/minicard/core/Solver.cc	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/core/Solver.cc	2020-07-04 11:29:34.000000000 +1000
 @@ -27,10 +27,10 @@
  
  #include <math.h>
@@ -423,9 +423,9 @@ diff -Naur build/solvers/minicard/core/Solver.cc solvers/minicard/core/Solver.cc
                 ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
      to.moveTo(ca);
  }
-diff -Naur build/solvers/minicard/core/Solver.h solvers/minicard/core/Solver.h
---- build/solvers/minicard/core/Solver.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/core/Solver.h	2019-12-02 08:41:19.447771500 +0100
+diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
+--- solvers/minicard/core/Solver.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/core/Solver.h	2020-07-04 11:29:34.000000000 +1000
 @@ -25,18 +25,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -528,9 +528,9 @@ diff -Naur build/solvers/minicard/core/Solver.h solvers/minicard/core/Solver.h
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-diff -Naur build/solvers/minicard/core/SolverTypes.h solvers/minicard/core/SolverTypes.h
---- build/solvers/minicard/core/SolverTypes.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/core/SolverTypes.h	2019-12-02 08:41:19.464363000 +0100
+diff -Naur solvers/minicard/core/SolverTypes.h solvers/mc/core/SolverTypes.h
+--- solvers/minicard/core/SolverTypes.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/core/SolverTypes.h	2020-07-04 11:29:34.000000000 +1000
 @@ -26,19 +26,19 @@
  **************************************************************************************************/
  
@@ -667,9 +667,9 @@ diff -Naur build/solvers/minicard/core/SolverTypes.h solvers/minicard/core/Solve
  |    Result:
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
-diff -Naur build/solvers/minicard/mtl/Alg.h solvers/minicard/mtl/Alg.h
---- build/solvers/minicard/mtl/Alg.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Alg.h	2019-12-02 08:41:19.474123900 +0100
+diff -Naur solvers/minicard/mtl/Alg.h solvers/mc/mtl/Alg.h
+--- solvers/minicard/mtl/Alg.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Alg.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -687,9 +687,9 @@ diff -Naur build/solvers/minicard/mtl/Alg.h solvers/minicard/mtl/Alg.h
  
  //=================================================================================================
  // Useful functions on vector-like types:
-diff -Naur build/solvers/minicard/mtl/Alloc.h solvers/minicard/mtl/Alloc.h
---- build/solvers/minicard/mtl/Alloc.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Alloc.h	2019-12-02 08:41:19.484859300 +0100
+diff -Naur solvers/minicard/mtl/Alloc.h solvers/mc/mtl/Alloc.h
+--- solvers/minicard/mtl/Alloc.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Alloc.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -709,9 +709,9 @@ diff -Naur build/solvers/minicard/mtl/Alloc.h solvers/minicard/mtl/Alloc.h
  
  //=================================================================================================
  // Simple Region-based memory allocator:
-diff -Naur build/solvers/minicard/mtl/Heap.h solvers/minicard/mtl/Heap.h
---- build/solvers/minicard/mtl/Heap.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Heap.h	2019-12-02 08:41:19.495597600 +0100
+diff -Naur solvers/minicard/mtl/Heap.h solvers/mc/mtl/Heap.h
+--- solvers/minicard/mtl/Heap.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Heap.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -729,9 +729,9 @@ diff -Naur build/solvers/minicard/mtl/Heap.h solvers/minicard/mtl/Heap.h
  
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
-diff -Naur build/solvers/minicard/mtl/IntTypes.h solvers/minicard/mtl/IntTypes.h
---- build/solvers/minicard/mtl/IntTypes.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/IntTypes.h	2019-12-02 08:41:19.505355200 +0100
+diff -Naur solvers/minicard/mtl/IntTypes.h solvers/mc/mtl/IntTypes.h
+--- solvers/minicard/mtl/IntTypes.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/IntTypes.h	2020-07-04 11:29:34.000000000 +1000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -757,9 +757,9 @@ diff -Naur build/solvers/minicard/mtl/IntTypes.h solvers/minicard/mtl/IntTypes.h
  #   include <inttypes.h>
  
  #endif
-diff -Naur build/solvers/minicard/mtl/Map.h solvers/minicard/mtl/Map.h
---- build/solvers/minicard/mtl/Map.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Map.h	2019-12-02 08:41:19.512192600 +0100
+diff -Naur solvers/minicard/mtl/Map.h solvers/mc/mtl/Map.h
+--- solvers/minicard/mtl/Map.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Map.h	2020-07-04 11:29:34.000000000 +1000
 @@ -17,28 +17,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -802,9 +802,9 @@ diff -Naur build/solvers/minicard/mtl/Map.h solvers/minicard/mtl/Map.h
  
  
  //=================================================================================================
-diff -Naur build/solvers/minicard/mtl/Queue.h solvers/minicard/mtl/Queue.h
---- build/solvers/minicard/mtl/Queue.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Queue.h	2019-12-02 08:41:19.521948600 +0100
+diff -Naur solvers/minicard/mtl/Queue.h solvers/mc/mtl/Queue.h
+--- solvers/minicard/mtl/Queue.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Queue.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -822,9 +822,9 @@ diff -Naur build/solvers/minicard/mtl/Queue.h solvers/minicard/mtl/Queue.h
  
  //=================================================================================================
  
-diff -Naur build/solvers/minicard/mtl/Sort.h solvers/minicard/mtl/Sort.h
---- build/solvers/minicard/mtl/Sort.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Sort.h	2019-12-02 08:41:19.528779600 +0100
+diff -Naur solvers/minicard/mtl/Sort.h solvers/mc/mtl/Sort.h
+--- solvers/minicard/mtl/Sort.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Sort.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -846,9 +846,9 @@ diff -Naur build/solvers/minicard/mtl/Sort.h solvers/minicard/mtl/Sort.h
  
  template<class T>
  struct LessThan_default {
-diff -Naur build/solvers/minicard/mtl/Vec.h solvers/minicard/mtl/Vec.h
---- build/solvers/minicard/mtl/Vec.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/Vec.h	2019-12-02 08:41:19.532683100 +0100
+diff -Naur solvers/minicard/mtl/Vec.h solvers/mc/mtl/Vec.h
+--- solvers/minicard/mtl/Vec.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/Vec.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -880,9 +880,9 @@ diff -Naur build/solvers/minicard/mtl/Vec.h solvers/minicard/mtl/Vec.h
          throw OutOfMemoryException();
   }
  
-diff -Naur build/solvers/minicard/mtl/XAlloc.h solvers/minicard/mtl/XAlloc.h
---- build/solvers/minicard/mtl/XAlloc.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/mtl/XAlloc.h	2019-12-02 08:41:19.536587100 +0100
+diff -Naur solvers/minicard/mtl/XAlloc.h solvers/mc/mtl/XAlloc.h
+--- solvers/minicard/mtl/XAlloc.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/mtl/XAlloc.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -900,9 +900,9 @@ diff -Naur build/solvers/minicard/mtl/XAlloc.h solvers/minicard/mtl/XAlloc.h
  
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
-diff -Naur build/solvers/minicard/utils/Options.cc solvers/minicard/utils/Options.cc
---- build/solvers/minicard/utils/Options.cc	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/utils/Options.cc	2019-12-02 08:41:19.543420500 +0100
+diff -Naur solvers/minicard/utils/Options.cc solvers/mc/utils/Options.cc
+--- solvers/minicard/utils/Options.cc	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/utils/Options.cc	2020-07-04 11:29:34.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -949,9 +949,9 @@ diff -Naur build/solvers/minicard/utils/Options.cc solvers/minicard/utils/Option
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
-diff -Naur build/solvers/minicard/utils/Options.h solvers/minicard/utils/Options.h
---- build/solvers/minicard/utils/Options.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/utils/Options.h	2019-12-02 08:41:19.560011900 +0100
+diff -Naur solvers/minicard/utils/Options.h solvers/mc/utils/Options.h
+--- solvers/minicard/utils/Options.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/utils/Options.h	2020-07-04 11:29:34.000000000 +1000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1006,10 +1006,10 @@ diff -Naur build/solvers/minicard/utils/Options.h solvers/minicard/utils/Options
          if (verbose){
              fprintf(stderr, "\n        %s\n", description);
              fprintf(stderr, "\n");
-diff -Naur build/solvers/minicard/utils/ParseUtils.h solvers/minicard/utils/ParseUtils.h
---- build/solvers/minicard/utils/ParseUtils.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/utils/ParseUtils.h	2019-12-02 08:41:19.568795300 +0100
-@@ -18,15 +18,15 @@
+diff -Naur solvers/minicard/utils/ParseUtils.h solvers/mc/utils/ParseUtils.h
+--- solvers/minicard/utils/ParseUtils.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/utils/ParseUtils.h	2020-07-04 11:29:34.000000000 +1000
+@@ -18,80 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
  
@@ -1021,16 +1021,101 @@ diff -Naur build/solvers/minicard/utils/ParseUtils.h solvers/minicard/utils/Pars
  #include <stdlib.h>
  #include <stdio.h>
  
- #include <zlib.h>
- 
+-#include <zlib.h>
+-
 -namespace Minisat {
+-
+-//-------------------------------------------------------------------------------------------------
+-// A simple buffered character stream class:
+-
+-static const int buffer_size = 1048576;
+-
+-
+-class StreamBuffer {
+-    gzFile        in;
+-    unsigned char buf[buffer_size];
+-    int           pos;
+-    int           size;
+-
+-    void assureLookahead() {
+-        if (pos >= size) {
+-            pos  = 0;
+-            size = gzread(in, buf, sizeof(buf)); } }
+-
+-public:
+-    explicit StreamBuffer(gzFile i) : in(i), pos(0), size(0) { assureLookahead(); }
+-
+-    int  operator *  () const { return (pos >= size) ? EOF : buf[pos]; }
+-    void operator ++ ()       { pos++; assureLookahead(); }
+-    int  position    () const { return pos; }
+-};
+-
+-
+-//-------------------------------------------------------------------------------------------------
+-// End-of-file detection functions for StreamBuffer and char*:
+-
+-
+-static inline bool isEof(StreamBuffer& in) { return *in == EOF;  }
+-static inline bool isEof(const char*   in) { return *in == '\0'; }
+-
+-//-------------------------------------------------------------------------------------------------
+-// Generic parse functions parametrized over the input-stream type.
+-
+-
+-template<class B>
+-static void skipWhitespace(B& in) {
+-    while ((*in >= 9 && *in <= 13) || *in == 32)
+-        ++in; }
+-
+-
+-template<class B>
+-static void skipLine(B& in) {
+-    for (;;){
+-        if (isEof(in)) return;
+-        if (*in == '\n') { ++in; return; }
+-        ++in; } }
+-
+-
+-template<class B>
+-static int parseInt(B& in) {
+-    int     val = 0;
+-    bool    neg = false;
+-    skipWhitespace(in);
+-    if      (*in == '-') neg = true, ++in;
+-    else if (*in == '+') ++in;
+-    if (*in < '0' || *in > '9') fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+-    while (*in >= '0' && *in <= '9')
+-        val = val*10 + (*in - '0'),
+-        ++in;
+-    return neg ? -val : val; }
+-
 +namespace Minicard {
  
- //-------------------------------------------------------------------------------------------------
- // A simple buffered character stream class:
-diff -Naur build/solvers/minicard/utils/System.cc solvers/minicard/utils/System.cc
---- build/solvers/minicard/utils/System.cc	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/utils/System.cc	2019-12-02 08:41:19.572699000 +0100
+ // String matching: in case of a match the input iterator will be advanced the corresponding
+ // number of characters.
+@@ -104,18 +37,9 @@
+ 
+     in += i;
+ 
+-    return true; 
++    return true;
+ }
+ 
+-// String matching: consumes characters eagerly, but does not require random access iterator.
+-template<class B>
+-static bool eagerMatch(B& in, const char* str) {
+-    for (; *str != '\0'; ++str, ++in)
+-        if (*str != *in)
+-            return false;
+-    return true; }
+-
+-
+ //=================================================================================================
+ }
+ 
+diff -Naur solvers/minicard/utils/System.cc solvers/mc/utils/System.cc
+--- solvers/minicard/utils/System.cc	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/utils/System.cc	2020-07-04 11:29:34.000000000 +1000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1092,9 +1177,9 @@ diff -Naur build/solvers/minicard/utils/System.cc solvers/minicard/utils/System.
 +double Minicard::memUsedPeak(void) { return memUsed(); }
 +
  #endif
-diff -Naur build/solvers/minicard/utils/System.h solvers/minicard/utils/System.h
---- build/solvers/minicard/utils/System.h	2017-04-06 16:30:14.000000000 +0200
-+++ solvers/minicard/utils/System.h	2019-12-02 08:41:19.578555600 +0100
+diff -Naur solvers/minicard/utils/System.h solvers/mc/utils/System.h
+--- solvers/minicard/utils/System.h	2017-04-07 00:30:14.000000000 +1000
++++ solvers/mc/utils/System.h	2020-07-04 11:29:34.000000000 +1000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
