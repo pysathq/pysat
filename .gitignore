@@ -3,6 +3,7 @@
 *.tar.gz
 *.swp
 build
+_build
 dist
 solvers/cadical
 solvers/glucose30

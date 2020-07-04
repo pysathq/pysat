@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.07.2020 (*0.1.5.dev17*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Removed dependency for zlib.
+
 23.06.2020 (*0.1.5.dev16*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
