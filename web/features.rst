@@ -4,8 +4,13 @@ Features
 
 PySAT integrates a number of widely used state-of-the-art SAT solvers. All the
 provided solvers are the original low-level implementations installed along
-with PySAT. Note that the solvers' source code *is not* a part of the project's
-source tree and is downloaded and patched at every PySAT installation.
+with PySAT. Note that the solvers' source code *is not* a part of the
+project's source tree and is downloaded and patched at every PySAT
+installation. Note that originally the solvers' source code was not
+distributed with PySAT, which resulted in sequence of download and patch
+operations for each solver during each installation of PySAT. This, however,
+causes serious issues in case of using a proxy. As a result and since version
+0.1.5.dev18, PySAT includes the solvers' archive files in the distribution.
 
 Currently, the following SAT solvers are supported (at this point, for
 Minisat-based solvers only *core* versions are integrated):
