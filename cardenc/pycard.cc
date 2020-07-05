@@ -242,8 +242,13 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 				&main_thread))
 		return NULL;
 
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
 	if (main_thread) {
-		signal(SIGINT, sigint_handler);
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
 		if (setjmp(env) != 0) {
 			PyErr_SetString(CardError, "Caught keyboard interrupt");
@@ -251,13 +256,12 @@ static PyObject *py_encode_atmost(PyObject *self, PyObject *args)
 		}
 	}
 
-	vector<int> lhs;
-	if (pyiter_to_vector(lhs_obj, lhs) == false)
-		return NULL;
-
 	// calling encoder
 	ClauseSet dest;
 	_encode_atmost(dest, lhs, rhs, top, enc);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
@@ -297,8 +301,13 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 				&main_thread))
 		return NULL;
 
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
 	if (main_thread) {
-		signal(SIGINT, sigint_handler);
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
 		if (setjmp(env) != 0) {
 			PyErr_SetString(CardError, "Caught keyboard interrupt");
@@ -306,13 +315,12 @@ static PyObject *py_encode_atleast(PyObject *self, PyObject *args)
 		}
 	}
 
-	vector<int> lhs;
-	if (pyiter_to_vector(lhs_obj, lhs) == false)
-		return NULL;
-
 	// calling encoder
 	ClauseSet dest;
 	_encode_atleast(dest, lhs, rhs, top, enc);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
@@ -352,8 +360,13 @@ static PyObject *py_itot_new(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &main_thread))
 		return NULL;
 
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
 	if (main_thread) {
-		signal(SIGINT, sigint_handler);
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
 		if (setjmp(env) != 0) {
 			PyErr_SetString(CardError, "Caught keyboard interrupt");
@@ -361,13 +374,12 @@ static PyObject *py_itot_new(PyObject *self, PyObject *args)
 		}
 	}
 
-	vector<int> lhs;
-	if (pyiter_to_vector(lhs_obj, lhs) == false)
-		return NULL;
-
 	// calling encoder
 	ClauseSet dest;
 	TotTree *tree = itot_new(dest, lhs, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
@@ -409,8 +421,12 @@ static PyObject *py_itot_inc(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oiii", &t_obj, &rhs, &top, &main_thread))
 		return NULL;
 
+	// get pointer to tree
+	TotTree *tree = (TotTree *)pyobj_to_void(t_obj);
+
+	PyOS_sighandler_t sig_save;
 	if (main_thread) {
-		signal(SIGINT, sigint_handler);
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
 		if (setjmp(env) != 0) {
 			PyErr_SetString(CardError, "Caught keyboard interrupt");
@@ -418,12 +434,12 @@ static PyObject *py_itot_inc(PyObject *self, PyObject *args)
 		}
 	}
 
-	// get pointer to tree
-	TotTree *tree = (TotTree *)pyobj_to_void(t_obj);
-
 	// calling encoder
 	ClauseSet dest;
 	itot_increase(tree, dest, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
@@ -466,15 +482,6 @@ static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 				&main_thread))
 		return NULL;
 
-	if (main_thread) {
-		signal(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(CardError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	vector<int> lhs;
 	if (pyiter_to_vector(lhs_obj, lhs) == false)
 		return NULL;
@@ -482,9 +489,22 @@ static PyObject *py_itot_ext(PyObject *self, PyObject *args)
 	// get pointer to tree
 	TotTree *tree = (TotTree *)pyobj_to_void(t_obj);
 
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
 	// calling encoder
 	ClauseSet dest;
 	tree = itot_extend(lhs, tree, dest, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
@@ -528,8 +548,13 @@ static PyObject *py_itot_mrg(PyObject *self, PyObject *args)
 				&main_thread))
 		return NULL;
 
+	// get pointer to tree
+	TotTree *tree1 = (TotTree *)pyobj_to_void(t1_obj);
+	TotTree *tree2 = (TotTree *)pyobj_to_void(t2_obj);
+
+	PyOS_sighandler_t sig_save;
 	if (main_thread) {
-		signal(SIGINT, sigint_handler);
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
 		if (setjmp(env) != 0) {
 			PyErr_SetString(CardError, "Caught keyboard interrupt");
@@ -537,13 +562,12 @@ static PyObject *py_itot_mrg(PyObject *self, PyObject *args)
 		}
 	}
 
-	// get pointer to tree
-	TotTree *tree1 = (TotTree *)pyobj_to_void(t1_obj);
-	TotTree *tree2 = (TotTree *)pyobj_to_void(t2_obj);
-
 	// calling encoder
 	ClauseSet dest;
 	tree1 = itot_merge(tree1, tree2, dest, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
 
 	// creating the resulting clause set
 	PyObject *dest_obj = PyList_New(dest.size());
