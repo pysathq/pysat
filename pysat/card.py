@@ -252,16 +252,8 @@ class CardEnc(object):
             ret.atmosts, ret.nv = [(lits, bound)], top_id
             return ret
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            res = pycard.encode_atmost(lits, bound, top_id, encoding, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            res = pycard.encode_atmost(lits, bound, top_id, encoding, 0)
+        res = pycard.encode_atmost(lits, bound, top_id, encoding,
+                int(MainThread.check()))
 
         if res:
             ret.clauses, ret.nv = res
@@ -348,16 +340,8 @@ class CardEnc(object):
             ret.atmosts, ret.nv = [([-l for l in lits], len(lits) - bound)], top_id
             return ret
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            res = pycard.encode_atleast(lits, bound, top_id, encoding, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            res = pycard.encode_atleast(lits, bound, top_id, encoding, 0)
+        res = pycard.encode_atleast(lits, bound, top_id, encoding,
+                int(MainThread.check()))
 
         if res:
             ret.clauses, ret.nv = res
@@ -494,19 +478,9 @@ class ITotalizer(object):
         self.ubound = ubound
         self.top_id = max(map(lambda x: abs(x), self.lits + [top_id if top_id != None else 0]))
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            # creating the object
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_new(self.lits,
-                    self.ubound, self.top_id, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_new(self.lits,
-                    self.ubound, self.top_id, 0)
+        # creating the object
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_new(self.lits,
+                self.ubound, self.top_id, int(MainThread.check()))
 
         # saving the result
         self.cnf.clauses = clauses
@@ -613,19 +587,9 @@ class ITotalizer(object):
         else:
             self.ubound = ubound
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            # updating the object and adding more variables and clauses
-            clauses, self.rhs, self.top_id = pycard.itot_inc(self.tobj,
-                    self.ubound, self.top_id, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            clauses, self.rhs, self.top_id = pycard.itot_inc(self.tobj,
-                    self.ubound, self.top_id, 0)
+        # updating the object and adding more variables and clauses
+        clauses, self.rhs, self.top_id = pycard.itot_inc(self.tobj,
+                self.ubound, self.top_id, int(MainThread.check()))
 
         # saving the result
         self.cnf.clauses.extend(clauses)
@@ -696,19 +660,9 @@ class ITotalizer(object):
         self.top_id = max(map(lambda x: abs(x), self.lits + [self.top_id, top_id if top_id != None else 0]))
         self.ubound = max(self.ubound, ubound if ubound != None else 0)
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            # updating the object and adding more variables and clauses
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_ext(self.tobj,
-                    lits, self.ubound, self.top_id, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_ext(self.tobj,
-                    lits, self.ubound, self.top_id, 0)
+        # updating the object and adding more variables and clauses
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_ext(self.tobj,
+                lits, self.ubound, self.top_id, int(MainThread.check()))
 
         # saving the result
         self.cnf.clauses.extend(clauses)
@@ -782,19 +736,9 @@ class ITotalizer(object):
         # extending the list of input literals
         self.lits.extend(another.lits)
 
-        if MainThread.check() == True:
-            # saving default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_DFL)
-
-            # updating the object and adding more variables and clauses
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_mrg(self.tobj,
-                    another.tobj, self.ubound, self.top_id, 1)
-
-            # recovering default SIGINT handler
-            def_sigint_handler = signal.signal(signal.SIGINT, def_sigint_handler)
-        else:
-            self.tobj, clauses, self.rhs, self.top_id = pycard.itot_mrg(self.tobj,
-                    another.tobj, self.ubound, self.top_id, 0)
+        # updating the object and adding more variables and clauses
+        self.tobj, clauses, self.rhs, self.top_id = pycard.itot_mrg(self.tobj,
+                another.tobj, self.ubound, self.top_id, int(MainThread.check()))
 
         # saving the result
         self.cnf.clauses.extend(another.cnf.clauses)
