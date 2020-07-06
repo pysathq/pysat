@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+06.07.2020 (*0.1.6.dev2*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Forgot to manifest the solver archives. :)
+
 06.07.2020 (*0.1.6.dev1*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
