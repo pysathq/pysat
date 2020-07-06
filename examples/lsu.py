@@ -118,20 +118,23 @@ class LSU:
 
         :param formula: input MaxSAT formula
         :param solver: name of SAT solver
+        :param expect_interrupt: whether or not an :meth:`interrupt` call is expected
         :param verbose: verbosity level
 
         :type formula: :class:`.WCNF`
         :type solver: str
+        :type expect_interrupt: bool
         :type verbose: int
     """
 
-    def __init__(self, formula, solver='g4', verbose=0):
+    def __init__(self, formula, solver='g4', expect_interrupt=False, verbose=0):
         """
             Constructor.
         """
 
         self.verbose = verbose
         self.solver = solver
+        self.expect_interrupt = expect_interrupt
         self.formula = formula
         self.topv = formula.nv  # largest variable index
         self.sels = []          # soft clause selector variables
@@ -217,7 +220,7 @@ class LSU:
 
         is_sat = False
 
-        while self.oracle.solve_limited():
+        while self.oracle.solve_limited(expect_interrupt=self.expect_interrupt):
             is_sat = True
             self.model = self.oracle.get_model()
             self.cost = self._get_model_cost(self.formula, self.model)
@@ -342,18 +345,21 @@ class LSUPlus(LSU, object):
         :class:`.Minicard`).
 
         :param formula: input MaxSAT formula in WCNF+ format
+        :param expect_interrupt: whether or not an :meth:`interrupt` call is expected
         :param verbose: verbosity level
 
         :type formula: :class:`.WCNFPlus`
+        :type expect_interrupt: bool
         :type verbose: int
     """
 
-    def __init__(self, formula, verbose=0):
+    def __init__(self, formula, expect_interrupt=False, verbose=0):
         """
             Constructor.
         """
 
-        super(LSUPlus, self).__init__(formula, solver='mc', verbose=verbose)
+        super(LSUPlus, self).__init__(formula, solver='mc',
+                expect_interrupt=expect_interrupt, verbose=verbose)
 
         # adding atmost constraints
         for am in formula.atms:
@@ -442,12 +448,14 @@ if __name__ == '__main__':
             else:  # expecting '*.cnf'
                 formula = CNF(from_file=files[0]).weighted()
 
-            lsu = LSU(formula, solver=solver, verbose=verbose)
+            lsu = LSU(formula, solver=solver,
+                    expect_interrupt=(timeout != None), verbose=verbose)
 
         # reading WCNF+
         elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
-            lsu = LSUPlus(formula, verbose=verbose)
+            lsu = LSUPlus(formula, expect_interrupt=(timeout != None),
+                    verbose=verbose)
 
         # setting a timer if necessary
         if timeout is not None:

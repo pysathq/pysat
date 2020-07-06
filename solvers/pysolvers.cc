@@ -1048,8 +1048,10 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -1063,23 +1065,28 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Glucose30::toInt(res)));
@@ -1572,8 +1579,10 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -1587,23 +1596,28 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		glucose41_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Glucose41::toInt(res)));
@@ -2477,8 +2491,10 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -2492,23 +2508,28 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		maplechrono_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MapleChrono::toInt(res)));
@@ -2985,8 +3006,10 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -3000,23 +3023,28 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		maplesat_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Maplesat::toInt(res)));
@@ -3493,8 +3521,10 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -3508,23 +3538,28 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		maplecm_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MapleCM::toInt(res)));
@@ -4026,8 +4061,10 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -4041,23 +4078,28 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minicard_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != Minicard::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Minicard::toInt(res)));
@@ -4482,8 +4524,10 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -4497,23 +4541,28 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisat22_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(Minisat22::toInt(res)));
@@ -4938,8 +4987,10 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
 	int main_thread;
+	int expect_interrupt;
 
-	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
 		return NULL;
 
 	// get pointer to solver
@@ -4953,23 +5004,28 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 	if (max_var > 0)
 		minisatgh_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
-
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
-		}
-	}
-
 	MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
-	Py_BEGIN_ALLOW_THREADS
-	res = s->solveLimited(a);
-	Py_END_ALLOW_THREADS
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
 
 	if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
 		return PyBool_FromLong((long)!(MinisatGH::toInt(res)));

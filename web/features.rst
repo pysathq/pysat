@@ -10,7 +10,7 @@ installation. Note that originally the solvers' source code was not
 distributed with PySAT, which resulted in sequence of download and patch
 operations for each solver during each installation of PySAT. This, however,
 causes serious issues in case of using a proxy. As a result and since version
-0.1.5.dev18, PySAT includes the solvers' archive files in the distribution.
+0.1.6.dev1, PySAT includes the solvers' archive files in the distribution.
 
 Currently, the following SAT solvers are supported (at this point, for
 Minisat-based solvers only *core* versions are integrated):

@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+06.07.2020 (*0.1.6.dev1*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Solver archive files are now shipped with PySAT.
+- A bit cleaner signal handling.
+- Got rid of the segmentation faults when CTRL+C'ing limited SAT calls.
+- Accumulated stats for Glucose4.1 (by Chris Jefferson)
+
 04.07.2020 (*0.1.5.dev17*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
