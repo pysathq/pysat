@@ -388,3 +388,15 @@ diff -Naur build/solvers/cadical/signal.cpp solvers/cadical/signal.cpp
  }
  
  }
+diff -Naur build/solvers/cadical/version.cpp solvers/cadical/version.cpp
+--- build/solvers/cadical/version.cpp	2019-07-12 22:22:02.000000000 +0200
++++ solvers/cadical/version.cpp	2019-12-02 08:41:16.375326400 +0100
+@@ -5,7 +5,7 @@
+ // defining '-DNBUILD'.  Then we try to guess part of the configuration.
+ 
+ #ifndef NBUILD
+-#include <build.hpp>
++#include "build.hpp"
+ #endif
+ 
+ /*------------------------------------------------------------------------*/
