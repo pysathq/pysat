@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+07.07.2020 (*0.1.6.dev3*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed RC2's enumeration of MSSes.
+- Minor changes to the patch for CaDiCaL
+
 06.07.2020 (*0.1.6.dev2*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -129,7 +129,7 @@ to_move = {
         ('src/extend.cpp', 'extend.cpp'),
         ('src/external.cpp', 'external.cpp'),
         ('src/external.hpp', 'external.hpp'),
-        ('src/file.cpp', 'file.cpp'),
+        ('src/file.cpp', 'file0.cpp'),
         ('src/file.hpp', 'file.hpp'),
         ('src/flags.cpp', 'flags.cpp'),
         ('src/flags.hpp', 'flags.hpp'),

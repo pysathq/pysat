@@ -206,7 +206,7 @@ class RC2(object):
         self.trim = trim
 
         # clause selectors and mapping from selectors to clause ids
-        self.sels, self.smap, self.sall, self.s2cl = [], {}, [], {}
+        self.sels, self.smap, self.sall, self.s2cl, self.sneg = [], {}, [], {}, set([])
 
         # other MaxSAT related stuff
         self.topv = formula.nv
@@ -529,6 +529,15 @@ class RC2(object):
                         if selv in m:
                             # clause is satisfied
                             cl.append(-selv)
+
+                            # next time we want to falsify one of these
+                            # clauses, i.e. we should encode the negation
+                            # of each of these selectors
+                            if selv in self.s2cl and not selv in self.sneg:
+                                self.sneg.add(selv)
+                                for il in self.s2cl[selv]:
+                                    self.oracle.add_clause([selv, -il])
+
                         elif selv in self.s2cl:
                             # clause is falsified and it is not unit size
                             for il in self.s2cl[selv]:
@@ -1706,10 +1715,10 @@ if __name__ == '__main__':
 
                 if i == to_enum:
                     break
-
-            # needed for MSE'20
-            if to_enum != 1 and block == 1:
-                print('v')
+            else:
+                # needed for MSE'20
+                if verbose > 2 and vnew and to_enum != 1 and block == 1:
+                    print('v')
 
             if verbose:
                 if not optimum_found:
