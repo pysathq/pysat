@@ -100,6 +100,7 @@ extern "C" {
 	static PyObject *py_cadical_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_cadical_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_cadical_del       (PyObject *, PyObject *);
+	static PyObject *py_cadical_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUCOSE30
 	static PyObject *py_glucose3_new       (PyObject *, PyObject *);
@@ -119,6 +120,7 @@ extern "C" {
 	static PyObject *py_glucose3_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_glucose3_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_del       (PyObject *, PyObject *);
+	static PyObject *py_glucose3_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUCOSE41
 	static PyObject *py_glucose41_new       (PyObject *, PyObject *);
@@ -151,6 +153,7 @@ extern "C" {
 	static PyObject *py_lingeling_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_lingeling_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_lingeling_del       (PyObject *, PyObject *);
+	static PyObject *py_lingeling_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MAPLECHRONO
 	static PyObject *py_maplechrono_new       (PyObject *, PyObject *);
@@ -169,6 +172,7 @@ extern "C" {
 	static PyObject *py_maplechrono_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_maplechrono_del       (PyObject *, PyObject *);
+	static PyObject *py_maplechrono_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MAPLECM
 	static PyObject *py_maplecm_new       (PyObject *, PyObject *);
@@ -187,6 +191,7 @@ extern "C" {
 	static PyObject *py_maplecm_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_maplecm_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_maplecm_del       (PyObject *, PyObject *);
+	static PyObject *py_maplecm_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MAPLESAT
 	static PyObject *py_maplesat_new       (PyObject *, PyObject *);
@@ -205,6 +210,7 @@ extern "C" {
 	static PyObject *py_maplesat_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_maplesat_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_maplesat_del       (PyObject *, PyObject *);
+	static PyObject *py_maplesat_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MINICARD
 	static PyObject *py_minicard_new       (PyObject *, PyObject *);
@@ -223,6 +229,7 @@ extern "C" {
 	static PyObject *py_minicard_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_minicard_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_minicard_del       (PyObject *, PyObject *);
+	static PyObject *py_minicard_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MINISAT22
 	static PyObject *py_minisat22_new       (PyObject *, PyObject *);
@@ -240,6 +247,7 @@ extern "C" {
 	static PyObject *py_minisat22_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_minisat22_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_del       (PyObject *, PyObject *);
+	static PyObject *py_minisat22_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_MINISATGH
 	static PyObject *py_minisatgh_new       (PyObject *, PyObject *);
@@ -257,6 +265,7 @@ extern "C" {
 	static PyObject *py_minisatgh_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_del       (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_acc_stats (PyObject *, PyObject *);
 #endif
 }
 
@@ -264,15 +273,16 @@ extern "C" {
 //=============================================================================
 static PyMethodDef module_methods[] = {
 #ifdef WITH_CADICAL
-	{ "cadical_new",       py_cadical_new,       METH_VARARGS,     new_docstring },
-	{ "cadical_add_cl",    py_cadical_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "cadical_solve",     py_cadical_solve,     METH_VARARGS,   solve_docstring },
-	{ "cadical_tracepr",   py_cadical_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "cadical_core",      py_cadical_core,      METH_VARARGS,    core_docstring },
-	{ "cadical_model",     py_cadical_model,     METH_VARARGS,   model_docstring },
-	{ "cadical_nof_vars",  py_cadical_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "cadical_nof_cls",   py_cadical_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "cadical_del",       py_cadical_del,       METH_VARARGS,     del_docstring },
+	{ "cadical_new",       py_cadical_new,       METH_VARARGS,      new_docstring },
+	{ "cadical_add_cl",    py_cadical_add_cl,    METH_VARARGS,    addcl_docstring },
+	{ "cadical_solve",     py_cadical_solve,     METH_VARARGS,    solve_docstring },
+	{ "cadical_tracepr",   py_cadical_tracepr,   METH_VARARGS,  tracepr_docstring },
+	{ "cadical_core",      py_cadical_core,      METH_VARARGS,     core_docstring },
+	{ "cadical_model",     py_cadical_model,     METH_VARARGS,    model_docstring },
+	{ "cadical_nof_vars",  py_cadical_nof_vars,  METH_VARARGS,    nvars_docstring },
+	{ "cadical_nof_cls",   py_cadical_nof_cls,   METH_VARARGS,     ncls_docstring },
+	{ "cadical_del",       py_cadical_del,       METH_VARARGS,      del_docstring },
+	{ "cadical_acc_stats", py_cadical_acc_stats, METH_VARARGS, acc_stat_docstring },
 #endif
 #ifdef WITH_GLUCOSE30
 	{ "glucose3_new",       py_glucose3_new,       METH_VARARGS,       new_docstring },
@@ -292,6 +302,7 @@ static PyMethodDef module_methods[] = {
 	{ "glucose3_nof_vars",  py_glucose3_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "glucose3_nof_cls",   py_glucose3_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "glucose3_del",       py_glucose3_del,       METH_VARARGS,       del_docstring },
+	{ "glucose3_acc_stats", py_glucose3_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_GLUCOSE41
 	{ "glucose41_new",       py_glucose41_new,       METH_VARARGS,       new_docstring },
@@ -314,16 +325,17 @@ static PyMethodDef module_methods[] = {
 	{ "glucose41_acc_stats", py_glucose41_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_LINGELING
-	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,     new_docstring },
-	{ "lingeling_add_cl",    py_lingeling_add_cl,    METH_VARARGS,   addcl_docstring },
-	{ "lingeling_solve",     py_lingeling_solve,     METH_VARARGS,   solve_docstring },
-	{ "lingeling_setphases", py_lingeling_setphases, METH_VARARGS,  phases_docstring },
-	{ "lingeling_tracepr",   py_lingeling_tracepr,   METH_VARARGS, tracepr_docstring },
-	{ "lingeling_core",      py_lingeling_core,      METH_VARARGS,    core_docstring },
-	{ "lingeling_model",     py_lingeling_model,     METH_VARARGS,   model_docstring },
-	{ "lingeling_nof_vars",  py_lingeling_nof_vars,  METH_VARARGS,   nvars_docstring },
-	{ "lingeling_nof_cls",   py_lingeling_nof_cls,   METH_VARARGS,    ncls_docstring },
-	{ "lingeling_del",       py_lingeling_del,       METH_VARARGS,     del_docstring },
+	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,      new_docstring },
+	{ "lingeling_add_cl",    py_lingeling_add_cl,    METH_VARARGS,    addcl_docstring },
+	{ "lingeling_solve",     py_lingeling_solve,     METH_VARARGS,    solve_docstring },
+	{ "lingeling_setphases", py_lingeling_setphases, METH_VARARGS,   phases_docstring },
+	{ "lingeling_tracepr",   py_lingeling_tracepr,   METH_VARARGS,  tracepr_docstring },
+	{ "lingeling_core",      py_lingeling_core,      METH_VARARGS,     core_docstring },
+	{ "lingeling_model",     py_lingeling_model,     METH_VARARGS,    model_docstring },
+	{ "lingeling_nof_vars",  py_lingeling_nof_vars,  METH_VARARGS,    nvars_docstring },
+	{ "lingeling_nof_cls",   py_lingeling_nof_cls,   METH_VARARGS,     ncls_docstring },
+	{ "lingeling_del",       py_lingeling_del,       METH_VARARGS,      del_docstring },
+	{ "lingeling_acc_stats", py_lingeling_acc_stats, METH_VARARGS, acc_stat_docstring },
 #endif
 #ifdef WITH_MAPLECHRONO
 	{ "maplechrono_new",       py_maplechrono_new,       METH_VARARGS,       new_docstring },
@@ -342,6 +354,7 @@ static PyMethodDef module_methods[] = {
 	{ "maplechrono_nof_vars",  py_maplechrono_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "maplechrono_nof_cls",   py_maplechrono_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "maplechrono_del",       py_maplechrono_del,       METH_VARARGS,       del_docstring },
+	{ "maplechrono_acc_stats", py_maplechrono_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MAPLECM
 	{ "maplecm_new",       py_maplecm_new,       METH_VARARGS,       new_docstring },
@@ -360,6 +373,7 @@ static PyMethodDef module_methods[] = {
 	{ "maplecm_nof_vars",  py_maplecm_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "maplecm_nof_cls",   py_maplecm_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "maplecm_del",       py_maplecm_del,       METH_VARARGS,       del_docstring },
+	{ "maplecm_acc_stats", py_maplecm_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MAPLESAT
 	{ "maplesat_new",       py_maplesat_new,       METH_VARARGS,       new_docstring },
@@ -378,6 +392,7 @@ static PyMethodDef module_methods[] = {
 	{ "maplesat_nof_vars",  py_maplesat_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "maplesat_nof_cls",   py_maplesat_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "maplesat_del",       py_maplesat_del,       METH_VARARGS,       del_docstring },
+	{ "maplesat_acc_stats", py_maplesat_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MINICARD
 	{ "minicard_new",       py_minicard_new,       METH_VARARGS,       new_docstring },
@@ -396,6 +411,7 @@ static PyMethodDef module_methods[] = {
 	{ "minicard_nof_cls",   py_minicard_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "minicard_del",       py_minicard_del,       METH_VARARGS,       del_docstring },
 	{ "minicard_add_am",    py_minicard_add_am,    METH_VARARGS,     addam_docstring },
+	{ "minicard_acc_stats", py_minicard_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MINISAT22
 	{ "minisat22_new",       py_minisat22_new,       METH_VARARGS,       new_docstring },
@@ -413,6 +429,7 @@ static PyMethodDef module_methods[] = {
 	{ "minisat22_nof_vars",  py_minisat22_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "minisat22_nof_cls",   py_minisat22_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "minisat22_del",       py_minisat22_del,       METH_VARARGS,       del_docstring },
+	{ "minisat22_acc_stats", py_minisat22_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MINISATGH
 	{ "minisatgh_new",       py_minisatgh_new,       METH_VARARGS,       new_docstring },
@@ -430,6 +447,7 @@ static PyMethodDef module_methods[] = {
 	{ "minisatgh_nof_vars",  py_minisatgh_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "minisatgh_nof_cls",   py_minisatgh_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "minisatgh_del",       py_minisatgh_del,       METH_VARARGS,       del_docstring },
+	{ "minisatgh_acc_stats", py_minisatgh_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 	{ NULL, NULL, 0, NULL }
 };
@@ -902,6 +920,30 @@ static PyObject *py_cadical_del(PyObject *self, PyObject *args)
 
 	delete s;
 	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->restarts(),
+		"conflicts", s->conflicts(),
+		"decisions", s->decisions(),
+		"propagations", s->propagations()
+	);
 }
 #endif  // WITH_CADICAL
 
@@ -1433,6 +1475,30 @@ static PyObject *py_glucose3_del(PyObject *self, PyObject *args)
 
 	delete s;
 	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Glucose30::Solver *s = (Glucose30::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Glucose30::Solver *s = (Glucose30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
 }
 #endif  // WITH_GLUCOSE30
 
@@ -2343,6 +2409,26 @@ static PyObject *py_lingeling_del(PyObject *self, PyObject *args)
 	lglrelease(s);
 	Py_RETURN_NONE;
 }
+
+//
+//=============================================================================
+static PyObject *py_lingeling_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	LGL *s = (LGL *)pyobj_to_void(s_obj);
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", lglgetrests(s),
+		"conflicts", lglgetconfs(s),
+		"decisions", lglgetdecs(s),
+		"propagations", lglgetprops(s)
+	);
+}
 #endif  // WITH_LINGELING
 
 // API for MapleChrono
@@ -2857,6 +2943,30 @@ static PyObject *py_maplechrono_del(PyObject *self, PyObject *args)
 
 	delete s;
 	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplechrono_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
 }
 #endif  // WITH_MAPLECHRONO
 
@@ -3373,6 +3483,30 @@ static PyObject *py_maplesat_del(PyObject *self, PyObject *args)
 	delete s;
 	Py_RETURN_NONE;
 }
+
+//
+//=============================================================================
+static PyObject *py_maplesat_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Maplesat::Solver *s = (Maplesat::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
 #endif  // WITH_MAPLESAT
 
 // API for MapleCM
@@ -3888,6 +4022,30 @@ static PyObject *py_maplecm_del(PyObject *self, PyObject *args)
 	delete s;
 	Py_RETURN_NONE;
 }
+
+//
+//=============================================================================
+static PyObject *py_maplecm_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	MapleCM::Solver *s = (MapleCM::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
 #endif  // WITH_MAPLECM
 
 // API for Minicard
@@ -4379,6 +4537,30 @@ static PyObject *py_minicard_del(PyObject *self, PyObject *args)
 	delete s;
 	Py_RETURN_NONE;
 }
+
+//
+//=============================================================================
+static PyObject *py_minicard_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Minicard::Solver *s = (Minicard::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Minicard::Solver *s = (Minicard::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
 #endif  // WITH_MINICARD
 
 // API for MiniSat 2.2
@@ -4842,6 +5024,30 @@ static PyObject *py_minisat22_del(PyObject *self, PyObject *args)
 	delete s;
 	Py_RETURN_NONE;
 }
+
+//
+//=============================================================================
+static PyObject *py_minisat22_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Minisat22::Solver *s = (Minisat22::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Minisat22::Solver *s = (Minisat22::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
 #endif  // WITH_MINISAT22
 
 // API for MiniSat from github
@@ -5304,6 +5510,30 @@ static PyObject *py_minisatgh_del(PyObject *self, PyObject *args)
 
 	delete s;
 	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MinisatGH::Solver *s = (MinisatGH::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	MinisatGH::Solver *s = (MinisatGH::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
 }
 #endif  // WITH_MINISATGH
 

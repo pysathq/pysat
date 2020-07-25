@@ -1,6 +1,6 @@
-diff -Naur build/solvers/cadical/Makefile solvers/cadical/Makefile
---- build/solvers/cadical/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/cadical/Makefile	2019-12-03 22:13:49.525556200 +0100
+diff -Naur solvers/cadical/Makefile solvers/cdc/Makefile
+--- solvers/cadical/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/cdc/Makefile	2020-07-07 18:25:11.000000000 +1000
 @@ -0,0 +1,42 @@
 +### Makefile ---
 +
@@ -44,16 +44,31 @@ diff -Naur build/solvers/cadical/Makefile solvers/cadical/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur build/solvers/cadical/build.hpp solvers/cadical/build.hpp
---- build/solvers/cadical/build.hpp	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/cadical/build.hpp	2019-12-02 08:41:16.201635400 +0100
+diff -Naur solvers/cadical/build.hpp solvers/cdc/build.hpp
+--- solvers/cadical/build.hpp	1970-01-01 10:00:00.000000000 +1000
++++ solvers/cdc/build.hpp	2020-07-07 18:25:11.000000000 +1000
 @@ -0,0 +1,3 @@
 +#define VERSION "1.0.2"
 +#define IDENTIFIER "93cea3a86d42697a35af7ea477ef5214332f059f"
 +#define DATE "Thu Jul 11 10:16:56 WEST 2019 Darwin antares.local 18.6.0 x86_64"
-diff -Naur build/solvers/cadical/contract.hpp solvers/cadical/contract.hpp
---- build/solvers/cadical/contract.hpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/contract.hpp	2019-12-02 08:41:16.269955000 +0100
+diff -Naur solvers/cadical/cadical.hpp solvers/cdc/cadical.hpp
+--- solvers/cadical/cadical.hpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/cadical.hpp	2020-07-26 00:25:55.000000000 +1000
+@@ -435,6 +435,11 @@
+   int64_t redundant () const;   // Number of active redundant clauses.
+   int64_t irredundant () const; // Number of active irredundant clauses.
+ 
++  int64_t conflicts () const;   // Number of conflicts.
++  int64_t decisions () const;   // Number of decisions.
++  int64_t restarts () const;   // Number of restarts.
++  int64_t propagations () const;   // Number of propagations.
++
+   //------------------------------------------------------------------------
+   // Same as 'solve' with 'limits ("conflicts", 0)' and
+   //                      'limits ("preprocessing", rounds)'.
+diff -Naur solvers/cadical/contract.hpp solvers/cdc/contract.hpp
+--- solvers/cadical/contract.hpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/contract.hpp	2020-07-07 18:25:11.000000000 +1000
 @@ -1,6 +1,10 @@
  #ifndef _contract_hpp_INCLUDED
  #define _contract_hpp_INCLUDED
@@ -65,9 +80,23 @@ diff -Naur build/solvers/cadical/contract.hpp solvers/cadical/contract.hpp
  /*------------------------------------------------------------------------*/
  
  // If the user violates API contracts while calling functions declared in
-diff -Naur build/solvers/cadical/file0.cpp solvers/cadical/file0.cpp
---- build/solvers/cadical/file0.cpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/file0.cpp	2019-12-02 08:41:16.375326400 +0100
+diff -Naur solvers/cadical/file.hpp solvers/cdc/file.hpp
+--- solvers/cadical/file.hpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/file.hpp	2020-07-07 18:25:11.000000000 +1000
+@@ -9,6 +9,10 @@
+ #include <climits>
+ #endif
+ 
++#ifdef _MSC_VER
++#define NUNLOCKED
++#endif
++
+ /*------------------------------------------------------------------------*/
+ #ifndef NUNLOCKED
+ #define cadical_putc_unlocked putc_unlocked
+diff -Naur solvers/cadical/file0.cpp solvers/cdc/file0.cpp
+--- solvers/cadical/file0.cpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/file0.cpp	2020-07-07 18:25:11.000000000 +1000
 @@ -19,6 +19,19 @@
  
  /*------------------------------------------------------------------------*/
@@ -88,23 +117,9 @@ diff -Naur build/solvers/cadical/file0.cpp solvers/cadical/file0.cpp
  // Private constructor.
  
  File::File (Internal *i, bool w, int c, FILE * f, const char * n)
-diff -Naur build/solvers/cadical/file.hpp solvers/cadical/file.hpp
---- build/solvers/cadical/file.hpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/file.hpp	2019-12-02 08:41:16.385087600 +0100
-@@ -9,6 +9,10 @@
- #include <climits>
- #endif
- 
-+#ifdef _MSC_VER
-+#define NUNLOCKED
-+#endif
-+
- /*------------------------------------------------------------------------*/
- #ifndef NUNLOCKED
- #define cadical_putc_unlocked putc_unlocked
-diff -Naur build/solvers/cadical/make-build-header.sh solvers/cadical/make-build-header.sh
---- build/solvers/cadical/make-build-header.sh	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/make-build-header.sh	2019-12-02 08:41:16.480734900 +0100
+diff -Naur solvers/cadical/make-build-header.sh solvers/cdc/make-build-header.sh
+--- solvers/cadical/make-build-header.sh	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/make-build-header.sh	2020-07-07 18:25:11.000000000 +1000
 @@ -19,17 +19,9 @@
  }
  
@@ -161,9 +176,9 @@ diff -Naur build/solvers/cadical/make-build-header.sh solvers/cadical/make-build
  if [ x"$FLAGS" = x ]
  then
    warning "could not determine 'FLAGS' ('CXXFLAGS')"
-diff -Naur build/solvers/cadical/resources.cpp solvers/cadical/resources.cpp
---- build/solvers/cadical/resources.cpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/resources.cpp	2019-12-02 08:41:16.629094100 +0100
+diff -Naur solvers/cadical/resources.cpp solvers/cdc/resources.cpp
+--- solvers/cadical/resources.cpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/resources.cpp	2020-07-07 18:25:11.000000000 +1000
 @@ -6,8 +6,15 @@
  // TODO: port these functions to different OS.
  
@@ -295,9 +310,9 @@ diff -Naur build/solvers/cadical/resources.cpp solvers/cadical/resources.cpp
  }
  
  }
-diff -Naur build/solvers/cadical/signal.cpp solvers/cadical/signal.cpp
---- build/solvers/cadical/signal.cpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/signal.cpp	2019-12-02 08:41:16.664222200 +0100
+diff -Naur solvers/cadical/signal.cpp solvers/cdc/signal.cpp
+--- solvers/cadical/signal.cpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/signal.cpp	2020-07-07 18:25:11.000000000 +1000
 @@ -25,8 +25,12 @@
  static int alarm_time = -1;
  static Handler * signal_handler;
@@ -388,9 +403,57 @@ diff -Naur build/solvers/cadical/signal.cpp solvers/cadical/signal.cpp
  }
  
  }
-diff -Naur build/solvers/cadical/version.cpp solvers/cadical/version.cpp
---- build/solvers/cadical/version.cpp	2019-07-12 22:22:02.000000000 +0200
-+++ solvers/cadical/version.cpp	2019-12-02 08:41:16.375326400 +0100
+diff -Naur solvers/cadical/solver.cpp solvers/cdc/solver.cpp
+--- solvers/cadical/solver.cpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/solver.cpp	2020-07-26 00:29:31.000000000 +1000
+@@ -664,6 +664,44 @@
+   return res;
+ }
+ 
++int64_t Solver::conflicts () const {
++  TRACE ("conflicts");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.conflicts;
++  LOG_API_CALL_RETURNS ("conflicts", res);
++  return res;
++}
++
++int64_t Solver::decisions () const {
++  TRACE ("decisions");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.decisions;
++  LOG_API_CALL_RETURNS ("decisions", res);
++  return res;
++}
++
++int64_t Solver::restarts () const {
++  TRACE ("restarts");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.restarts;
++  LOG_API_CALL_RETURNS ("restarts", res);
++  return res;
++}
++
++int64_t Solver::propagations () const {
++  TRACE ("propagations");
++  REQUIRE_VALID_STATE ();
++  int64_t res = 0;
++  res += internal->stats.propagations.cover;
++  res += internal->stats.propagations.probe;
++  res += internal->stats.propagations.search;
++  res += internal->stats.propagations.transred;
++  res += internal->stats.propagations.vivify;
++  res += internal->stats.propagations.walk;
++  LOG_API_CALL_RETURNS ("propagations", res);
++  return res;
++}
++
+ /*------------------------------------------------------------------------*/
+ 
+ void Solver::freeze (int lit) {
+diff -Naur solvers/cadical/version.cpp solvers/cdc/version.cpp
+--- solvers/cadical/version.cpp	2019-07-13 06:22:02.000000000 +1000
++++ solvers/cdc/version.cpp	2020-07-07 18:27:04.000000000 +1000
 @@ -5,7 +5,7 @@
  // defining '-DNBUILD'.  Then we try to guess part of the configuration.
  

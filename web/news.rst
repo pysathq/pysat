@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+26.07.2020 (*0.1.6.dev4*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Accumulated stats for other solvers.
+- More enumeration-related fixes in RC2Stratified.
+
 07.07.2020 (*0.1.6.dev3*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

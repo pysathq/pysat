@@ -1,6 +1,6 @@
-diff -Naur build/solvers/lingeling/Makefile solvers/lingeling/Makefile
---- build/solvers/lingeling/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/lingeling/Makefile	2019-12-02 08:41:17.809069600 +0100
+diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
+--- solvers/lingeling/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/lgl/Makefile	2019-03-16 23:30:32.000000000 +1100
 @@ -0,0 +1,38 @@
 +### Makefile ---
 +
@@ -40,9 +40,9 @@ diff -Naur build/solvers/lingeling/Makefile solvers/lingeling/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
---- build/solvers/lingeling/druplig.c	2019-12-03 22:14:22.963962500 +0100
-+++ solvers/lingeling/druplig.c	2019-12-02 08:41:17.825662400 +0100
+diff -Naur solvers/lingeling/druplig.c solvers/lgl/druplig.c
+--- solvers/lingeling/druplig.c	2020-07-26 00:44:54.000000000 +1000
++++ solvers/lgl/druplig.c	2020-07-26 00:05:51.000000000 +1000
 @@ -15,9 +15,14 @@
  
  /*------------------------------------------------------------------------*/
@@ -111,9 +111,9 @@ diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
  
  typedef struct Prof { char * name; long long calls; double time; } Prof;
  
-diff -Naur build/solvers/lingeling/druplig.h solvers/lingeling/druplig.h
---- build/solvers/lingeling/druplig.h	2019-12-03 22:14:22.965917300 +0100
-+++ solvers/lingeling/druplig.h	2019-12-02 08:41:17.839327800 +0100
+diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
+--- solvers/lingeling/druplig.h	2020-07-26 00:44:54.000000000 +1000
++++ solvers/lgl/druplig.h	2019-03-16 23:30:32.000000000 +1100
 @@ -10,6 +10,10 @@
  
  typedef struct Druplig Druplig;
@@ -134,9 +134,9 @@ diff -Naur build/solvers/lingeling/druplig.h solvers/lingeling/druplig.h
 +#endif
 +
  #endif
-diff -Naur build/solvers/lingeling/lglib.c solvers/lingeling/lglib.c
---- build/solvers/lingeling/lglib.c	2016-07-07 10:21:31.000000000 +0200
-+++ solvers/lingeling/lglib.c	2019-12-02 08:41:17.883244900 +0100
+diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
+--- solvers/lingeling/lglib.c	2016-07-07 18:21:31.000000000 +1000
++++ solvers/lgl/lglib.c	2020-07-26 00:07:11.000000000 +1000
 @@ -20,11 +20,43 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -1594,9 +1594,21 @@ diff -Naur build/solvers/lingeling/lglib.c solvers/lingeling/lglib.c
    lglprof (lgl);
    lglprsline (lgl);
    lglprs (lgl,
-diff -Naur build/solvers/lingeling/lglib.h solvers/lingeling/lglib.h
---- build/solvers/lingeling/lglib.h	2016-04-27 22:01:55.000000000 +0200
-+++ solvers/lingeling/lglib.h	2019-12-02 08:41:17.898861000 +0100
+@@ -24982,6 +25030,11 @@
+   return lgl->stats->props.search + lgl->stats->props.simp;
+ }
+ 
++int64_t lglgetrests (LGL * lgl) {
++  REQINITNOTFORKED ();
++  return lgl->stats->restarts.count;
++}
++
+ int64_t lglgetconfs (LGL * lgl) {
+   REQINITNOTFORKED ();
+   return lgl->stats->confs;
+diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
+--- solvers/lingeling/lglib.h	2016-04-28 06:01:55.000000000 +1000
++++ solvers/lgl/lglib.h	2020-07-26 00:06:18.000000000 +1000
 @@ -20,6 +20,14 @@
  
  //--------------------------------------------------------------------------
@@ -1612,7 +1624,33 @@ diff -Naur build/solvers/lingeling/lglib.h solvers/lingeling/lglib.h
  LGL * lglinit (void);				// constructor
  void lglrelease (LGL *);			// destructor
  
-@@ -338,4 +346,8 @@
+@@ -104,7 +112,7 @@
+ void * lglfirstopt (LGL *);			// option iterator: first
+ 
+ void * lglnextopt (LGL *, 			// option iterator: next
+-                   void * iterator, 
++                   void * iterator,
+                    const char ** nameptr,
+ 		   int *valptr, int *minptr, int *maxptr);
+ 
+@@ -114,7 +122,7 @@
+ 
+ // Set default phase of a literal.  Any decision on this literal will always
+ // try this phase.  Note, that this function does not have any effect on
+-// eliminated variables.  Further equivalent variables share the same forced 
++// eliminated variables.  Further equivalent variables share the same forced
+ // phase and thus if they are set to different default phases, only the last
+ // set operation will be kept.
+ 
+@@ -311,6 +319,7 @@
+ int64_t lglgetconfs (LGL *);
+ int64_t lglgetdecs (LGL *);
+ int64_t lglgetprops (LGL *);
++int64_t lglgetrests (LGL *);
+ size_t lglbytes (LGL *);
+ int lglnvars (LGL *);
+ int lglnclauses (LGL *);
+@@ -338,4 +347,8 @@
  void lglsetmsglock (LGL *, void (*lock)(void*), void (*unlock)(void*), void*);
  void lglsetime (LGL *, double (*time)(void));
  
@@ -1621,9 +1659,9 @@ diff -Naur build/solvers/lingeling/lglib.h solvers/lingeling/lglib.h
 +#endif
 +
  #endif
-diff -Naur build/solvers/lingeling/lglopts.h solvers/lingeling/lglopts.h
---- build/solvers/lingeling/lglopts.h	2016-04-27 22:01:55.000000000 +0200
-+++ solvers/lingeling/lglopts.h	2019-12-02 08:41:17.981821600 +0100
+diff -Naur solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
+--- solvers/lingeling/lglopts.h	2016-04-28 06:01:55.000000000 +1000
++++ solvers/lgl/lglopts.h	2019-03-16 23:30:32.000000000 +1100
 @@ -32,8 +32,16 @@
  
  /*------------------------------------------------------------------------*/

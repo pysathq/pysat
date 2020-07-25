@@ -379,8 +379,9 @@ class Solver(object):
 
     def accum_stats(self):
         """
-            Get accumulated low-level stats from the solver. This varies
-            between solvers.
+            Get accumulated low-level stats from the solver. Currently, the
+            statistics includes the number of restarts, conflicts, decisions,
+            and propagations.
         """
 
         if self.solver:
@@ -1224,6 +1225,15 @@ class Cadical(object):
         if self.cadical:
             return pysolvers.cadical_nof_cls(self.cadical)
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical_acc_stats(self.cadical)
+
     def enum_models(self, assumptions=[]):
         """
             Iterate over models of the internal formula.
@@ -1514,6 +1524,15 @@ class Glucose3(object):
         if self.glucose:
             return pysolvers.glucose3_nof_cls(self.glucose)
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.glucose:
+            return pysolvers.glucose3_acc_stats(self.glucose)
+
     def enum_models(self, assumptions=[]):
         """
             Iterate over models of the internal formula.
@@ -1641,15 +1660,6 @@ class Glucose4(object):
 
             if self.prfile:
                 self.prfile.close()
-
-    def accum_stats(self):
-        """
-            Get accumulated low-level stats from the solver. This varies
-            between solvers.
-        """
-
-        if self.glucose:
-            return pysolvers.glucose41_acc_stats(self.glucose)
 
     def solve(self, assumptions=[]):
         """
@@ -1812,6 +1822,15 @@ class Glucose4(object):
 
         if self.glucose:
             return pysolvers.glucose41_nof_cls(self.glucose)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.glucose:
+            return pysolvers.glucose41_acc_stats(self.glucose)
 
     def enum_models(self, assumptions=[]):
         """
@@ -2074,6 +2093,15 @@ class Lingeling(object):
 
         if self.lingeling:
             return pysolvers.lingeling_nof_cls(self.lingeling)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.lingeling:
+            return pysolvers.lingeling_acc_stats(self.lingeling)
 
     def enum_models(self, assumptions=[]):
         """
@@ -2347,6 +2375,15 @@ class MapleChrono(object):
 
         if self.maplesat:
             return pysolvers.maplechrono_nof_cls(self.maplesat)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplechrono_acc_stats(self.maplesat)
 
     def enum_models(self, assumptions=[]):
         """
@@ -2635,6 +2672,15 @@ class MapleCM(object):
         if self.maplesat:
             return pysolvers.maplecm_nof_cls(self.maplesat)
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplecm_acc_stats(self.maplesat)
+
     def enum_models(self, assumptions=[]):
         """
             Iterate over models of the internal formula.
@@ -2922,6 +2968,15 @@ class Maplesat(object):
         if self.maplesat:
             return pysolvers.maplesat_nof_cls(self.maplesat)
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.maplesat:
+            return pysolvers.maplesat_acc_stats(self.maplesat)
+
     def enum_models(self, assumptions=[]):
         """
             Iterate over models of the internal formula.
@@ -3198,6 +3253,15 @@ class Minicard(object):
 
         if self.minicard:
             return pysolvers.minicard_nof_cls(self.minicard)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.minicard:
+            return pysolvers.minicard_acc_stats(self.minicard)
 
     def enum_models(self, assumptions=[]):
         """
@@ -3484,6 +3548,15 @@ class Minisat22(object):
         if self.minisat:
             return pysolvers.minisat22_nof_cls(self.minisat)
 
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.minisat:
+            return pysolvers.minisat22_acc_stats(self.minisat)
+
     def enum_models(self, assumptions=[]):
         """
             Iterate over models of the internal formula.
@@ -3756,6 +3829,15 @@ class MinisatGH(object):
 
         if self.minisat:
             return pysolvers.minisatgh_nof_cls(self.minisat)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatgh_acc_stats(self.minisat)
 
     def enum_models(self, assumptions=[]):
         """
