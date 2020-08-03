@@ -258,13 +258,14 @@ class CardEnc(object):
         if res:
             ret.clauses, ret.nv = res
 
-        # updating vpool if necessary
-        if vpool:
-            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                cls._update_vids(ret, vpool)
-            else:
-                vpool.top = ret.nv - 1
-                vpool._next()
+            # updating vpool if necessary
+            if vpool:
+                if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
+                    cls._update_vids(ret, vpool)
+                else:
+                    # here, ret.nv id is assumed to be larger than the top id
+                    vpool.top = ret.nv - 1
+                    vpool._next()
 
         return ret
 
@@ -346,13 +347,14 @@ class CardEnc(object):
         if res:
             ret.clauses, ret.nv = res
 
-        # updating vpool if necessary
-        if vpool:
-            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                cls._update_vids(ret, vpool)
-            else:
-                vpool.top = ret.nv - 1
-                vpool._next()
+            # updating vpool if necessary
+            if vpool:
+                if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
+                    cls._update_vids(ret, vpool)
+                else:
+                    # here, ret.nv id is assumed to be larger than the top id
+                    vpool.top = ret.nv - 1
+                    vpool._next()
 
         return ret
 
