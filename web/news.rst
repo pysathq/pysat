@@ -11,8 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+03.08.2020 (*0.1.6.dev5*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed the bug of wrong top_id when no cardinality encoding is created.
+
 26.07.2020 (*0.1.6.dev4*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - Accumulated stats for other solvers.
 - More enumeration-related fixes in RC2Stratified.
 
