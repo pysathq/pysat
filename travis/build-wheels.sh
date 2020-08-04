@@ -21,7 +21,7 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-for PYBIN in /opt/python/*/bin/; do
-    "${PYBIN}/pip" install python-sat --no-index -f /io/wheelhouse
-    (cd "$HOME"; "${PYBIN}/nosetests" python-sat)
-done
+# for PYBIN in /opt/python/*/bin/; do
+#     "${PYBIN}/pip" install python-sat --no-index -f /io/wheelhouse
+#     (cd "$HOME"; "${PYBIN}/nosetests" python-sat)
+# done
