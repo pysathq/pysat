@@ -1,6 +1,6 @@
 diff -Naur solvers/maplecm/Makefile solvers/mcm/Makefile
 --- solvers/maplecm/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/mcm/Makefile	2020-07-04 11:29:26.000000000 +1000
++++ solvers/mcm/Makefile	2020-07-04 11:00:31.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -42,8 +42,8 @@ diff -Naur solvers/maplecm/Makefile solvers/mcm/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/maplecm/core/Solver.cc solvers/mcm/core/Solver.cc
---- solvers/maplecm/core/Solver.cc	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/core/Solver.cc	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/core/Solver.cc	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/core/Solver.cc	2020-07-04 11:00:31.000000000 +1000
 @@ -1,12 +1,12 @@
  /***************************************************************************************[Solver.cc]
   MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
@@ -1902,8 +1902,8 @@ diff -Naur solvers/maplecm/core/Solver.cc solvers/mcm/core/Solver.cc
  }
  
 diff -Naur solvers/maplecm/core/Solver.h solvers/mcm/core/Solver.h
---- solvers/maplecm/core/Solver.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/core/Solver.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/core/Solver.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/core/Solver.h	2020-07-04 11:00:31.000000000 +1000
 @@ -6,9 +6,9 @@
  
  Maple_LCM, Based on MapleCOMSPS_DRUP --Copyright (c) 2017, Mao Luo, Chu-Min LI, Fan Xiao: implementing a learnt clause minimisation approach
@@ -2143,8 +2143,8 @@ diff -Naur solvers/maplecm/core/Solver.h solvers/mcm/core/Solver.h
  inline bool     Solver::okay          ()      const   { return ok; }
  
 diff -Naur solvers/maplecm/core/SolverTypes.h solvers/mcm/core/SolverTypes.h
---- solvers/maplecm/core/SolverTypes.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/core/SolverTypes.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/core/SolverTypes.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/core/SolverTypes.h	2020-07-04 11:00:31.000000000 +1000
 @@ -6,9 +6,9 @@
  
  Maple_LCM, Based on MapleCOMSPS_DRUP --Copyright (c) 2017, Mao Luo, Chu-Min LI, Fan Xiao: implementing a learnt clause minimisation approach
@@ -2326,8 +2326,8 @@ diff -Naur solvers/maplecm/core/SolverTypes.h solvers/mcm/core/SolverTypes.h
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
 diff -Naur solvers/maplecm/mtl/Alg.h solvers/mcm/mtl/Alg.h
---- solvers/maplecm/mtl/Alg.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Alg.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Alg.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Alg.h	2020-07-04 11:00:31.000000000 +1000
 @@ -1,7 +1,7 @@
  /*******************************************************************************************[Alg.h]
  Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
@@ -2355,8 +2355,8 @@ diff -Naur solvers/maplecm/mtl/Alg.h solvers/mcm/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/maplecm/mtl/Alloc.h solvers/mcm/mtl/Alloc.h
---- solvers/maplecm/mtl/Alloc.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Alloc.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Alloc.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Alloc.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -2403,8 +2403,8 @@ diff -Naur solvers/maplecm/mtl/Alloc.h solvers/mcm/mtl/Alloc.h
      if (sz < prev_sz)
          throw OutOfMemoryException();
 diff -Naur solvers/maplecm/mtl/Heap.h solvers/mcm/mtl/Heap.h
---- solvers/maplecm/mtl/Heap.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Heap.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Heap.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Heap.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2465,8 +2465,8 @@ diff -Naur solvers/maplecm/mtl/Heap.h solvers/mcm/mtl/Heap.h
  };
  
 diff -Naur solvers/maplecm/mtl/IntTypes.h solvers/mcm/mtl/IntTypes.h
---- solvers/maplecm/mtl/IntTypes.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/IntTypes.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/IntTypes.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/IntTypes.h	2020-08-03 22:47:15.000000000 +1000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2478,9 +2478,20 @@ diff -Naur solvers/maplecm/mtl/IntTypes.h solvers/mcm/mtl/IntTypes.h
  
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
+@@ -37,6 +37,10 @@
+ 
+ #include <limits.h>
+ 
++#ifndef PRIu64
++#define PRIu64 "lu"
++#define PRIi64 "ld"
++#endif
+ //=================================================================================================
+ 
+ #endif
 diff -Naur solvers/maplecm/mtl/Map.h solvers/mcm/mtl/Map.h
---- solvers/maplecm/mtl/Map.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Map.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Map.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Map.h	2020-07-04 11:00:31.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2528,8 +2539,8 @@ diff -Naur solvers/maplecm/mtl/Map.h solvers/mcm/mtl/Map.h
      }
  
 diff -Naur solvers/maplecm/mtl/Queue.h solvers/mcm/mtl/Queue.h
---- solvers/maplecm/mtl/Queue.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Queue.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Queue.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Queue.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2548,8 +2559,8 @@ diff -Naur solvers/maplecm/mtl/Queue.h solvers/mcm/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/maplecm/mtl/Sort.h solvers/mcm/mtl/Sort.h
---- solvers/maplecm/mtl/Sort.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Sort.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Sort.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Sort.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2572,8 +2583,8 @@ diff -Naur solvers/maplecm/mtl/Sort.h solvers/mcm/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/maplecm/mtl/Vec.h solvers/mcm/mtl/Vec.h
---- solvers/maplecm/mtl/Vec.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/Vec.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/Vec.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/Vec.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2615,8 +2626,8 @@ diff -Naur solvers/maplecm/mtl/Vec.h solvers/mcm/mtl/Vec.h
   }
  
 diff -Naur solvers/maplecm/mtl/XAlloc.h solvers/mcm/mtl/XAlloc.h
---- solvers/maplecm/mtl/XAlloc.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/mtl/XAlloc.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/mtl/XAlloc.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/mtl/XAlloc.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -2635,8 +2646,8 @@ diff -Naur solvers/maplecm/mtl/XAlloc.h solvers/mcm/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/maplecm/utils/Options.cc solvers/mcm/utils/Options.cc
---- solvers/maplecm/utils/Options.cc	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/utils/Options.cc	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/utils/Options.cc	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/utils/Options.cc	2020-07-04 11:00:31.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2692,8 +2703,8 @@ diff -Naur solvers/maplecm/utils/Options.cc solvers/mcm/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/maplecm/utils/Options.h solvers/mcm/utils/Options.h
---- solvers/maplecm/utils/Options.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/utils/Options.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/utils/Options.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/utils/Options.h	2020-07-04 11:00:31.000000000 +1000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2898,8 +2909,8 @@ diff -Naur solvers/maplecm/utils/Options.h solvers/mcm/utils/Options.h
              bool b = !match(span, "no-");
  
 diff -Naur solvers/maplecm/utils/ParseUtils.h solvers/mcm/utils/ParseUtils.h
---- solvers/maplecm/utils/ParseUtils.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/utils/ParseUtils.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/utils/ParseUtils.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/utils/ParseUtils.h	2020-07-04 11:25:49.000000000 +1000
 @@ -18,84 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -3009,8 +3020,8 @@ diff -Naur solvers/maplecm/utils/ParseUtils.h solvers/mcm/utils/ParseUtils.h
  }
  
 diff -Naur solvers/maplecm/utils/System.cc solvers/mcm/utils/System.cc
---- solvers/maplecm/utils/System.cc	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/utils/System.cc	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/utils/System.cc	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/utils/System.cc	2020-07-04 11:00:31.000000000 +1000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -3064,8 +3075,8 @@ diff -Naur solvers/maplecm/utils/System.cc solvers/mcm/utils/System.cc
      return 0; }
  #endif
 diff -Naur solvers/maplecm/utils/System.h solvers/mcm/utils/System.h
---- solvers/maplecm/utils/System.h	2020-07-04 11:29:05.000000000 +1000
-+++ solvers/mcm/utils/System.h	2020-07-04 11:29:26.000000000 +1000
+--- solvers/maplecm/utils/System.h	2020-08-03 23:08:10.000000000 +1000
++++ solvers/mcm/utils/System.h	2020-07-04 11:00:31.000000000 +1000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
