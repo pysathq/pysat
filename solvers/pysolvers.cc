@@ -938,7 +938,7 @@ static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
 	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->restarts(),
 		"conflicts", s->conflicts(),
 		"decisions", s->decisions(),
@@ -1493,7 +1493,7 @@ static PyObject *py_glucose3_acc_stats(PyObject *self, PyObject *args)
 	Glucose30::Solver *s = (Glucose30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -2048,7 +2048,7 @@ static PyObject *py_glucose41_acc_stats(PyObject *self, PyObject *args)
 	Glucose41::Solver *s = (Glucose41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -2422,7 +2422,7 @@ static PyObject *py_lingeling_acc_stats(PyObject *self, PyObject *args)
 	// get pointer to solver
 	LGL *s = (LGL *)pyobj_to_void(s_obj);
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", lglgetrests(s),
 		"conflicts", lglgetconfs(s),
 		"decisions", lglgetdecs(s),
@@ -2961,7 +2961,7 @@ static PyObject *py_maplechrono_acc_stats(PyObject *self, PyObject *args)
 	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -3500,7 +3500,7 @@ static PyObject *py_maplesat_acc_stats(PyObject *self, PyObject *args)
 	Maplesat::Solver *s = (Maplesat::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -4039,7 +4039,7 @@ static PyObject *py_maplecm_acc_stats(PyObject *self, PyObject *args)
 	MapleCM::Solver *s = (MapleCM::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -4554,7 +4554,7 @@ static PyObject *py_minicard_acc_stats(PyObject *self, PyObject *args)
 	Minicard::Solver *s = (Minicard::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -5041,7 +5041,7 @@ static PyObject *py_minisat22_acc_stats(PyObject *self, PyObject *args)
 	Minisat22::Solver *s = (Minisat22::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
@@ -5528,7 +5528,7 @@ static PyObject *py_minisatgh_acc_stats(PyObject *self, PyObject *args)
 	MinisatGH::Solver *s = (MinisatGH::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:i,s:i,s:i,s:i}",
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
 		"restarts", s->starts,
 		"conflicts", s->conflicts,
 		"decisions", s->decisions,
