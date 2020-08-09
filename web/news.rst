@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+09.08.2020 (*0.1.6.dev6*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Using int64_t for accum_stats().
+
 03.08.2020 (*0.1.6.dev5*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
