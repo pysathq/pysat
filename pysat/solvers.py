@@ -1245,7 +1245,7 @@ class Cadical(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -1544,7 +1544,7 @@ class Glucose3(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -1843,7 +1843,7 @@ class Glucose4(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -2114,7 +2114,7 @@ class Lingeling(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -2396,7 +2396,7 @@ class MapleChrono(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -2692,7 +2692,7 @@ class MapleCM(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -2988,7 +2988,7 @@ class Maplesat(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -3274,7 +3274,7 @@ class Minicard(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -3568,7 +3568,7 @@ class Minisat22(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
@@ -3850,7 +3850,7 @@ class MinisatGH(object):
                 self.status = self.solve(assumptions=assumptions)
                 model = self.get_model()
 
-                if model:
+                if model is not None:
                     self.add_clause([-l for l in model])  # blocking model
                     yield model
                 else:
