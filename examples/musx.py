@@ -203,10 +203,10 @@ class MUSX(object):
                 print('c MUS approx:', ' '.join([str(self.vmap[sel] + 1) for sel in approx]), '0')
 
             # iterate over clauses in the approximation and try to delete them
-            self._compute(approx)
+            mus = self._compute(approx)
 
             # return an MUS
-            return list(map(lambda x: self.vmap[x] + 1, approx))
+            return list(map(lambda x: self.vmap[x] + 1, mus))
 
     def _compute(self, approx):
         """
@@ -255,6 +255,8 @@ class MUSX(object):
                     print(' -> unsat (removing {0})'.format(clid))
 
                 approx = to_test
+
+        return approx
 
     def oracle_time(self):
         """
