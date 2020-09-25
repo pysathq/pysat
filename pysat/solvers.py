@@ -382,6 +382,21 @@ class Solver(object):
             Get accumulated low-level stats from the solver. Currently, the
             statistics includes the number of restarts, conflicts, decisions,
             and propagations.
+
+            :rtype: dict.
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.examples.genhard import PHP
+                >>> cnf = PHP(5)
+                >>> from pysat.solvers import Solver
+                >>> with Solver(bootstrap_with=cnf) as s:
+                ...     print(s.solve())
+                ...     print(s.accum_stats())
+                False
+                {'restarts': 2, 'conflicts': 201, 'decisions': 254, 'propagations': 2321}
         """
 
         if self.solver:

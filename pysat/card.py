@@ -244,6 +244,9 @@ class CardEnc(object):
         if vpool:
             top_id = vpool.top
 
+        # making sure we are dealing with a list of literals
+        lits = list(lits)
+
         # choosing the maximum id among the current top and the list of literals
         top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
 
@@ -332,6 +335,9 @@ class CardEnc(object):
         # obtaining the top id from the variable pool
         if vpool:
             top_id = vpool.top
+
+        # making sure we are dealing with a list of literals
+        lits = list(lits)
 
         # choosing the maximum id among the current top and the list of literals
         top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))

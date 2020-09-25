@@ -748,7 +748,7 @@ class CNF(object):
         """
 
         self.nv = max([abs(l) for l in clause] + [self.nv])
-        self.clauses.append(clause)
+        self.clauses.append(list(clause))
 
     def extend(self, clauses):
         """
@@ -1238,12 +1238,12 @@ class WCNF(object):
         self.nv = max([abs(l) for l in clause] + [self.nv])
 
         if weight:
-            self.soft.append(clause)
+            self.soft.append(list(clause))
             self.wght.append(weight)
 
             self.topw += weight
         else:
-            self.hard.append(clause)
+            self.hard.append(list(clause))
 
     def extend(self, clauses, weights=None):
         """
@@ -1506,10 +1506,58 @@ class CNFPlus(CNF, object):
 
         if not is_atmost:
             self.nv = max([abs(l) for l in clause] + [self.nv])
-            self.clauses.append(clause)
+            self.clauses.append(list(clause))
         else:
             self.nv = max([abs(l) for l in clause[0]] + [self.nv])
             self.atmosts.append(clause)
+
+    def extend(self, formula):
+        """
+            Extend the CNF+ formula with more clauses and/or AtMostK
+            constraints. The additional clauses and AtMostK constraints to add
+            should be given in the form of :class:`CNFPlus`. Alternatively, a
+            list of clauses can be added too. For every single clause and
+            AtMostK constraint in the input formula, method :meth:`append` is
+            invoked.
+
+            :param formula: new constraints to add.
+            :type formula: :class:`CNFPlus`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNFPlus
+                >>> cnf1 = CNFPlus()
+                >>> cnf1.extend([[-3, 4], [5, 6], [[1, 2, 3], 1]])
+                >>> print(cnf1.clauses)
+                [[-3, 4], [5, 6]]
+                >>> print(cnf1.atmosts)
+                [[[1, 2, 3], 1]]
+                >>> cnf2 = CNFPlus()
+                >>> cnf2.extend(cnf1)
+                >>> print(cnf1.clauses)
+                [[-3, 4], [5, 6]]
+                >>> print(cnf1.atmosts)
+                [[[1, 2, 3], 1]]
+        """
+
+        for cl in formula:
+            if len(cl) != 2 or isinstance(cl[0], int):  # it is a clause
+                self.append(cl)
+            else:
+                self.append(cl, is_atmost=True)
+
+    def __iter__(self):
+        """
+            Iterator over all clauses and AtMostK constraints of the formula.
+        """
+
+        for cl in self.clauses:
+            yield cl
+
+        for am in self.atmosts:
+            yield am
 
     def weighted(self):
         """
@@ -1817,12 +1865,12 @@ class WCNFPlus(WCNF, object):
             self.nv = max([abs(l) for l in clause] + [self.nv])
 
             if weight:
-                self.soft.append(clause)
+                self.soft.append(list(clause))
                 self.wght.append(weight)
 
                 self.topw += weight
             else:
-                self.hard.append(clause)
+                self.hard.append(list(clause))
         else:
             self.nv = max([abs(l) for l in clause[0]] + [self.nv])
             self.atms.append(clause)
