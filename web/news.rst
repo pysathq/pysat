@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+25.09.2020 (*0.1.6.dev7*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added an example for accum_stats().
+- Fixed a minor bug in musx example.
+- A few fixes in :mod:`pysat.formula`.
+- Fixed an issue in :mod:`pysat.card` related to non-list literals.
+
 09.08.2020 (*0.1.6.dev6*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
