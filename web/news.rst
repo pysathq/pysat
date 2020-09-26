@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+26.09.2020 (*0.1.6.dev8*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug in `solvers.py` related to the :class:`CNFPlus` iterator.
+
 25.09.2020 (*0.1.6.dev7*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -1085,6 +1085,9 @@ class Cadical(object):
                 pysolvers.cadical_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by CaDiCaL')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -1295,6 +1298,9 @@ class Cadical(object):
         if self.cadical:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by CaDiCaL')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -1351,6 +1357,9 @@ class Glucose3(object):
             self.glucose = pysolvers.glucose3_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Glucose3')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -1594,6 +1603,9 @@ class Glucose3(object):
         if self.glucose:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Glucose3')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -1650,6 +1662,9 @@ class Glucose4(object):
             self.glucose = pysolvers.glucose41_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Glucose4')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -1893,6 +1908,9 @@ class Glucose4(object):
         if self.glucose:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Glucose4')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -1949,6 +1967,9 @@ class Lingeling(object):
             self.lingeling = pysolvers.lingeling_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Lingeling')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -2156,6 +2177,9 @@ class Lingeling(object):
         """
 
         if self.lingeling:
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Lingeling')
+
             for clause in formula:
                 self.add_clause(clause, no_return)
 
@@ -2206,6 +2230,9 @@ class MapleChrono(object):
             self.maplesat = pysolvers.maplechrono_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by MapleChrono')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -2446,6 +2473,9 @@ class MapleChrono(object):
         if self.maplesat:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by MapleChrono')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -2502,6 +2532,9 @@ class MapleCM(object):
             self.maplesat = pysolvers.maplecm_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by MapleCM')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -2742,6 +2775,9 @@ class MapleCM(object):
         if self.maplesat:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by MapleCM')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -2798,6 +2834,9 @@ class Maplesat(object):
             self.maplesat = pysolvers.maplesat_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Maplesat')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -3038,6 +3077,9 @@ class Maplesat(object):
         if self.maplesat:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Maplesat')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -3090,11 +3132,10 @@ class Minicard(object):
 
             if bootstrap_with:
                 for clause in bootstrap_with:
-                    self.add_clause(clause)
-
-                if type(bootstrap_with) == CNFPlus:
-                    for atmost in bootstrap_with.atmosts:
-                        self.add_atmost(*atmost)
+                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1])
 
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
@@ -3331,16 +3372,15 @@ class Minicard(object):
         if self.minicard:
             res = None
 
+            # this loop should work for a list of clauses, CNF, and CNFPlus
             for clause in formula:
-                res = self.add_clause(clause, no_return)
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1], no_return)
+
                 if not no_return and res == False:
                     return res
-
-            if type(formula) == CNFPlus:
-                for atmost in formula.atmosts:
-                    res = self.add_atmost(atmost[0], atmost[1], no_return)
-                    if not no_return and res == False:
-                        return res
 
             if not no_return:
                 return res
@@ -3387,6 +3427,9 @@ class Minisat22(object):
             self.minisat = pysolvers.minisat22_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by MiniSat')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -3618,6 +3661,9 @@ class Minisat22(object):
         if self.minisat:
             res = None
 
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by MiniSat')
+
             for clause in formula:
                 res = self.add_clause(clause, no_return)
 
@@ -3669,6 +3715,9 @@ class MinisatGH(object):
             self.minisat = pysolvers.minisatgh_new()
 
             if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by MiniSat')
+
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
@@ -3899,6 +3948,9 @@ class MinisatGH(object):
 
         if self.minisat:
             res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by MiniSat')
 
             for clause in formula:
                 res = self.add_clause(clause, no_return)
