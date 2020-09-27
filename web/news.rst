@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+27.09.2020 (*0.1.6.dev9*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug in copying of :class:`CNFPlus` and :class:`WCNFPlus` objects.
+- Added an attempt to write down OPB and LP formats (likely to be buggy!).
+
 26.09.2020 (*0.1.6.dev8*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

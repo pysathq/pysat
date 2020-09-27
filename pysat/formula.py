@@ -697,10 +697,10 @@ class CNF(object):
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
-            :param fname: a file name where to store the formula.
+            :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
 
-            :type fname: str
+            :type file_pointer: file pointer
             :type comments: list(str)
 
             Example:
@@ -729,11 +729,82 @@ class CNF(object):
         for cl in self.clauses:
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
 
+    def to_alien(self, file_pointer, format='opb', comments=None):
+        """
+            The method can be used to dump a CNF formula into a file pointer
+            in an alien file format, which at this point can either be OPB or
+            LP. The file pointer is expected as an argument. Additionally, the
+            target format 'opb' or 'lp' may be specified (equal to 'opb' by
+            default). Finally, supplementary comment lines can be specified in
+            the ``comments`` parameter.
+
+            :param file_pointer: a file pointer where to store the formula.
+            :param format: alien file format to use
+            :param comments: additional comments to put in the file.
+
+            :type file_pointer: file pointer
+            :type format: str
+            :type comments: list(str)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF()
+                ...
+                >>> # the formula is filled with a bunch of clauses
+                >>> with open('some-file.lp', 'w') as fp:
+                ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
+        """
+
+        cchars = {'opb': '*', 'lp': '\\'}
+
+        # saving formula's internal comments
+        for c in self.comments:
+            print(cchars[format], c, file=file_pointer)
+
+        # saving externally specified comments
+        if comments:
+            for c in comments:
+                print(cchars[format], c, file=file_pointer)
+
+        if format == 'opb':
+            print('* #variable= {0} #constraint= {1}'.format(self.nv, len(self.clauses)),
+                    file=file_pointer)
+        elif format == 'lp':
+            print('Minimize', file=file_pointer)
+            print('obj:', file=file_pointer)
+            print('Subject To', file=file_pointer)
+
+        for i, cl in enumerate(self.clauses, 1):
+            line, neg = [], 0
+            for l in cl:
+                if l > 0:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                else:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                    neg += 1
+
+            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                    ' '.join(l for l in line),
+                    1 - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        if format == 'lp':
+            print('Bounds')
+            for v in range(1, self.nv + 1):
+                print('0 <= x{0} <= 1'.format(v))
+            print('Binary')
+            for v in range(1, self.nv + 1):
+                print('x{0}'.format(v))
+            print('End')
+
     def append(self, clause):
         """
             Add one more clause to CNF formula. This method additionally
-            updates the number of variables, i.e. variable ``self.nv``, used in
-            the formula.
+            updates the number of variables, i.e. variable ``self.nv``, used
+            in the formula.
 
             :param clause: a new clause to add.
             :type clause: list(int)
@@ -1168,10 +1239,10 @@ class WCNF(object):
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
-            :param fname: a file name where to store the formula.
+            :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
 
-            :type fname: str
+            :type file_pointer: file pointer
             :type comments: list(str)
 
             Example:
@@ -1204,6 +1275,93 @@ class WCNF(object):
 
         for cl in self.hard:
             print(self.topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+
+    def to_alien(self, file_pointer, format='opb', comments=None):
+        """
+            The method can be used to dump a WCNF formula into a file pointer
+            in an alien file format, which at this point can either be OPB or
+            LP. The file pointer is expected as an argument. Additionally, the
+            target format 'opb' or 'lp' may be specified (equal to 'opb' by
+            default). Finally, supplementary comment lines can be specified in
+            the ``comments`` parameter.
+
+            :param file_pointer: a file pointer where to store the formula.
+            :param format: alien file format to use
+            :param comments: additional comments to put in the file.
+
+            :type file_pointer: file pointer
+            :type format: str
+            :type comments: list(str)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import WCNF
+                >>> cnf = WCNF()
+                ...
+                >>> # the formula is filled with a bunch of clauses
+                >>> with open('some-file.lp', 'w') as fp:
+                ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
+        """
+
+        cchars = {'opb': '*', 'lp': '\\'}
+
+        # saving formula's internal comments
+        for c in self.comments:
+            print(cchars[format], c, file=file_pointer)
+
+        # saving externally specified comments
+        if comments:
+            for c in comments:
+                print(cchars[format], c, file=file_pointer)
+
+        # normalized soft clauses
+        soft, hard = [], []
+        topv = self.nv + 1
+        for cl in self.soft:
+            if len(cl) == 1:
+                soft.append(cl)
+            else:
+                hard.append([topv] + cl)
+                soft.append([topv])
+                topv += 1
+
+        if format == 'opb':
+            print('* #variable= {0} #constraint= {1}'.format(self.nv, len(self.hard) + len(hard)),
+                    file=file_pointer)
+            print('min:',
+                    ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
+                    ';', file=file_pointer)
+        elif format == 'lp':
+            print('Minimize', file=file_pointer)
+            print('obj:',
+                    ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
+                    file=file_pointer)
+            print('Subject To', file=file_pointer)
+
+        for i, cl in enumerate(self.hard + hard, 1):
+            line, neg = [], 0
+            for l in cl:
+                if l > 0:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                else:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                    neg += 1
+
+            print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
+                    ' '.join(l for l in line),
+                    1 - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        if format == 'lp':
+            print('Bounds')
+            for v in range(1, topv):
+                print('0 <= x{0} <= 1'.format(v))
+            print('Binary')
+            for v in range(1, topv):
+                print('x{0}'.format(v))
+            print('End')
 
     def append(self, clause, weight=None):
         """
@@ -1439,10 +1597,10 @@ class CNFPlus(CNF, object):
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
-            :param fname: a file name where to store the formula.
+            :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
 
-            :type fname: str
+            :type file_pointer: file pointer
             :type comments: list(str)
 
             Example:
@@ -1475,6 +1633,91 @@ class CNFPlus(CNF, object):
 
         for am in self.atmosts:
             print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_alien(self, file_pointer, format='opb', comments=None):
+        """
+            The method can be used to dump a CNF+ formula into a file pointer
+            in an alien file format, which at this point can either be OPB or
+            LP. The file pointer is expected as an argument. Additionally, the
+            target format 'opb' or 'lp' may be specified (equal to 'opb' by
+            default). Finally, supplementary comment lines can be specified in
+            the ``comments`` parameter.
+
+            :param file_pointer: a file pointer where to store the formula.
+            :param format: alien file format to use
+            :param comments: additional comments to put in the file.
+
+            :type file_pointer: file pointer
+            :type format: str
+            :type comments: list(str)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNFPlus
+                >>> cnf = CNFPlus()
+                ...
+                >>> # the formula is filled with a bunch of clauses
+                >>> with open('some-file.lp', 'w') as fp:
+                ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
+        """
+
+        cchars = {'opb': '*', 'lp': '\\'}
+
+        # saving formula's internal comments
+        for c in self.comments:
+            print(cchars[format], c, file=file_pointer)
+
+        # saving externally specified comments
+        if comments:
+            for c in comments:
+                print(cchars[format], c, file=file_pointer)
+
+        if format == 'opb':
+            print('* #variable= {0} #constraint= {1}'.format(self.nv, len(self.clauses)),
+                    file=file_pointer)
+        elif format == 'lp':
+            print('Minimize', file=file_pointer)
+            print('obj:', file=file_pointer)
+            print('Subject To', file=file_pointer)
+
+        for i, cl in enumerate(self.clauses, 1):
+            line, neg = [], 0
+            for l in cl:
+                if l > 0:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                else:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                    neg += 1
+
+            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                    ' '.join(l for l in line),
+                    1 - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        for i, am in enumerate(self.atmosts, len(self.clauses) + 1):
+            line, neg = [], 0
+            for l in am[0]:
+                if l > 0:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    neg += 1
+                else:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+
+            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                    ' '.join(l for l in line),
+                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        if format == 'lp':
+            print('Bounds')
+            for v in range(1, self.nv + 1):
+                print('0 <= x{0} <= 1'.format(v))
+            print('Binary')
+            for v in range(1, self.nv + 1):
+                print('x{0}'.format(v))
+            print('End')
 
     def append(self, clause, is_atmost=False):
         """
@@ -1630,6 +1873,7 @@ class CNFPlus(CNF, object):
 
         cnfplus = super(CNFPlus, self).copy()
         cnfplus.atmosts = copy.deepcopy(self.atmosts)
+        cnfplus.__class__ = CNFPlus  # casting it to CNF+
 
         return cnfplus
 
@@ -1778,10 +2022,10 @@ class WCNFPlus(WCNF, object):
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
-            :param fname: a file name where to store the formula.
+            :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
 
-            :type fname: str
+            :type file_pointer: file pointer
             :type comments: list(str)
 
             Example:
@@ -1820,6 +2064,107 @@ class WCNFPlus(WCNF, object):
         # atmost constraints are hard
         for am in self.atms:
             print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_alien(self, file_pointer, format='opb', comments=None):
+        """
+            The method can be used to dump a WCNF formula into a file pointer
+            in an alien file format, which at this point can either be OPB or
+            LP. The file pointer is expected as an argument. Additionally, the
+            target format 'opb' or 'lp' may be specified (equal to 'opb' by
+            default). Finally, supplementary comment lines can be specified in
+            the ``comments`` parameter.
+
+            :param file_pointer: a file pointer where to store the formula.
+            :param format: alien file format to use
+            :param comments: additional comments to put in the file.
+
+            :type file_pointer: file pointer
+            :type format: str
+            :type comments: list(str)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import WCNFPlus
+                >>> cnf = WCNFPlus()
+                ...
+                >>> # the formula is filled with a bunch of clauses
+                >>> with open('some-file.lp', 'w') as fp:
+                ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
+        """
+
+        cchars = {'opb': '*', 'lp': '\\'}
+
+        # saving formula's internal comments
+        for c in self.comments:
+            print(cchars[format], c, file=file_pointer)
+
+        # saving externally specified comments
+        if comments:
+            for c in comments:
+                print(cchars[format], c, file=file_pointer)
+
+        # normalized soft clauses
+        soft, hard = [], []
+        topv = self.nv + 1
+        for cl in self.soft:
+            if len(cl) == 1:
+                soft.append(cl)
+            else:
+                hard.append([topv] + cl)
+                soft.append([topv])
+                topv += 1
+
+        if format == 'opb':
+            print('* #variable= {0} #constraint= {1}'.format(self.nv, len(self.hard) + len(hard)),
+                    file=file_pointer)
+            print('min:',
+                    ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
+                    ';', file=file_pointer)
+        elif format == 'lp':
+            print('Minimize', file=file_pointer)
+            print('obj:',
+                    ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
+                    file=file_pointer)
+            print('Subject To', file=file_pointer)
+
+        for i, cl in enumerate(self.hard + hard, 1):
+            line, neg = [], 0
+            for l in cl:
+                if l > 0:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                else:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                    neg += 1
+
+            print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
+                    ' '.join(l for l in line),
+                    1 - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        for i, am in enumerate(self.atms, len(self.hard) + len(hard) + 1):
+            line, neg = [], 0
+            for l in am[0]:
+                if l > 0:
+                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    neg += 1
+                else:
+                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+
+            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                    ' '.join(l for l in line),
+                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else '',
+                    file=file_pointer))
+
+        if format == 'lp':
+            print('Bounds')
+            for v in range(1, topv):
+                print('0 <= x{0} <= 1'.format(v))
+            print('Binary')
+            for v in range(1, topv):
+                print('x{0}'.format(v))
+            print('End')
 
     def append(self, clause, weight=None, is_atmost=False):
         """
@@ -1947,5 +2292,6 @@ class WCNFPlus(WCNF, object):
 
         wcnfplus = super(WCNFPlus, self).copy()
         wcnfplus.atms = copy.deepcopy(self.atms)
+        wcnfplus.__class__ = WCNFPlus  # casting it to WCNF+
 
         return wcnfplus
