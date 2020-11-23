@@ -732,11 +732,11 @@ class CNF(object):
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
             The method can be used to dump a CNF formula into a file pointer
-            in an alien file format, which at this point can either be OPB or
-            LP. The file pointer is expected as an argument. Additionally, the
-            target format 'opb' or 'lp' may be specified (equal to 'opb' by
-            default). Finally, supplementary comment lines can be specified in
-            the ``comments`` parameter.
+            in an alien file format, which at this point can either be LP,
+            OPB, or SMT. The file pointer is expected as an argument.
+            Additionally, the target format 'lp', 'opb', or 'smt' may be
+            specified (equal to 'opb' by default). Finally, supplementary
+            comment lines can be specified in the ``comments`` parameter.
 
             :param file_pointer: a file pointer where to store the formula.
             :param format: alien file format to use
@@ -758,7 +758,7 @@ class CNF(object):
                 ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
         """
 
-        cchars = {'opb': '*', 'lp': '\\'}
+        cchars = {'lp': '\\', 'opb': '*', 'smt': ';'}
 
         # saving formula's internal comments
         for c in self.comments:
@@ -776,20 +776,32 @@ class CNF(object):
             print('Minimize', file=file_pointer)
             print('obj:', file=file_pointer)
             print('Subject To', file=file_pointer)
+        elif format == 'smt':
+            for v in range(1, self.nv + 1):
+                print('(declare-fun x{0} () Bool)'.format(v))
 
         for i, cl in enumerate(self.clauses, 1):
             line, neg = [], 0
             for l in cl:
                 if l > 0:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    if format == 'smt':
+                        line.append('x{0}'.format(l))
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
                 else:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
-                    neg += 1
+                    if format == 'smt':
+                        line.append('(not x{0})'.format(-l))
+                    else:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                        neg += 1
 
-            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
-                    ' '.join(l for l in line),
-                    1 - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+            if format == 'smt':
+                print('(assert (or {0}))'.format(' '.join(line)), file=file_pointer)
+            else:
+                print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                        ' '.join(l for l in line),
+                        1 - neg, ';' if format == 'opb' else '',
+                        file=file_pointer))
 
         if format == 'lp':
             print('Bounds')
@@ -799,6 +811,9 @@ class CNF(object):
             for v in range(1, self.nv + 1):
                 print('x{0}'.format(v))
             print('End')
+        elif format == 'smt':
+            print('(check-sat)', file=file_pointer)
+            print('(exit)', file=file_pointer)
 
     def append(self, clause):
         """
@@ -1279,11 +1294,11 @@ class WCNF(object):
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
             The method can be used to dump a WCNF formula into a file pointer
-            in an alien file format, which at this point can either be OPB or
-            LP. The file pointer is expected as an argument. Additionally, the
-            target format 'opb' or 'lp' may be specified (equal to 'opb' by
-            default). Finally, supplementary comment lines can be specified in
-            the ``comments`` parameter.
+            in an alien file format, which at this point can either be LP,
+            OPB, or SMT. The file pointer is expected as an argument.
+            Additionally, the target format 'lp', 'opb', or 'smt' may be
+            specified (equal to 'opb' by default). Finally, supplementary
+            comment lines can be specified in the ``comments`` parameter.
 
             :param file_pointer: a file pointer where to store the formula.
             :param format: alien file format to use
@@ -1305,7 +1320,7 @@ class WCNF(object):
                 ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
         """
 
-        cchars = {'opb': '*', 'lp': '\\'}
+        cchars = {'lp': '\\', 'opb': '*', 'smt': ';'}
 
         # saving formula's internal comments
         for c in self.comments:
@@ -1339,20 +1354,32 @@ class WCNF(object):
                     ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
                     file=file_pointer)
             print('Subject To', file=file_pointer)
+        elif format == 'smt':
+            for v in range(1, self.nv + 1):
+                print('(declare-fun x{0} () Bool)'.format(v))
 
         for i, cl in enumerate(self.hard + hard, 1):
             line, neg = [], 0
             for l in cl:
                 if l > 0:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    if format == 'smt':
+                        line.append('x{0}'.format(l))
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
                 else:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
-                    neg += 1
+                    if format == 'smt':
+                        line.append('(not x{0})'.format(-l))
+                    else:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                        neg += 1
 
-            print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
-                    ' '.join(l for l in line),
-                    1 - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+            if format == 'smt':
+                print('(assert (or {0}))'.format(' '.join(line)), file=file_pointer)
+            else:
+                print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
+                        ' '.join(l for l in line),
+                        1 - neg, ';' if format == 'opb' else '',
+                        file=file_pointer))
 
         if format == 'lp':
             print('Bounds')
@@ -1362,6 +1389,15 @@ class WCNF(object):
             for v in range(1, topv):
                 print('x{0}'.format(v))
             print('End')
+        elif format == 'smt':
+            for cl, w in zip(soft, self.wght):
+                l = 'x{0}'.format(cl[0]) if cl[0] > 0 else '(not x{0})'.format(-cl[0])
+                print('(assert-soft {0} :weight {1})'.format(l, w), file=file_pointer)
+
+            print('(check-sat)', file=file_pointer)
+            print('(get-model)', file=file_pointer)
+            print('(get-objectives)', file=file_pointer)
+            print('(exit)', file=file_pointer)
 
     def append(self, clause, weight=None):
         """
@@ -1637,11 +1673,19 @@ class CNFPlus(CNF, object):
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
             The method can be used to dump a CNF+ formula into a file pointer
-            in an alien file format, which at this point can either be OPB or
-            LP. The file pointer is expected as an argument. Additionally, the
-            target format 'opb' or 'lp' may be specified (equal to 'opb' by
-            default). Finally, supplementary comment lines can be specified in
-            the ``comments`` parameter.
+            in an alien file format, which at this point can either be LP,
+            OPB, or SMT. The file pointer is expected as an argument.
+            Additionally, the target format 'lp', 'opb', or 'smt' may be
+            specified (equal to 'opb' by default). Finally, supplementary
+            comment lines can be specified in the ``comments`` parameter.
+
+            .. note::
+
+                `SMT-LIB2 <http://smtlib.cs.uiowa.edu/language.shtml>`__ does
+                not directly support PB constraints. As a result, native
+                cardinality constraints of CNF+ cannot be translated to
+                SMT-LIB2 unless an explicit cardinality encoding is applied.
+                You may want to use Z3's API instead (see its PB interface).
 
             :param file_pointer: a file pointer where to store the formula.
             :param format: alien file format to use
@@ -1663,7 +1707,10 @@ class CNFPlus(CNF, object):
                 ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
         """
 
-        cchars = {'opb': '*', 'lp': '\\'}
+        if self.atmosts and format == 'smt':
+            raise NotImplementedError('SMT-LIB2 does not support PB constraints directly; you may want to use Z3\'s API instead')
+
+        cchars = {'lp': '\\', 'opb': '*', 'smt': ';'}
 
         # saving formula's internal comments
         for c in self.comments:
@@ -1681,20 +1728,32 @@ class CNFPlus(CNF, object):
             print('Minimize', file=file_pointer)
             print('obj:', file=file_pointer)
             print('Subject To', file=file_pointer)
+        elif format == 'smt':
+            for v in range(1, self.nv + 1):
+                print('(declare-fun x{0} () Bool)'.format(v))
 
         for i, cl in enumerate(self.clauses, 1):
             line, neg = [], 0
             for l in cl:
                 if l > 0:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    if format == 'smt':
+                        line.append('x{0}'.format(l))
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
                 else:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
-                    neg += 1
+                    if format == 'smt':
+                        line.append('(not x{0})'.format(-l))
+                    else:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                        neg += 1
 
-            print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
-                    ' '.join(l for l in line),
-                    1 - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+            if format == 'smt':
+                print('(assert (or {0}))'.format(' '.join(line)), file=file_pointer)
+            else:
+                print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
+                        ' '.join(l for l in line),
+                        1 - neg, ';' if format == 'opb' else '',
+                        file=file_pointer))
 
         for i, am in enumerate(self.atmosts, len(self.clauses) + 1):
             line, neg = [], 0
@@ -1718,6 +1777,9 @@ class CNFPlus(CNF, object):
             for v in range(1, self.nv + 1):
                 print('x{0}'.format(v))
             print('End')
+        elif format == 'smt':
+            print('(check-sat)', file=file_pointer)
+            print('(exit)', file=file_pointer)
 
     def append(self, clause, is_atmost=False):
         """
@@ -2067,12 +2129,20 @@ class WCNFPlus(WCNF, object):
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
-            The method can be used to dump a WCNF formula into a file pointer
-            in an alien file format, which at this point can either be OPB or
-            LP. The file pointer is expected as an argument. Additionally, the
-            target format 'opb' or 'lp' may be specified (equal to 'opb' by
-            default). Finally, supplementary comment lines can be specified in
-            the ``comments`` parameter.
+            The method can be used to dump a WCNF+ formula into a file pointer
+            in an alien file format, which at this point can either be LP,
+            OPB, or SMT. The file pointer is expected as an argument.
+            Additionally, the target format 'lp', 'opb', or 'smt' may be
+            specified (equal to 'opb' by default). Finally, supplementary
+            comment lines can be specified in the ``comments`` parameter.
+
+            .. note::
+
+                `SMT-LIB2 <http://smtlib.cs.uiowa.edu/language.shtml>`__ does
+                not directly support PB constraints. As a result, native
+                cardinality constraints of CNF+ cannot be translated to
+                SMT-LIB2 unless an explicit cardinality encoding is applied.
+                You may want to use Z3's API instead (see its PB interface).
 
             :param file_pointer: a file pointer where to store the formula.
             :param format: alien file format to use
@@ -2094,7 +2164,10 @@ class WCNFPlus(WCNF, object):
                 ...     cnf.to_alien(fp, format='lp')  # writing to the file pointer
         """
 
-        cchars = {'opb': '*', 'lp': '\\'}
+        if self.atms and format == 'smt':
+            raise NotImplementedError('SMT-LIB2 does not support PB constraints directly; you may want to use Z3\'s API instead')
+
+        cchars = {'lp': '\\', 'opb': '*', 'smt': ';'}
 
         # saving formula's internal comments
         for c in self.comments:
@@ -2128,20 +2201,32 @@ class WCNFPlus(WCNF, object):
                     ' '.join(['{0}{1} x{2}'.format('-' if s[0] > 0 else '+', w, abs(s[0])) for s, w in zip(soft, self.wght)]),
                     file=file_pointer)
             print('Subject To', file=file_pointer)
+        elif format == 'smt':
+            for v in range(1, self.nv + 1):
+                print('(declare-fun x{0} () Bool)'.format(v))
 
         for i, cl in enumerate(self.hard + hard, 1):
             line, neg = [], 0
             for l in cl:
                 if l > 0:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
+                    if format == 'smt':
+                        line.append('x{0}'.format(l))
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', l))
                 else:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
-                    neg += 1
+                    if format == 'smt':
+                        line.append('(not x{0})'.format(-l))
+                    else:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', -l))
+                        neg += 1
 
-            print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
-                    ' '.join(l for l in line),
-                    1 - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+            if format == 'smt':
+                print('(assert (or {0}))'.format(' '.join(line)), file=file_pointer)
+            else:
+                print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
+                        ' '.join(l for l in line),
+                        1 - neg, ';' if format == 'opb' else '',
+                        file=file_pointer))
 
         for i, am in enumerate(self.atms, len(self.hard) + len(hard) + 1):
             line, neg = [], 0
@@ -2165,6 +2250,15 @@ class WCNFPlus(WCNF, object):
             for v in range(1, topv):
                 print('x{0}'.format(v))
             print('End')
+        elif format == 'smt':
+            for cl, w in zip(soft, self.wght):
+                l = 'x{0}'.format(cl[0]) if cl[0] > 0 else '(not x{0})'.format(-cl[0])
+                print('(assert-soft {0} :weight {1})'.format(l, w), file=file_pointer)
+
+            print('(check-sat)', file=file_pointer)
+            print('(get-model)', file=file_pointer)
+            print('(get-objectives)', file=file_pointer)
+            print('(exit)', file=file_pointer)
 
     def append(self, clause, weight=None, is_atmost=False):
         """
