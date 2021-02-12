@@ -800,8 +800,8 @@ class CNF(object):
             else:
                 print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                         ' '.join(l for l in line),
-                        1 - neg, ';' if format == 'opb' else '',
-                        file=file_pointer))
+                        1 - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         if format == 'lp':
             print('Bounds')
@@ -1378,8 +1378,8 @@ class WCNF(object):
             else:
                 print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
                         ' '.join(l for l in line),
-                        1 - neg, ';' if format == 'opb' else '',
-                        file=file_pointer))
+                        1 - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         if format == 'lp':
             print('Bounds')
@@ -1752,8 +1752,8 @@ class CNFPlus(CNF, object):
             else:
                 print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                         ' '.join(l for l in line),
-                        1 - neg, ';' if format == 'opb' else '',
-                        file=file_pointer))
+                        1 - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         for i, am in enumerate(self.atmosts, len(self.clauses) + 1):
             line, neg = [], 0
@@ -1766,8 +1766,8 @@ class CNFPlus(CNF, object):
 
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
-                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         if format == 'lp':
             print('Bounds')
@@ -2225,8 +2225,8 @@ class WCNFPlus(WCNF, object):
             else:
                 print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
                         ' '.join(l for l in line),
-                        1 - neg, ';' if format == 'opb' else '',
-                        file=file_pointer))
+                        1 - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         for i, am in enumerate(self.atms, len(self.hard) + len(hard) + 1):
             line, neg = [], 0
@@ -2239,8 +2239,8 @@ class WCNFPlus(WCNF, object):
 
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
-                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else '',
-                    file=file_pointer))
+                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
+                      file=file_pointer)
 
         if format == 'lp':
             print('Bounds')
