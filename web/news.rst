@@ -11,6 +11,21 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+13.02.2021 (*0.1.6.dev12*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed formula dumping in other formats (see :meth:`to_alien`).
+
+24.11.2020 (*0.1.6.dev11*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added formula dumping in SMT-LIB2 (see :meth:`to_alien`).
+
+19.11.2020 (*0.1.6.dev10*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed the number of propagations ins MapleChrono.
+
 27.09.2020 (*0.1.6.dev9*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -778,7 +778,7 @@ class CNF(object):
             print('Subject To', file=file_pointer)
         elif format == 'smt':
             for v in range(1, self.nv + 1):
-                print('(declare-fun x{0} () Bool)'.format(v))
+                print('(declare-fun x{0} () Bool)'.format(v), file=file_pointer)
 
         for i, cl in enumerate(self.clauses, 1):
             line, neg = [], 0
@@ -801,16 +801,16 @@ class CNF(object):
                 print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                         ' '.join(l for l in line),
                         1 - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                        file=file_pointer)
 
         if format == 'lp':
-            print('Bounds')
+            print('Bounds', file=file_pointer)
             for v in range(1, self.nv + 1):
-                print('0 <= x{0} <= 1'.format(v))
-            print('Binary')
+                print('0 <= x{0} <= 1'.format(v), file=file_pointer)
+            print('Binary', file=file_pointer)
             for v in range(1, self.nv + 1):
-                print('x{0}'.format(v))
-            print('End')
+                print('x{0}'.format(v), file=file_pointer)
+            print('End', file=file_pointer)
         elif format == 'smt':
             print('(check-sat)', file=file_pointer)
             print('(exit)', file=file_pointer)
@@ -1356,7 +1356,7 @@ class WCNF(object):
             print('Subject To', file=file_pointer)
         elif format == 'smt':
             for v in range(1, self.nv + 1):
-                print('(declare-fun x{0} () Bool)'.format(v))
+                print('(declare-fun x{0} () Bool)'.format(v), file=file_pointer)
 
         for i, cl in enumerate(self.hard + hard, 1):
             line, neg = [], 0
@@ -1379,16 +1379,16 @@ class WCNF(object):
                 print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
                         ' '.join(l for l in line),
                         1 - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                        file=file_pointer)
 
         if format == 'lp':
-            print('Bounds')
+            print('Bounds', file=file_pointer)
             for v in range(1, topv):
-                print('0 <= x{0} <= 1'.format(v))
-            print('Binary')
+                print('0 <= x{0} <= 1'.format(v), file=file_pointer)
+            print('Binary', file=file_pointer)
             for v in range(1, topv):
-                print('x{0}'.format(v))
-            print('End')
+                print('x{0}'.format(v), file=file_pointer)
+            print('End', file=file_pointer)
         elif format == 'smt':
             for cl, w in zip(soft, self.wght):
                 l = 'x{0}'.format(cl[0]) if cl[0] > 0 else '(not x{0})'.format(-cl[0])
@@ -1730,7 +1730,7 @@ class CNFPlus(CNF, object):
             print('Subject To', file=file_pointer)
         elif format == 'smt':
             for v in range(1, self.nv + 1):
-                print('(declare-fun x{0} () Bool)'.format(v))
+                print('(declare-fun x{0} () Bool)'.format(v), file=file_pointer)
 
         for i, cl in enumerate(self.clauses, 1):
             line, neg = [], 0
@@ -1753,7 +1753,7 @@ class CNFPlus(CNF, object):
                 print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                         ' '.join(l for l in line),
                         1 - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                        file=file_pointer)
 
         for i, am in enumerate(self.atmosts, len(self.clauses) + 1):
             line, neg = [], 0
@@ -1767,16 +1767,16 @@ class CNFPlus(CNF, object):
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
                     len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                    file=file_pointer)
 
         if format == 'lp':
-            print('Bounds')
+            print('Bounds', file=file_pointer)
             for v in range(1, self.nv + 1):
-                print('0 <= x{0} <= 1'.format(v))
-            print('Binary')
+                print('0 <= x{0} <= 1'.format(v), file=file_pointer)
+            print('Binary', file=file_pointer)
             for v in range(1, self.nv + 1):
-                print('x{0}'.format(v))
-            print('End')
+                print('x{0}'.format(v), file=file_pointer)
+            print('End', file=file_pointer)
         elif format == 'smt':
             print('(check-sat)', file=file_pointer)
             print('(exit)', file=file_pointer)
@@ -2203,7 +2203,7 @@ class WCNFPlus(WCNF, object):
             print('Subject To', file=file_pointer)
         elif format == 'smt':
             for v in range(1, self.nv + 1):
-                print('(declare-fun x{0} () Bool)'.format(v))
+                print('(declare-fun x{0} () Bool)'.format(v), file=file_pointer)
 
         for i, cl in enumerate(self.hard + hard, 1):
             line, neg = [], 0
@@ -2226,7 +2226,7 @@ class WCNFPlus(WCNF, object):
                 print('{0}{1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}: '.format(i),
                         ' '.join(l for l in line),
                         1 - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                        file=file_pointer)
 
         for i, am in enumerate(self.atms, len(self.hard) + len(hard) + 1):
             line, neg = [], 0
@@ -2240,16 +2240,16 @@ class WCNFPlus(WCNF, object):
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
                     len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
-                      file=file_pointer)
+                    file=file_pointer)
 
         if format == 'lp':
-            print('Bounds')
+            print('Bounds', file=file_pointer)
             for v in range(1, topv):
-                print('0 <= x{0} <= 1'.format(v))
-            print('Binary')
+                print('0 <= x{0} <= 1'.format(v), file=file_pointer)
+            print('Binary', file=file_pointer)
             for v in range(1, topv):
-                print('x{0}'.format(v))
-            print('End')
+                print('x{0}'.format(v), file=file_pointer)
+            print('End', file=file_pointer)
         elif format == 'smt':
             for cl, w in zip(soft, self.wght):
                 l = 'x{0}'.format(cl[0]) if cl[0] > 0 else '(not x{0})'.format(-cl[0])
