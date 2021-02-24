@@ -28,7 +28,7 @@ suffixes = {
     (2, 7, '64bit'): None,
     (3, 6, '64bit'): 'cp36-cp36m-win_amd64',
     (3, 7, '64bit'): 'cp37-cp37m-win_amd64',
-    (3, 8, '64bit'): 'cp38-cp38-win_amd64'
+    (3, 8, '64bit'): 'cp38-cp38-win_amd64',
     (3, 9, '64bit'): 'cp39-cp39-win_amd64'
 }
 
@@ -62,5 +62,5 @@ if __name__ == '__main__':
 
     for asset in rsp['assets']:
         print(asset['name'])
-        if suffix and suffix in asset['name']:
-            pycall('-m pip install --upgrade {0}'.format(asset['browser_download_url']))
+        # if suffix and suffix in asset['name']:
+        #     pycall('-m pip install --upgrade {0}'.format(asset['browser_download_url']))
