@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+23.03.2021 (*0.1.6.dev14*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A minor correction in the ``setup.py`` script.
+
 23.03.2021 (*0.1.6.dev13*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
