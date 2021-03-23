@@ -412,7 +412,7 @@ class OptUx(object):
                 # i.e. it is an optimal MUS we are searching for;
                 # therefore, blocking it and returning
                 self.hitman.block(hs)
-                self.cost = self.hitman.oracle.cost
+                self.cost = self.hitman.oracle.cost + len(self.units)
                 return sorted(map(lambda s: self.smap[s], self.units + hs))
             else:
                 # the candidate subset is satisfiable,

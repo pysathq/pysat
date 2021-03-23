@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+23.03.2021 (*0.1.6.dev15*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A minor correction in :class:`OptUx` related to MUS cost value.
+
 23.03.2021 (*0.1.6.dev14*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
