@@ -41,4 +41,5 @@ Supplementary :mod:`.examples` package
     api/examples/mcsls
     api/examples/models
     api/examples/musx
+    api/examples/optux
     api/examples/rc2

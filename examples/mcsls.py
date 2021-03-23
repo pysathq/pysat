@@ -247,17 +247,26 @@ class MCSls(object):
             self.sels.append(sel)
             self.smap[sel] = len(self.sels)
 
-    def compute(self):
+    def compute(self, enable=[]):
         """
             Compute and return one solution. This method checks whether the
             hard part of the formula is satisfiable, i.e. an MCS can be
             extracted. If the formula is satisfiable, the model computed by the
             SAT call is used as an *over-approximation* of the MCS in the
             method :func:`_compute` invoked here, which implements the BLS
-            algorithm augmented with CLD oracle calls.
 
             An MCS is reported as a list of integers, each representing a soft
             clause index (the smallest index is ``1``).
+
+            An optional input parameter is ``enable``, which represents a
+            sequence (normally a list) of soft clause indices that a user
+            would prefer to enable/satisfy. Note that this may result in an
+            unsatisfiable oracle call, in which case ``None`` will be reported
+            as solution. Also, the smallest clause index is assumed to be
+            ``1``.
+
+            :param enable: a sequence of clause ids to enable
+            :type enable: iterable(int)
 
             :rtype: list(int)
         """
@@ -267,7 +276,7 @@ class MCSls(object):
         self.bb_assumps = []  # backbone assumptions
         self.ss_assumps = []  # satisfied soft clause assumptions
 
-        if self.oracle.solve():
+        if self.oracle.solve(assumptions=[self.sels[cl_id - 1] for cl_id in enable]):
             # hard part is satisfiable => there is a solution
             self._overapprox()
             self._compute()

@@ -244,7 +244,7 @@ class LBX(object):
 
             self.sels.append(sel)
 
-    def compute(self):
+    def compute(self, enable=[]):
         """
             Compute and return one solution. This method checks whether the
             hard part of the formula is satisfiable, i.e. an MCS can be
@@ -256,6 +256,16 @@ class LBX(object):
             An MCS is reported as a list of integers, each representing a soft
             clause index (the smallest index is ``1``).
 
+            An optional input parameter is ``enable``, which represents a
+            sequence (normally a list) of soft clause indices that a user
+            would prefer to enable/satisfy. Note that this may result in an
+            unsatisfiable oracle call, in which case ``None`` will be reported
+            as solution. Also, the smallest clause index is assumed to be
+            ``1``.
+
+            :param enable: a sequence of clause ids to enable
+            :type enable: iterable(int)
+
             :rtype: list(int)
         """
 
@@ -265,7 +275,7 @@ class LBX(object):
         self.bb_assumps = []  # backbone assumptions
         self.ss_assumps = []  # satisfied soft clause assumptions
 
-        if self.oracle.solve():
+        if self.oracle.solve(assumptions=[self.sels[cl_id - 1] for cl_id in enable]):
             # hard part is satisfiable => there is a solution
             self._filter_satisfied(update_setd=True)
             self._compute()

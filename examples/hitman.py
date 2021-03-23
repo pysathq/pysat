@@ -159,7 +159,7 @@
 #
 #==============================================================================
 from pysat.formula import IDPool, WCNF
-from pysat.examples.rc2 import RC2
+from pysat.examples.rc2 import RC2, RC2Stratified
 from pysat.examples.lbx import LBX
 from pysat.examples.mcsls import MCSls
 import six
@@ -196,16 +196,34 @@ class Hitman(object):
         well as their combinations. The bootstrapping phase is done in
         :func:`init`.
 
+        A few other optional parameters include the possible options for RC2
+        as well as for LBX- and MCSls-like MCS enumerators that control the
+        behaviour of the underlying solvers.
+
         :param bootstrap_with: input set of sets to hit
+        :param weights: a mapping from objects to their weights (if weighted)
         :param solver: name of SAT solver
         :param htype: enumerator type
+        :param mxs_adapt: detect and process AtMost1 constraints in RC2
+        :param mxs_exhaust: apply unsatisfiable core exhaustion in RC2
+        :param mxs_minz: apply heuristic core minimization in RC2
+        :param mxs_trim: trim unsatisfiable cores at most this number of times
+        :param mcs_usecld: use clause-D heuristic in the MCS enumerator
 
         :type bootstrap_with: iterable(iterable(obj))
+        :type weights: dict(obj)
         :type solver: str
         :type htype: str
+        :type mxs_adapt: bool
+        :type mxs_exhaust: bool
+        :type mxs_minz: bool
+        :type mxs_trim: int
+        :type mcs_usecld: bool
     """
 
-    def __init__(self, bootstrap_with=[], solver='g3', htype='sorted'):
+    def __init__(self, bootstrap_with=[], weights=None, solver='g3',
+            htype='sorted', mxs_adapt=False, mxs_exhaust=False, mxs_minz=False,
+            mxs_trim=0, mcs_usecld=False):
         """
             Constructor.
         """
@@ -215,6 +233,13 @@ class Hitman(object):
 
         # name of SAT solver
         self.solver = solver
+
+        # various oracle options
+        self.adapt    = mxs_adapt
+        self.exhaust  = mxs_exhaust
+        self.minz     = mxs_minz
+        self.trim     = mxs_trim
+        self.usecld   = mcs_usecld
 
         # hitman type: either a MaxSAT solver or an MCS enumerator
         if htype in ('maxsat', 'mxsat', 'rc2', 'sorted'):
@@ -228,7 +253,7 @@ class Hitman(object):
         self.idpool = IDPool()
 
         # initialize hitting set solver
-        self.init(bootstrap_with)
+        self.init(bootstrap_with, weights)
 
     def __del__(self):
         """
@@ -251,15 +276,22 @@ class Hitman(object):
 
         self.delete()
 
-    def init(self, bootstrap_with):
+    def init(self, bootstrap_with, weights=None):
         """
             This method serves for initializing the hitting set solver with a
             given list of sets to hit. Concretely, the hitting set problem is
             encoded into partial MaxSAT as outlined above, which is then fed
             either to a MaxSAT solver or an MCS enumerator.
 
+            An additional optional parameter is ``weights``, which can be used
+            to specify non-unit weights for the target objects in the sets to
+            hit. This only works if ``'sorted'`` enumeration of hitting sets
+            is applied.
+
             :param bootstrap_with: input set of sets to hit
+            :param weights: weights of the objects in case the problem is weighted
             :type bootstrap_with: iterable(iterable(obj))
+            :type weights: dict(obj)
         """
 
         # formula encoding the sets to hit
@@ -273,16 +305,23 @@ class Hitman(object):
 
         # soft clauses
         for obj_id in six.iterkeys(self.idpool.id2obj):
-            formula.append([-obj_id], weight=1)
+            formula.append([-obj_id],
+                    weight=1 if not weights else weights[self.idpool.obj(obj_id)])
 
         if self.htype == 'rc2':
-            # using the RC2-A options from MaxSAT evaluation 2018
-            self.oracle = RC2(formula, solver=self.solver, adapt=False,
-                    exhaust=True, trim=5)
+            if not weights:
+                self.oracle = RC2(formula, solver=self.solver, adapt=self.adapt,
+                        exhaust=self.exhaust, minz=self.minz, trim=self.trim)
+            else:
+                self.oracle = RC2Stratified(formula, solver=self.solver,
+                        adapt=self.adapt, exhaust=self.exhaust, minz=self.minz,
+                        nohard=True, trim=self.trim)
         elif self.htype == 'lbx':
-            self.oracle = LBX(formula, solver_name=self.solver, use_cld=True)
+            self.oracle = LBX(formula, solver_name=self.solver,
+                    use_cld=self.usecld)
         else:
-            self.oracle = MCSls(formula, solver_name=self.solver, use_cld=True)
+            self.oracle = MCSls(formula, solver_name=self.solver,
+                    use_cld=self.usecld)
 
     def delete(self):
         """
@@ -314,14 +353,22 @@ class Hitman(object):
 
             return list(map(lambda vid: self.idpool.id2obj[vid], self.hset))
 
-    def hit(self, to_hit):
+    def hit(self, to_hit, weights=None):
         """
             This method adds a new set to hit to the hitting set solver. This
             is done by translating the input iterable of objects into a list of
             Boolean variables in the MaxSAT problem formulation.
 
+            Note that an optional parameter that can be passed to this method
+            is ``weights``, which contains a mapping the objects under
+            question into weights. Also note that the weight of an object must
+            not change from one call of :meth:`hit` to another.
+
             :param to_hit: a new set to hit
+            :param weights: a mapping from objects to weights
+
             :type to_hit: iterable(obj)
+            :type weights: dict(obj)
         """
 
         # translating objects to variables
@@ -335,17 +382,25 @@ class Hitman(object):
 
         # new soft clauses
         for vid in new_obj:
-            self.oracle.add_clause([-vid], 1)
+            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
 
-    def block(self, to_block):
+    def block(self, to_block, weights=None):
         """
             The method serves for imposing a constraint forbidding the hitting
             set solver to compute a given hitting set. Each set to block is
             encoded as a hard clause in the MaxSAT problem formulation, which
             is then added to the underlying oracle.
 
+            Note that an optional parameter that can be passed to this method
+            is ``weights``, which contains a mapping the objects under
+            question into weights. Also note that the weight of an object must
+            not change from one call of :meth:`hit` to another.
+
             :param to_block: a set to block
+            :param weights: a mapping from objects to weights
+
             :type to_block: iterable(obj)
+            :type weights: dict(obj)
         """
 
         # translating objects to variables
@@ -359,7 +414,7 @@ class Hitman(object):
 
         # new soft clauses
         for vid in new_obj:
-            self.oracle.add_clause([-vid], 1)
+            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
 
     def enumerate(self):
         """
@@ -382,3 +437,10 @@ class Hitman(object):
                 yield hset
             else:
                 done = True
+
+    def oracle_time(self):
+        """
+            Report the total SAT solving time.
+        """
+
+        return self.oracle.oracle_time()

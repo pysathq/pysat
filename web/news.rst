@@ -11,6 +11,15 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+23.03.2021 (*0.1.6.dev13*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added a way to bootstrap :class:`.LBX` and :class:`.MCSls` for computing
+  MCSes that include a specified subset of clauses.
+- Updated :class:`Hitman` to support *weighted* hitting set problems.
+- Added :class:`.OptUx`, which is an smallest/optimal MUS extractor and
+  enumerator that aims to replicate the performance of Forqes.
+
 13.02.2021 (*0.1.6.dev12*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
