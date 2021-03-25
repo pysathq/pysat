@@ -465,6 +465,12 @@ class RC2(object):
         if res:
             # extracting a model
             self.model = self.oracle.get_model()
+
+            if self.model is None and self.topv == 0:
+                # we seem to have been given an empty formula
+                # so let's transform the None model returned to []
+                self.model = []
+
             self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
             self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
             self.model = sorted(self.model, key=lambda l: abs(l))
@@ -1325,6 +1331,12 @@ class RC2Stratified(RC2, object):
 
         # extracting a model
         self.model = self.oracle.get_model()
+
+        if self.model is None and self.topv == 0:
+            # we seem to have been given an empty formula
+            # so let's transform the None model returned to []
+            self.model = []
+
         self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
         self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
         self.model = sorted(self.model, key=lambda l: abs(l))

@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+25.03.2021 (*0.1.6.dev16*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- A few minor corrections in :class:`RC2`, :class:`RC2Stratified`, and
+  :class:`Hitman` addressing the issues related to empty formulas.
+
 23.03.2021 (*0.1.6.dev15*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

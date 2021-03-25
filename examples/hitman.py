@@ -344,7 +344,7 @@ class Hitman(object):
 
         model = self.oracle.compute()
 
-        if model:
+        if model is not None:
             if self.htype == 'rc2':
                 # extracting a hitting set
                 self.hset = filter(lambda v: v > 0, model)
