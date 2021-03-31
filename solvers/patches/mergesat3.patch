@@ -259,7 +259,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
  #endif
 diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
 --- solvers/mergesat3/core/Solver.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.cc	2021-03-31 21:36:41.000000000 +1100
++++ solvers/mgs3/core/Solver.cc	2021-03-31 21:56:13.000000000 +1100
 @@ -50,14 +50,14 @@
  #include <signal.h>
  #include <unistd.h>
@@ -281,24 +281,116 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
  //#define PRINT_OUT
  
-@@ -207,7 +207,7 @@
+@@ -124,23 +124,23 @@
+                                    IntRange(0, INT32_MAX));
+ static IntOption
+ opt_dup_buffer_size(_cat, "lcm-dup-buffer", "Number of clauses to keep for duplicate check", 16, IntRange(0, INT32_MAX));
+-static Int64Option
+-opt_vsids_c(_cat, "vsids-c", "conflicts after which we want to switch back to VSIDS (0=off)", 12000000, Int64Range(0, INT64_MAX));
+-static Int64Option
+-opt_vsids_p(_cat, "vsids-p", "propagations after which we want to switch back to VSIDS (0=off)", 3000000000, Int64Range(0, INT64_MAX));
++/* static Int64Option */
++/* opt_vsids_c(_cat, "vsids-c", "conflicts after which we want to switch back to VSIDS (0=off)", 12000000, Int64Range(0, INT64_MAX)); */
++/* static Int64Option */
++/* opt_vsids_p(_cat, "vsids-p", "propagations after which we want to switch back to VSIDS (0=off)", 3000000000, Int64Range(0, INT64_MAX)); */
+ static BoolOption opt_pref_assumpts(_cat, "pref-assumpts", "Assign all assumptions at once", true);
+ 
+-static Int64Option
+-opt_VSIDS_props_limit(_cat,
+-                      "VSIDS-lim",
+-                      "specifies the number of propagations after which the solver switches between LRB and VSIDS.",
+-                      30 * 1000000,
+-                      Int64Range(1, INT64_MAX));
+-static Int64Option opt_VSIDS_props_init_limit(_cat,
+-                                              "VSIDS-init-lim",
+-                                              "specifies the number of propagations before we start with LRB.",
+-                                              10000,
+-                                              Int64Range(1, INT64_MAX));
++/* static Int64Option */
++/* opt_VSIDS_props_limit(_cat, */
++/*                       "VSIDS-lim", */
++/*                       "specifies the number of propagations after which the solver switches between LRB and VSIDS.", */
++/*                       30 * 1000000, */
++/*                       Int64Range(1, INT64_MAX)); */
++/* static Int64Option opt_VSIDS_props_init_limit(_cat, */
++/*                                               "VSIDS-init-lim", */
++/*                                               "specifies the number of propagations before we start with LRB.", */
++/*                                               10000, */
++/*                                               Int64Range(1, INT64_MAX)); */
+ static IntOption opt_inprocessing_init_delay(_cat,
+                                              "inprocess-init-delay",
+                                              "Use this amount of iterations before using inprocessing (-1 == off)",
+@@ -151,11 +151,11 @@
+                                          "Use this factor to wait for next inprocessing (0=off)",
+                                          2,
+                                          DoubleRange(0, true, HUGE_VAL, false));
+-static Int64Option opt_inprocessing_penalty(_cat,
+-                                            "inprocess-penalty",
+-                                            "Add this amount, in case inprocessing did not simplify anything",
+-                                            2,
+-                                            Int64Range(0, INT64_MAX));
++/* static Int64Option opt_inprocessing_penalty(_cat, */
++/*                                             "inprocess-penalty", */
++/*                                             "Add this amount, in case inprocessing did not simplify anything", */
++/*                                             2, */
++/*                                             Int64Range(0, INT64_MAX)); */
+ static IntOption opt_inprocess_learnt_level(_cat,
+                                             "inprocess-learnt-level",
+                                             "Which clauses to consider for inprocessing (1=core only, 3=all learnts)",
+@@ -207,31 +207,31 @@
  //=================================================================================================
  // Constructor/Destructor:
  
 -bool MERGESAT_NSPACE::updateOptions()
 +bool MergeSat3::updateOptions()
  {
-     if (getenv("MINISAT_RUNTIME_ARGS") == NULL) return false;
+-    if (getenv("MINISAT_RUNTIME_ARGS") == NULL) return false;
+-
+-    char *args = strdup(getenv("MINISAT_RUNTIME_ARGS")); // make sure it's freed
+-    if (!args) return false;
+-    char *original_args = args;
++    /* if (getenv("MINISAT_RUNTIME_ARGS") == NULL) return false; */
  
-@@ -220,7 +220,7 @@
-     char *argv[len + 2];
-     int count = 1;
+-    const size_t len = strlen(args);
++    /* char *args = strdup(getenv("MINISAT_RUNTIME_ARGS")); // make sure it's freed */
++    /* if (!args) return false; */
++    /* char *original_args = args; */
++
++    /* const size_t len = strlen(args); */
++
++    /* char *argv[len + 2]; */
++    /* int count = 1; */
++
++    /* argv[0] = (char *)"mergesat"; */
++    /* while (isspace(*args)) ++args; */
++    /* while (*args) { */
++    /*     argv[count++] = args;                    // store current argument */
++    /*     while (*args && !isspace(*args)) ++args; // skip current token */
++    /*     if (!*args) break; */
++    /*     *args = (char)0; // separate current token */
++    /*     ++args; */
++    /* } */
  
+-    char *argv[len + 2];
+-    int count = 1;
+-
 -    argv[0] = "mergesat";
-+    argv[0] = (char *)"mergesat";
-     while (isspace(*args)) ++args;
-     while (*args) {
-         argv[count++] = args;                    // store current argument
+-    while (isspace(*args)) ++args;
+-    while (*args) {
+-        argv[count++] = args;                    // store current argument
+-        while (*args && !isspace(*args)) ++args; // skip current token
+-        if (!*args) break;
+-        *args = (char)0; // separate current token
+-        ++args;
+-    }
+-
+-    parseOptions(count, argv, false);
+-    free(original_args);
++    /* parseOptions(count, argv, false); */
++    /* free(original_args); */
+     return false;
+ }
+ 
 @@ -241,6 +241,7 @@
    // Parameters (user settable):
    //
@@ -307,6 +399,35 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
    , reparsed_options(updateOptions())
    , verbosity(0)
    , status_every(100000)
+@@ -296,8 +297,8 @@
+ 
+   , restart(opt_restart_select)
+ 
+-  , VSIDS_conflicts(opt_vsids_c)
+-  , VSIDS_propagations(opt_vsids_p)
++  , VSIDS_conflicts(12000000)
++  , VSIDS_propagations(3000000000)
+   , reactivate_VSIDS(false)
+ 
+   , inprocessing_C(0)
+@@ -356,14 +357,14 @@
+   , inprocess_learnt_level(opt_inprocess_learnt_level)
+ 
+   , inprocess_inc(opt_inprocessing_inc)
+-  , inprocess_penalty(opt_inprocessing_penalty)
++  , inprocess_penalty(2)
+ 
+   , max_learnts(0)
+   , learntsize_adjust_confl(0)
+   , learntsize_adjust_cnt(0)
+ 
+-  , VSIDS_props_limit(opt_VSIDS_props_limit)
+-  , VSIDS_props_init_limit(opt_VSIDS_props_init_limit)
++  , VSIDS_props_limit(30 * 1000000)
++  , VSIDS_props_init_limit(10000)
+   , switch_mode(false)
+ 
+   // Resource constraints:
 @@ -473,18 +474,18 @@
  
              Lit imp = wbin[k].blocker;
@@ -1820,7 +1941,7 @@ diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
  #endif
 diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
 --- solvers/mergesat3/utils/ParseUtils.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ParseUtils.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/utils/ParseUtils.h	2021-03-31 21:43:43.000000000 +1100
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1844,6 +1965,115 @@ diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
  {
  
  //-------------------------------------------------------------------------------------------------
+@@ -152,57 +152,57 @@
+     return res;
+ }
+ 
+-inline FILE *open_pipe(const char *fmt, const char *path, const char *mode)
+-{
+-    size_t name_len = 0;
+-    while (fmt[name_len] && fmt[name_len] != ' ') name_len++;
+-    char *name = (char *)xrealloc(NULL, name_len + 1);
+-    if (!name) return 0;
+-    strncpy(name, fmt, name_len);
+-    name[name_len] = 0;
+-    bool found = find_executable(name);
+-    if (!found) fprintf(stderr, "c WARNING: failed to find executable %s\n", name);
+-    free(name);
+-    if (!found) return 0;
+-    char *cmd = (char *)xrealloc(NULL, strlen(fmt) + strlen(path) + 1);
+-    if (!cmd) return 0;
+-    sprintf(cmd, fmt, path);
+-    FILE *res = popen(cmd, mode);
+-    free(cmd);
+-    return res;
+-}
+-
+-inline FILE *read_pipe(const char *fmt, const int *sig, const char *path)
+-{
+-    if (!file_readable(path)) return 0;
+-    if (sig && !match_signature(path, sig)) return 0;
+-    return open_pipe(fmt, path, "r");
+-}
+-
+-inline FILE *open_to_read_file(const char *path)
+-{
+-    FILE *file = NULL;
+-#define READ_PIPE(SUFFIX, CMD, SIG)                                                                                    \
+-    do {                                                                                                               \
+-        if (has_suffix(path, SUFFIX)) {                                                                                \
+-            file = read_pipe(CMD, SIG, path);                                                                          \
+-        }                                                                                                              \
+-    } while (0)
+-
+-    READ_PIPE(".bz2", "bzip2 -c -d %s", bz2sig);
+-    if (file) return file;
+-    READ_PIPE(".gz", "gzip -c -d %s", gzsig);
+-    if (file) return file;
+-    READ_PIPE(".lzma", "lzma -c -d %s", lzmasig);
+-    if (file) return file;
+-    READ_PIPE(".7z", "7z x -so %s 2>/dev/null", sig7z);
+-    if (file) return file;
+-    READ_PIPE(".xz", "xz -c -d %s", xzsig);
+-    if (file) return file;
+-
+-    file = fopen(path, "r");
+-    return file;
+-}
++/* inline FILE *open_pipe(const char *fmt, const char *path, const char *mode) */
++/* { */
++/*     size_t name_len = 0; */
++/*     while (fmt[name_len] && fmt[name_len] != ' ') name_len++; */
++/*     char *name = (char *)xrealloc(NULL, name_len + 1); */
++/*     if (!name) return 0; */
++/*     strncpy(name, fmt, name_len); */
++/*     name[name_len] = 0; */
++/*     bool found = find_executable(name); */
++/*     if (!found) fprintf(stderr, "c WARNING: failed to find executable %s\n", name); */
++/*     free(name); */
++/*     if (!found) return 0; */
++/*     char *cmd = (char *)xrealloc(NULL, strlen(fmt) + strlen(path) + 1); */
++/*     if (!cmd) return 0; */
++/*     sprintf(cmd, fmt, path); */
++/*     FILE *res = popen(cmd, mode); */
++/*     free(cmd); */
++/*     return res; */
++/* } */
++
++/* inline FILE *read_pipe(const char *fmt, const int *sig, const char *path) */
++/* { */
++/*     if (!file_readable(path)) return 0; */
++/*     if (sig && !match_signature(path, sig)) return 0; */
++/*     return open_pipe(fmt, path, "r"); */
++/* } */
++
++/* inline FILE *open_to_read_file(const char *path) */
++/* { */
++/*     FILE *file = NULL; */
++/* #define READ_PIPE(SUFFIX, CMD, SIG)                                                                                    \ */
++/*     do {                                                                                                               \ */
++/*         if (has_suffix(path, SUFFIX)) {                                                                                \ */
++/*             file = read_pipe(CMD, SIG, path);                                                                          \ */
++/*         }                                                                                                              \ */
++/*     } while (0) */
++
++/*     READ_PIPE(".bz2", "bzip2 -c -d %s", bz2sig); */
++/*     if (file) return file; */
++/*     READ_PIPE(".gz", "gzip -c -d %s", gzsig); */
++/*     if (file) return file; */
++/*     READ_PIPE(".lzma", "lzma -c -d %s", lzmasig); */
++/*     if (file) return file; */
++/*     READ_PIPE(".7z", "7z x -so %s 2>/dev/null", sig7z); */
++/*     if (file) return file; */
++/*     READ_PIPE(".xz", "xz -c -d %s", xzsig); */
++/*     if (file) return file; */
++
++/*     file = fopen(path, "r"); */
++/*     return file; */
++/* } */
+ 
+ //-------------------------------------------------------------------------------------------------
+ // End-of-file detection functions for StreamBuffer and char*:
 @@ -272,6 +272,6 @@
  
  
