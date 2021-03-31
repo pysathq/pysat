@@ -27,6 +27,7 @@
         MapleChrono
         MapleCM
         Maplesat
+        Mergesat3
         Minicard
         Minisat22
         MinisatGH
