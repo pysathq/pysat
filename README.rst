@@ -45,6 +45,7 @@ Minisat-based solvers only *core* versions are integrated):
 -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
 -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
 -  Maplesat (`MapleCOMSPS_LRB <https://sites.google.com/a/gsd.uwaterloo.ca/maplesat/>`__)
+-  Mergesat (`3.0 <https://github.com/conp-solutions/mergesat>`__)
 -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
 -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
 -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)

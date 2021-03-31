@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+31.03.2021 (*0.1.7.dev1*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added basic interface to :class:`Mergesat3`.
+- Ported :class:`Minicard`'s native cardinality support to Glucose, which
+  resulted in solvers :class:`Gluecard3` and :class:`Gluecard4`.
+- Added translation of :class:`Cadical`'s binary DRUP format to text-based.
+
 25.03.2021 (*0.1.6.dev16*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
