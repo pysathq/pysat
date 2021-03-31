@@ -1850,7 +1850,7 @@ diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
  
 diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
 --- solvers/mergesat3/utils/Options.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/Options.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/utils/Options.h	2021-03-31 22:56:29.000000000 +1100
 @@ -17,23 +17,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1882,6 +1882,47 @@ diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
  {
  
  //==================================================================================================
+@@ -638,23 +638,23 @@
+ 
+     virtual void help(bool verbose = false)
+     {
+-        fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
+-        if (range.begin == INT64_MIN)
+-            fprintf(stderr, "imin");
+-        else
+-            fprintf(stderr, "%4" PRIi64, range.begin);
+-
+-        fprintf(stderr, " .. ");
+-        if (range.end == INT64_MAX)
+-            fprintf(stderr, "imax");
+-        else
+-            fprintf(stderr, "%4" PRIi64, range.end);
+-
+-        fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
+-        if (verbose) {
+-            fprintf(stderr, "\n        %s\n", description);
+-            fprintf(stderr, "\n");
+-        }
++        /* fprintf(stderr, "  -%-12s = %-8s [", name, type_name); */
++        /* if (range.begin == INT64_MIN) */
++        /*     fprintf(stderr, "imin"); */
++        /* else */
++        /*     fprintf(stderr, "%4" PRIi64, range.begin); */
++
++        /* fprintf(stderr, " .. "); */
++        /* if (range.end == INT64_MAX) */
++        /*     fprintf(stderr, "imax"); */
++        /* else */
++        /*     fprintf(stderr, "%4" PRIi64, range.end); */
++
++        /* fprintf(stderr, "] (default: %" PRIi64 ")\n", value); */
++        /* if (verbose) { */
++        /*     fprintf(stderr, "\n        %s\n", description); */
++        /*     fprintf(stderr, "\n"); */
++        /* } */
+     }
+ 
+     void fillGranularityDomain(int granularity, std::vector<int64_t> &values)
 @@ -715,23 +715,23 @@
                  if (i != 0) {
                      fprintf(pcsFile, ",");
