@@ -1,0 +1,2181 @@
+diff -Naur solvers/mergesat3/.clang-format solvers/mgs3/.clang-format
+--- solvers/mergesat3/.clang-format	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.clang-format	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,48 @@
++
++AccessModifierOffset: 0
++AlignEscapedNewlinesLeft: false
++AlignTrailingComments: true
++AllowAllParametersOfDeclarationOnNextLine: false
++AllowShortFunctionsOnASingleLine: true
++AllowShortIfStatementsOnASingleLine: true
++AllowShortLoopsOnASingleLine: true
++AlwaysBreakBeforeMultilineStrings: false
++AlwaysBreakTemplateDeclarations: false
++BinPackParameters: false
++BreakBeforeBinaryOperators: false
++BreakBeforeBraces: Linux
++BreakBeforeTernaryOperators: false
++BreakConstructorInitializersBeforeComma: true
++ColumnLimit: 120
++CommentPragmas: ''
++ConstructorInitializerAllOnOneLineOrOnePerLine: true
++ConstructorInitializerIndentWidth: 2
++ContinuationIndentWidth: 0
++Cpp11BracedListStyle: false
++DerivePointerBinding: false
++IndentCaseLabels: false
++IndentFunctionDeclarationAfterType: false
++IndentWidth: 4
++Language: Cpp
++MaxEmptyLinesToKeep: 2
++NamespaceIndentation: None
++ObjCSpaceAfterProperty: true
++ObjCSpaceBeforeProtocolList: true
++PenaltyBreakBeforeFirstCallParameter: 100
++PenaltyBreakComment: 100
++PenaltyBreakFirstLessLess: 0
++PenaltyBreakString: 100
++PenaltyExcessCharacter: 1
++PenaltyReturnTypeOnItsOwnLine: 20
++PointerBindsToType: false
++SpaceBeforeAssignmentOperators: true
++SpaceBeforeParens: ControlStatements
++SpaceInEmptyParentheses: false
++SpacesBeforeTrailingComments: 1
++SpacesInAngles: false
++SpacesInCStyleCastParentheses: false
++SpacesInContainerLiterals: false
++SpacesInParentheses: false
++Standard: Cpp11
++TabWidth: 4
++UseTab: Never
+diff -Naur solvers/mergesat3/.github/workflows/build-and-test.yml solvers/mgs3/.github/workflows/build-and-test.yml
+--- solvers/mergesat3/.github/workflows/build-and-test.yml	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.github/workflows/build-and-test.yml	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,35 @@
++name: Build and Test on Linux and Mac OS
++
++on: [push]
++
++jobs:
++  Linux:
++
++    runs-on: ubuntu-18.04
++
++    steps:
++    - name: Install Packages
++      run: sudo apt-get install zlib1g-dev make cmake picosat
++
++    - uses: actions/checkout@v1
++
++    - name: mergesat build
++      run: make d r p sh lr ld lp lsh
++
++    - name: run CI script
++      env:
++        RUNOPENWBO: 0
++      run: ./tools/ci.sh
++
++  MacOS:
++
++    runs-on: macos-latest
++
++    steps:
++    - name: Install Packages
++      run: brew install libzip
++
++    - uses: actions/checkout@v1
++
++    - name: mergesat build
++      run: make d r sh lr ld lsh
+diff -Naur solvers/mergesat3/.github/workflows/build-maxsat.yml solvers/mgs3/.github/workflows/build-maxsat.yml
+--- solvers/mergesat3/.github/workflows/build-maxsat.yml	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.github/workflows/build-maxsat.yml	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,18 @@
++name: Build and Test MaxSat Solver
++
++on: [push]
++
++jobs:
++  Linux:
++
++    runs-on: ubuntu-20.04
++
++    steps:
++    - name: Install Packages
++      run: sudo apt-get install zlib1g-dev make cmake picosat
++
++    - uses: actions/checkout@v1
++
++    - name: maxsat build
++      run: ./tools/ci/maxsat/UWrMaxSat/test-UWrMaxSat.sh
++
+diff -Naur solvers/mergesat3/.github/workflows/mini-competition.yml solvers/mgs3/.github/workflows/mini-competition.yml
+--- solvers/mergesat3/.github/workflows/mini-competition.yml	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.github/workflows/mini-competition.yml	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,20 @@
++name: Run Mini-Competition Benchmark on Linux
++
++on: [push]
++
++jobs:
++  Linux:
++
++    runs-on: ubuntu-18.04
++
++    steps:
++    - name: Install Packages
++      run: sudo apt-get install zlib1g-dev make cmake picosat runlim xz-utils p7zip-full bzip2
++
++    - uses: actions/checkout@v1
++
++    - name: mergesat build
++      run: make d r p sh lr ld lp lsh
++
++    - name: run copmetition script
++      run: bash -x ./tools/ci/mini-competition.sh -v "build/release/bin/mergesat"
+diff -Naur solvers/mergesat3/.github/workflows/unit-tests.yml solvers/mgs3/.github/workflows/unit-tests.yml
+--- solvers/mergesat3/.github/workflows/unit-tests.yml	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.github/workflows/unit-tests.yml	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,36 @@
++name: Run Unit Test on Linux and Mac OS
++
++on: [push]
++
++jobs:
++  Linux:
++
++    runs-on: ubuntu-18.04
++
++    steps:
++    - name: Install Packages
++      run: sudo apt-get install zlib1g-dev make cmake picosat
++
++    - uses: actions/checkout@v1
++
++    - name: Run mergesat release unit tests
++      run: make run-tests-r-all
++      
++    - name: Run mergesat debug unit tests
++      run: make run-tests-d-all
++
++  MacOS:
++
++    runs-on: macos-latest
++
++    steps:
++    - name: Install Packages
++      run: brew install libzip
++
++    - uses: actions/checkout@v1
++
++    - name: Run mergesat release unit tests
++      run: make run-tests-r-all
++      
++    - name: Run mergesat debug unit tests
++      run: make run-tests-d-all
+diff -Naur solvers/mergesat3/.travis.yml solvers/mgs3/.travis.yml
+--- solvers/mergesat3/.travis.yml	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/.travis.yml	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,23 @@
++language: cpp
++dist: xenial
++compiler: g++
++sudo: required
++
++before_install:
++  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
++  - sudo apt-get update -q
++  - sudo apt-get remove gcc g++
++  - sudo apt-get install g++-7 gcc-7 -y
++  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
++  - sudo update-alternatives --install /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 60
++  - sudo update-alternatives --install /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7 60
++  - sudo update-alternatives --install /usr/bin/x86_64-linux-gnu-gcc x86_64-linux-gnu-gcc /usr/bin/x86_64-linux-gnu-gcc-7 60 --slave /usr/bin/x86_64-linux-gnu-g++ x86_64-linux-gnu-g++ /usr/bin/x86_64-linux-gnu-g++-7
++  - sudo apt-get install clang-format-6.0
++  - sudo apt-get install picosat
++
++# run the typical ci checks, for now, compile
++script:
++  - make d r p sh lr ld lp lsh -j $(nproc)
++  - git checkout -b travis-ci-test-branch
++  - ./tools/check-style.sh
++  - RUNIPASIR=0 RUNOPENWBO=0 ./tools/ci.sh
+diff -Naur solvers/mergesat3/Makefile solvers/mgs3/Makefile
+--- solvers/mergesat3/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/mgs3/Makefile	2021-03-31 12:07:03.000000000 +1100
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc utils/ccnr.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := mergesat3
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/mergesat3/core/BoundedQueue.h solvers/mgs3/core/BoundedQueue.h
+--- solvers/mergesat3/core/BoundedQueue.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/BoundedQueue.h	2021-03-31 12:07:03.000000000 +1100
+@@ -20,14 +20,14 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef MergeSat_BoundedQueue_h
+-#define MergeSat_BoundedQueue_h
++#ifndef MergeSat3_BoundedQueue_h
++#define MergeSat3_BoundedQueue_h
+ 
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Vec.h"
+ 
+ //=================================================================================================
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ template <class T> class bqueue
+@@ -138,7 +138,7 @@
+         sumofqueue = 0;
+     }
+ };
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ //=================================================================================================
+ 
+ #endif
+diff -Naur solvers/mergesat3/core/Constants.h solvers/mgs3/core/Constants.h
+--- solvers/mergesat3/core/Constants.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/Constants.h	2021-03-31 12:07:03.000000000 +1100
+@@ -19,8 +19,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Constants_h
+-#define MergeSat_Constants_h
++#ifndef MergeSat3_Constants_h
++#define MergeSat3_Constants_h
+ 
+ #define DYNAMICNBLEVEL
+ #define CONSTANTREMOVECLAUSE
+diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
+--- solvers/mergesat3/core/Dimacs.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/Dimacs.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,15 +18,15 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Dimacs_h
+-#define MergeSat_Dimacs_h
++#ifndef MergeSat3_Dimacs_h
++#define MergeSat3_Dimacs_h
+ 
+ #include <stdio.h>
+ 
+-#include "core/SolverTypes.h"
+-#include "utils/ParseUtils.h"
++#include "mergesat3/core/SolverTypes.h"
++#include "mergesat3/utils/ParseUtils.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -94,6 +94,6 @@
+ }
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineProofChecker.h
+--- solvers/mergesat3/core/OnlineProofChecker.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/OnlineProofChecker.h	2021-03-31 12:07:03.000000000 +1100
+@@ -2,19 +2,19 @@
+ Copyright (c) 2020, Norbert Manthey
+ **************************************************************************************************/
+ 
+-#ifndef OnlineProofChecker_h
+-#define OnlineProofChecker_h
++#ifndef MergeSat3_OnlineProofChecker_h
++#define MergeSat3_OnlineProofChecker_h
+ 
+-#include "core/Constants.h"
+-#include "core/SolverTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Heap.h"
+-#include "mtl/Vec.h"
+-#include "utils/System.h"
++#include "mergesat3/core/Constants.h"
++#include "mergesat3/core/SolverTypes.h"
++#include "mergesat3/mtl/Alg.h"
++#include "mergesat3/mtl/Heap.h"
++#include "mergesat3/mtl/Vec.h"
++#include "mergesat3/utils/System.h"
+ 
+ #include <vector>
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ /// distinguish between DRUP and DRAT proofs
+@@ -137,7 +137,7 @@
+     watches.init(mkLit(v, false));
+     watches.init(mkLit(v, true));
+ 
+-    assigns.push(l_Undef);
++    assigns.push(mg3l_Undef);
+     occ.push_back(std::vector<CRef>()); // there are no new clauses here yet
+     occ.push_back(std::vector<CRef>());
+     ma.resize(ma.size() + 2); // for each literal have a cell
+@@ -157,7 +157,7 @@
+ inline void OnlineProofChecker::cancelUntil()
+ {
+     for (int c = trail.size() - 1; c >= 0; c--) {
+-        assigns[var(trail[c])] = l_Undef;
++        assigns[var(trail[c])] = mg3l_Undef;
+     }
+     qhead = 0;
+     trail.clear();
+@@ -178,9 +178,9 @@
+     DOUT(if (verbose > 4) std::cerr << "c [DRAT-OTFC] propagate " << unitClauses.size() << " units" << std::endl;);
+     for (int i = 0; i < unitClauses.size(); ++i) { // propagate all known units
+         const Lit l = unitClauses[i];
+-        if (value(l) == l_True) {
++        if (value(l) == mg3l_True) {
+             continue;
+-        } else if (value(l) == l_False) {
++        } else if (value(l) == mg3l_False) {
+             return true;
+         } else {
+             uncheckedEnqueue(l);
+@@ -202,7 +202,7 @@
+ 
+             // Try to avoid inspecting the clause:
+             const Lit blocker = i->blocker;
+-            if (value(blocker) == l_True) { // keep binary clauses, and clauses where the blocking literal is satisfied
++            if (value(blocker) == mg3l_True) { // keep binary clauses, and clauses where the blocking literal is satisfied
+                 DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] clause is true by blocker " << blocker << " in "
+                                                 << ca[i->cref] << std::endl;);
+                 *j++ = *i++;
+@@ -222,7 +222,7 @@
+             // If 0th watch is true, then clause is already satisfied.
+             Lit first = c[0];
+             const Watcher &w = Watcher(cr, first);            // updates the blocking literal
+-            if (first != blocker && value(first) == l_True) { // satisfied clause
++            if (first != blocker && value(first) == mg3l_True) { // satisfied clause
+                 DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] clause is true by other watch " << first << " in "
+                                                 << c << std::endl;);
+                 *j++ = w;
+@@ -231,7 +231,7 @@
+ 
+             // Look for new watch:
+             for (int k = 2; k < c.size(); k++)
+-                if (value(c[k]) != l_False) {
++                if (value(c[k]) != mg3l_False) {
+                     DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] found new watch for the clause: " << c[k]
+                                                     << " in " << c << std::endl;);
+                     c[1] = c[k];
+@@ -242,7 +242,7 @@
+ 
+             // Did not find watch -- clause is unit under assignment:
+             *j++ = w;
+-            if (value(first) == l_False) {
++            if (value(first) == mg3l_False) {
+                 confl = cr;
+                 qhead = trail.size();
+                 // Copy the remaining watches:
+@@ -607,9 +607,9 @@
+     // enqueue all complementary literals!
+     cancelUntil();
+     for (int i = 0; i < cls.size(); ++i) {
+-        if (value(cls[i]) == l_Undef) {
++        if (value(cls[i]) == mg3l_Undef) {
+             uncheckedEnqueue(~cls[i]);
+-        } else if (value(~cls[i]) == l_False) {
++        } else if (value(~cls[i]) == mg3l_False) {
+             conflict = true;
+             break;
+         }
+@@ -691,9 +691,9 @@
+                             resovleConflict = false;
+                             cancelUntil();
+                             for (int k = 0; k < lits.size(); ++k) {
+-                                if (value(lits[k]) == l_Undef) {
++                                if (value(lits[k]) == mg3l_Undef) {
+                                     uncheckedEnqueue(~lits[k]);
+-                                } else if (value(~lits[k]) == l_False) {
++                                } else if (value(~lits[k]) == mg3l_False) {
+                                     resovleConflict = true;
+                                     DOUT(if (verbose > 4) std::cerr << "c [DRAT-OTFC] the clause " << cls
+                                                                     << " conflicts during enqueing its literals" << std::endl;);
+@@ -832,6 +832,6 @@
+     }
+ }
+ 
+-}; // namespace MERGESAT_NSPACE
++}; // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
+--- solvers/mergesat3/core/Solver.cc	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/Solver.cc	2021-03-31 12:08:22.000000000 +1100
+@@ -50,14 +50,14 @@
+ #include <signal.h>
+ #include <unistd.h>
+ 
+-#include "core/Solver.h"
+-#include "mtl/Sort.h"
++#include "mergesat3/core/Solver.h"
++#include "mergesat3/mtl/Sort.h"
+ 
+-#include "utils/Options.h"
+-#include "utils/System.h"
+-#include "utils/ccnr.h"
++#include "mergesat3/utils/Options.h"
++#include "mergesat3/utils/System.h"
++#include "mergesat3/utils/ccnr.h"
+ 
+-using namespace MERGESAT_NSPACE;
++using namespace MergeSat3;
+ 
+ //#define PRINT_OUT
+ 
+@@ -207,7 +207,7 @@
+ //=================================================================================================
+ // Constructor/Destructor:
+ 
+-bool MERGESAT_NSPACE::updateOptions()
++bool MergeSat3::updateOptions()
+ {
+     if (getenv("MINISAT_RUNTIME_ARGS") == NULL) return false;
+ 
+@@ -220,7 +220,7 @@
+     char *argv[len + 2];
+     int count = 1;
+ 
+-    argv[0] = "mergesat";
++    argv[0] = (char *)"mergesat";
+     while (isspace(*args)) ++args;
+     while (*args) {
+         argv[count++] = args;                    // store current argument
+@@ -241,6 +241,7 @@
+   // Parameters (user settable):
+   //
+   drup_file(NULL)
++  , drup_pyfile(NULL)
+   , reparsed_options(updateOptions())
+   , verbosity(0)
+   , status_every(100000)
+@@ -473,18 +474,18 @@
+ 
+             Lit imp = wbin[k].blocker;
+ 
+-            if (value(imp) == l_False) {
++            if (value(imp) == mg3l_False) {
+                 return wbin[k].cref;
+             }
+ 
+-            if (value(imp) == l_Undef) {
++            if (value(imp) == mg3l_Undef) {
+                 simpleUncheckEnqueue(imp, wbin[k].cref);
+             }
+         }
+         for (i = j = (Watcher *)ws, end = i + ws.size(); i != end;) {
+             // Try to avoid inspecting the clause:
+             Lit blocker = i->blocker;
+-            if (value(blocker) == l_True) {
++            if (value(blocker) == mg3l_True) {
+                 *j++ = *i++;
+                 continue;
+             }
+@@ -502,7 +503,7 @@
+             // why not simply do i->blocker=first in this case?
+             Lit first = c[0];
+             //  Watcher w     = Watcher(cr, first);
+-            if (first != blocker && value(first) == l_True) {
++            if (first != blocker && value(first) == mg3l_True) {
+                 i->blocker = first;
+                 *j++ = *i++;
+                 continue;
+@@ -514,7 +515,7 @@
+             //	int choosenPos = -1;
+             //	for (int k = 2; k < c.size(); k++)
+             //	{
+-            //		if (value(c[k]) != l_False)
++            //		if (value(c[k]) != mg3l_False)
+             //		{
+             //			if (decisionLevel()>assumptions.size())
+             //			{
+@@ -525,7 +526,7 @@
+             //			{
+             //				choosenPos = k;
+ 
+-            //				if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
++            //				if (value(c[k]) == mg3l_True || !isSelector(var(c[k]))) {
+             //					break;
+             //				}
+             //			}
+@@ -546,7 +547,7 @@
+             else { // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
+                 for (int k = 2; k < c.size(); k++) {
+ 
+-                    if (value(c[k]) != l_False) {
++                    if (value(c[k]) != mg3l_False) {
+                         // watcher i is abandonned using i++, because cr watches now ~c[k] instead of p
+                         // the blocker is first in the watcher. However,
+                         // the blocker in the corresponding watcher in ~first is not c[1]
+@@ -563,7 +564,7 @@
+             // Did not find watch -- clause is unit under assignment:
+             i->blocker = first;
+             *j++ = *i++;
+-            if (value(first) == l_False) {
++            if (value(first) == mg3l_False) {
+                 confl = cr;
+                 qhead = trail.size();
+                 // Copy the remaining watches:
+@@ -583,7 +584,7 @@
+ 
+ void Solver::simpleUncheckEnqueue(Lit p, CRef from)
+ {
+-    assert(value(p) == l_Undef);
++    assert(value(p) == mg3l_Undef);
+     assigns[var(p)] = lbool(!sign(p)); // this makes a lbool object whose value is sign(p)
+     vardata[var(p)].reason = from;
+     vardata[var(p)].level = decisionLevel();
+@@ -594,7 +595,7 @@
+ {
+     for (int c = trail.size() - 1; c >= trailRecord; c--) {
+         Var x = var(trail[c]);
+-        assigns[x] = l_Undef;
++        assigns[x] = mg3l_Undef;
+     }
+     qhead = trailRecord;
+     trail.shrink(trail.size() - trailRecord);
+@@ -621,9 +622,9 @@
+             Clause &c = ca[confl];
+             // Special case for binary clauses
+             // The first one has to be SAT
+-            if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
++            if (p != lit_Undef && c.size() == 2 && value(c[0]) == mg3l_False) {
+ 
+-                assert(value(c[1]) == l_True);
++                assert(value(c[1]) == mg3l_True);
+                 Lit tmp = c[0];
+                 c[0] = c[1], c[1] = tmp;
+             }
+@@ -735,10 +736,10 @@
+             nbSimplifing++;
+             sat = false_lit = false;
+             for (int i = 0; i < c.size(); i++) {
+-                if (value(c[i]) == l_True) {
++                if (value(c[i]) == mg3l_True) {
+                     sat = true;
+                     break;
+-                } else if (value(c[i]) == l_False) {
++                } else if (value(c[i]) == mg3l_False) {
+                     false_lit = true;
+                 }
+             }
+@@ -749,7 +750,7 @@
+ 
+                 if (false_lit) {
+                     for (li = lj = 0; li < c.size(); li++) {
+-                        if (value(c[li]) != l_False) {
++                        if (value(c[li]) != mg3l_False) {
+                             c[lj++] = c[li];
+                         }
+                     }
+@@ -908,7 +909,7 @@
+     watches_bin.init(mkLit(v, true));
+     watches.init(mkLit(v, false));
+     watches.init(mkLit(v, true));
+-    assigns.push(l_Undef);
++    assigns.push(mg3l_Undef);
+     vardata.push(mkVarData(CRef_Undef, 0));
+     oldreasons.push(CRef_Undef);
+     activity_CHB.push(0);
+@@ -1003,13 +1004,13 @@
+     }
+ 
+     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+-        if (value(ps[i]) == l_True || ps[i] == ~p)
++        if (value(ps[i]) == mg3l_True || ps[i] == ~p)
+             return true;
+-        else if (value(ps[i]) != l_False && ps[i] != p) {
++        else if (value(ps[i]) != mg3l_False && ps[i] != p) {
+             ps[j++] = p = ps[i];
+             somePositive = somePositive || !sign(p);
+             someNegative = someNegative || sign(p);
+-        } else if (value(ps[i]) == l_False) {
++        } else if (value(ps[i]) == mg3l_False) {
+             // for polarity analysis, we ignore unit propagation
+             somePositive = somePositive || !sign(ps[i]);
+             someNegative = someNegative || sign(ps[i]);
+@@ -1103,10 +1104,10 @@
+     // Don't leave pointers to free'd memory!
+     if (remove_from_proof) {
+         if (locked(c)) {
+-            Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == l_True ? c[0] : c[1]);
++            Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == mg3l_True ? c[0] : c[1]);
+             vardata[var(implied)].reason = CRef_Undef;
+             if (drup_file && onlineDratChecker && level(var(implied)) == 0) { /* before we drop the reason, store a unit */
+-                if (!onlineDratChecker->addClause(mkLit(var(implied), value(var(implied)) == l_False))) exit(134);
++                if (!onlineDratChecker->addClause(mkLit(var(implied), value(var(implied)) == mg3l_False))) exit(134);
+             }
+         }
+         if (drup_file) {
+@@ -1134,7 +1135,7 @@
+ 
+     if (drup_file && locked(c)) {
+         // The following line was copied from Solver::locked.
+-        int i = c.size() != 2 ? 0 : (value(c[0]) == l_True ? 0 : 1);
++        int i = c.size() != 2 ? 0 : (value(c[0]) == mg3l_True ? 0 : 1);
+         Lit unit = c[i];
+ #ifdef BIN_DRUP
+         vec<Lit> unitClause;
+@@ -1152,10 +1153,10 @@
+ bool Solver::satisfied(const Clause &c) const
+ {
+     if (assumptions.size()) // Check clauses with many selectors is too time consuming
+-        return (value(c[0]) == l_True) || (value(c[1]) == l_True);
++        return (value(c[0]) == mg3l_True) || (value(c[1]) == mg3l_True);
+ 
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) == l_True) return true;
++        if (value(c[i]) == mg3l_True) return true;
+     return false;
+ }
+ 
+@@ -1203,7 +1204,7 @@
+             canceled[x] = conflicts;
+ #endif
+ 
+-            assigns[x] = l_Undef;
++            assigns[x] = mg3l_Undef;
+ #ifdef PRINT_OUT
+             std::cout << "undo " << x << "\n";
+ #endif
+@@ -1244,11 +1245,11 @@
+     // Random decision:
+     /*if (drand(random_seed) < random_var_freq && !order_heap.empty()){
+         next = order_heap[irand(random_seed,order_heap.size())];
+-        if (value(next) == l_Undef && decision[next])
++        if (value(next) == mg3l_Undef && decision[next])
+             rnd_decisions++; }*/
+ 
+     // Activity based decision:
+-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
++    while (next == var_Undef || value(next) != mg3l_Undef || !decision[next])
+         if (order_heap->empty())
+             return lit_Undef;
+         else {
+@@ -1350,8 +1351,8 @@
+         statistics.solveSteps++;
+ 
+         // For binary clauses, we don't rearrange literals in propagate(), so check and make sure the first is an implied lit.
+-        if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
+-            assert(value(c[1]) == l_True);
++        if (p != lit_Undef && c.size() == 2 && value(c[0]) == mg3l_False) {
++            assert(value(c[1]) == mg3l_True);
+             Lit tmp = c[0];
+             c[0] = c[1], c[1] = tmp;
+         }
+@@ -1517,7 +1518,7 @@
+     for (int i = 0; i < ws.size(); i++) {
+         Lit the_other = ws[i].blocker;
+         // Does 'the_other' appear negatively in 'out_learnt'?
+-        if (seen2[var(the_other)] == counter && value(the_other) == l_True) {
++        if (seen2[var(the_other)] == counter && value(the_other) == mg3l_True) {
+             to_remove++;
+             seen2[var(the_other)] = counter - 1; // Remember to remove this variable.
+         }
+@@ -1547,8 +1548,8 @@
+         analyze_stack.pop();
+ 
+         // Special handling for binary clauses like in 'analyze()'.
+-        if (c.size() == 2 && value(c[0]) == l_False) {
+-            assert(value(c[1]) == l_True);
++        if (c.size() == 2 && value(c[0]) == mg3l_False) {
++            assert(value(c[1]) == mg3l_True);
+             Lit tmp = c[0];
+             c[0] = c[1], c[1] = tmp;
+         }
+@@ -1654,7 +1655,7 @@
+ 
+ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
+ {
+-    assert(value(p) == l_Undef);
++    assert(value(p) == mg3l_Undef);
+     assert(level <= decisionLevel() && "do not enqueue literals on non-existing levels");
+     assert((from == CRef_Undef || from < ca.size()) && "do not use reasons that are not located in the allocator");
+     Var x = var(p);
+@@ -1679,6 +1680,57 @@
+ }
+ 
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == mg3l_False)
++            st = false;
++        else if (value(p) != mg3l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p, decisionLevel());
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
++    return st && confl == CRef_Undef;
++}
++
++
+ /*_________________________________________________________________________________________________
+ |
+ |  propagate : [void]  ->  [Clause*]
+@@ -1721,7 +1773,7 @@
+                         old_reason = oldreasons[var(old_trail_top)];
+                         if (old_reason == CRef_Undef) {
+                             break;
+-                        } else if (value(old_trail_top) == l_False) {
++                        } else if (value(old_trail_top) == mg3l_False) {
+                             const Clause &new_conflict = ca[old_reason];
+                             if (new_conflict.size() != 2 && new_conflict[0] != old_trail_top) {
+                                 /* We will hit a conflict here, the clause is just not structured correctly yet,
+@@ -1738,7 +1790,7 @@
+                                    "asserting literal is at position 1");
+                             /* No need to touch watch lists, we will backtrack this level anyways! */
+                             goto propagation_out;
+-                        } else if (value(old_trail_top) == l_Undef) {
++                        } else if (value(old_trail_top) == mg3l_Undef) {
+                             Clause &new_conflict = ca[old_reason];
+                             if (new_conflict.size() != 2 && new_conflict[0] != old_trail_top) {
+                                 /* We will use this unit clause, the clause is just not structured correctly yet */
+@@ -1753,7 +1805,7 @@
+                             uncheckedEnqueue(old_trail_top, decisionLevel(), old_reason);
+                         }
+                     }
+-                } else if (var(p) == var(old_trail_top) || value(old_trail_top) == l_False) {
++                } else if (var(p) == var(old_trail_top) || value(old_trail_top) == mg3l_False) {
+                     reset_old_trail();
+                 }
+             }
+@@ -1763,10 +1815,10 @@
+         vec<Watcher> &ws_bin = watches_bin[p]; // Propagate binary clauses first.
+         for (int k = 0; k < ws_bin.size(); k++) {
+             Lit the_other = ws_bin[k].blocker;
+-            if (value(the_other) == l_False) {
++            if (value(the_other) == mg3l_False) {
+                 confl = ws_bin[k].cref;
+                 goto propagation_out;
+-            } else if (value(the_other) == l_Undef) {
++            } else if (value(the_other) == mg3l_Undef) {
+                 uncheckedEnqueue(the_other, currLevel, ws_bin[k].cref);
+ #ifdef PRINT_OUT
+                 std::cout << "i " << the_other << " l " << currLevel << "\n";
+@@ -1777,7 +1829,7 @@
+         for (i = j = (Watcher *)ws, end = i + ws.size(); i != end;) {
+             // Try to avoid inspecting the clause:
+             const Lit blocker = i->blocker;
+-            if (value(blocker) == l_True) {
++            if (value(blocker) == mg3l_True) {
+                 *j++ = *i++;
+                 continue;
+             }
+@@ -1794,7 +1846,7 @@
+             // If 0th watch is true, then clause is already satisfied.
+             const Lit first = c[0];
+             const Watcher w = Watcher(cr, first);
+-            if (first != blocker && value(first) == l_True) {
++            if (first != blocker && value(first) == mg3l_True) {
+                 *j++ = w;
+                 continue;
+             }
+@@ -1802,7 +1854,7 @@
+             // Look for new watch:
+             int watchPos = 0, avoidLevel = assumptions.size();
+             for (int k = 2; k < c.size(); k++) {
+-                if (value(c[k]) != l_False) {
++                if (value(c[k]) != mg3l_False) {
+                     watchPos = k; /* memorize that we found one literal we can watch */
+                     if (level(var(c[k])) > avoidLevel) break;
+                 }
+@@ -1812,7 +1864,7 @@
+             if (watchPos != 0) {
+                 c[1] = c[watchPos];
+                 c[watchPos] = false_lit;
+-                if (value(c[1]) == l_True) {
++                if (value(c[1]) == mg3l_True) {
+                     lazySATwatch.push(watchItem(w, ~c[1]));
+                 } else {
+                     watches[~c[1]].push(w);
+@@ -1822,7 +1874,7 @@
+ 
+             // Did not find watch -- clause is unit under assignment:
+             *j++ = w;
+-            if (value(first) == l_False) {
++            if (value(first) == mg3l_False) {
+                 confl = cr;
+                 qhead = trail.size();
+                 // Copy the remaining watches:
+@@ -1848,7 +1900,7 @@
+                     if (nMaxInd != 1) {
+                         std::swap(c[1], c[nMaxInd]);
+                         j--; // undo last watch
+-                        if (value(c[1]) == l_True) {
++                        if (value(c[1]) == mg3l_True) {
+                             lazySATwatch.push(watchItem(w, ~c[1]));
+                         } else {
+                             watches[~c[1]].push(w);
+@@ -2023,7 +2075,7 @@
+             repeatReusedTrail = false; // get it right this time?
+ 
+             // Activity based selection
+-            while (next == var_Undef || value(next) != l_Undef ||
++            while (next == var_Undef || value(next) != mg3l_Undef ||
+                    !decision[next]) // found a yet unassigned variable with the highest activity among the unassigned variables
+                 if (order_heap->empty()) {
+                     // we cannot compare to any other variable, hence, we have SAT already
+@@ -2048,7 +2100,7 @@
+             if (restart.selection_type > 1 && restartLevel > 0) { // check whether jumping higher would be "more correct"
+                 cancelUntil(restartLevel);
+                 Var more = var_Undef;
+-                while (more == var_Undef || value(more) != l_Undef || !decision[more])
++                while (more == var_Undef || value(more) != mg3l_Undef || !decision[more])
+                     if (order_heap->empty()) {
+                         more = var_Undef;
+                         break;
+@@ -2116,7 +2168,7 @@
+     /* all unassigned variables present, no need to rebuild */
+     if (decisionLevel() == 0 && (order_heap->size() + trail.size() >= nVars())) {
+         TRACE(for (Var v = 0; v < nVars(); v++) {
+-            assert((!decision[v] || value(v) != l_Undef || order_heap->inHeap(v)) &&
++            assert((!decision[v] || value(v) != mg3l_Undef || order_heap->inHeap(v)) &&
+                    "unassigned variables have to be present in the heap");
+         });
+         return;
+@@ -2124,7 +2176,7 @@
+ 
+     decision_rebuild_vars.clear();
+     for (Var v = 0; v < nVars(); v++)
+-        if (decision[v] && value(v) == l_Undef) decision_rebuild_vars.push(v);
++        if (decision[v] && value(v) == mg3l_Undef) decision_rebuild_vars.push(v);
+ 
+     order_heap->build(decision_rebuild_vars);
+     full_heap_size = order_heap->size();
+@@ -2204,10 +2256,10 @@
+ 
+                 if (reason(v) != CRef_Undef) {
+                     Clause &rc = ca[reason(v)];
+-                    if (rc.size() == 2 && value(rc[0]) == l_False) {
++                    if (rc.size() == 2 && value(rc[0]) == mg3l_False) {
+                         // Special case for binary clauses
+                         // The first one has to be SAT
+-                        assert(value(rc[1]) != l_False);
++                        assert(value(rc[1]) != mg3l_False);
+                         Lit tmp = rc[0];
+                         rc[0] = rc[1], rc[1] = tmp;
+                     }
+@@ -2281,7 +2333,7 @@
+ 
+     for (i = lits.size() - 1; i >= 0; i--) {
+         lit = lits[i];
+-        if (value(lit) == l_Undef) {
++        if (value(lit) == mg3l_Undef) {
+             newDecisionLevel();
+             uncheckedEnqueue(lit, decisionLevel());
+             CRef confl = propagate();
+@@ -2301,10 +2353,10 @@
+     bool conflict = false;
+ 
+     // literal is a unit clause
+-    if (value(l) != l_Undef) {
+-        return value(l) == l_False;
++    if (value(l) != mg3l_Undef) {
++        return value(l) == mg3l_False;
+     }
+-    assert(value(l) == l_Undef);
++    assert(value(l) == mg3l_Undef);
+ 
+     // propagate on a new decision level, to be able to roll back
+     newDecisionLevel();
+@@ -2329,14 +2381,14 @@
+             // Perform user provided assumption:
+             Lit p = assumptions[decisionLevel()];
+ 
+-            if (value(p) == l_False) {
++            if (value(p) == mg3l_False) {
+                 // TODO: write proper conflict handling
+                 cancelUntil(0);
+                 break;
+             }
+ 
+             newDecisionLevel();
+-            if (value(p) == l_Undef) uncheckedEnqueue(p, decisionLevel(), CRef_Undef);
++            if (value(p) == mg3l_Undef) uncheckedEnqueue(p, decisionLevel(), CRef_Undef);
+         }
+ 
+         assert((decisionLevel() == 0 || decisionLevel() == assumptions.size()) &&
+@@ -2349,7 +2401,7 @@
+         }
+     }
+ 
+-    return l_Undef; // for now, we just work with the generic case
++    return mg3l_Undef; // for now, we just work with the generic case
+ }
+ 
+ bool Solver::check_invariants()
+@@ -2622,13 +2674,13 @@
+                    learnts_core.size() + learnts_tier2.size() + learnts_local.size());
+         nbSimplifyAll++;
+         if (!simplifyAll()) {
+-            return l_False;
++            return mg3l_False;
+         }
+         curSimplify = (conflicts / nbconfbeforesimplify) + 1;
+         nbconfbeforesimplify += incSimplify;
+     }
+ 
+-    if (!okay()) return l_False;
++    if (!okay()) return mg3l_False;
+ 
+     // check whether we want to do inprocessing
+     inprocessing();
+@@ -2658,7 +2710,7 @@
+             TRACE(printf("c hit conflict %ld\n", conflicts);)
+             if (conflicts == 100000 && learnts_core.size() < 100) core_lbd_cut = 5;
+             ConflictData data = FindConflictLevel(confl);
+-            if (data.nHighestLevel == 0) return l_False;
++            if (data.nHighestLevel == 0) return mg3l_False;
+             // assert(prev_confl != this_confl && "we should not have duplicate conflicts in a row");
+             if (data.bOnlyOneLitFromHighest) { //  && prev_confl != this_confl) {
+                 int btLevel = (prev_confl != this_confl) ? data.nHighestLevel - 1 : data.secondHighestLevel - 1;
+@@ -2775,10 +2827,10 @@
+                 int var_nums = nVars();
+                 for (int idx_i = 0; idx_i < var_nums; ++idx_i) {
+                     lbool value_i = value(idx_i);
+-                    if (value_i == l_Undef)
++                    if (value_i == mg3l_Undef)
+                         top_trail_soln[idx_i] = !polarity[idx_i];
+                     else {
+-                        top_trail_soln[idx_i] = value_i == l_True ? 1 : 0;
++                        top_trail_soln[idx_i] = value_i == mg3l_True ? 1 : 0;
+                     }
+                 }
+             }
+@@ -2798,7 +2850,7 @@
+ 
+                     if (res) {
+                         solved_by_ls = true;
+-                        return l_True;
++                        return mg3l_True;
+                     }
+                 }
+             }
+@@ -2823,11 +2875,11 @@
+                 restartLevel = (assumptions.size() && restartLevel <= assumptions.size()) ? assumptions.size() : restartLevel;
+                 TRACE(std::cout << "c jump to level " << restartLevel << " for restart" << std::endl);
+                 cancelUntil(restartLevel);
+-                return l_Undef;
++                return mg3l_Undef;
+             }
+ 
+             // Simplify the set of problem clauses:
+-            if (decisionLevel() == 0 && !simplify()) return l_False;
++            if (decisionLevel() == 0 && !simplify()) return mg3l_False;
+ 
+             if (core_size_lim != -1 && learnts_core.size() > core_size_lim) {
+                 TRACE(std::cout << "c reduce core learnt clauses" << std::endl);
+@@ -2852,12 +2904,12 @@
+             while (decisionLevel() < assumptions.size()) {
+                 // Perform user provided assumption:
+                 Lit p = assumptions[decisionLevel()];
+-                if (value(p) == l_True) {
++                if (value(p) == mg3l_True) {
+                     // Dummy decision level:
+                     newDecisionLevel();
+-                } else if (value(p) == l_False) {
++                } else if (value(p) == mg3l_False) {
+                     analyzeFinal(~p, conflict);
+-                    return l_False;
++                    return mg3l_False;
+                 } else {
+                     next = p;
+                     break;
+@@ -2871,7 +2923,7 @@
+ 
+                 if (next == lit_Undef)
+                     // Model found:
+-                    return l_True;
++                    return mg3l_True;
+ 
+                 lastDecision = var(next);
+             }
+@@ -2901,17 +2953,17 @@
+     receivedCls++;
+ 
+     if (cls.size() == 1) {
+-        if (value(cls[0]) == l_False) {
++        if (value(cls[0]) == mg3l_False) {
+             ok = false;
+         } else {
+             cancelUntil(0);
+-            if (value(cls[0]) == l_Undef) uncheckedEnqueue(cls[0], 0);
++            if (value(cls[0]) == mg3l_Undef) uncheckedEnqueue(cls[0], 0);
+         }
+     } else {
+         /* currently, we cannot tell much about the quality of the clause */
+         CRef cr = ca.alloc(cls, true);
+         learnts_local.push(cr);
+-        assert((value(cls[0]) != l_False || value(cls[1]) != l_False) && "cannot watch falsified literals");
++        assert((value(cls[0]) != mg3l_False || value(cls[1]) != mg3l_False) && "cannot watch falsified literals");
+         attachClause(cr);
+         claBumpActivity(ca[cr]);
+     }
+@@ -3075,7 +3127,7 @@
+ {
+     model.clear();
+     conflict.clear();
+-    if (!ok) return l_False;
++    if (!ok) return mg3l_False;
+ 
+     reset_old_trail();
+     solves++;
+@@ -3089,7 +3141,7 @@
+     max_learnts = nClauses() * learntsize_factor;
+     learntsize_adjust_confl = learntsize_adjust_start_confl;
+     learntsize_adjust_cnt = (int)learntsize_adjust_confl;
+-    lbool status = l_Undef;
++    lbool status = mg3l_Undef;
+ 
+     ls_mediation_soln.resize(nVars());
+     ls_best_soln.resize(nVars());
+@@ -3116,7 +3168,7 @@
+     if (assumptions.size() == 0 && solves == 1 && initial_sls) {
+         int fls_res = call_ls(false);
+         if (fls_res) {
+-            status = l_True;
++            status = mg3l_True;
+         }
+     }
+ 
+@@ -3124,7 +3176,7 @@
+     if (solves == 1) {
+         if (!usesVSIDS()) toggle_decision_heuristic(true);
+         int init = VSIDS_props_init_limit;
+-        while (status == l_Undef && init > 0 && withinBudget()) status = search(init);
++        while (status == mg3l_Undef && init > 0 && withinBudget()) status = search(init);
+         // do not use VSIDS now
+         toggle_decision_heuristic(false);
+     }
+@@ -3133,7 +3185,7 @@
+     uint64_t curr_props = 0;
+     int curr_restarts = 0;
+     last_switch_conflicts = starts;
+-    while (status == l_Undef && withinBudget()) {
++    while (status == mg3l_Undef && withinBudget()) {
+         if (propagations - curr_props > VSIDS_props_limit) {
+             curr_props = propagations;
+             switch_mode = true;
+@@ -3168,14 +3220,14 @@
+     if (verbosity >= 1) printf("c ===============================================================================\n");
+ 
+ #ifdef BIN_DRUP
+-    if (drup_file && status == l_False) binDRUP_flush(drup_file);
++    if (drup_file && status == mg3l_False) binDRUP_flush(drup_file);
+ #endif
+ 
+-    if (status == l_True) {
++    if (status == mg3l_True) {
+         // Extend & copy model:
+         model.growTo(nVars());
+         if (solved_by_ls)
+-            for (int i = 0; i < nVars(); i++) model[i] = ls_mediation_soln[i] ? l_True : l_False;
++            for (int i = 0; i < nVars(); i++) model[i] = ls_mediation_soln[i] ? mg3l_True : mg3l_False;
+         else
+             for (int i = 0; i < nVars(); i++) model[i] = value(i);
+ 
+@@ -3188,12 +3240,12 @@
+                 printf("c validated SAT answer\n");
+         }
+ 
+-    } else if (status == l_False && conflict.size() == 0)
++    } else if (status == mg3l_False && conflict.size() == 0)
+         ok = false;
+ 
+     cancelUntil(0);
+ 
+-    if (status == l_False && conflict.size() && lcm_core) {
++    if (status == mg3l_False && conflict.size() && lcm_core) {
+         if (lcm_core_success) {
+             int pre_conflict_size = conflict.size();
+             simplifyLearnt(conflict);
+@@ -3228,7 +3280,7 @@
+     if (satisfied(c)) return;
+ 
+     for (int i = 0; i < c.size(); i++)
+-        if (value(c[i]) != l_False) fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
++        if (value(c[i]) != mg3l_False) fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
+     fprintf(f, "0\n");
+ }
+ 
+@@ -3263,7 +3315,7 @@
+         if (!satisfied(ca[clauses[i]])) {
+             Clause &c = ca[clauses[i]];
+             for (int j = 0; j < c.size(); j++)
+-                if (value(c[j]) != l_False) mapVar(var(c[j]), map, max);
++                if (value(c[j]) != mg3l_False) mapVar(var(c[j]), map, max);
+         }
+ 
+     // Assumptions are added as unit clauses:
+@@ -3272,7 +3324,7 @@
+     fprintf(f, "p cnf %d %d\n", max, cnt);
+ 
+     for (int i = 0; i < assumptions.size(); i++) {
+-        assert(value(assumptions[i]) != l_False);
++        assert(value(assumptions[i]) != mg3l_False);
+         fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
+     }
+ 
+@@ -3291,7 +3343,7 @@
+         int Z = 0, i, j, k, l = -1, p;
+ 
+         if (verbosity > 0)
+-            printf("c inprocessing simplify at try %ld, next limit: %ld\n", inprocess_attempts, inprocess_next_lim);
++            printf("c inprocessing simplify at try %llu, next limit: %llu\n", inprocess_attempts, inprocess_next_lim);
+         // fill occurrence data structure
+         O.resize(2 * nVars());
+ 
+@@ -3402,7 +3454,7 @@
+         if (add_tmp.size()) {
+             cancelUntil(0, false);
+             for (int i = 0; i < add_tmp.size(); ++i) {
+-                if (value(add_tmp[i]) == l_False) { /* we found a contradicting unit clause */
++                if (value(add_tmp[i]) == mg3l_False) { /* we found a contradicting unit clause */
+                     ok = false;
+                     return false;
+                 }
+@@ -3500,33 +3552,33 @@
+ 
+ void Solver::printStats()
+ {
+-    double cpu_time = cpuTime();
+-    double mem_used = memUsedPeak();
+-    printf("c restarts              : %" PRIu64 "\n", starts);
+-    printf("c conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
+-    printf("c decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
+-           (float)rnd_decisions * 100 / (float)decisions, decisions / cpu_time);
+-    printf("c propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
+-    printf("c conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
+-           (max_literals - tot_literals) * 100 / (double)max_literals);
+-    printf("c backtracks            : %-12" PRIu64 "   (NCB %0.f%% , CB %0.f%%)\n", non_chrono_backtrack + chrono_backtrack,
+-           (non_chrono_backtrack * 100) / (double)(non_chrono_backtrack + chrono_backtrack),
+-           (chrono_backtrack * 100) / (double)(non_chrono_backtrack + chrono_backtrack));
+-    printf("c partial restarts      : %-12" PRIu64 "   (partial: %" PRIu64 "  savedD: %" PRIu64 " savedP: %" PRIu64
+-           " (%.2lf %%))\n",
+-           starts, restart.partialRestarts, restart.savedDecisions, restart.savedPropagations,
+-           ((double)restart.savedPropagations * 100.0) / (double)propagations);
+-    printf("c polarity              : %d pos, %d neg\n", posMissingInSome, negMissingInSome);
+-    printf("c LCM                   : %lu runs, %lu Ctried, %lu Cshrinked (%lu known duplicates), %lu Ldeleted, %lu "
+-           "Lrev-deleted\n",
+-           nbSimplifyAll, LCM_total_tries, LCM_successful_tries, nr_lcm_duplicates, LCM_dropped_lits, LCM_dropped_reverse);
+-    printf("c Inprocessing          : %lu subsumed, %lu dropped lits, %lu attempts, %lu mems\n", inprocessing_C,
+-           inprocessing_L, inprocessings, inprocess_mems);
+-    printf("c Stats:                : %lf solve, %lu steps, %lf simp, %lu steps, %d var, budget: %d\n", statistics.solveSeconds,
+-           statistics.solveSteps, statistics.simpSeconds, statistics.simpSteps, nVars(), withinBudget());
+-    printf("c backup trail: stored: %lu used successfully: %lu\n", backuped_trail_lits, used_backup_lits);
+-    if (mem_used != 0) printf("c Memory used           : %.2f MB\n", mem_used);
+-    printf("c CPU time              : %g s\n", cpu_time);
++    /* double cpu_time = cpuTime(); */
++    /* double mem_used = memUsedPeak(); */
++    /* printf("c restarts              : %" PRIu64 "\n", starts); */
++    /* printf("c conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", conflicts, conflicts / cpu_time); */
++    /* printf("c decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions, */
++    /*        (float)rnd_decisions * 100 / (float)decisions, decisions / cpu_time); */
++    /* printf("c propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time); */
++    /* printf("c conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals, */
++    /*        (max_literals - tot_literals) * 100 / (double)max_literals); */
++    /* printf("c backtracks            : %-12" PRIu64 "   (NCB %0.f%% , CB %0.f%%)\n", non_chrono_backtrack + chrono_backtrack, */
++    /*        (non_chrono_backtrack * 100) / (double)(non_chrono_backtrack + chrono_backtrack), */
++    /*        (chrono_backtrack * 100) / (double)(non_chrono_backtrack + chrono_backtrack)); */
++    /* printf("c partial restarts      : %-12" PRIu64 "   (partial: %" PRIu64 "  savedD: %" PRIu64 " savedP: %" PRIu64 */
++    /*        " (%.2lf %%))\n", */
++    /*        starts, restart.partialRestarts, restart.savedDecisions, restart.savedPropagations, */
++    /*        ((double)restart.savedPropagations * 100.0) / (double)propagations); */
++    /* printf("c polarity              : %d pos, %d neg\n", posMissingInSome, negMissingInSome); */
++    /* printf("c LCM                   : %lu runs, %lu Ctried, %lu Cshrinked (%lu known duplicates), %lu Ldeleted, %lu " */
++    /*        "Lrev-deleted\n", */
++    /*        nbSimplifyAll, LCM_total_tries, LCM_successful_tries, nr_lcm_duplicates, LCM_dropped_lits, LCM_dropped_reverse); */
++    /* printf("c Inprocessing          : %lu subsumed, %lu dropped lits, %lu attempts, %lu mems\n", inprocessing_C, */
++    /*        inprocessing_L, inprocessings, inprocess_mems); */
++    /* printf("c Stats:                : %lf solve, %lu steps, %lf simp, %lu steps, %d var, budget: %d\n", statistics.solveSeconds, */
++    /*        statistics.solveSteps, statistics.simpSeconds, statistics.simpSteps, nVars(), withinBudget()); */
++    /* printf("c backup trail: stored: %lu used successfully: %lu\n", backuped_trail_lits, used_backup_lits); */
++    /* if (mem_used != 0) printf("c Memory used           : %.2f MB\n", mem_used); */
++    /* printf("c CPU time              : %g s\n", cpu_time); */
+ }
+ 
+ bool Solver::call_ls(bool use_up_build)
+@@ -3535,7 +3587,7 @@
+ 
+     called_initial_sls = true;
+ 
+-    ccnr = CCNR::ls_solver();
++    ccnr = MergeSat3_CCNR::ls_solver();
+     int ls_var_nums = nVars();
+     int ls_cls_nums = nClauses() + learnts_core.size() + learnts_tier2.size();
+ 
+@@ -3572,7 +3624,7 @@
+             int cls_sz = c.size();
+             for (int j = 0; j < cls_sz; j++) {
+                 int cur_lit = toFormal(c[j]);
+-                ccnr._clauses[ct].literals.push_back(CCNR::lit(cur_lit, ct));
++                ccnr._clauses[ct].literals.push_back(MergeSat3_CCNR::lit(cur_lit, ct));
+             }
+             ct++;
+         }
+@@ -3580,19 +3632,19 @@
+     if (trail_lim.size() > 0) {
+         int cls_sz = trail_lim[0];
+         for (int i = 0; i < cls_sz; i++) {
+-            ccnr._clauses[ct].literals.push_back(CCNR::lit(toFormal(trail[i]), ct));
++            ccnr._clauses[ct].literals.push_back(MergeSat3_CCNR::lit(toFormal(trail[i]), ct));
+             ct++;
+         }
+     } else if (trail_lim.size() == 0) {
+         int trl_sz = trail.size();
+         for (int i = 0; i < trl_sz; i++) {
+-            ccnr._clauses[ct].literals.push_back(CCNR::lit(toFormal(trail[i]), ct));
++            ccnr._clauses[ct].literals.push_back(MergeSat3_CCNR::lit(toFormal(trail[i]), ct));
+             ct++;
+         }
+     }
+ 
+     for (int i = 0; i < assumptions.size(); i++) {
+-        ccnr._clauses[ct].literals.push_back(CCNR::lit(toFormal(assumptions[i]), ct));
++        ccnr._clauses[ct].literals.push_back(MergeSat3_CCNR::lit(toFormal(assumptions[i]), ct));
+         ct++;
+     }
+ 
+@@ -3600,16 +3652,16 @@
+     int topLevel = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
+     for (int i = 0; i < topLevel; ++i) {
+         Var v = var(trail[i]);
+-        ls_mediation_soln[v] = (value(v) == l_True) ? 1 : 0;
++        ls_mediation_soln[v] = (value(v) == mg3l_True) ? 1 : 0;
+     }
+     // set assignment variables
+     for (int i = 0; i < assumptions.size(); i++) {
+         Var v = var(assumptions[i]);
+-        ls_mediation_soln[v] = (value(v) == l_True) ? 1 : 0;
++        ls_mediation_soln[v] = (value(v) == mg3l_True) ? 1 : 0;
+     }
+ 
+     for (size_t c = 0; c < ccnr._num_clauses; c++) {
+-        for (CCNR::lit item : ccnr._clauses[c].literals) {
++        for (MergeSat3_CCNR::lit item : ccnr._clauses[c].literals) {
+             int v = item.var_num;
+             ccnr._vars[v].literals.push_back(item);
+         }
+@@ -3633,11 +3685,11 @@
+         std::vector<int> undef_vars(var_nums - t_sz + 2);
+         std::vector<int> idx_undef_vars(var_nums + 1, -1); // undef_vars' idx is not -1
+         for (int i = 0; i < var_nums; ++i)
+-            if (value(i) == l_Undef) {
++            if (value(i) == mg3l_Undef) {
+                 idx_undef_vars[i] = undef_nums;
+                 undef_vars[undef_nums++] = i;
+             } else {
+-                ls_mediation_soln[i] = (value(i) == l_True) ? 1 : 0;
++                ls_mediation_soln[i] = (value(i) == mg3l_True) ? 1 : 0;
+             }
+ 
+         while (undef_nums > 0) {
+diff -Naur solvers/mergesat3/core/Solver.h solvers/mgs3/core/Solver.h
+--- solvers/mergesat3/core/Solver.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/Solver.h	2021-03-31 14:48:11.000000000 +1100
+@@ -43,8 +43,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Solver_h
+-#define MergeSat_Solver_h
++#ifndef MergeSat3_Solver_h
++#define MergeSat3_Solver_h
+ 
+ #define ANTI_EXPLORATION
+ #define BIN_DRUP
+@@ -58,11 +58,11 @@
+ #define LOOSE_PROP_STAT
+ #endif
+ 
+-#include "core/SolverTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Heap.h"
+-#include "mtl/Vec.h"
+-#include "utils/ccnr.h"
++#include "mergesat3/core/SolverTypes.h"
++#include "mergesat3/mtl/Alg.h"
++#include "mergesat3/mtl/Heap.h"
++#include "mergesat3/mtl/Vec.h"
++#include "mergesat3/utils/ccnr.h"
+ 
+ 
+ // Don't change the actual numbers.
+@@ -81,11 +81,11 @@
+ 
+ 
+ // check generation of DRUP/DRAT proof on the fly
+-#include "core/OnlineProofChecker.h"
++#include "mergesat3/core/OnlineProofChecker.h"
+ 
+ #include <vector>
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -169,6 +169,7 @@
+     bool solve(Lit p, Lit q);        // Search for a model that respects two assumptions.
+     bool solve(Lit p, Lit q, Lit r); // Search for a model that respects three assumptions.
+     bool okay() const;               // FALSE means solver is in a conflicting state
++    bool prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
+ 
+     void toDimacs(FILE *f, const vec<Lit> &assumps); // Write CNF to file in DIMACS-format.
+     void toDimacs(const char *file, const vec<Lit> &assumps);
+@@ -230,6 +231,7 @@
+     // Mode of operation:
+     //
+     FILE *drup_file;
++    void *drup_pyfile;
+     bool reparsed_options; // Indicate whether the update parameter method has been used
+     int verbosity;
+     int status_every; // print status update every X conflicts
+@@ -432,7 +434,7 @@
+ 
+                     // either clause is already satisfied, or this literal is satisfied
+                     satisfied_current_clause =
+-                    satisfied_current_clause || (sign(l) && model[v] == l_False) || (!sign(l) && (model[v] != l_False));
++                    satisfied_current_clause || (sign(l) && model[v] == mg3l_False) || (!sign(l) && (model[v] != mg3l_False));
+                 }
+             }
+             assert(valid && "the current clause should have been satisfied by the model");
+@@ -796,7 +798,7 @@
+     int sls_var_lim, sls_clause_lim;
+ 
+     // informations
+-    CCNR::ls_solver ccnr;
++    MergeSat3_CCNR::ls_solver ccnr;
+     int freeze_ls_restart_num = 0;
+     double ls_used_time = 0;
+     int ls_call_num = 0;
+@@ -877,7 +879,7 @@
+ // NOTE: enqueue does not set the ok flag! (only public methods do)
+ inline bool Solver::enqueue(Lit p, CRef from)
+ {
+-    return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, decisionLevel(), from), true);
++    return value(p) != mg3l_Undef ? value(p) != mg3l_False : (uncheckedEnqueue(p, decisionLevel(), from), true);
+ }
+ inline bool Solver::addClause(const vec<Lit> &ps)
+ {
+@@ -912,8 +914,8 @@
+ }
+ inline bool Solver::locked(const Clause &c) const
+ {
+-    int i = c.size() != 2 ? 0 : (value(c[0]) == l_True ? 0 : 1);
+-    return value(c[i]) == l_True && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c;
++    int i = c.size() != 2 ? 0 : (value(c[0]) == mg3l_True ? 0 : 1);
++    return value(c[i]) == mg3l_True && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c;
+ }
+ inline void Solver::newDecisionLevel() { trail_lim.push(trail.size()); }
+ 
+@@ -960,14 +962,14 @@
+ {
+     budgetOff();
+     assumptions.clear();
+-    return solve_() == l_True;
++    return solve_() == mg3l_True;
+ }
+ inline bool Solver::solve(Lit p)
+ {
+     budgetOff();
+     assumptions.clear();
+     assumptions.push(p);
+-    return solve_() == l_True;
++    return solve_() == mg3l_True;
+ }
+ inline bool Solver::solve(Lit p, Lit q)
+ {
+@@ -975,7 +977,7 @@
+     assumptions.clear();
+     assumptions.push(p);
+     assumptions.push(q);
+-    return solve_() == l_True;
++    return solve_() == mg3l_True;
+ }
+ inline bool Solver::solve(Lit p, Lit q, Lit r)
+ {
+@@ -984,13 +986,13 @@
+     assumptions.push(p);
+     assumptions.push(q);
+     assumptions.push(r);
+-    return solve_() == l_True;
++    return solve_() == mg3l_True;
+ }
+ inline bool Solver::solve(const vec<Lit> &assumps)
+ {
+     budgetOff();
+     assumps.copyTo(assumptions);
+-    return solve_() == l_True;
++    return solve_() == mg3l_True;
+ }
+ inline lbool Solver::solveLimited(const vec<Lit> &assumps)
+ {
+@@ -1083,8 +1085,8 @@
+         assert(decisionLevel() == 1 && "only run simplification on level 0");
+ 
+         for (i = 0, j = 0; i < c.size(); i++) {
+-            if (value(c[i]) == l_Undef) {
+-                // printf("///@@@ uncheckedEnqueue:index = %d. l_Undef\n", i);
++            if (value(c[i]) == mg3l_Undef) {
++                // printf("///@@@ uncheckedEnqueue:index = %d. mg3l_Undef\n", i);
+                 simpleUncheckEnqueue(~c[i]);
+                 c[j++] = c[i];
+                 confl = simplePropagate();
+@@ -1092,14 +1094,14 @@
+                     break;
+                 }
+             } else {
+-                if (value(c[i]) == l_True) {
+-                    // printf("///@@@ uncheckedEnqueue:index = %d. l_True\n", i);
++                if (value(c[i]) == mg3l_True) {
++                    // printf("///@@@ uncheckedEnqueue:index = %d. mg3l_True\n", i);
+                     c[j++] = c[i];
+                     True_confl = true;
+                     confl = reason(var(c[i]));
+                     break;
+                 } else {
+-                    // printf("///@@@ uncheckedEnqueue:index = %d. l_False\n", i);
++                    // printf("///@@@ uncheckedEnqueue:index = %d. mg3l_False\n", i);
+                 }
+             }
+         }
+@@ -1186,6 +1188,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/core/SolverTypes.h solvers/mgs3/core/SolverTypes.h
+--- solvers/mergesat3/core/SolverTypes.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/core/SolverTypes.h	2021-03-31 12:07:03.000000000 +1100
+@@ -29,21 +29,21 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef MergeSat_SolverTypes_h
+-#define MergeSat_SolverTypes_h
++#ifndef MergeSat3_SolverTypes_h
++#define MergeSat3_SolverTypes_h
+ 
+ #include <assert.h>
+ #include <string.h>
+ 
+-#include "mtl/Alg.h"
+-#include "mtl/Alloc.h"
+-#include "mtl/IntTypes.h"
+-#include "mtl/Map.h"
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Alg.h"
++#include "mergesat3/mtl/Alloc.h"
++#include "mergesat3/mtl/IntTypes.h"
++#include "mergesat3/mtl/Map.h"
++#include "mergesat3/mtl/Vec.h"
+ #include <iostream>
+ #include <vector>
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -124,9 +124,9 @@
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+-#define l_True (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+-#define l_False (lbool((uint8_t)1))
+-#define l_Undef (lbool((uint8_t)2))
++#define mg3l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
++#define mg3l_False (lbool((uint8_t)1))
++#define mg3l_Undef (lbool((uint8_t)2))
+ 
+ class lbool
+ {
+@@ -164,7 +164,7 @@
+ 
+ inline std::ostream &operator<<(std::ostream &out, const lbool &l)
+ {
+-    out << (l == l_True ? "l_True" : (l == l_False ? "l_False" : "l_Undef")) << std::flush;
++    out << (l == mg3l_True ? "l_True" : (l == mg3l_False ? "l_False" : "l_Undef")) << std::flush;
+     return out;
+ }
+ 
+@@ -712,6 +712,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Alg.h solvers/mgs3/mtl/Alg.h
+--- solvers/mergesat3/mtl/Alg.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Alg.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Alg_h
+-#define MergeSat_Alg_h
++#ifndef MergeSat3_Alg_h
++#define MergeSat3_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Vec.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -84,6 +84,6 @@
+ template <class T> static inline void append(const vec<T> &from, vec<T> &to) { copy(from, to, true); }
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Alloc.h solvers/mgs3/mtl/Alloc.h
+--- solvers/mergesat3/mtl/Alloc.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Alloc.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef MergeSat_Alloc_h
+-#define MergeSat_Alloc_h
++#ifndef MergeSat3_Alloc_h
++#define MergeSat3_Alloc_h
+ 
+-#include "mtl/Vec.h"
+-#include "mtl/XAlloc.h"
++#include "mergesat3/mtl/Vec.h"
++#include "mergesat3/mtl/XAlloc.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -141,6 +141,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Heap.h solvers/mgs3/mtl/Heap.h
+--- solvers/mergesat3/mtl/Heap.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Heap.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Heap_h
+-#define MergeSat_Heap_h
++#ifndef MergeSat3_Heap_h
++#define MergeSat3_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Vec.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -158,6 +158,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/IntTypes.h solvers/mgs3/mtl/IntTypes.h
+--- solvers/mergesat3/mtl/IntTypes.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/IntTypes.h	2021-03-31 12:07:03.000000000 +1100
+@@ -17,8 +17,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_IntTypes_h
+-#define MergeSat_IntTypes_h
++#ifndef MergeSat3_IntTypes_h
++#define MergeSat3_IntTypes_h
+ 
+ #ifdef __sun
+ // Not sure if there are newer versions that support C99 headers. The
+diff -Naur solvers/mergesat3/mtl/Map.h solvers/mgs3/mtl/Map.h
+--- solvers/mergesat3/mtl/Map.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Map.h	2021-03-31 12:07:03.000000000 +1100
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Map_h
+-#define MergeSat_Map_h
++#ifndef MergeSat3_Map_h
++#define MergeSat3_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/IntTypes.h"
++#include "mergesat3/mtl/Vec.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -215,6 +215,6 @@
+ };
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Queue.h solvers/mgs3/mtl/Queue.h
+--- solvers/mergesat3/mtl/Queue.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Queue.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Queue_h
+-#define MergeSat_Queue_h
++#ifndef MergeSat3_Queue_h
++#define MergeSat3_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Vec.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -90,6 +90,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Sort.h solvers/mgs3/mtl/Sort.h
+--- solvers/mergesat3/mtl/Sort.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Sort.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,10 +18,10 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Sort_h
+-#define MergeSat_Sort_h
++#ifndef MergeSat3_Sort_h
++#define MergeSat3_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "mergesat3/mtl/Vec.h"
+ #include <cstring> // for memcpy
+ #include <vector>
+ 
+@@ -29,7 +29,7 @@
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ template <class T> struct LessThan_default {
+@@ -168,6 +168,6 @@
+ template <class T> void sort(std::vector<T> &v) { sort(v, LessThan_default<T>()); }
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/Vec.h solvers/mgs3/mtl/Vec.h
+--- solvers/mergesat3/mtl/Vec.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/Vec.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Vec_h
+-#define MergeSat_Vec_h
++#ifndef MergeSat3_Vec_h
++#define MergeSat3_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "mergesat3/mtl/IntTypes.h"
++#include "mergesat3/mtl/XAlloc.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -195,6 +195,6 @@
+ }
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/mtl/XAlloc.h solvers/mgs3/mtl/XAlloc.h
+--- solvers/mergesat3/mtl/XAlloc.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/mtl/XAlloc.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,18 +18,18 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef MergeSat_XAlloc_h
+-#define MergeSat_XAlloc_h
++#ifndef MergeSat3_XAlloc_h
++#define MergeSat3_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ 
+ // To not introduce this multiple times, use this header, as it's rather central
+-#ifndef MERGESAT_NSPACE
+-#define MERGESAT_NSPACE Minisat
++#ifndef MergeSat3
++#define MergeSat3 Minisat
+ #endif
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //=================================================================================================
+@@ -48,6 +48,6 @@
+ }
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
+--- solvers/mergesat3/utils/Options.cc	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/Options.cc	2021-03-31 12:07:03.000000000 +1100
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/Options.h"
+-#include "mtl/Sort.h"
+-#include "utils/ParseUtils.h"
++#include "mergesat3/utils/Options.h"
++#include "mergesat3/mtl/Sort.h"
++#include "mergesat3/utils/ParseUtils.h"
+ 
+-using namespace MERGESAT_NSPACE;
++using namespace MergeSat3;
+ 
+-bool MERGESAT_NSPACE::parseOptions(int &argc, char **argv, bool strict)
++bool MergeSat3::parseOptions(int &argc, char **argv, bool strict)
+ {
+     int i, j;
+     bool ret = false;
+@@ -62,9 +62,9 @@
+ }
+ 
+ 
+-void MERGESAT_NSPACE::setUsageHelp(const char *str) { Option::getUsageString() = str; }
+-void MERGESAT_NSPACE::setHelpPrefixStr(const char *str) { Option::getHelpPrefixString() = str; }
+-void MERGESAT_NSPACE::printUsageAndExit(int argc, char **argv, bool verbose)
++void MergeSat3::setUsageHelp(const char *str) { Option::getUsageString() = str; }
++void MergeSat3::setHelpPrefixStr(const char *str) { Option::getHelpPrefixString() = str; }
++void MergeSat3::printUsageAndExit(int argc, char **argv, bool verbose)
+ {
+     const char *usage = Option::getUsageString();
+     if (usage != NULL) fprintf(stderr, usage, argv[0]);
+@@ -97,7 +97,7 @@
+ }
+ 
+ 
+-void MERGESAT_NSPACE::printOptions(FILE *pcsFile, int granularity)
++void MergeSat3::printOptions(FILE *pcsFile, int granularity)
+ {
+     sort(Option::getOptionList(), Option::OptionLt());
+ 
+@@ -126,7 +126,7 @@
+ }
+ 
+ 
+-void MERGESAT_NSPACE::printOptionsDependencies(FILE *pcsFile, int granularity)
++void MergeSat3::printOptionsDependencies(FILE *pcsFile, int granularity)
+ {
+     sort(Option::getOptionList(), Option::OptionLt());
+ 
+diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
+--- solvers/mergesat3/utils/Options.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/Options.h	2021-03-31 12:07:03.000000000 +1100
+@@ -17,23 +17,23 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_Options_h
+-#define MergeSat_Options_h
++#ifndef MergeSat3_Options_h
++#define MergeSat3_Options_h
+ 
+ #include <math.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Sort.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "mergesat3/mtl/IntTypes.h"
++#include "mergesat3/mtl/Sort.h"
++#include "mergesat3/mtl/Vec.h"
++#include "mergesat3/utils/ParseUtils.h"
+ 
+ #include <sstream>
+ #include <vector>
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //==================================================================================================
+@@ -715,23 +715,23 @@
+                 if (i != 0) {
+                     fprintf(pcsFile, ",");
+                 }
+-                fprintf(pcsFile, "%ld", values[i]);
++                fprintf(pcsFile, "%lld", values[i]);
+             }
+-            fprintf(pcsFile, "} [%ld]    # %s\n", value, description);
++            fprintf(pcsFile, "} [%lld]    # %s\n", value, description);
+         } else {
+             if ((range.end - range.begin <= 16 && range.end - range.begin > 0 && range.end != INT32_MAX) ||
+                 (range.begin <= 0 && range.end >= 0)) {
+                 if (range.end - range.begin <= 16 && range.end - range.begin > 0) { // print all values if the difference is really small
+-                    fprintf(pcsFile, "%s  {%ld", name, range.begin);
++                    fprintf(pcsFile, "%s  {%lld", name, range.begin);
+                     for (int64_t i = range.begin + 1; i <= range.end; ++i) {
+-                        fprintf(pcsFile, ",%ld", i);
++                        fprintf(pcsFile, ",%lld", i);
+                     }
+-                    fprintf(pcsFile, "} [%ld]    # %s\n", value, description);
++                    fprintf(pcsFile, "} [%lld]    # %s\n", value, description);
+                 } else {
+-                    fprintf(pcsFile, "%s  [%ld,%ld] [%ld]i    # %s\n", name, range.begin, range.end, value, description);
++                    fprintf(pcsFile, "%s  [%lld,%lld] [%lld]i    # %s\n", name, range.begin, range.end, value, description);
+                 }
+             } else {
+-                fprintf(pcsFile, "%s  [%ld,%ld] [%ld]il   # %s\n", name, range.begin, range.end, value, description);
++                fprintf(pcsFile, "%s  [%lld,%lld] [%lld]il   # %s\n", name, range.begin, range.end, value, description);
+             }
+         }
+     }
+@@ -750,7 +750,7 @@
+                 if (values[i] == defaultValue) {
+                     continue;
+                 }                                         // do not print default value
+-                snprintf(buffer, size, "%ld", values[i]); // convert value
++                snprintf(buffer, size, "%lld", values[i]); // convert value
+                 const int sl = strlen(buffer);
+                 size = size - strlen(buffer) - 1; // store new size
+                 if (i + 1 < values.size() && values[i + 1] != defaultValue) {
+@@ -764,7 +764,7 @@
+                 if (i == defaultValue) {
+                     continue;
+                 }                                 // do not print default value
+-                snprintf(buffer, size, "%ld", i); // convert value
++                snprintf(buffer, size, "%lld", i); // convert value
+                 const int sl = strlen(buffer);
+                 size = size - strlen(buffer) - 1; // store new size
+                 if (i != range.end && i + 1 != defaultValue) {
+@@ -1026,6 +1026,6 @@
+ };
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
+--- solvers/mergesat3/utils/ParseUtils.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/ParseUtils.h	2021-03-31 12:07:03.000000000 +1100
+@@ -18,8 +18,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef MergeSat_ParseUtils_h
+-#define MergeSat_ParseUtils_h
++#ifndef MergeSat3_ParseUtils_h
++#define MergeSat3_ParseUtils_h
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -31,9 +31,9 @@
+ #include <zlib.h>
+ #endif
+ 
+-#include "mtl/XAlloc.h"
++#include "mergesat3/mtl/XAlloc.h"
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ //-------------------------------------------------------------------------------------------------
+@@ -272,6 +272,6 @@
+ 
+ 
+ //=================================================================================================
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ #endif
+diff -Naur solvers/mergesat3/utils/System.cc solvers/mgs3/utils/System.cc
+--- solvers/mergesat3/utils/System.cc	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/System.cc	2021-03-31 12:07:03.000000000 +1100
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "mergesat3/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace MERGESAT_NSPACE;
++using namespace MergeSat3;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,8 +67,8 @@
+     return peak_kb;
+ }
+ 
+-double MERGESAT_NSPACE::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024 * 1024); }
+-double MERGESAT_NSPACE::memUsedPeak()
++double MergeSat3::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024 * 1024); }
++double MergeSat3::memUsedPeak()
+ {
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak;
+@@ -76,25 +76,25 @@
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double MERGESAT_NSPACE::memUsed(void)
++double MergeSat3::memUsed(void)
+ {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024;
+ }
+-double MERGESAT_NSPACE::memUsedPeak(void) { return memUsed(); }
++double MergeSat3::memUsedPeak(void) { return memUsed(); }
+ 
+ 
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double MERGESAT_NSPACE::memUsed(void)
++double MergeSat3::memUsed(void)
+ {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024 * 1024);
+ }
+-double MERGESAT_NSPACE::memUsedPeak(void) { return memUsed(); }
++double MergeSat3::memUsedPeak(void) { return memUsed(); }
+ #else
+-double MERGESAT_NSPACE::memUsed() { return 0; }
++double MergeSat3::memUsed() { return 0; }
+ #endif
+diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
+--- solvers/mergesat3/utils/System.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/System.h	2021-03-31 12:07:03.000000000 +1100
+@@ -25,19 +25,19 @@
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "mergesat3/mtl/IntTypes.h"
++#include "mergesat3/mtl/XAlloc.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace MERGESAT_NSPACE
++namespace MergeSat3
+ {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
+ extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
+ 
+-} // namespace MERGESAT_NSPACE
++} // namespace MergeSat3
+ 
+ //-------------------------------------------------------------------------------------------------
+ // Implementation of inline functions:
+@@ -45,14 +45,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double MERGESAT_NSPACE::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double MergeSat3::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/resource.h>
+ #include <sys/time.h>
+ #include <unistd.h>
+ 
+-static inline double MERGESAT_NSPACE::cpuTime(void)
++static inline double MergeSat3::cpuTime(void)
+ {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+diff -Naur solvers/mergesat3/utils/ccnr.cc solvers/mgs3/utils/ccnr.cc
+--- solvers/mergesat3/utils/ccnr.cc	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/ccnr.cc	2021-03-31 12:07:03.000000000 +1100
+@@ -1,7 +1,7 @@
+ 
+-#include "ccnr.h"
++#include "mergesat3/utils/ccnr.h"
+ 
+-using namespace CCNR;
++using namespace MergeSat3_CCNR;
+ using namespace std;
+ 
+ 
+diff -Naur solvers/mergesat3/utils/ccnr.h solvers/mgs3/utils/ccnr.h
+--- solvers/mergesat3/utils/ccnr.h	2021-03-25 18:15:00.000000000 +1100
++++ solvers/mgs3/utils/ccnr.h	2021-03-31 12:07:03.000000000 +1100
+@@ -1,5 +1,5 @@
+-#ifndef CCNR_H
+-#define CCNR_H
++#ifndef MergeSat3_CCNR_H
++#define MergeSat3_CCNR_H
+ 
+ // heads
+ #include <cmath>
+@@ -17,7 +17,7 @@
+ 
+ //---------------------
+ 
+-namespace CCNR
++namespace MergeSat3_CCNR
+ {
+ 
+ //--------------------------

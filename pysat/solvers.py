@@ -19,6 +19,8 @@
         SolverNames
         Solver
         Cadical
+        Gluecard3
+        Gluecard4
         Glucose3
         Glucose4
         Lingeling
@@ -43,9 +45,17 @@
     -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
     -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
     -  Maplesat (`MapleCOMSPS_LRB <https://sites.google.com/a/gsd.uwaterloo.ca/maplesat/>`__)
+    -  Mergesat (`3.0 <https://github.com/conp-solutions/mergesat>`__)
     -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
     -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
     -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)
+
+    Additionally, PySAT includes the versions of :class:`Glucose3` and
+    :class:`Glucose4` that support native cardinality constraints, ported from
+    :class:`Minicard`:
+
+    -  Gluecard3
+    -  Gluecard4
 
     All solvers can be accessed through a unified MiniSat-like [1]_ incremental
     [2]_ interface described below.
@@ -57,13 +67,14 @@
         solving*. Electr. Notes Theor. Comput. Sci. 89(4). 2003. pp. 543-560
 
     The module provides direct access to all supported solvers using the
-    corresponding classes :class:`Glucose3`, :class:`Glucose4`,
+    corresponding classes :class:`Cadical`, :class:`Gluecard3`,
+    :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
     :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
-    :class:`Maplesat`, :class:`Minicard`, :class:`Minisat22`, and
-    :class:`MinisatGH`. However, the solvers can also be accessed through the
-    common base class :class:`Solver` using the solver ``name`` argument. For
-    example, both of the following pieces of code create a copy of the
-    :class:`Glucose3` solver:
+    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
+    :class:`Minisat22`, and :class:`MinisatGH`. However, the solvers can also
+    be accessed through the common base class :class:`Solver` using the solver
+    ``name`` argument. For example, both of the following pieces of code
+    create a copy of the :class:`Glucose3` solver:
 
     .. code-block:: python
 
@@ -126,8 +137,9 @@
 
     In order to shorten the description of the module, the classes providing
     direct access to the individual solvers, i.e. classes :class:`Cadical`,
-    :class:`Glucose3`, :class:`Glucose4`, :class:`Lingeling`,
-    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
+    :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
+    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
+    :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
     :class:`Minicard`, :class:`Minisat22`, and :class:`MinisatGH`, are
     **omitted**. They replicate the interface of the base class
     :class:`Solver` and, thus, can be used the same exact way.
@@ -157,9 +169,10 @@ class NoSuchSolverError(Exception):
     """
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
-        solvers includes the names `'cadical'`, `'glucose3'`, `'glucose4'`,
-        `'lingeling'`, `'maplechrono'`, `'maplecm'`, `'maplesat'`,
-        `'minicard'`, `'minisat22'`, and `'minisatgh'`.
+        solvers includes the names `'cadical'`, `'gluecard3'`, `'gluecard4'`,
+        `'glucose3'`, `'glucose4'`, `'lingeling'`, `'maplechrono'`,
+        `'maplecm'`, `'maplesat'`, `'mergesat3'`, `'minicard'`, `'minisat22'`,
+        and `'minisatgh'`.
     """
 
     pass
@@ -176,12 +189,15 @@ class SolverNames(object):
         .. code-block:: python
 
             cadical     = ('cd', 'cdl', 'cadical')
+            gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
+            gluecard41  = ('gc3', 'gc41', 'gluecard4', 'gluecard41')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
             lingeling   = ('lgl', 'lingeling')
             maplechrono = ('mcb', 'chrono', 'maplechrono')
             maplecm     = ('mcm', 'maplecm')
             maplesat    = ('mpl', 'maple', 'maplesat')
+            mergesat3   = ('mg3', 'mgs3', 'mergesat3', 'mergesat30')
             minicard    = ('mc', 'mcard', 'minicard')
             minisat22   = ('m22', 'msat22', 'minisat22')
             minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
@@ -193,12 +209,15 @@ class SolverNames(object):
     """
 
     cadical     = ('cd', 'cdl', 'cadical')
+    gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
+    gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
     lingeling   = ('lgl', 'lingeling')
     maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
     maplecm     = ('mcm', 'maplecm')
     maplesat    = ('mpl', 'maple', 'maplesat')
+    mergesat3   = ('mg3', 'mgs3', 'mergesat3', 'mergesat30')
     minicard    = ('mc', 'mcard', 'minicard')
     minisat22   = ('m22', 'msat22', 'minisat22')
     minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
@@ -262,13 +281,11 @@ class Solver(object):
 
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
-        :class:`Cadical`, :class:`Lingeling`, :class:`Glucose3`,
-        :class:`Glucose4`, :class:`MapleChrono`, :class:`MapleCM` and
-        :class:`Maplesat` can have additional default arguments. One such
-        argument supported by :class:`Glucose3` and :class:`Glucose4` but also
-        by ``Cadical``, ``Lingeling``, ``MapleChrono``, ``MapleCM``, and
-        ``Maplesat`` is `DRUP proof
-        <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
+        :class:`Cadical`, :class:`Lingeling`, :class:`Gluecard3`,
+        :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
+        :class:`MapleChrono`, :class:`MapleCM`, and :class:`Maplesat` can have
+        additional default arguments. One such argument supported by is `DRUP
+        proof <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
         enabled by setting the ``with_proof`` argument to ``True`` (``False``
         by default):
 
@@ -285,11 +302,11 @@ class Solver(object):
             ...     l.get_proof()
             ['-5 0', '6 0', '-2 0', '-4 0', '1 0', '3 0', '0']
 
-        Additionally and in contrast to :class:`Cadical` and
-        :class:`Lingeling`, both :class:`Glucose3` and :class:`Glucose4` have
-        one more default argument ``incr`` (``False`` by default), which
-        enables incrementality features introduced in Glucose3 [3]_. To
-        summarize, the additional arguments of Glucose are:
+        Additionally, Glucose-based solvers, namely :class:`Glucose3`,
+        :class:`Glucose4`, :class:`Gluecard3`, and :class:`Gluecard4` have one
+        more default argument ``incr`` (``False`` by default), which enables
+        incrementality features introduced in Glucose3 [3]_. To summarize, the
+        additional arguments of Glucose are:
 
         :param incr: enable the incrementality features of Glucose3 [3]_.
         :param with_proof: enable proof logging in the `DRUP format <http://www.cs.utexas.edu/~marijn/drup/>`__.
@@ -346,6 +363,10 @@ class Solver(object):
             name_ = name.lower()
             if name_ in SolverNames.cadical:
                 self.solver = Cadical(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.gluecard3:
+                self.solver = Gluecard3(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.gluecard4:
+                self.solver = Gluecard4(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose3:
                 self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose4:
@@ -358,6 +379,8 @@ class Solver(object):
                 self.solver = MapleCM(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.maplesat:
                 self.solver = Maplesat(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.mergesat3:
+                self.solver = Mergesat3(bootstrap_with, use_timer)
             elif name_ in SolverNames.minicard:
                 self.solver = Minicard(bootstrap_with, use_timer)
             elif name_ in SolverNames.minisat22:
@@ -969,9 +992,9 @@ class Solver(object):
     def add_atmost(self, lits, k, no_return=True):
         """
             This method is responsible for adding a new *native* AtMostK (see
-            :mod:`pysat.card`) constraint into :class:`Minicard`.
+            :mod:`pysat.card`) constraint.
 
-            **Note that none of the other solvers supports native AtMostK
+            **Note that most of the solvers do not support native AtMostK
             constraints**.
 
             An AtMostK constraint is :math:`\sum_{i=1}^{n}{x_i}\leq k`. A
@@ -1033,6 +1056,72 @@ class Solver(object):
             res = self.solver.append_formula(formula, no_return)
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+
+            :rtype: bool
+
+            A usage example is the following:
+
+            .. code-block:: python
+
+                >>> s = Solver(name='mc')
+                >>> s.supports_atmost()
+                True
+                >>> # there is support for AtMostK constraints in this solver
+        """
+
+        if self.solver:
+            return self.solver.supports_atmost()
+
+    @staticmethod
+    def _proof_bin2text(bytes_):
+        """
+            Auxiliary method to translate a proof specified in the binary DRUP
+            format to the text DRUP format.
+
+            :param bytes_: proof-trace as a sequence of bytes
+            :type bytes_: bytearray
+
+            :rtype: list(str)
+        """
+
+        # necessary variables
+        proof, lits, lit, shift, newbeg = [], [], 0, 0, True
+
+        for byte in bytes_:
+            if newbeg:
+                # new clause; here, we expect either 'a' or 'd'
+                if byte == 100:
+                    lits.append('d')
+                else:
+                    assert byte == 97, 'clause should start with either \'a\' or \'d\''
+
+                newbeg = False
+            else:
+                # this is a byte of an actual literal
+                if byte:
+                    lit |= (byte & 0x7f) << shift
+                    shift += 7
+
+                    if byte >> 7 == 0:
+                        # MSB is zero => this is the last byte of the literal
+                        lits.append(str((1 if lit % 2 == 0 else -1) * (lit >> 1)))
+                        lit, shift = 0, 0
+
+                else:
+                    # zero-byte indicates the end of clause
+                    lits.append('0')
+                    proof.append(' '.join(lits))
+                    lits, newbeg = [], True
+
+        if not newbeg and not lits:
+            proof.append('0')
+
+        return proof
 
 
 #
@@ -1209,7 +1298,9 @@ class Cadical(object):
 
         if self.cadical and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+
+            # stripping may cause issues here!
+            return Solver._proof_bin2text(bytearray(self.prfile.read()).strip())
 
     def time(self):
         """
@@ -1309,6 +1400,656 @@ class Cadical(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
+
+#
+#==============================================================================
+class Gluecard3(object):
+    """
+        Gluecard 3 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        self.gluecard = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, incr, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.gluecard = None
+
+    def new(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        assert not incr or not with_proof, 'Incremental mode and proof tracing cannot be set together.'
+
+        if not self.gluecard:
+            self.gluecard = pysolvers.gluecard3_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1])
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if incr:
+                pysolvers.gluecard3_setincr(self.gluecard)
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.gluecard3_tracepr(self.gluecard, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_del(self.gluecard)
+            self.gluecard = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.gluecard3_solve(self.gluecard, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.gluecard3_solve_lim(self.gluecard,
+                    assumptions, int(MainThread.check()), int(expect_interrupt))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_cbudget(self.gluecard, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_pbudget(self.gluecard, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_interrupt(self.gluecard)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_clearint(self.gluecard)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.gluecard3_propagate(self.gluecard,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_setphases(self.gluecard, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.gluecard:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.gluecard and self.status == True:
+            model = pysolvers.gluecard3_model(self.gluecard)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.gluecard and self.status == False:
+            return pysolvers.gluecard3_core(self.gluecard)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.gluecard and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.gluecard:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.gluecard:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard3_nof_vars(self.gluecard)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard3_nof_cls(self.gluecard)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard3_acc_stats(self.gluecard)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.gluecard:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.gluecard:
+            res = pysolvers.gluecard3_add_cl(self.gluecard, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by Gluecard.
+        """
+
+        if self.gluecard:
+            res = pysolvers.gluecard3_add_am(self.gluecard, lits, k)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.gluecard:
+            res = None
+
+            # this loop should work for a list of clauses, CNF, and CNFPlus
+            for clause in formula:
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1], no_return)
+
+                if not no_return and res == False:
+                    return res
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return True
+
+
+#
+#==============================================================================
+class Gluecard4(object):
+    """
+        Gluecard 4 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Basic constructor.
+        """
+
+        self.gluecard = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, incr, with_proof)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.gluecard = None
+
+    def new(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        assert not incr or not with_proof, 'Incremental mode and proof tracing cannot be set together.'
+
+        if not self.gluecard:
+            self.gluecard = pysolvers.gluecard41_new()
+
+            if bootstrap_with:
+                for clause in bootstrap_with:
+                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1])
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            if incr:
+                pysolvers.gluecard41_setincr(self.gluecard)
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.gluecard41_tracepr(self.gluecard, self.prfile)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_del(self.gluecard)
+            self.gluecard = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.gluecard41_solve(self.gluecard, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.gluecard41_solve_lim(self.gluecard,
+                    assumptions, int(MainThread.check()), int(expect_interrupt))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_cbudget(self.gluecard, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_pbudget(self.gluecard, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_interrupt(self.gluecard)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_clearint(self.gluecard)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.gluecard:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.gluecard41_propagate(self.gluecard,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_setphases(self.gluecard, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.gluecard:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.gluecard and self.status == True:
+            model = pysolvers.gluecard41_model(self.gluecard)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.gluecard and self.status == False:
+            return pysolvers.gluecard41_core(self.gluecard)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.gluecard and self.prfile:
+            self.prfile.seek(0)
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.gluecard:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.gluecard:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard41_nof_vars(self.gluecard)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard41_nof_cls(self.gluecard)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.gluecard:
+            return pysolvers.gluecard41_acc_stats(self.gluecard)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.gluecard:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.gluecard:
+            res = pysolvers.gluecard41_add_cl(self.gluecard, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by Gluecard.
+        """
+
+        if self.gluecard:
+            res = pysolvers.gluecard41_add_am(self.gluecard, lits, k)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.gluecard:
+            res = None
+
+            # this loop should work for a list of clauses, CNF, and CNFPlus
+            for clause in formula:
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1], no_return)
+
+                if not no_return and res == False:
+                    return res
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return True
 
 
 #
@@ -1514,7 +2255,7 @@ class Glucose3(object):
 
         if self.glucose and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -1614,6 +2355,14 @@ class Glucose3(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -1819,7 +2568,7 @@ class Glucose4(object):
 
         if self.glucose and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -1919,6 +2668,14 @@ class Glucose4(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -2096,7 +2853,7 @@ class Lingeling(object):
 
         if self.lingeling and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -2182,6 +2939,14 @@ class Lingeling(object):
 
             for clause in formula:
                 self.add_clause(clause, no_return)
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -2384,7 +3149,7 @@ class MapleChrono(object):
 
         if self.maplesat and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -2484,6 +3249,14 @@ class MapleChrono(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -2686,7 +3459,7 @@ class MapleCM(object):
 
         if self.maplesat and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -2786,6 +3559,14 @@ class MapleCM(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -2988,7 +3769,7 @@ class Maplesat(object):
 
         if self.maplesat and self.prfile:
             self.prfile.seek(0)
-            return [line.rstrip() for line in self.prfile.readlines()]
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
     def time(self):
         """
@@ -3088,6 +3869,310 @@ class Maplesat(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
+
+#
+#==============================================================================
+class Mergesat3(object):
+    """
+        MergeSat 3 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False):
+        """
+            Basic constructor.
+        """
+
+        self.mergesat = None
+        self.status = None
+
+        self.new(bootstrap_with, use_timer)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.mergesat = None
+
+    def new(self, bootstrap_with=None, use_timer=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.mergesat:
+            self.mergesat = pysolvers.mergesat3_new()
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Mergesat3')
+
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_del(self.mergesat)
+            self.mergesat = None
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.mergesat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.mergesat3_solve(self.mergesat, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.mergesat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.mergesat3_solve_lim(self.mergesat,
+                    assumptions, int(MainThread.check()), int(expect_interrupt))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_cbudget(self.mergesat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_pbudget(self.mergesat, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_interrupt(self.mergesat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_clearint(self.mergesat)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.mergesat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.mergesat3_propagate(self.mergesat,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.mergesat:
+            pysolvers.mergesat3_setphases(self.mergesat, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.mergesat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.mergesat and self.status == True:
+            model = pysolvers.mergesat3_model(self.mergesat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.mergesat and self.status == False:
+            return pysolvers.mergesat3_core(self.mergesat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        raise NotImplementedError('Proof tracing is currently unsupported by Mergesat3.')
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.mergesat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.mergesat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.mergesat:
+            return pysolvers.mergesat3_nof_vars(self.mergesat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.mergesat:
+            return pysolvers.mergesat3_nof_cls(self.mergesat)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.mergesat:
+            return pysolvers.mergesat3_acc_stats(self.mergesat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.mergesat:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.mergesat:
+            res = pysolvers.mergesat3_add_cl(self.mergesat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by Mergesat3.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by Mergesat3.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.mergesat:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Mergesat3')
+
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
 
 
 #
@@ -3385,6 +4470,14 @@ class Minicard(object):
             if not no_return:
                 return res
 
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return True
+
 
 #
 #==============================================================================
@@ -3673,6 +4766,14 @@ class Minisat22(object):
             if not no_return:
                 return res
 
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
 
 #
 #==============================================================================
@@ -3960,3 +5061,11 @@ class MinisatGH(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False

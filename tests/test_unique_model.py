@@ -2,6 +2,8 @@ from pysat.solvers import Solver
 from pysat.formula import CNF
 
 solvers = ['cadical',
+           'gluecard30',
+           'gluecard41',
            'glucose30',
            'glucose41',
            'lingeling',
@@ -9,6 +11,7 @@ solvers = ['cadical',
            'maplecm',
            'maplesat',
            'minicard',
+           'mergesat3',
            'minisat22',
            'minisat-gh']
 

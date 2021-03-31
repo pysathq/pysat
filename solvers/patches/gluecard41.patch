@@ -1,0 +1,3309 @@
+diff -Naur solvers/gluecard41/Makefile solvers/gc41/Makefile
+--- solvers/gluecard41/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/gc41/Makefile	2021-03-29 16:03:00.000000000 +1100
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DINCREMENTAL
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     :=  gluecard41
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/gluecard41/core/BoundedQueue.h solvers/gc41/core/BoundedQueue.h
+--- solvers/gluecard41/core/BoundedQueue.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/core/BoundedQueue.h	2021-03-29 16:01:17.000000000 +1100
+@@ -9,19 +9,19 @@
+                                 Labri - Univ. Bordeaux, France
+ 
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
++Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
+ 
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
++sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+-be used in any competitive event (sat competitions/evaluations) without the express permission of 
++be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
+ 
+@@ -48,14 +48,14 @@
+  **************************************************************************************************/
+ 
+ 
+-#ifndef BoundedQueue_h
+-#define BoundedQueue_h
++#ifndef Gluecard41_BoundedQueue_h
++#define Gluecard41_BoundedQueue_h
+ 
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+ //=================================================================================================
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ template <class T>
+ class bqueue {
+@@ -68,17 +68,17 @@
+ 	bool expComputed;
+ 	double exp,value;
+ public:
+- bqueue(void) : first(0), last(0), sumofqueue(0), maxsize(0), queuesize(0),expComputed(false) { } 
+-	
++ bqueue(void) : first(0), last(0), sumofqueue(0), maxsize(0), queuesize(0),expComputed(false) { }
++
+ 	void initSize(int size) {growTo(size);exp = 2.0/(size+1);} // Init size of bounded size queue
+-	
++
+ 	void push(T x) {
+ 	  expComputed = false;
+ 		if (queuesize==maxsize) {
+ 			assert(last==first); // The queue is full, next value to enter will replace oldest one
+ 			sumofqueue -= elems[last];
+ 			if ((++last) == maxsize) last = 0;
+-		} else 
++		} else
+ 			queuesize++;
+ 		sumofqueue += x;
+ 		elems[first] = x;
+@@ -87,7 +87,7 @@
+ 
+ 	T peek() { assert(queuesize>0); return elems[last]; }
+ 	void pop() {sumofqueue-=elems[last]; queuesize--; if ((++last) == maxsize) last = 0;}
+-	
++
+ 	unsigned long long getsum() const {return sumofqueue;}
+ 	unsigned int getavg() const {return (unsigned int)(sumofqueue/((unsigned long long)queuesize));}
+ 	int maxSize() const {return maxsize;}
+@@ -99,13 +99,13 @@
+ 	  return tmp/elems.size();
+ 	}
+ 	int isvalid() const {return (queuesize==maxsize);}
+-	
++
+ 	void growTo(int size) {
+-		elems.growTo(size); 
++		elems.growTo(size);
+ 		first=0; maxsize=size; queuesize = 0;last = 0;
+-		for(int i=0;i<size;i++) elems[i]=0; 
++		for(int i=0;i<size;i++) elems[i]=0;
+ 	}
+-	
++
+ 	double getAvgExp() {
+ 	  if(expComputed) return value;
+ 	  double a=exp;
+@@ -121,11 +121,11 @@
+ 	  value = value*(1-exp)/(1-a);
+ 	  expComputed = true;
+ 	  return value;
+-	  
++
+ 
+ 	}
+ 	void fastclear() {first = 0; last = 0; queuesize=0; sumofqueue=0;} // to be called after restarts... Discard the queue
+-	
++
+     int  size(void)    { return queuesize; }
+ 
+     void clear(bool dealloc = false)   { elems.clear(dealloc); first = 0; maxsize=0; queuesize=0;sumofqueue=0;}
+@@ -138,7 +138,7 @@
+         dest.expComputed = expComputed;
+         dest.exp = exp;
+         dest.value = value;
+-        dest.first = first;        
++        dest.first = first;
+         elems.copyTo(dest.elems);
+     }
+ };
+diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
+--- solvers/gluecard41/core/Solver.cc	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/core/Solver.cc	2021-03-29 21:22:13.000000000 +1100
+@@ -9,19 +9,19 @@
+                                 Labri - Univ. Bordeaux, France
+ 
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
++Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
+ 
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
++sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+-be used in any competitive event (sat competitions/evaluations) without the express permission of 
++be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
+ 
+@@ -49,13 +49,12 @@
+ 
+ #include <math.h>
+ 
+-#include "utils/System.h"
+-#include "mtl/Sort.h"
+-#include "core/Solver.h"
+-#include "core/Constants.h"
+-#include"simp/SimpSolver.h"
++#include "gluecard41/utils/System.h"
++#include "gluecard41/mtl/Sort.h"
++#include "gluecard41/core/Solver.h"
++#include "gluecard41/core/Constants.h"
+ 
+-using namespace Glucose;
++using namespace Gluecard41;
+ 
+ 
+ //=================================================================================================
+@@ -104,6 +103,7 @@
+ static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
+ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
+                                      DoubleRange(0, false, HUGE_VAL, false));
++static BoolOption    opt_detect_clause     (_cat, "dt-clause",   "Treat AtLeast 1 cardinality constraints as regular clauses", true);
+ static BoolOption opt_glu_reduction(_cat, "gr", "glucose strategy to fire clause database reduction (must be false to fire Chanseok strategy)", true);
+ static BoolOption opt_luby_restart(_cat, "luby", "Use the Luby restart sequence", false);
+ static DoubleOption opt_restart_inc(_cat, "rinc", "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
+@@ -149,7 +149,9 @@
+ , rnd_init_act(opt_rnd_init_act)
+ , randomizeFirstDescent(false)
+ , garbage_frac(opt_garbage_frac)
++, detect_clause(opt_detect_clause)
+ , certifiedOutput(NULL)
++, certifiedPyFile(NULL)
+ , certifiedUNSAT(false) // Not in the first parallel version
+ , vbyte(false)
+ , panicModeLastRemoved(0), panicModeLastRemovedShared(0)
+@@ -378,7 +380,7 @@
+     watchesBin.init(mkLit(v, true));
+     unaryWatches.init(mkLit(v, false));
+     unaryWatches.init(mkLit(v, true));
+-    assigns.push(l_Undef);
++    assigns.push(gc41l_Undef);
+     vardata.push(mkVarData(CRef_Undef, 0));
+     activity.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+     seen.push(0);
+@@ -386,6 +388,7 @@
+     polarity.push(sign);
+     forceUNSAT.push(0);
+     decision.push();
++    assump.push(false);
+     trail.capacity(v + 1);
+     setDecisionVar(v, dvar);
+     return v;
+@@ -408,15 +411,15 @@
+     if(certifiedUNSAT) {
+         for(i = j = 0, p = lit_Undef; i < ps.size(); i++) {
+             oc.push(ps[i]);
+-            if(value(ps[i]) == l_True || ps[i] == ~p || value(ps[i]) == l_False)
++            if(value(ps[i]) == gc41l_True || ps[i] == ~p || value(ps[i]) == gc41l_False)
+                 flag = 1;
+         }
+     }
+ 
+     for(i = j = 0, p = lit_Undef; i < ps.size(); i++)
+-        if(value(ps[i]) == l_True || ps[i] == ~p)
++        if(value(ps[i]) == gc41l_True || ps[i] == ~p)
+             return true;
+-        else if(value(ps[i]) != l_False && ps[i] != p)
++        else if(value(ps[i]) != gc41l_False && ps[i] != p)
+             ps[j++] = p = ps[i];
+     ps.shrink(i - j);
+ 
+@@ -434,12 +437,12 @@
+         }
+         else {
+             for(i = j = 0, p = lit_Undef; i < ps.size(); i++)
+-                fprintf(certifiedOutput, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
++                fprintf(certifiedOutput, "%i ", var(ps[i]) * (-2 * sign(ps[i]) + 1));
+             fprintf(certifiedOutput, "0\n");
+ 
+             fprintf(certifiedOutput, "d ");
+             for(i = j = 0, p = lit_Undef; i < oc.size(); i++)
+-                fprintf(certifiedOutput, "%i ", (var(oc[i]) + 1) * (-2 * sign(oc[i]) + 1));
++                fprintf(certifiedOutput, "%i ", var(oc[i]) * (-2 * sign(oc[i]) + 1));
+             fprintf(certifiedOutput, "0\n");
+         }
+     }
+@@ -459,20 +462,108 @@
+     return true;
+ }
+ 
++bool Solver::addAtMost_(vec<Lit>& ps, int k) {
++    assert(decisionLevel() == 0);
++    if (!ok) return false;
++
++    // Remove false or already-true variables; filter opposite literals
++    sort(ps);
++    Lit p; int i, j;
++    for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
++        if (value(ps[i]) == gc41l_True) {
++            // Already true: leave it out and decrement the bound
++            k--;
++        }
++        else if (value(ps[i]) == gc41l_False) {
++            // Already false: left out, but bound unchanged
++            continue;
++        }
++        else if (ps[i] == ~p) {
++            // Opposite literals: leave both out and decrement the bound by one
++            //                    (exactly one of the two will be true)
++            j--;    // remove the last literal kept
++            if (j > 0) {
++                p = ps[j-1];
++            }
++            else {
++                p = lit_Undef;
++            }
++            k--;
++        }
++        else {
++            // Keep this one.
++            ps[j++] = p = ps[i];
++        }
++    }
++    ps.shrink(i - j);
++
++    // Check if constraint is satisfied
++    if (k >= ps.size()) {
++        return true;
++    }
++
++    // Check if constraint is falsified
++    if (k < 0) {
++        return ok = false;
++    }
++
++    if (detect_clause) {
++        // Check if constraint is actually a clause
++        // and add it as a clause for efficiency
++        if (k == ps.size()-1) {
++            for (i = 0 ; i < ps.size() ; i++) {
++                ps[i] = ~ps[i];
++            }
++            return addClause_(ps);
++        }
++    }
++
++    // Propagate negation of remaining literals if already at bound
++    if (k == 0) {
++        for (i = 0; i < ps.size(); i++) {
++            if (i == 0 || ps[i] != ps[i-1]) {
++                uncheckedEnqueue(~ps[i]);
++            }
++        }
++        return ok = (propagate() == CRef_Undef);
++    }
++
++    // Allocate a Clause in ca for this AtMost
++    CRef cr = ca.alloc(ps, false, false, true);
++    ca[cr].set_atmost_nw(ps.size() - k + 1);  // n-k+1 : AtMost k of n needs n-k+1 watchers
++    clauses.push(cr);
++
++    // Set watchers
++    attachClause(cr);
++
++    return true;
++}
++
+ 
+ void Solver::attachClause(CRef cr) {
+     const Clause &c = ca[cr];
+ 
+     assert(c.size() > 1);
+-    if(c.size() == 2) {
+-        watchesBin[~c[0]].push(Watcher(cr, c[1]));
+-        watchesBin[~c[1]].push(Watcher(cr, c[0]));
+-    } else {
+-        watches[~c[0]].push(Watcher(cr, c[1]));
+-        watches[~c[1]].push(Watcher(cr, c[0]));
++    if (c.is_atmost()) {
++        if (detect_clause) { assert(c.atmost_watches() != 2); }  // should have been made a clause
++        for (int i = 0 ; i < c.atmost_watches() ; i++) {
++            Lit l = c[i];
++            // Visit this constraint when l becomes true
++            watches[l].push(Watcher(cr, lit_Undef));  // lit_Undef for no blocker on this Watcher (can't have just one blocker here)
++        }
++        stats[clauses_literals] += c.size();
++    }
++    else {
++        if(c.size() == 2) {
++            watchesBin[~c[0]].push(Watcher(cr, c[1]));
++            watchesBin[~c[1]].push(Watcher(cr, c[0]));
++        } else {
++            watches[~c[0]].push(Watcher(cr, c[1]));
++            watches[~c[1]].push(Watcher(cr, c[0]));
++        }
++        if(c.learnt()) stats[learnts_literals] += c.size();
++        else stats[clauses_literals] += c.size();
+     }
+-    if(c.learnt()) stats[learnts_literals] += c.size();
+-    else stats[clauses_literals] += c.size();
+ }
+ 
+ 
+@@ -488,6 +579,9 @@
+ void Solver::detachClause(CRef cr, bool strict) {
+     const Clause &c = ca[cr];
+ 
++    // We shouldn't need to remove an atmost.
++    assert(!c.is_atmost());
++
+     assert(c.size() > 1);
+     if(c.size() == 2) {
+         if(strict) {
+@@ -526,46 +620,81 @@
+ }
+ 
+ 
++void Solver::detachAtMost(CRef cr) {
++    const Clause& c = ca[cr];
++    for (int i = 0 ; i < c.atmost_watches() ; i++) {
++        remove(watches[c[i]], Watcher(cr, c[i]));
++    }
++
++    stats[clauses_literals] -= c.size();
++}
++
++
+ void Solver::removeClause(CRef cr, bool inPurgatory) {
+ 
+     Clause &c = ca[cr];
+ 
+-    if(certifiedUNSAT) {
+-        if(vbyte) {
+-            write_char('d');
+-            for(int i = 0; i < c.size(); i++)
+-                write_lit(2 * (var(c[i]) + 1) + sign(c[i]));
+-            write_lit(0);
+-        }
+-        else {
+-            fprintf(certifiedOutput, "d ");
+-            for(int i = 0; i < c.size(); i++)
+-                fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
+-            fprintf(certifiedOutput, "0\n");
++    if (c.is_atmost()) {
++        detachAtMost(cr);
++        // Don't leave pointers to free'd memory!
++        for (int i = 0 ; i < c.atmost_watches() ; i++) {
++            // duplicating locked(c) but for the AtMost
++            // TODO: Clean this up (duplication).
++            if (value(c[i]) == gc41l_False && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c) {
++                vardata[var(c[i])].reason = CRef_Undef;
++            }
+         }
+     }
++    else {
++        if(certifiedUNSAT) {
++            if(vbyte) {
++                write_char('d');
++                for(int i = 0; i < c.size(); i++)
++                    write_lit(2 * (var(c[i]) + 1) + sign(c[i]));
++                write_lit(0);
++            }
++            else {
++                fprintf(certifiedOutput, "d ");
++                for(int i = 0; i < c.size(); i++)
++                    fprintf(certifiedOutput, "%i ", var(c[i]) * (-2 * sign(c[i]) + 1));
++                fprintf(certifiedOutput, "0\n");
++            }
++        }
+ 
+-    if(inPurgatory)
+-        detachClausePurgatory(cr);
+-    else
+-        detachClause(cr);
+-    // Don't leave pointers to free'd memory!
+-    if(locked(c)) vardata[var(c[0])].reason = CRef_Undef;
+-    c.mark(1);
+-    ca.free(cr);
++        if(inPurgatory)
++            detachClausePurgatory(cr);
++        else
++            detachClause(cr);
++        // Don't leave pointers to free'd memory!
++        if(locked(c)) vardata[var(c[0])].reason = CRef_Undef;
++        c.mark(1);
++        ca.free(cr);
++    }
+ }
+ 
+ 
+ bool Solver::satisfied(const Clause &c) const {
++    if (c.is_atmost()) {
++        int numFalse = 0;
++        // Scan through all literals
++        for (int i = 0 ; i < c.size() ; i++) {
++            if (value(c[i]) == gc41l_False) {
++                numFalse++;
++                if (numFalse >= c.atmost_watches() - 1) return true;
++            }
++        }
++    }
++    else {
+ #ifdef INCREMENTAL
+-    if(incremental)
+-        return (value(c[0]) == l_True) || (value(c[1]) == l_True);
++        if(incremental)
++            return (value(c[0]) == gc41l_True) || (value(c[1]) == gc41l_True);
+ #endif
+ 
+-    // Default mode
+-    for(int i = 0; i < c.size(); i++)
+-        if(value(c[i]) == l_True)
+-            return true;
++        // Default mode
++        for(int i = 0; i < c.size(); i++)
++            if(value(c[i]) == gc41l_True)
++                return true;
++    }
+     return false;
+ }
+ 
+@@ -628,7 +757,7 @@
+         int nb = 0;
+         for(int k = 0; k < wbin.size(); k++) {
+             Lit imp = wbin[k].blocker;
+-            if(permDiff[var(imp)] == MYFLAG && value(imp) == l_True) {
++            if(permDiff[var(imp)] == MYFLAG && value(imp) == gc41l_True) {
+                 nb++;
+                 permDiff[var(imp)] = MYFLAG - 1;
+             }
+@@ -659,7 +788,7 @@
+     if(decisionLevel() > level) {
+         for(int c = trail.size() - 1; c >= trail_lim[level]; c--) {
+             Var x = var(trail[c]);
+-            assigns[x] = l_Undef;
++            assigns[x] = gc41l_Undef;
+             if(phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last())) {
+                 polarity[x] = sign(trail[c]);
+             }
+@@ -681,12 +810,12 @@
+     // Random decision:
+     if(((randomizeFirstDescent && conflicts == 0) || drand(random_seed) < random_var_freq) && !order_heap.empty()) {
+         next = order_heap[irand(random_seed, order_heap.size())];
+-        if(value(next) == l_Undef && decision[next])
++        if(value(next) == gc41l_Undef && decision[next])
+             stats[rnd_decisions]++;
+     }
+ 
+     // Activity based decision:
+-    while(next == var_Undef || value(next) != l_Undef || !decision[next])
++    while(next == var_Undef || value(next) != gc41l_Undef || !decision[next])
+         if(order_heap.empty()) {
+             next = var_Undef;
+             break;
+@@ -718,19 +847,19 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Analyze conflict and produce a reason clause.
+-|  
++|
+ |    Pre-conditions:
+ |      * 'out_learnt' is assumed to be cleared.
+ |      * Current decision level must be greater than root level.
+-|  
++|
+ |    Post-conditions:
+ |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+-|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the 
++|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ |        rest of literals. There may be others from the same level though.
+-|  
++|
+ |________________________________________________________________________________________________@*/
+ void Solver::analyze(CRef confl, vec <Lit> &out_learnt, vec <Lit> &selectors, int &out_btlevel, unsigned int &lbd, unsigned int &szWithoutSelectors) {
+     int pathC = 0;
+@@ -744,74 +873,94 @@
+     do {
+         assert(confl != CRef_Undef); // (otherwise should be UIP)
+         Clause &c = ca[confl];
+-        // Special case for binary clauses
+-        // The first one has to be SAT
+-        if(p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
+-
+-            assert(value(c[1]) == l_True);
+-            Lit tmp = c[0];
+-            c[0] = c[1], c[1] = tmp;
+-        }
+-
+-        if(c.learnt()) {
+-            parallelImportClauseDuringConflictAnalysis(c, confl);
+-            claBumpActivity(c);
+-        } else { // original clause
+-            if(!c.getSeen()) {
+-                stats[originalClausesSeen]++;
+-                c.setSeen(true);
+-            }
+-        }
+ 
+-        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
+-        if(c.learnt() && c.lbd() > 2) {
+-            unsigned int nblevels = computeLBD(c);
+-            if(nblevels + 1 < c.lbd()) { // improve the LBD
+-                if(c.lbd() <= lbLBDFrozenClause) {
+-                    // seems to be interesting : keep it for the next round
+-                    c.setCanBeDel(false);
+-                }
+-                if(chanseokStrategy && nblevels <= coLBDBound) {
+-                    c.nolearnt();
+-                    learnts.remove(confl);
+-                    permanentLearnts.push(confl);
+-                    stats[nbPermanentLearnts]++;
++        if(c.is_atmost()) {
++            // Get the reason from the atmost
++            for (int j = 0; j < c.size(); j++){
++                if (value(c[j]) != gc41l_True) continue;
+ 
+-                } else {
+-                    c.setLBD(nblevels); // Update it
++                Lit q = ~c[j];
++
++                if (!seen[var(q)] && level(var(q)) > 0){
++                    varBumpActivity(var(q));
++                    seen[var(q)] = 1;
++                    if (level(var(q)) >= decisionLevel())
++                        pathC++;
++                    else
++                        out_learnt.push(q);
+                 }
+             }
+         }
++        else {
++            // Special case for binary clauses
++            // The first one has to be SAT
++            if(p != lit_Undef && c.size() == 2 && value(c[0]) == gc41l_False) {
++
++                assert(value(c[1]) == gc41l_True);
++                Lit tmp = c[0];
++                c[0] = c[1], c[1] = tmp;
++            }
++
++            if(c.learnt()) {
++                parallelImportClauseDuringConflictAnalysis(c, confl);
++                claBumpActivity(c);
++            } else { // original clause
++                if(!c.getSeen()) {
++                    stats[originalClausesSeen]++;
++                    c.setSeen(true);
++                }
++            }
+ 
++            // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
++            if(c.learnt() && c.lbd() > 2) {
++                unsigned int nblevels = computeLBD(c);
++                if(nblevels + 1 < c.lbd()) { // improve the LBD
++                    if(c.lbd() <= lbLBDFrozenClause) {
++                        // seems to be interesting : keep it for the next round
++                        c.setCanBeDel(false);
++                    }
++                    if(chanseokStrategy && nblevels <= coLBDBound) {
++                        c.nolearnt();
++                        learnts.remove(confl);
++                        permanentLearnts.push(confl);
++                        stats[nbPermanentLearnts]++;
+ 
+-        for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+-            Lit q = c[j];
++                    } else {
++                        c.setLBD(nblevels); // Update it
++                    }
++                }
++            }
+ 
+-            if(!seen[var(q)]) {
+-                if(level(var(q)) == 0) {
+-                } else { // Here, the old case
+-                    if(!isSelector(var(q)))
+-                        varBumpActivity(var(q));
+ 
+-                    // This variable was responsible for a conflict,
+-                    // consider it as a UNSAT assignation for this literal
+-                    bumpForceUNSAT(~q); // Negation because q is false here
++            for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
++                Lit q = c[j];
+ 
+-                    seen[var(q)] = 1;
+-                    if(level(var(q)) >= decisionLevel()) {
+-                        pathC++;
+-                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+-                        if(!isSelector(var(q)) && (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
+-                            lastDecisionLevel.push(q);
+-                    } else {
+-                        if(isSelector(var(q))) {
+-                            assert(value(q) == l_False);
+-                            selectors.push(q);
+-                        } else
+-                            out_learnt.push(q);
++                if(!seen[var(q)]) {
++                    if(level(var(q)) == 0) {
++                    } else { // Here, the old case
++                        if(!isSelector(var(q)))
++                            varBumpActivity(var(q));
++
++                        // This variable was responsible for a conflict,
++                        // consider it as a UNSAT assignation for this literal
++                        bumpForceUNSAT(~q); // Negation because q is false here
++
++                        seen[var(q)] = 1;
++                        if(level(var(q)) >= decisionLevel()) {
++                            pathC++;
++                            // UPDATEVARACTIVITY trick (see competition'09 companion paper)
++                            if(!isSelector(var(q)) && (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
++                                lastDecisionLevel.push(q);
++                        } else {
++                            if(isSelector(var(q))) {
++                                assert(value(q) == gc41l_False);
++                                selectors.push(q);
++                            } else
++                                out_learnt.push(q);
++                        }
+                     }
+-                }
+-            } //else stats[sumResSeen]++;
++                } //else stats[sumResSeen]++;
++            }
+         }
+ 
+         // Select next clause to look at:
+@@ -931,22 +1080,21 @@
+         assert(reason(var(analyze_stack.last())) != CRef_Undef);
+         Clause &c = ca[reason(var(analyze_stack.last()))];
+         analyze_stack.pop(); //
+-        if(c.size() == 2 && value(c[0]) == l_False) {
+-            assert(value(c[1]) == l_True);
+-            Lit tmp = c[0];
+-            c[0] = c[1], c[1] = tmp;
+-        }
+ 
+-        for(int i = 1; i < c.size(); i++) {
+-            Lit p = c[i];
+-            if(!seen[var(p)]) {
+-                if(level(var(p)) > 0) {
+-                    if(reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0) {
++        // TODO: Reduce code duplication
++        if (c.is_atmost()) {
++            // Get the reason from the atmost
++            for (int i = 0; i < c.size(); i++){
++                if (value(c[i]) != gc41l_True) continue;
++
++                Lit p = ~c[i];
++                if (!seen[var(p)] && level(var(p)) > 0){
++                    if (reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0){
+                         seen[var(p)] = 1;
+                         analyze_stack.push(p);
+                         analyze_toclear.push(p);
+-                    } else {
+-                        for(int j = top; j < analyze_toclear.size(); j++)
++                    }else{
++                        for (int j = top; j < analyze_toclear.size(); j++)
+                             seen[var(analyze_toclear[j])] = 0;
+                         analyze_toclear.shrink(analyze_toclear.size() - top);
+                         return false;
+@@ -954,6 +1102,31 @@
+                 }
+             }
+         }
++        else {
++            if(c.size() == 2 && value(c[0]) == gc41l_False) {
++                assert(value(c[1]) == gc41l_True);
++                Lit tmp = c[0];
++                c[0] = c[1], c[1] = tmp;
++            }
++
++            for(int i = 1; i < c.size(); i++) {
++                Lit p = c[i];
++                if(!seen[var(p)]) {
++                    if(level(var(p)) > 0) {
++                        if(reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0) {
++                            seen[var(p)] = 1;
++                            analyze_stack.push(p);
++                            analyze_toclear.push(p);
++                        } else {
++                            for(int j = top; j < analyze_toclear.size(); j++)
++                                seen[var(analyze_toclear[j])] = 0;
++                            analyze_toclear.shrink(analyze_toclear.size() - top);
++                            return false;
++                        }
++                    }
++                }
++            }
++        }
+     }
+ 
+     return true;
+@@ -963,7 +1136,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  analyzeFinal : (p : Lit)  ->  [void]
+-|  
++|
+ |  Description:
+ |    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+@@ -986,12 +1159,19 @@
+                 out_conflict.push(~trail[i]);
+             } else {
+                 Clause &c = ca[reason(x)];
+-                //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
+-                // Bug in case of assumptions due to special data structures for Binary.
+-                // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
+-                for(int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
+-                    if(level(var(c[j])) > 0)
+-                        seen[var(c[j])] = 1;
++                if (!c.is_atmost()) {
++                    //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
++                    // Bug in case of assumptions due to special data structures for Binary.
++                    // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
++                    for(int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
++                        if(level(var(c[j])) > 0)
++                            seen[var(c[j])] = 1;
++                }
++                else {
++                    for (int j = 0; j < c.size(); j++)
++                        if (value(c[j]) == gc41l_True && level(var(c[j])) > 0)
++                            seen[var(c[j])] = 1;
++                }
+             }
+ 
+             seen[x] = 0;
+@@ -1003,27 +1183,154 @@
+ 
+ 
+ void Solver::uncheckedEnqueue(Lit p, CRef from) {
+-    assert(value(p) == l_Undef);
++    assert(value(p) == gc41l_Undef);
+     assigns[var(p)] = lbool(!sign(p));
+     vardata[var(p)] = mkVarData(from, decisionLevel());
+     trail.push_(p);
+ }
+ 
+ 
++Lit Solver::findNewWatch(CRef cr, Lit p) {
++    Clause& c = ca[cr];
++    assert(c.is_atmost());
++
++    Lit newWatch = lit_Error;
++    int numFalse = 0;
++    int numTrue = 0;
++    int maxTrue = c.size()-c.atmost_watches()+1;  // n - (n-k+1) + 1 = k
++
++    // Scan through all watchers
++    for (int q = 0 ; q < c.atmost_watches() ; q++) {
++        lbool val = value(c[q]);
++
++        if (val == gc41l_Undef) continue;
++        else if (val == gc41l_False) {
++            numFalse++;
++            if (numFalse >= c.atmost_watches()-1) {
++                // This constraint is satisfied -- no chance of propagation or conflict
++                if (newWatch == lit_Undef || newWatch == lit_Error) {
++                    // If we haven't already swapped a new watch in, just return the old one to be kept
++                    return p;
++                }
++                else {
++                    return newWatch;
++                }
++            }
++            continue;
++        }
++
++        // Lit must be true (other possibilities continue loop, above)
++        assert(val == gc41l_True);
++        numTrue++;
++        if (numTrue > maxTrue) {
++            return lit_Error;
++        }
++
++        if (newWatch != lit_Undef && c[q] == p) {
++            // Haven't hit our watched lit before now, and this *is* our watched lit
++            assert(newWatch == lit_Error);
++
++            // Need to find new watch
++            for (int next = c.atmost_watches() ; next < c.size() ; next++) {
++                if (value(c[next]) != gc41l_True) {
++                    // Swap them!
++                    // Record this as the new watch.
++                    newWatch = c[next];
++                    c[next] = c[q];
++                    c[q] = newWatch;
++
++                    return newWatch;
++                }
++            }
++
++            newWatch = lit_Undef;
++            // If no suitable watch remains, newWatch will be lit_Undef.
++            // In that case: Conflict or propagate remaining literals?
++            // Remaining scan will find out.  newWatch == lit_Undef will trigger
++            // conflict if another l_True is seen in ps, else we'll end up returning
++            // lit_Undef and triggering propagation.
++        }
++    }
++
++    assert(newWatch == lit_Undef);
++
++    if (numTrue > 1) {
++        // No suitable watch plus one other True in watch-space = conflict!
++        return lit_Error;
++    }
++    else {
++        // Else no suitable watch, but no conflict = propagate.
++        return lit_Undef;
++    }
++}
++
++
+ void Solver::bumpForceUNSAT(Lit q) {
+     forceUNSAT[var(q)] = sign(q) ? -1 : +1;
+     return;
+ }
+ 
++//=================================================================================================
++// Propagate and check:
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == gc41l_False)
++            st = false;
++        else if (value(p) != gc41l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        // here we may choose a wrong literal
++        // in Glucose if the clause is binary!
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
++    return st && confl == CRef_Undef;
++}
++
+ 
+ /*_________________________________________________________________________________________________
+ |
+ |  propagate : [void]  ->  [Clause*]
+-|  
++|
+ |  Description:
+ |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ |    otherwise CRef_Undef.
+-|  
++|
+ |    Post-conditions:
+ |      * the propagation queue is empty, even if there was a conflict.
+ |________________________________________________________________________________________________@*/
+@@ -1046,11 +1353,11 @@
+ 
+             Lit imp = wbin[k].blocker;
+ 
+-            if(value(imp) == l_False) {
++            if(value(imp) == gc41l_False) {
+                 return wbin[k].cref;
+             }
+ 
+-            if(value(imp) == l_Undef) {
++            if(value(imp) == gc41l_Undef) {
+                 uncheckedEnqueue(imp, wbin[k].cref);
+             }
+         }
+@@ -1059,7 +1366,7 @@
+         for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
+             // Try to avoid inspecting the clause:
+             Lit blocker = i->blocker;
+-            if(value(blocker) == l_True) {
++            if(blocker != lit_Undef && value(blocker) == gc41l_True) {
+                 *j++ = *i++;
+                 continue;
+             }
+@@ -1067,72 +1374,114 @@
+             // Make sure the false literal is data[1]:
+             CRef cr = i->cref;
+             Clause &c = ca[cr];
+-            assert(!c.getOneWatched());
+-            Lit false_lit = ~p;
+-            if(c[0] == false_lit)
+-                c[0] = c[1], c[1] = false_lit;
+-            assert(c[1] == false_lit);
+-            i++;
+-
+-            // If 0th watch is true, then clause is already satisfied.
+-            Lit first = c[0];
+-            Watcher w = Watcher(cr, first);
+-            if(first != blocker && value(first) == l_True) {
+ 
+-                *j++ = w;
+-                continue;
++            if (c.is_atmost()) {
++                // p is our new fact, and so we came here because
++                // this AtMost includes p.
++                // The first n-k+1 are being watched, and we need
++                // to look for another to watch now.
++                Lit newWatch = findNewWatch(cr, p);
++
++                if (newWatch == lit_Undef) {
++                    // No new watch found, so we have reached the bound.
++                    // Enque the negation of each remaining literal
++                    for (int k = 0 ; k < c.atmost_watches() ; k++) {
++                        if (c[k] != p && value(c[k]) != gc41l_False && (k==0 || c[k] != c[k-1])) {
++                            assert(value(c[k]) == gc41l_Undef);
++                            uncheckedEnqueue(~c[k],cr);
++                        }
++                    }
++
++                    // keep this watch
++                    *j++ = *i++;
++                }
++                else if (newWatch == lit_Error) {
++                    // we have a conflict
++                    confl = cr;
++                    qhead = trail.size();
++                    // Copy all the remaining watches:
++                    while (i < end)
++                        *j++ = *i++;
++                }
++                else if (newWatch == p) {
++                    // Constraint is satisfied.  Keep this watch.
++                    *j++ = *i++;
++                }
++                else {
++                    // drop this watch
++                    i++;
++                    // add new watch
++                    Watcher w = Watcher(cr, lit_Undef);
++                    watches[newWatch].push(w);
++                }
+             }
++            else {
++                assert(!c.getOneWatched());
++                Lit false_lit = ~p;
++                if(c[0] == false_lit)
++                    c[0] = c[1], c[1] = false_lit;
++                assert(c[1] == false_lit);
++                i++;
++
++                // If 0th watch is true, then clause is already satisfied.
++                Lit first = c[0];
++                Watcher w = Watcher(cr, first);
++                if(first != blocker && value(first) == gc41l_True) {
++
++                    *j++ = w;
++                    continue;
++                }
+ #ifdef INCREMENTAL
+-            if(incremental) { // ----------------- INCREMENTAL MODE
+-              int choosenPos = -1;
+-              for (int k = 2; k < c.size(); k++) {
+-
+-            if (value(c[k]) != l_False){
+-              if(decisionLevel()>assumptions.size()) {
+-                choosenPos = k;
+-                break;
+-              } else {
+-                choosenPos = k;
+-
+-                if(value(c[k])==l_True || !isSelector(var(c[k]))) {
+-                  break;
+-                }
+-              }
+-
+-            }
+-              }
+-              if(choosenPos!=-1) {
+-            c[1] = c[choosenPos]; c[choosenPos] = false_lit;
+-            watches[~c[1]].push(w);
+-            goto NextClause; }
+-            } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
++                if(incremental) { // ----------------- INCREMENTAL MODE
++                  int choosenPos = -1;
++                  for (int k = 2; k < c.size(); k++) {
++
++                if (value(c[k]) != gc41l_False){
++                  if(decisionLevel()>assumptions.size()) {
++                    choosenPos = k;
++                    break;
++                  } else {
++                    choosenPos = k;
++
++                    if(value(c[k])==gc41l_True || !isSelector(var(c[k]))) {
++                      break;
++                    }
++                  }
++
++                }
++                  }
++                  if(choosenPos!=-1) {
++                c[1] = c[choosenPos]; c[choosenPos] = false_lit;
++                watches[~c[1]].push(w);
++                goto NextClause; }
++                } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
+ #endif
+-            for(int k = 2; k < c.size(); k++) {
++                for(int k = 2; k < c.size(); k++) {
+ 
+-                if(value(c[k]) != l_False) {
+-                    c[1] = c[k];
+-                    c[k] = false_lit;
+-                    watches[~c[1]].push(w);
+-                    goto NextClause;
++                    if(value(c[k]) != gc41l_False) {
++                        c[1] = c[k];
++                        c[k] = false_lit;
++                        watches[~c[1]].push(w);
++                        goto NextClause;
++                    }
+                 }
+-            }
+ #ifdef INCREMENTAL
+-            }
++                }
+ #endif
+-            // Did not find watch -- clause is unit under assignment:
+-            *j++ = w;
+-            if(value(first) == l_False) {
+-                confl = cr;
+-                qhead = trail.size();
+-                // Copy the remaining watches:
+-                while(i < end)
+-                    *j++ = *i++;
+-            } else {
+-                uncheckedEnqueue(first, cr);
+-
++                // Did not find watch -- clause is unit under assignment:
++                *j++ = w;
++                if(value(first) == gc41l_False) {
++                    confl = cr;
++                    qhead = trail.size();
++                    // Copy the remaining watches:
++                    while(i < end)
++                        *j++ = *i++;
++                } else {
++                    uncheckedEnqueue(first, cr);
++                }
++                NextClause:;
+ 
+             }
+-            NextClause:;
+         }
+         ws.shrink(i - j);
+ 
+@@ -1155,11 +1504,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  propagateUnaryWatches : [Lit]  ->  [Clause*]
+-|  
++|
+ |  Description:
+-|    Propagates unary watches of Lit p, return a conflict 
++|    Propagates unary watches of Lit p, return a conflict
+ |    otherwise CRef_Undef
+-|  
++|
+ |________________________________________________________________________________________________@*/
+ 
+ CRef Solver::propagateUnaryWatches(Lit p) {
+@@ -1169,7 +1518,7 @@
+     for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
+         // Try to avoid inspecting the clause:
+         Lit blocker = i->blocker;
+-        if(value(blocker) == l_True) {
++        if(value(blocker) == gc41l_True) {
+             *j++ = *i++;
+             continue;
+         }
+@@ -1186,7 +1535,7 @@
+         i++;
+         Watcher w = Watcher(cr, c[0]);
+         for(int k = 1; k < c.size(); k++) {
+-            if(value(c[k]) != l_False) {
++            if(value(c[k]) != gc41l_False) {
+                 c[0] = c[k];
+                 c[k] = false_lit;
+                 unaryWatches[~c[0]].push(w);
+@@ -1211,7 +1560,7 @@
+             int maxlevel = -1;
+             int index = -1;
+             for(int k = 1; k < c.size(); k++) {
+-                assert(value(c[k]) == l_False);
++                assert(value(c[k]) == gc41l_False);
+                 assert(level(var(c[k])) <= level(var(c[0])));
+                 if(level(var(c[k])) > maxlevel) {
+                     index = k;
+@@ -1240,7 +1589,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  reduceDB : ()  ->  [void]
+-|  
++|
+ |  Description:
+ |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+@@ -1269,6 +1618,7 @@
+ 
+     for(i = j = 0; i < learnts.size(); i++) {
+         Clause &c = ca[learnts[i]];
++        assert(!c.is_atmost());
+         if(c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
+             removeClause(learnts[i]);
+             stats[nbRemovedClauses]++;
+@@ -1305,7 +1655,7 @@
+ void Solver::rebuildOrderHeap() {
+     vec <Var> vs;
+     for(Var v = 0; v < nVars(); v++)
+-        if(decision[v] && value(v) == l_Undef)
++        if(decision[v] && value(v) == gc41l_Undef)
+             vs.push(v);
+     order_heap.build(vs);
+ 
+@@ -1315,7 +1665,7 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  simplify : [void]  ->  [bool]
+-|  
++|
+ |  Description:
+ |    Simplify the clause database according to the current top-level assigment. Currently, the only
+ |    thing done here is the removal of satisfied clauses, but more things can be put here.
+@@ -1354,7 +1704,7 @@
+ void Solver::adaptSolver() {
+     bool adjusted = false;
+     bool reinit = false;
+-    printf("c\nc Try to adapt solver strategies\nc \n");
++    // printf("c\nc Try to adapt solver strategies\nc \n");
+     /*  printf("c Adjusting solver for the SAT Race 2015 (alpha feature)\n");
+     printf("c key successive Conflicts       : %" PRIu64"\n",stats[noDecisionConflict]);
+     printf("c nb unary clauses learnt        : %" PRIu64"\n",stats[nbUn]);
+@@ -1365,7 +1715,7 @@
+         coLBDBound = 4;
+         glureduce = true;
+         adjusted = true;
+-        printf("c Adjusting for low decision levels.\n");
++        // printf("c Adjusting for low decision levels.\n");
+         reinit = true;
+         firstReduceDB = 2000;
+         nbclausesbeforereduce = firstReduceDB;
+@@ -1379,10 +1729,10 @@
+         var_decay = 0.999;
+         max_var_decay = 0.999;
+         adjusted = true;
+-        printf("c Adjusting for low successive conflicts.\n");
++        // printf("c Adjusting for low successive conflicts.\n");
+     }
+     if(stats[noDecisionConflict] > 54400) {
+-        printf("c Adjusting for high successive conflicts.\n");
++        // printf("c Adjusting for high successive conflicts.\n");
+         chanseokStrategy = true;
+         glureduce = true;
+         coLBDBound = 3;
+@@ -1396,12 +1746,12 @@
+         var_decay = 0.91;
+         max_var_decay = 0.91;
+         adjusted = true;
+-        printf("c Adjusting for a very large number of true glue clauses found.\n");
++        // printf("c Adjusting for a very large number of true glue clauses found.\n");
+     }
+     if(!adjusted) {
+-        printf("c Nothing extreme in this problem, continue with glucose default strategies.\n");
++        // printf("c Nothing extreme in this problem, continue with glucose default strategies.\n");
+     }
+-    printf("c\n");
++    // printf("c\n");
+     if(adjusted) { // Let's reinitialize the glucose restart strategy counters
+         lbdQueue.fastclear();
+         sumLBD = 0;
+@@ -1422,7 +1772,7 @@
+             }
+         }
+         learnts.shrink(i - j);
+-        printf("c Activating Chanseok Strategy: moved %d clauses to the permanent set.\n", moved);
++        // printf("c Activating Chanseok Strategy: moved %d clauses to the permanent set.\n", moved);
+     }
+ 
+     if(reinit) {
+@@ -1435,13 +1785,13 @@
+ /*
+ 	order_heap.clear();
+ 	for(int i=0;i<nVars();i++) {
+-	    polarity[i] = true; 
++	    polarity[i] = true;
+ 	    activity[i]=0.0;
+ 	    if (decision[i]) order_heap.insert(i);
+ 	}
+ 	printf("c reinitialization of all variables activity/phase/learnt clauses.\n");
+ */
+-        printf("c Removing of non permanent clauses.\n");
++        // printf("c Removing of non permanent clauses.\n");
+     }
+ 
+ }
+@@ -1450,15 +1800,15 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
+-|  
++|
+ |  Description:
+-|    Search for a model the specified number of conflicts. 
++|    Search for a model the specified number of conflicts.
+ |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
+-|  
++|
+ |  Output:
+-|    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+-|    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+-|    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
++|    'gc41l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
++|    all variables are decision variables, this means that the clause set is satisfiable. 'gc41l_False'
++|    if the clause set is unsatisfiable. 'gc41l_Undef' if the bound on number of conflicts is reached.
+ |________________________________________________________________________________________________@*/
+ lbool Solver::search(int nof_conflicts) {
+     assert(ok);
+@@ -1475,7 +1825,7 @@
+             parallelImportUnaryClauses();
+ 
+             if(parallelImportClauses())
+-                return l_False;
++                return gc41l_False;
+ 
+         }
+         CRef confl = propagate();
+@@ -1483,7 +1833,7 @@
+         if(confl != CRef_Undef) {
+             newDescent = false;
+             if(parallelJobIsFinished())
+-                return l_Undef;
++                return gc41l_Undef;
+ 
+             if(!aDecisionWasMade)
+                 stats[noDecisionConflict]++;
+@@ -1505,14 +1855,14 @@
+                        (int) stats[nbReduceDB], nLearnts(), (int) stats[nbDL2], (int) stats[nbRemovedClauses], progressEstimate() * 100);
+             }
+             if(decisionLevel() == 0) {
+-                return l_False;
++                return gc41l_False;
+ 
+             }
+             if(adaptStrategies && conflicts == 100000) {
+                 cancelUntil(0);
+                 adaptSolver();
+                 adaptStrategies = false;
+-                return l_Undef;
++                return gc41l_Undef;
+             }
+ 
+             trailQueue.push(trail.size());
+@@ -1546,7 +1896,7 @@
+                 }
+                 else {
+                     for(int i = 0; i < learnt_clause.size(); i++)
+-                        fprintf(certifiedOutput, "%i ", (var(learnt_clause[i]) + 1) *
++                        fprintf(certifiedOutput, "%i ", var(learnt_clause[i]) *
+                                                         (-2 * sign(learnt_clause[i]) + 1));
+                     fprintf(certifiedOutput, "0\n");
+                 }
+@@ -1603,13 +1953,13 @@
+                 }
+ 
+                 cancelUntil(bt);
+-                return l_Undef;
++                return gc41l_Undef;
+             }
+ 
+ 
+             // Simplify the set of problem clauses:
+             if(decisionLevel() == 0 && !simplify()) {
+-                return l_False;
++                return gc41l_False;
+             }
+             // Perform clause database reduction !
+             if((chanseokStrategy && !glureduce && learnts.size() > firstReduceDB) ||
+@@ -1628,12 +1978,12 @@
+             while(decisionLevel() < assumptions.size()) {
+                 // Perform user provided assumption:
+                 Lit p = assumptions[decisionLevel()];
+-                if(value(p) == l_True) {
++                if(value(p) == gc41l_True) {
+                     // Dummy decision level:
+                     newDecisionLevel();
+-                } else if(value(p) == l_False) {
++                } else if(value(p) == gc41l_False) {
+                     analyzeFinal(~p, conflict);
+-                    return l_False;
++                    return gc41l_False;
+                 } else {
+                     next = p;
+                     break;
+@@ -1645,9 +1995,9 @@
+                 decisions++;
+                 next = pickBranchLit();
+                 if(next == lit_Undef) {
+-                    printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
++                    // printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
+                     // Model found:
+-                    return l_True;
++                    return gc41l_True;
+                 }
+             }
+ 
+@@ -1742,13 +2092,15 @@
+ 
+     model.clear();
+     conflict.clear();
+-    if(!ok) return l_False;
++    if(!ok) return gc41l_False;
+     double curTime = cpuTime();
+ 
+     solves++;
+ 
++    for (int i = 0; i < assumptions.size(); i++)
++      assump[var(assumptions[i])] = true;
+ 
+-    lbool status = l_Undef;
++    lbool status = gc41l_Undef;
+     if(!incremental && verbosity >= 1) {
+         printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
+         printf("c | Constants are supposed to work well together :-)                                                      |\n");
+@@ -1786,7 +2138,7 @@
+ 
+     // Search:
+     int curr_restarts = 0;
+-    while(status == l_Undef) {
++    while(status == gc41l_Undef) {
+         status = search(
+                 luby_restart ? luby(restart_inc, curr_restarts) * luby_restart_factor : 0); // the parameter is useless in glucose, kept to allow modifications
+ 
+@@ -1798,7 +2150,7 @@
+         printf("c =========================================================================================================\n");
+ 
+     if(certifiedUNSAT) { // Want certified output
+-        if(status == l_False) {
++        if(status == gc41l_False) {
+             if(vbyte) {
+                 write_char('a');
+                 write_lit(0);
+@@ -1807,15 +2159,15 @@
+                 fprintf(certifiedOutput, "0\n");
+             }
+         }
+-        fclose(certifiedOutput);
++        // fclose(certifiedOutput);
+     }
+ 
+ 
+-    if(status == l_True) {
++    if(status == gc41l_True) {
+         // Extend & copy model:
+         model.growTo(nVars());
+         for(int i = 0; i < nVars(); i++) model[i] = value(i);
+-    } else if(status == l_False && conflict.size() == 0)
++    } else if(status == gc41l_False && conflict.size() == 0)
+         ok = false;
+ 
+ 
+@@ -1823,11 +2175,11 @@
+ 
+ 
+     double finalTime = cpuTime();
+-    if(status == l_True) {
++    if(status == gc41l_True) {
+         nbSatCalls++;
+         totalTime4Sat += (finalTime - curTime);
+     }
+-    if(status == l_False) {
++    if(status == gc41l_False) {
+         nbUnsatCalls++;
+         totalTime4Unsat += (finalTime - curTime);
+     }
+@@ -1843,7 +2195,7 @@
+ 
+ //=================================================================================================
+ // Writing CNF to DIMACS:
+-// 
++//
+ // FIXME: this needs to be rewritten completely.
+ 
+ static Var mapVar(Var x, vec <Var> &map, Var &max) {
+@@ -1859,7 +2211,7 @@
+     if(satisfied(c)) return;
+ 
+     for(int i = 0; i < c.size(); i++)
+-        if(value(c[i]) != l_False)
++        if(value(c[i]) != gc41l_False)
+             fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
+     fprintf(f, "0\n");
+ }
+@@ -1895,7 +2247,7 @@
+         if(!satisfied(ca[clauses[i]])) {
+             Clause &c = ca[clauses[i]];
+             for(int j = 0; j < c.size(); j++)
+-                if(value(c[j]) != l_False)
++                if(value(c[j]) != gc41l_False)
+                     mapVar(var(c[j]), map, max);
+         }
+ 
+@@ -1905,7 +2257,7 @@
+     fprintf(f, "p cnf %d %d\n", max, cnt);
+ 
+     for(int i = 0; i < assumptions.size(); i++) {
+-        assert(value(assumptions[i]) != l_False);
++        assert(value(assumptions[i]) != gc41l_False);
+         fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
+     }
+ 
+diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
+--- solvers/gluecard41/core/Solver.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/core/Solver.h	2021-03-29 16:49:28.000000000 +1100
+@@ -9,19 +9,19 @@
+                                 Labri - Univ. Bordeaux, France
+ 
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
++Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
+ 
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
++sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+-be used in any competitive event (sat competitions/evaluations) without the express permission of 
++be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
+ 
+@@ -47,26 +47,27 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  **************************************************************************************************/
+ 
+-#ifndef Glucose_Solver_h
+-#define Glucose_Solver_h
++#ifndef Gluecard41_Solver_h
++#define Gluecard41_Solver_h
++
++#include "gluecard41/mtl/Heap.h"
++#include "gluecard41/mtl/Alg.h"
++#include "gluecard41/utils/Options.h"
++#include "gluecard41/core/SolverTypes.h"
++#include "gluecard41/core/BoundedQueue.h"
++#include "gluecard41/core/Constants.h"
++#include "gluecard41/mtl/Clone.h"
++#include "gluecard41/core/SolverStats.h"
++
++#include <vector>
++
++namespace Gluecard41 {
++// Core stats
+ 
+-#include "mtl/Heap.h"
+-#include "mtl/Alg.h"
+-#include "utils/Options.h"
+-#include "core/SolverTypes.h"
+-#include "core/BoundedQueue.h"
+-#include "core/Constants.h"
+-#include "mtl/Clone.h"
+-#include "core/SolverStats.h"
+-
+-
+-namespace Glucose {
+-// Core stats 
+-    
+ enum CoreStats {
+   sumResSeen,
+   sumRes,
+-  sumTrail,  
++  sumTrail,
+   nbPromoted,
+   originalClausesSeen,
+   sumDecisionLevels,
+@@ -104,26 +105,31 @@
+     //
+     Solver();
+     Solver(const  Solver &s);
+-    
++
+     virtual ~Solver();
+-    
++
+     /**
+      * Clone function
+      */
+     virtual Clone* clone() const {
+         return  new Solver(*this);
+-    }   
++    }
+ 
+     // Problem specification:
+     //
+     virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
++    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
+-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
+-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
++    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
++    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
++    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+     virtual bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+                                                                 // change the passed vector 'ps'.
++
++    bool    addAtMost (const vec<Lit>& ps, int k);              // Add an AtMost cardinality constraint: SUM(ps) <= k
++    bool    addAtMost_(      vec<Lit>& ps, int k);              // Add an AtMost cardinality constraint to the solver without making superflous internal copy.
++                                                                // Will change the passed vector 'ps'.
++
+     // Solving:
+     //
+     bool    simplify     ();                        // Removes already satisfied clauses.
+@@ -134,6 +140,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
+ 
+        // Convenience versions of 'toDimacs()':
+     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+@@ -143,14 +150,14 @@
+     void    toDimacs     (const char* file, Lit p);
+     void    toDimacs     (const char* file, Lit p, Lit q);
+     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+- 
++
+     // Display clauses and literals
+     void printLit(Lit l);
+     void printClause(CRef c);
+     void printInitialClause(CRef c);
+-    
++
+     // Variable mode:
+-    // 
++    //
+     void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
+ 
+@@ -198,7 +205,7 @@
+     int       verbosity;
+     int       verbEveryConflicts;
+     int       showModel;
+-    
++
+     // Constants For restarts
+     double    K;
+     double    R;
+@@ -228,13 +235,15 @@
+     bool      rnd_init_act;       // Initialize variable activities with a small random value.
+     bool      randomizeFirstDescent; // the first decisions (until first cnflict) are made randomly
+                                      // Useful for syrup!
+-    
++
+     // Constant for Memory managment
+     double    garbage_frac;       // The fraction of wasted memory allowed before a garbage collection is triggered.
++    bool      detect_clause;      // The parser will detect when constraints are actually clauses
+ 
+     // Certified UNSAT ( Thanks to Marijn Heule
+     // New in 2016 : proof in DRAT format, possibility to use binary output
+     FILE*               certifiedOutput;
++    void*               certifiedPyFile;
+     bool                certifiedUNSAT;
+     bool                vbyte;
+ 
+@@ -242,15 +251,15 @@
+     void write_lit (int n);
+ 
+ 
+-    // Panic mode. 
++    // Panic mode.
+     // Save memory
+     uint32_t panicModeLastRemoved, panicModeLastRemovedShared;
+-    
++
+     bool useUnaryWatched;            // Enable unary watched literals
+     bool promoteOneWatchedClause;    // One watched clauses are promotted to two watched clauses if found empty
+-    
++
+     // Functions useful for multithread solving
+-    // Useless in the sequential case 
++    // Useless in the sequential case
+     // Overide in ParallelSolver
+     virtual void parallelImportClauseDuringConflictAnalysis(Clause &c,CRef confl);
+     virtual bool parallelImportClauses(); // true if the empty clause was received
+@@ -259,13 +268,13 @@
+     virtual void parallelExportClauseDuringSearch(Clause &c);
+     virtual bool parallelJobIsFinished();
+     virtual bool panicModeIsEnabled();
+-    
+-    
++
++
+     double luby(double y, int x);
+-    
+-    // Statistics 
++
++    // Statistics
+     vec<uint64_t> stats;
+-    
++
+     // Important stats completely related to search. Keep here
+     uint64_t solves,starts,decisions,propagations,conflicts,conflictsRestarts;
+ 
+@@ -334,6 +343,7 @@
+     vec<CRef>           unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
+ 
+     vec<lbool>          assigns;          // The current assignments.
++    vec<bool>           assump;           // Declares if a variable is an assumption variable or not.
+     vec<char>           polarity;         // The preferred polarity of each variable.
+     vec<char>           forceUNSAT;
+     void                bumpForceUNSAT(Lit q); // Handles the forces
+@@ -351,15 +361,15 @@
+     double              progress_estimate;// Set by 'search()'.
+     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+     vec<unsigned int>   permDiff;           // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+-    
++
+ 
+     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+-    vec<Lit> lastDecisionLevel; 
++    vec<Lit> lastDecisionLevel;
+ 
+     ClauseAllocator     ca;
+ 
+     int nbclausesbeforereduce;            // To know when it is time to reduce clause database
+-    
++
+     // Used for restart strategies
+     bqueue<unsigned int> trailQueue,lbdQueue; // Bounded queues for restarts.
+     float sumLBD; // used to compute the global average of LBD. Restarts...
+@@ -404,6 +414,7 @@
+     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
+     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
+     CRef     propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
++    Lit      findNewWatch     (CRef cr, Lit p);                                        // Find a new watched lit for an AtMost
+     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
+     void     analyze          (CRef confl, vec<Lit>& out_learnt, vec<Lit> & selectors, int& out_btlevel,unsigned int &nblevels,unsigned int &szWithoutSelectors);    // (bt = backtrack)
+     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+@@ -429,6 +440,7 @@
+     void     attachClause     (CRef cr);               // Attach a clause to watcher lists.
+     void     detachClause     (CRef cr, bool strict = false); // Detach a clause to watcher lists.
+     void     detachClausePurgatory(CRef cr, bool strict = false);
++    void     detachAtMost     (CRef cr);               // Detach an AtMost from watcher lists.
+     void     attachClausePurgatory(CRef cr);
+     void     removeClause     (CRef cr, bool inPurgatory = false);               // Detach and free a clause.
+     bool     locked           (const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
+@@ -447,7 +459,7 @@
+     int      level            (Var x) const;
+     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+     bool     withinBudget     ()      const;
+-    inline bool isSelector(Var v) {return (incremental && v>nbVarsInitialFormula);}
++    inline bool isSelector(Var v) { return (incremental && assump[v]); }
+ 
+     // Static helpers:
+     //
+@@ -501,19 +513,20 @@
+         garbageCollect(); }
+ 
+ // NOTE: enqueue does not set the ok flag! (only public methods do)
+-inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
++inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != gc41l_Undef ? value(p) != gc41l_False : (uncheckedEnqueue(p, from), true); }
+ inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
+ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
+ inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
+- inline bool     Solver::locked          (const Clause& c) const { 
+-   if(c.size()>2) 
+-     return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; 
+-   return 
+-     (value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c)
+-     || 
+-     (value(c[1]) == l_True && reason(var(c[1])) != CRef_Undef && ca.lea(reason(var(c[1]))) == &c);
++inline bool     Solver::addAtMost       (const vec<Lit>& ps, int k)  { ps.copyTo(add_tmp); return addAtMost_(add_tmp, k); }
++inline bool     Solver::locked          (const Clause& c) const {
++   if(c.size()>2)
++     return value(c[0]) == gc41l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c;
++   return
++     (value(c[0]) == gc41l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c)
++     ||
++     (value(c[1]) == gc41l_True && reason(var(c[1])) != CRef_Undef && ca.lea(reason(var(c[1]))) == &c);
+  }
+ inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+ 
+@@ -527,12 +540,12 @@
+ inline int      Solver::nClauses      ()      const   { return clauses.size(); }
+ inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
+ inline int      Solver::nVars         ()      const   { return vardata.size(); }
+-inline int      Solver::nFreeVars     ()         { 
++inline int      Solver::nFreeVars     ()         {
+     int a = stats[dec_vars];
+     return (int)(a) - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+ inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
+-inline void     Solver::setDecisionVar(Var v, bool b) 
+-{ 
++inline void     Solver::setDecisionVar(Var v, bool b)
++{
+     if      ( b && !decision[v]) stats[dec_vars]++;
+     else if (!b &&  decision[v]) stats[dec_vars]--;
+ 
+@@ -552,11 +565,11 @@
+ // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
+ // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
+ // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
+-inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
+-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
+-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
++inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == gc41l_True; }
++inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == gc41l_True; }
++inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == gc41l_True; }
++inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == gc41l_True; }
++inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == gc41l_True; }
+ inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
+ inline bool     Solver::okay          ()      const   { return ok; }
+ 
+@@ -566,14 +579,13 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+ 
+ 
+-
+ //=================================================================================================
+ // Debug etc:
+ 
+ 
+ inline void Solver::printLit(Lit l)
+ {
+-    printf("%s%d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
++    printf("%s%d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == gc41l_True ? '1' : (value(l) == gc41l_False ? '0' : 'X'));
+ }
+ 
+ 
+@@ -639,7 +651,7 @@
+         return ca[x].activity() < ca[y].activity();
+         //return x->size() < y->size();
+ 
+-        //return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
++        //return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
+     }
+ };
+ 
+diff -Naur solvers/gluecard41/core/SolverStats.h solvers/gc41/core/SolverStats.h
+--- solvers/gluecard41/core/SolverStats.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/core/SolverStats.h	2021-03-29 16:01:39.000000000 +1100
+@@ -9,19 +9,19 @@
+                                 Labri - Univ. Bordeaux, France
+ 
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
++Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
+ 
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
++sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+-be used in any competitive event (sat competitions/evaluations) without the express permission of 
++be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
+ 
+@@ -47,12 +47,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  **************************************************************************************************/
+ 
+-#ifndef SOLVERSTATS_H
+-#define	SOLVERSTATS_H
++#ifndef Gluecard41_SolverStats_h
++#define	Gluecard41_SolverStats_h
+ 
+-#include "mtl/Map.h"
++#include "gluecard41/mtl/Map.h"
+ #include <string>
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+     class SolverStats {
+     protected:
+@@ -68,7 +68,7 @@
+             for(int i = 0;i<sz;i++)
+                 addStat(names[i]);
+         }
+-        
++
+         void addStat(std::string name) {
+             map.insert(name, 0);
+         }
+@@ -84,16 +84,16 @@
+         void maximize(const std::string name,uint64_t val) {
+             if(val > map[name])
+                 map[name] = val;
+-        } 
+-         
++        }
++
+         void minimize(const std::string name,uint64_t val) {
+             if(val < map[name])
+                 map[name] = val;
+-        } 
++        }
+ 
+ };
+ 
+ }
+ 
+-#endif	/* SOLVERSTATS_H */
++#endif	/* Gluecard41_SolverStats_h */
+ 
+diff -Naur solvers/gluecard41/core/SolverTypes.h solvers/gc41/core/SolverTypes.h
+--- solvers/gluecard41/core/SolverTypes.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/core/SolverTypes.h	2021-03-29 21:15:00.000000000 +1100
+@@ -9,19 +9,19 @@
+                                 Labri - Univ. Bordeaux, France
+ 
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
++Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
+ 
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
++sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+-be used in any competitive event (sat competitions/evaluations) without the express permission of 
++be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
+ 
+@@ -48,21 +48,26 @@
+  **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_SolverTypes_h
+-#define Glucose_SolverTypes_h
++#ifndef Gluecard41_SolverTypes_h
++#define Gluecard41_SolverTypes_h
+ 
+ #include <assert.h>
+ #include <stdint.h>
++
++#ifdef _MSC_VER
++#define putc_unlocked(a,b) putc(a,b)
++#else
+ #include <pthread.h>
++#endif
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Vec.h"
+-#include "mtl/Map.h"
+-#include "mtl/Alloc.h"
++#include "gluecard41/mtl/IntTypes.h"
++#include "gluecard41/mtl/Alg.h"
++#include "gluecard41/mtl/Vec.h"
++#include "gluecard41/mtl/Map.h"
++#include "gluecard41/mtl/Alloc.h"
+ 
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+@@ -94,9 +99,9 @@
+ inline  int  var       (Lit p)              { return p.x >> 1; }
+ 
+ // Mapping Literals to and from compact integers suitable for array indexing:
+-inline  int  toInt     (Var v)              { return v; } 
+-inline  int  toInt     (Lit p)              { return p.x; } 
+-inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; } 
++inline  int  toInt     (Var v)              { return v; }
++inline  int  toInt     (Lit p)              { return p.x; }
++inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
+ 
+ //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
+ //const Lit lit_Error = mkLit(var_Undef, true );  // }
+@@ -109,13 +114,13 @@
+ // Lifted booleans:
+ //
+ // NOTE: this implementation is optimized for the case when comparisons between values are mostly
+-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
++//       between one variable and one constant. Some care had to be taken to make sure that gcc
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+-#define l_True  (Glucose::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+-#define l_False (Glucose::lbool((uint8_t)1))
+-#define l_Undef (Glucose::lbool((uint8_t)2))
++#define gc41l_True  (Gluecard41::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
++#define gc41l_False (Gluecard41::lbool((uint8_t)1))
++#define gc41l_Undef (Gluecard41::lbool((uint8_t)2))
+ 
+ class lbool {
+     uint8_t value;
+@@ -130,7 +135,7 @@
+     bool  operator != (lbool b) const { return !(*this == b); }
+     lbool operator ^  (bool  b) const { return lbool((uint8_t)(value^(uint8_t)b)); }
+ 
+-    lbool operator && (lbool b) const { 
++    lbool operator && (lbool b) const {
+         uint8_t sel = (this->value << 1) | (b.value << 3);
+         uint8_t v   = (0xF7F755F4 >> sel) & 3;
+         return lbool(v); }
+@@ -152,7 +157,7 @@
+ class Clause;
+ typedef RegionAllocator<uint32_t>::Ref CRef;
+ 
+-#define BITS_LBD 20 
++#define BITS_LBD 20
+ #ifdef INCREMENTAL
+   #define BITS_SIZEWITHOUTSEL 19
+ #endif
+@@ -162,11 +167,12 @@
+       unsigned mark       : 2;
+       unsigned learnt     : 1;
+       unsigned canbedel   : 1;
+-      unsigned extra_size : 2; // extra size (end of 32bits) 0..3       
++      unsigned extra_size : 2; // extra size (end of 32bits) 0..3
+       unsigned seen       : 1;
+       unsigned reloced    : 1;
+       unsigned exported   : 2; // Values to keep track of the clause status for exportations
+       unsigned oneWatched : 1;
++      unsigned is_atmost  : 1;
+       unsigned lbd : BITS_LBD;
+ 
+       unsigned size       : BITS_REALSIZE;
+@@ -176,35 +182,38 @@
+ #endif
+     }  header;
+ 
+-    union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
++    union { Lit lit; float act; uint32_t abs; CRef rel; int32_t atmost_watches; } data[0];
+ 
+     friend class ClauseAllocator;
+ 
+     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
+     template<class V>
+-    Clause(const V& ps, int _extra_size, bool learnt) {
++    Clause(const V& ps, int _extra_size, bool learnt, bool atmost) {
+ 	assert(_extra_size < (1<<2));
+         header.mark      = 0;
+         header.learnt    = learnt;
+         header.extra_size = _extra_size;
+-            header.reloced   = 0;
++        header.reloced   = 0;
+         header.size      = ps.size();
+ 	header.lbd = 0;
+ 	header.canbedel = 1;
+-	header.exported = 0; 
++	header.exported = 0;
+ 	header.oneWatched = 0;
++	header.is_atmost = atmost;
+ 	header.seen = 0;
+-        for (int i = 0; i < ps.size(); i++) 
++        for (int i = 0; i < ps.size(); i++)
+             data[i].lit = ps[i];
+-	
++
+         if (header.extra_size > 0){
+-	  if (header.learnt) 
+-                data[header.size].act = 0; 
+-            else 
++	  if (header.learnt)
++                data[header.size].act = 0;
++          else if (header.is_atmost)
++                data[header.size].atmost_watches = -1;
++          else
+                 calcAbstraction();
+ 	  if (header.extra_size > 1) {
+ 	      data[header.size+1].abs = 0; // learntFrom
+-	  }	      
++	  }
+ 	}
+     }
+ 
+@@ -217,7 +226,7 @@
+         data[header.size].abs = abstraction;  }
+ 
+     int          size        ()      const   { return header.size; }
+-    void         shrink      (int i)         { assert(i <= size()); 
++    void         shrink      (int i)         { assert(i <= size());
+ 						if (header.extra_size > 0) {
+ 						    data[header.size-i] = data[header.size];
+ 						    if (header.extra_size > 1) { // Special case for imported clauses
+@@ -237,6 +246,11 @@
+     CRef         relocation  ()      const   { return data[0].rel; }
+     void         relocate    (CRef c)        { header.reloced = 1; data[0].rel = c; }
+ 
++    // AtMost specification: "at most k of my literals are assigned True."
++    bool         is_atmost   ()      const   { return header.is_atmost; }
++    int32_t      atmost_watches ()   const   { assert(header.is_atmost);  return data[header.size].atmost_watches; }
++    void         set_atmost_nw (uint32_t nw) { assert(header.is_atmost);  data[header.size].atmost_watches = nw; }
++
+     // NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
+     //       subsumption operations to behave correctly.
+     Lit&         operator [] (int i)         { return data[i].lit; }
+@@ -253,7 +267,7 @@
+ 
+     Lit          subsumes    (const Clause& other) const;
+     void         strengthen  (Lit p);
+-    void         setLBD(int i)  {header.lbd=i; /*if (i < (1<<(BITS_LBD-1))) header.lbd = i; else header.lbd = (1<<(BITS_LBD-1));*/} 
++    void         setLBD(int i)  {header.lbd=i; /*if (i < (1<<(BITS_LBD-1))) header.lbd = i; else header.lbd = (1<<(BITS_LBD-1));*/}
+     // unsigned int&       lbd    ()              { return header.lbd; }
+     unsigned int        lbd    () const        { return header.lbd; }
+     void setCanBeDel(bool b) {header.canbedel = b;}
+@@ -264,7 +278,7 @@
+     unsigned int getExported() {return header.exported;}
+     void setOneWatched(bool b) {header.oneWatched = b;}
+     bool getOneWatched() {return header.oneWatched;}
+-#ifdef INCREMNENTAL
++#ifdef INCREMENTAL
+     void setSizeWithoutSelectors   (unsigned int n)              {header.szWithoutSelectors = n; }
+     unsigned int        sizeWithoutSelectors   () const        { return header.szWithoutSelectors; }
+ #endif
+@@ -292,15 +306,16 @@
+             RegionAllocator<uint32_t>::moveTo(to); }
+ 
+         template<class Lits>
+-        CRef alloc(const Lits& ps, bool learnt = false, bool imported = false)
++        CRef alloc(const Lits& ps, bool learnt = false, bool imported = false, bool atmost = false)
+         {
+             assert(sizeof(Lit)      == sizeof(uint32_t));
+             assert(sizeof(float)    == sizeof(uint32_t));
+ 
+-            bool use_extra = learnt | extra_clause_field;
++            bool use_extra = learnt | atmost | extra_clause_field;
++
+             int extra_size = imported?3:(use_extra?1:0);
+             CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), extra_size));
+-            new (lea(cid)) Clause(ps, extra_size, learnt);
++            new (lea(cid)) Clause(ps, use_extra, learnt, atmost);
+ 
+             return cid;
+         }
+@@ -324,7 +339,7 @@
+ 
+             if (c.reloced()) { cr = c.relocation(); return; }
+ 
+-            cr = to.alloc(c, c.learnt(), c.wasImported());
++            cr = to.alloc(c, c.learnt(), c.wasImported(), c.is_atmost());
+             c.relocate(cr);
+ 
+             // Copy extra data-fields:
+@@ -343,6 +358,7 @@
+                     to[cr].setImportedFrom(c.importedFrom());
+                 }
+             }
++            else if (to[cr].is_atmost()) to[cr].set_atmost_nw(c.atmost_watches());
+             else {
+                 to[cr].setSeen(c.getSeen());
+                 if (to[cr].has_extra()) to[cr].calcAbstraction();
+@@ -364,7 +380,7 @@
+ 
+  public:
+     OccLists(const Deleted& d) : deleted(d) {}
+-    
++
+     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
+     // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+@@ -372,7 +388,7 @@
+ 
+     void  cleanAll  ();
+     void copyTo(OccLists &copy) const {
+-	
++
+ 	copy.occs.growTo(occs.size());
+ 	for(int i = 0;i<occs.size();i++)
+ 	    occs[i].memCopyTo(copy.occs[i]);
+@@ -432,13 +448,13 @@
+ 
+     typedef Map<CRef, T, CRefHash> HashTable;
+     HashTable map;
+-        
++
+  public:
+     // Size-operations:
+     void     clear       ()                           { map.clear(); }
+     int      size        ()                const      { return map.elems(); }
+ 
+-    
++
+     // Insert/Remove/Test mapping:
+     void     insert      (CRef cr, const T& t){ map.insert(cr, t); }
+     void     growTo      (CRef cr, const T& t){ map.insert(cr, t); } // NOTE: for compatibility
+@@ -465,11 +481,11 @@
+ /*_________________________________________________________________________________________________
+ |
+ |  subsumes : (other : const Clause&)  ->  Lit
+-|  
++|
+ |  Description:
+ |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+ |       by subsumption resolution.
+-|  
++|
+ |    Result:
+ |       lit_Error  - No subsumption or simplification
+ |       lit_Undef  - Clause subsumes 'other'
+@@ -479,6 +495,7 @@
+ {
+     //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
+     //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
++    assert(!is_atmost());     assert(!other.is_atmost());
+     assert(!header.learnt);   assert(!other.header.learnt);
+     assert(header.extra_size > 0); assert(other.header.extra_size > 0);
+     if (other.header.size < header.size || (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
+@@ -511,9 +528,9 @@
+     remove(*this, p);
+     calcAbstraction();
+ }
+- 
++
+ //=================================================================================================
+ }
+ 
+- 
++
+ #endif
+diff -Naur solvers/gluecard41/mtl/Alg.h solvers/gc41/mtl/Alg.h
+--- solvers/gluecard41/mtl/Alg.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Alg.h	2021-03-29 16:00:06.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Alg_h
+-#define Glucose_Alg_h
++#ifndef Gluecard41_Alg_h
++#define Gluecard41_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur solvers/gluecard41/mtl/Alloc.h solvers/gc41/mtl/Alloc.h
+--- solvers/gluecard41/mtl/Alloc.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Alloc.h	2021-03-29 16:00:17.000000000 +1100
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_Alloc_h
+-#define Glucose_Alloc_h
++#ifndef Gluecard41_Alloc_h
++#define Gluecard41_Alloc_h
+ 
+-#include "mtl/XAlloc.h"
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/XAlloc.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+@@ -57,7 +57,7 @@
+     uint32_t getCap    () const      { return cap;}
+     uint32_t wasted    () const      { return wasted_; }
+ 
+-    Ref      alloc     (int size); 
++    Ref      alloc     (int size);
+     void     free      (int size)    { wasted_ += size; }
+ 
+     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
+@@ -83,7 +83,7 @@
+     void copyTo(RegionAllocator& to) const {
+      //   if (to.memory != NULL) ::free(to.memory);
+         to.memory = (T*)xrealloc(to.memory, sizeof(T)*cap);
+-        memcpy(to.memory,memory,sizeof(T)*cap);        
++        memcpy(to.memory,memory,sizeof(T)*cap);
+         to.sz = sz;
+         to.cap = cap;
+         to.wasted_ = wasted_;
+@@ -119,14 +119,14 @@
+ template<class T>
+ typename RegionAllocator<T>::Ref
+ RegionAllocator<T>::alloc(int size)
+-{ 
++{
+     //printf("ALLOC called (this = %p, size = %d)\n", this, size); fflush(stdout);
+     assert(size > 0);
+     capacity(sz + size);
+ 
+     uint32_t prev_sz = sz;
+     sz += size;
+-    
++
+     // Handle overflow:
+     if (sz < prev_sz)
+         throw OutOfMemoryException();
+diff -Naur solvers/gluecard41/mtl/Clone.h solvers/gc41/mtl/Clone.h
+--- solvers/gluecard41/mtl/Clone.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Clone.h	2021-03-29 16:00:22.000000000 +1100
+@@ -1,8 +1,8 @@
+-#ifndef Glucose_Clone_h
+-#define Glucose_Clone_h
++#ifndef Gluecard41_Clone_h
++#define Gluecard41_Clone_h
+ 
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+     class Clone {
+         public:
+@@ -10,4 +10,4 @@
+     };
+ };
+ 
+-#endif
+\ No newline at end of file
++#endif
+diff -Naur solvers/gluecard41/mtl/Heap.h solvers/gc41/mtl/Heap.h
+--- solvers/gluecard41/mtl/Heap.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Heap.h	2021-03-29 16:00:26.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Heap_h
+-#define Glucose_Heap_h
++#ifndef Gluecard41_Heap_h
++#define Gluecard41_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+@@ -46,7 +46,7 @@
+     {
+         int x  = heap[i];
+         int p  = parent(i);
+-        
++
+         while (i != 0 && lt(x, heap[p])){
+             heap[i]          = heap[p];
+             indices[heap[p]] = i;
+@@ -105,7 +105,7 @@
+ 
+         indices[n] = heap.size();
+         heap.push(n);
+-        percolateUp(indices[n]); 
++        percolateUp(indices[n]);
+     }
+ 
+ 
+@@ -117,7 +117,7 @@
+         indices[x]       = -1;
+         heap.pop();
+         if (heap.size() > 1) percolateDown(0);
+-        return x; 
++        return x;
+     }
+ 
+ 
+@@ -135,11 +135,11 @@
+             percolateDown(i);
+     }
+ 
+-    void clear(bool dealloc = false) 
+-    { 
++    void clear(bool dealloc = false)
++    {
+         for (int i = 0; i < heap.size(); i++)
+             indices[heap[i]] = -1;
+-        heap.clear(dealloc); 
++        heap.clear(dealloc);
+     }
+ };
+ 
+diff -Naur solvers/gluecard41/mtl/IntTypes.h solvers/gc41/mtl/IntTypes.h
+--- solvers/gluecard41/mtl/IntTypes.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/IntTypes.h	2021-03-29 16:00:31.000000000 +1100
+@@ -17,8 +17,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_IntTypes_h
+-#define Glucose_IntTypes_h
++#ifndef Gluecard41_IntTypes_h
++#define Gluecard41_IntTypes_h
+ 
+ #ifdef __sun
+     // Not sure if there are newer versions that support C99 headers. The
+diff -Naur solvers/gluecard41/mtl/Map.h solvers/gc41/mtl/Map.h
+--- solvers/gluecard41/mtl/Map.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Map.h	2021-03-29 16:00:35.000000000 +1100
+@@ -17,15 +17,15 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Map_h
+-#define Glucose_Map_h
++#ifndef Gluecard41_Map_h
++#define Gluecard41_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/IntTypes.h"
++#include "gluecard41/mtl/Vec.h"
+ #include <string>
+ #include <unordered_map>
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+@@ -76,7 +76,7 @@
+     bool    checkCap(int new_size) const { return new_size > cap; }
+ 
+     int32_t index  (const K& k) const { return hash(k) % cap; }
+-    void   _insert (const K& k, const D& d) { 
++    void   _insert (const K& k, const D& d) {
+         vec<Pair>& ps = table[index(k)];
+         ps.push(); ps.last().key = k; ps.last().data = d; }
+ 
+@@ -100,7 +100,7 @@
+         // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
+     }
+ 
+-    
++
+  public:
+ 
+     Map () : table(NULL), cap(0), size(0) {}
+@@ -144,7 +144,7 @@
+         for (int i = 0; i < ps.size(); i++)
+             if (equals(ps[i].key, k)){
+                 d = ps[i].data;
+-                return true; } 
++                return true; }
+         return false;
+     }
+ 
+diff -Naur solvers/gluecard41/mtl/Queue.h solvers/gc41/mtl/Queue.h
+--- solvers/gluecard41/mtl/Queue.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Queue.h	2021-03-29 16:00:41.000000000 +1100
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Queue_h
+-#define Glucose_Queue_h
++#ifndef Gluecard41_Queue_h
++#define Gluecard41_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ 
+@@ -41,22 +41,22 @@
+     void clear (bool dealloc = false) { buf.clear(dealloc); buf.growTo(1); first = end = 0; }
+     int  size  () const { return (end >= first) ? end - first : end - first + buf.size(); }
+ 
+-    
+-    
++
++
+     const T& operator [] (int index) const  { assert(index >= 0); assert(index < size()); return buf[(first + index) % buf.size()]; }
+     T&       operator [] (int index)        { assert(index >= 0); assert(index < size()); return buf[(first + index) % buf.size()]; }
+ 
+     T    peek  () const { assert(first != end); return buf[first]; }
+     void pop   () { assert(first != end); first++; if (first == buf.size()) first = 0; }
+-    
+-    
++
++
+     void copyTo(Queue<T>& copy) const {
+         copy.first = first;
+         copy.end = end;
+         buf.memCopyTo(copy.buf);
+     }
+-    
+-    
++
++
+     void insert(T elem) {   // INVARIANT: buf[end] is always unused
+         buf[end++] = elem;
+         if (end == buf.size()) end = 0;
+diff -Naur solvers/gluecard41/mtl/Sort.h solvers/gc41/mtl/Sort.h
+--- solvers/gluecard41/mtl/Sort.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Sort.h	2021-03-29 16:00:45.000000000 +1100
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Sort_h
+-#define Glucose_Sort_h
++#ifndef Gluecard41_Sort_h
++#define Gluecard41_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "gluecard41/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur solvers/gluecard41/mtl/Vec.h solvers/gc41/mtl/Vec.h
+--- solvers/gluecard41/mtl/Vec.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/Vec.h	2021-03-29 16:00:53.000000000 +1100
+@@ -18,17 +18,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Vec_h
+-#define Glucose_Vec_h
++#ifndef Gluecard41_Vec_h
++#define Gluecard41_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
+-#include<string.h>
++#include "gluecard41/mtl/IntTypes.h"
++#include "gluecard41/mtl/XAlloc.h"
++#include <string.h>
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+@@ -44,7 +44,7 @@
+     // Don't allow copying (error prone):
+     vec<T>&  operator = (vec<T>& other) { assert(0); return *this; }
+              vec        (vec<T>& other) { assert(0); }
+-             
++
+     // Helpers for calculating next capacity:
+     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
+     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+@@ -75,11 +75,11 @@
+     void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
+     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
+     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
+-    
++
+     void     remove(const T &elem) {
+         int tmp;
+         for(tmp = 0;tmp<sz;tmp++) {
+-            if(data[tmp]==elem) 
++            if(data[tmp]==elem)
+                 break;
+         }
+         if(tmp<sz) {
+@@ -87,9 +87,9 @@
+             data[tmp] = data[sz-1];
+             sz = sz - 1;
+         }
+-        
++
+     }
+-    
++
+     // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
+     // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
+     // happen given the way capacities are calculated (below). Essentially, all capacities are
+@@ -118,7 +118,7 @@
+ void vec<T>::capacity(int min_cap) {
+     if (cap >= min_cap) return;
+     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+-    if (add > INT_MAX - cap || ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM)
++    if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
+         throw OutOfMemoryException();
+  }
+ 
+diff -Naur solvers/gluecard41/mtl/VecThreads.h solvers/gc41/mtl/VecThreads.h
+--- solvers/gluecard41/mtl/VecThreads.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/VecThreads.h	2021-03-29 16:00:58.000000000 +1100
+@@ -1,5 +1,5 @@
+ /*******************************************************************************************[VecThreads.h]
+- * Threads safe  version used in Glucose-Syrup, 2015, Gilles Audemard, Laurent Simon
++ * Threads safe  version used in Gluecard41-Syrup, 2015, Gilles Audemard, Laurent Simon
+ Copyright (c) 2003-2007, Niklas Een, Niklas Sorensson
+ Copyright (c) 2007-2010, Niklas Sorensson
+ 
+@@ -19,17 +19,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_VecThreads_h
+-#define Glucose_VecThreads_h
++#ifndef Gluecard41_VecThreads_h
++#define Gluecard41_VecThreads_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
+-#include<string.h>
++#include "gluecard41/mtl/IntTypes.h"
++#include "gluecard41/mtl/XAlloc.h"
++#include <string.h>
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+@@ -47,7 +47,7 @@
+     // Don't allow copying (error prone):
+     vecThreads<T>&  operator = (vecThreads<T>& other) { assert(0); return *this; }
+              vecThreads        (vecThreads<T>& other) { assert(0); }
+-             
++
+     // Helpers for calculating next capacity:
+     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
+     //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+@@ -79,7 +79,7 @@
+     void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
+     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
+     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
+-    
++
+     void     startMaintenance();
+     void     endMaintenance();
+     void     startLoop();
+@@ -88,7 +88,7 @@
+     void     remove(const T &elem) {
+         int tmp;
+         for(tmp = 0;tmp<sz;tmp++) {
+-            if(data[tmp]==elem) 
++            if(data[tmp]==elem)
+                 break;
+         }
+         if(tmp<sz) {
+@@ -96,9 +96,9 @@
+             data[tmp] = data[sz-1];
+             sz = sz - 1;
+         }
+-        
++
+     }
+-    
++
+     // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
+     // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
+     // happen given the way capacities are calculated (below). Essentially, all capacities are
+@@ -112,12 +112,12 @@
+     T&       operator [] (int index)       { return data[index]; }
+ 
+     // Duplicatation (preferred instead):
+-    void copyTo(vecThreads<T>& copy) const { copy.clear(); copy.growTo(sz); 
++    void copyTo(vecThreads<T>& copy) const { copy.clear(); copy.growTo(sz);
+ 	startLoop();for (int i = 0; i < sz; i++) copy[i] = data[i]; endLoop();}
+-    void moveTo(vecThreads<T>& dest) { 
++    void moveTo(vecThreads<T>& dest) {
+ 	assert(false); // This cannot be made thread safe from here.
+ 	dest.clear(true);
+-	startMaintenance(); 
++	startMaintenance();
+ 	dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0;
+         endMaintenance(); }
+     void memCopyTo(vecThreads<T>& copy) const{
+@@ -141,7 +141,7 @@
+ template<class T>
+ void vecThreads<T>::endLoop() {
+     while(!__sync_bool_compare_and_swap(&lock,false, true));
+-    nbusers--; 
++    nbusers--;
+     lock = false;
+ }
+ 
+@@ -158,7 +158,7 @@
+ template<class T>
+ inline void vecThreads<T>::endMaintenance() {
+     while(!__sync_bool_compare_and_swap(&lock,false, true));
+-    nbusers++; 
++    nbusers++;
+     lock = false;
+ }
+ template<class T>
+@@ -185,7 +185,7 @@
+     startMaintenance();
+     capacity(size);
+     for (int i = sz; i < size; i++) data[i] = pad;
+-    sz = size; 
++    sz = size;
+     endMaintenance();
+ }
+ 
+@@ -196,7 +196,7 @@
+     startMaintenance();
+     capacity(size);
+     for (int i = sz; i < size; i++) new (&data[i]) T();
+-    sz = size; 
++    sz = size;
+     endMaintenance();
+ }
+ 
+@@ -207,7 +207,7 @@
+ 	startMaintenance();
+         for (int i = 0; i < sz; i++) data[i].~T();
+         sz = 0;
+-        if (dealloc) free(data), data = NULL, cap = 0; 
++        if (dealloc) free(data), data = NULL, cap = 0;
+         endMaintenance();} }
+ 
+ //=================================================================================================
+diff -Naur solvers/gluecard41/mtl/XAlloc.h solvers/gc41/mtl/XAlloc.h
+--- solvers/gluecard41/mtl/XAlloc.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/mtl/XAlloc.h	2021-03-29 16:01:05.000000000 +1100
+@@ -18,14 +18,14 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_XAlloc_h
+-#define Glucose_XAlloc_h
++#ifndef Gluecard41_XAlloc_h
++#define Gluecard41_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur solvers/gluecard41/utils/Options.cc solvers/gc41/utils/Options.cc
+--- solvers/gluecard41/utils/Options.cc	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/utils/Options.cc	2021-03-29 16:02:17.000000000 +1100
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "mtl/Sort.h"
+-#include "utils/Options.h"
+-#include "utils/ParseUtils.h"
++#include "gluecard41/mtl/Sort.h"
++#include "gluecard41/utils/Options.h"
++#include "gluecard41/utils/ParseUtils.h"
+ 
+-using namespace Glucose;
++using namespace Gluecard41;
+ 
+-void Glucose::parseOptions(int& argc, char** argv, bool strict)
++void Gluecard41::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -35,18 +35,19 @@
+                 printUsageAndExit(argc, argv, true);
+         } else {
+             bool parsed_ok = false;
+-        
++
+             for (int k = 0; !parsed_ok && k < Option::getOptionList().size(); k++){
+                 parsed_ok = Option::getOptionList()[k]->parse(argv[i]);
+ 
+                 // fprintf(stderr, "checking %d: %s against flag <%s> (%s)\n", i, argv[i], Option::getOptionList()[k]->name, parsed_ok ? "ok" : "skip");
+             }
+ 
+-            if (!parsed_ok)
++            if (!parsed_ok) {
+                 if (strict && match(argv[i], "-"))
+                     fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i], Option::getHelpPrefixString()), exit(1);
+                 else
+                     argv[j++] = argv[i];
++            }
+         }
+     }
+ 
+@@ -54,9 +55,9 @@
+ }
+ 
+ 
+-void Glucose::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Glucose::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Glucose::printUsageAndExit (int argc, char** argv, bool verbose)
++void Gluecard41::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void Gluecard41::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void Gluecard41::printUsageAndExit (int argc, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur solvers/gluecard41/utils/Options.h solvers/gc41/utils/Options.h
+--- solvers/gluecard41/utils/Options.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/utils/Options.h	2021-03-29 16:02:20.000000000 +1100
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Options_h
+-#define Glucose_Options_h
++#ifndef Gluecard41_Options_h
++#define Gluecard41_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "gluecard41/mtl/IntTypes.h"
++#include "gluecard41/mtl/Vec.h"
++#include "gluecard41/utils/ParseUtils.h"
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+@@ -60,20 +60,20 @@
+     struct OptionLt {
+         bool operator()(const Option* x, const Option* y) {
+             int test1 = strcmp(x->category, y->category);
+-            return test1 < 0 || test1 == 0 && strcmp(x->type_name, y->type_name) < 0;
++            return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
+         }
+     };
+ 
+-    Option(const char* name_, 
++    Option(const char* name_,
+            const char* desc_,
+            const char* cate_,
+-           const char* type_) : 
++           const char* type_) :
+       name       (name_)
+     , description(desc_)
+     , category   (cate_)
+     , type_name  (type_)
+-    { 
+-        getOptionList().push(this); 
++    {
++        getOptionList().push(this);
+     }
+ 
+  public:
+@@ -135,7 +135,7 @@
+     DoubleOption& operator=(double x)   { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -143,7 +143,7 @@
+         char*  end;
+         double tmp = strtod(span, &end);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp >= range.end && (!range.end_inclusive || tmp != range.end)){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -159,12 +159,12 @@
+     }
+ 
+     virtual void help (bool verbose = false){
+-        fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n", 
+-                name, type_name, 
+-                range.begin_inclusive ? '[' : '(', 
++        fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n",
++                name, type_name,
++                range.begin_inclusive ? '[' : '(',
+                 range.begin,
+                 range.end,
+-                range.end_inclusive ? ']' : ')', 
++                range.end_inclusive ? ']' : ')',
+                 value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+@@ -187,13 +187,13 @@
+  public:
+     IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
+         : Option(n, d, c, "<int32>"), range(r), value(def) {}
+- 
++
+     operator   int32_t   (void) const { return value; }
+     operator   int32_t&  (void)       { return value; }
+     IntOption& operator= (int32_t x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -201,7 +201,7 @@
+         char*   end;
+         int32_t tmp = strtol(span, &end, 10);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp > range.end){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -249,13 +249,13 @@
+  public:
+     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
+         : Option(n, d, c, "<int64>"), range(r), value(def) {}
+- 
++
+     operator     int64_t   (void) const { return value; }
+     operator     int64_t&  (void)       { return value; }
+     Int64Option& operator= (int64_t x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -263,7 +263,7 @@
+         char*   end;
+         int64_t tmp = strtoll(span, &end, 10);
+ 
+-        if (end == NULL) 
++        if (end == NULL)
+             return false;
+         else if (tmp > range.end){
+             fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+@@ -307,7 +307,7 @@
+ {
+     const char* value;
+  public:
+-    StringOption(const char* c, const char* n, const char* d, const char* def = NULL) 
++    StringOption(const char* c, const char* n, const char* d, const char* def = NULL)
+         : Option(n, d, c, "<string>"), value(def) {}
+ 
+     operator      const char*  (void) const     { return value; }
+@@ -315,7 +315,7 @@
+     StringOption& operator=    (const char* x)  { value = x; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
++        const char* span = str;
+ 
+         if (!match(span, "-") || !match(span, name) || !match(span, "="))
+             return false;
+@@ -330,7 +330,7 @@
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");
+         }
+-    }    
++    }
+ };
+ 
+ 
+@@ -343,7 +343,7 @@
+     bool value;
+ 
+  public:
+-    BoolOption(const char* c, const char* n, const char* d, bool v) 
++    BoolOption(const char* c, const char* n, const char* d, bool v)
+         : Option(n, d, c, "<bool>"), value(v) {}
+ 
+     operator    bool     (void) const { return value; }
+@@ -351,8 +351,8 @@
+     BoolOption& operator=(bool b)     { value = b; return *this; }
+ 
+     virtual bool parse(const char* str){
+-        const char* span = str; 
+-        
++        const char* span = str;
++
+         if (match(span, "-")){
+             bool b = !match(span, "no-");
+ 
+diff -Naur solvers/gluecard41/utils/ParseUtils.h solvers/gc41/utils/ParseUtils.h
+--- solvers/gluecard41/utils/ParseUtils.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/utils/ParseUtils.h	2021-03-29 16:02:23.000000000 +1100
+@@ -18,109 +18,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_ParseUtils_h
+-#define Glucose_ParseUtils_h
++#ifndef Gluecard41_ParseUtils_h
++#define Gluecard41_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+-#include <math.h>
+-
+-#include <zlib.h>
+-
+-namespace Glucose {
+-
+-//-------------------------------------------------------------------------------------------------
+-// A simple buffered character stream class:
+-
+-static const int buffer_size = 1048576;
+-
+-
+-class StreamBuffer {
+-    gzFile        in;
+-    unsigned char buf[buffer_size];
+-    int           pos;
+-    int           size;
+-
+-    void assureLookahead() {
+-        if (pos >= size) {
+-            pos  = 0;
+-            size = gzread(in, buf, sizeof(buf)); } }
+-
+-public:
+-    explicit StreamBuffer(gzFile i) : in(i), pos(0), size(0) { assureLookahead(); }
+-
+-    int  operator *  () const { return (pos >= size) ? EOF : buf[pos]; }
+-    void operator ++ ()       { pos++; assureLookahead(); }
+-    int  position    () const { return pos; }
+-};
+-
+-
+-//-------------------------------------------------------------------------------------------------
+-// End-of-file detection functions for StreamBuffer and char*:
+-
+-
+-static inline bool isEof(StreamBuffer& in) { return *in == EOF;  }
+-static inline bool isEof(const char*   in) { return *in == '\0'; }
+-
+-//-------------------------------------------------------------------------------------------------
+-// Generic parse functions parametrized over the input-stream type.
+-
+-
+-template<class B>
+-static void skipWhitespace(B& in) {
+-    while ((*in >= 9 && *in <= 13) || *in == 32)
+-        ++in; }
+-
+-
+-template<class B>
+-static void skipLine(B& in) {
+-    for (;;){
+-        if (isEof(in)) return;
+-        if (*in == '\n') { ++in; return; }
+-        ++in; } }
+-
+-template<class B>
+-static double parseDouble(B& in) { // only in the form X.XXXXXe-XX
+-    bool    neg= false;
+-	double accu = 0.0;
+-	double currentExponent = 1;
+-	int exponent;
+-	
+-    skipWhitespace(in);
+-    if(*in == EOF) return 0;
+-    if      (*in == '-') neg = true, ++in;
+-    else if (*in == '+') ++in;
+-    if (*in < '1' || *in > '9') printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+-	accu = (double)(*in - '0');
+-	++in;
+-	if (*in != '.') printf("PARSE ERROR! Unexpected char: %c\n", *in),exit(3);
+-	++in; // skip dot
+-	currentExponent = 0.1;
+-    while (*in >= '0' && *in <= '9')
+-        accu = accu + currentExponent * ((double)(*in - '0')),
+-		currentExponent /= 10,
+-        ++in;
+-	if (*in != 'e') printf("PARSE ERROR! Unexpected char: %c\n", *in),exit(3);
+-	++in; // skip dot
+-	exponent = parseInt(in); // read exponent
+-	accu *= pow(10,exponent);
+-	return neg ? -accu:accu;
+-}
+-
+-
+-template<class B>
+-static int parseInt(B& in) {
+-    int     val = 0;
+-    bool    neg = false;
+-    skipWhitespace(in);
+-    if      (*in == '-') neg = true, ++in;
+-    else if (*in == '+') ++in;
+-    if (*in < '0' || *in > '9') fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+-    while (*in >= '0' && *in <= '9')
+-        val = val*10 + (*in - '0'),
+-        ++in;
+-    return neg ? -val : val; }
+ 
++namespace Gluecard41 {
+ 
+ // String matching: in case of a match the input iterator will be advanced the corresponding
+ // number of characters.
+@@ -133,18 +37,9 @@
+ 
+     in += i;
+ 
+-    return true; 
++    return true;
+ }
+ 
+-// String matching: consumes characters eagerly, but does not require random access iterator.
+-template<class B>
+-static bool eagerMatch(B& in, const char* str) {
+-    for (; *str != '\0'; ++str, ++in)
+-        if (*str != *in)
+-            return false;
+-    return true; }
+-
+-
+ //=================================================================================================
+ }
+ 
+diff -Naur solvers/gluecard41/utils/System.cc solvers/gc41/utils/System.cc
+--- solvers/gluecard41/utils/System.cc	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/utils/System.cc	2021-03-29 16:02:27.000000000 +1100
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "gluecard41/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace Glucose;
++using namespace Gluecard41;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,14 +67,14 @@
+     return peak_kb;
+ }
+ 
+-double Glucose::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Glucose::memUsedPeak() { 
++double Gluecard41::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double Gluecard41::memUsedPeak() {
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double Glucose::memUsed(void) {
++double Gluecard41::memUsed(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+@@ -84,12 +84,12 @@
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Glucose::memUsed(void) {
++double Gluecard41::memUsed(void) {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+ 
+ #else
+-double Glucose::memUsed() { 
++double Gluecard41::memUsed() {
+     return 0; }
+ #endif
+diff -Naur solvers/gluecard41/utils/System.h solvers/gc41/utils/System.h
+--- solvers/gluecard41/utils/System.h	2016-12-08 23:48:26.000000000 +1100
++++ solvers/gc41/utils/System.h	2021-03-29 16:02:30.000000000 +1100
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_System_h
+-#define Glucose_System_h
++#ifndef Gluecard41_System_h
++#define Gluecard41_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
++#include "gluecard41/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Glucose {
++namespace Gluecard41 {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ static inline double realTime(void);
+@@ -44,22 +44,56 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Glucose::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double Gluecard41::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Glucose::cpuTime(void) {
++static inline double Gluecard41::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
+ 
+ #endif
+ 
++#ifdef _MSC_VER
++
++#define WIN32_LEAN_AND_MEAN
++#include <Windows.h>
++#include <stdint.h> // portable: uint64_t   MSVC: __int64
++
++// MSVC defines this in winsock2.h!?
++typedef struct timeval {
++    long tv_sec;
++    long tv_usec;
++} timeval;
++
++static inline int gettimeofday(struct timeval * tp, struct timezone * tzp)
++{
++    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
++    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
++    // until 00:00:00 January 1, 1970
++    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
++
++    SYSTEMTIME  system_time;
++    FILETIME    file_time;
++    uint64_t    time;
++
++    GetSystemTime( &system_time );
++    SystemTimeToFileTime( &system_time, &file_time );
++    time =  ((uint64_t)file_time.dwLowDateTime )      ;
++    time += ((uint64_t)file_time.dwHighDateTime) << 32;
++
++    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
++    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
++    return 0;
++}
++#endif
++
+ // Laurent: I know that this will not compile directly under Windows... sorry for that
+-static inline double Glucose::realTime() {
++static inline double Gluecard41::realTime() {
+     struct timeval tv;
+     gettimeofday(&tv, NULL);
+     return (double)tv.tv_sec + (double) tv.tv_usec / 1000000; }

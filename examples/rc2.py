@@ -279,8 +279,8 @@ class RC2(object):
         # this can be done only if the Minicard solver is in use
         # this cannot be done if RC2 is run from the command line
         if isinstance(formula, WCNFPlus) and formula.atms:
-            assert self.solver in SolverNames.minicard, \
-                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+            assert self.oracle.supports_atmost(), \
+                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
             for atm in formula.atms:
                 self.oracle.add_atmost(*atm)
@@ -377,8 +377,8 @@ class RC2(object):
             else:
                 # this should be a native cardinality constraint,
                 # which can be used only together with Minicard
-                assert self.solver in SolverNames.minicard, \
-                        'Only Minicard supports native cardinality constraints.'
+                assert self.oracle.supports_atmost(), \
+                        '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
                 self.oracle.add_atmost(cl, clause[1])
         else:
@@ -412,12 +412,12 @@ class RC2(object):
         """
 
         if self.oracle:
-            self.oracle.delete()
-            self.oracle = None
-
-            if self.solver not in SolverNames.minicard:  # for minicard, there is nothing to free
+            if not self.oracle.supports_atmost():  # for minicard, there is nothing to free
                 for t in six.itervalues(self.tobj):
                     t.delete()
+
+            self.oracle.delete()
+            self.oracle = None
 
     def compute(self):
         """
@@ -1029,7 +1029,7 @@ class RC2(object):
             :class:`.ITotalizer`.
         """
 
-        if self.solver not in SolverNames.minicard:  # standard totalizer-based encoding
+        if not self.oracle.supports_atmost():  # standard totalizer-based encoding
             # new totalizer sum
             t = ITotalizer(lits=self.rels, ubound=bound, top_id=self.topv)
 
@@ -1092,7 +1092,7 @@ class RC2(object):
         # increment the current bound
         b = self.bnds[assump] + 1
 
-        if self.solver not in SolverNames.minicard:  # the case of standard totalizer encoding
+        if not self.oracle.supports_atmost():  # the case of standard totalizer encoding
             # increasing its bound
             t.increase(ubound=b, top_id=self.topv)
 

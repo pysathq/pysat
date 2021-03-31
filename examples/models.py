@@ -85,8 +85,10 @@ def enumerate_models(formula, to_enum, solver):
     with Solver(name=solver, bootstrap_with=formula.clauses, use_timer=True) as s:
         # adding native cardinality constraints if needed
         if formula.atmosts:
-            assert solver in SolverNames.minicard, \
-                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+            assert solver_name in SolverNames.minicard or \
+                    solver_name in SolverNames.gluecard3 or \
+                    solver_name in SolverNames.gluecard4, \
+                    '{0} does not support native cardinality constraints'.format(solver_name)
 
             for atm in formula.atmosts:
                 s.add_atmost(*atm)

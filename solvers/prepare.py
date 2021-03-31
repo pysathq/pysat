@@ -32,6 +32,14 @@ sources = {
         'https://github.com/arminbiere/cadical/archive/rel-1.0.3.tar.gz',
         'solvers/cadical.tar.gz'
     ),
+    'gluecard30': (
+        'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz',
+        'solvers/glucose30.tar.gz'
+    ),
+    'gluecard41': (
+        'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-syrup-4.1.tgz',
+        'solvers/glucose41.tar.gz'
+    ),
     'glucose30': (
         'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz',
         'solvers/glucose30.tar.gz'
@@ -56,6 +64,10 @@ sources = {
         'https://sites.google.com/a/gsd.uwaterloo.ca/maplesat/MapleCOMSPS_pure_LRB.zip',
         'solvers/maplesat.zip'
     ),
+    'mergesat3': (
+        'https://github.com/conp-solutions/mergesat/archive/refs/tags/v3.0.tar.gz',
+        'solvers/mergesat3.tar.gz'
+    ),
     'minicard': (
         'https://github.com/liffiton/minicard/archive/v1.2.tar.gz',
         'http://reason.di.fc.ul.pt/~aign/storage/mirror/minicard-v1.2.tar.gz',
@@ -76,12 +88,15 @@ sources = {
 #==============================================================================
 to_extract = {
     'cadical': [],
+    'gluecard30': [],
+    'gluecard41': [],
     'glucose30': [],
     'glucose41': [],
     'lingeling': ['druplig-009.zip', 'lingeling-bbc-9230380-160707.tar.gz'],
     'maplechrono': [],
     'maplecm': [],
     'maplesat': [],
+    'mergesat3': [],
     'minicard': [],
     'minisat22': [],
     'minisatgh': []
@@ -209,6 +224,8 @@ to_move = {
         ('src/watch.cpp', 'watch.cpp'),
         ('src/watch.hpp', 'watch.hpp')
     ],
+    'gluecard30': [],
+    'gluecard41': [],
     'glucose30': [],
     'glucose41': [],
     'lingeling': [
@@ -232,6 +249,16 @@ to_move = {
         ('sources/utils', 'utils')
     ],
     'maplesat': [],
+    'mergesat3': [
+        ('core', '_core'),
+        ('mtl', '_mtl'),
+        ('simp', '_simp'),
+        ('utils', '_utils'),
+        ('minisat/core', 'core'),
+        ('minisat/mtl', 'mtl'),
+        ('minisat/simp', 'simp'),
+        ('minisat/utils', 'utils')
+    ],
     'minicard': [
         ('core', '_core'),
         ('minicard', 'core')
@@ -260,6 +287,62 @@ to_remove = {
         'src',
         'test',
         'mobical.cpp'
+    ],
+    'gluecard30': [
+        'core/Dimacs.h',
+        'core/Main.cc',
+        'core/Makefile',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'simp',
+        'utils/Makefile'
+    ],
+    'gluecard41': [
+        '._Changelog',
+        '._LICENCE',
+        '._README',
+        '._core',
+        '._mtl',
+        '._parallel',
+        '._simp',
+        '._utils',
+        'Changelog',
+        'core/._BoundedQueue.h',
+        'core/._Constants.h',
+        'core/._Dimacs.h',
+        'core/._Makefile',
+        'core/._Solver.cc',
+        'core/._Solver.h',
+        'core/._SolverStats.h',
+        'core/._SolverTypes.h',
+        'core/Dimacs.h',
+        'core/Makefile',
+        'LICENCE',
+        'README',
+        'mtl/._Alg.h',
+        'mtl/._Alloc.h',
+        'mtl/._Clone.h',
+        'mtl/._Heap.h',
+        'mtl/._IntTypes.h',
+        'mtl/._Map.h',
+        'mtl/._Queue.h',
+        'mtl/._Sort.h',
+        'mtl/._Vec.h',
+        'mtl/._VecThreads.h',
+        'mtl/._XAlloc.h',
+        'mtl/._config.mk',
+        'mtl/._template.mk',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'simp',
+        'parallel',
+        'utils/._Makefile',
+        'utils/._Options.cc',
+        'utils/._Options.h',
+        'utils/._ParseUtils.h',
+        'utils/._System.cc',
+        'utils/._System.h',
+        'utils/Makefile'
     ],
     'glucose30': [
         'core/Dimacs.h',
@@ -362,6 +445,30 @@ to_remove = {
         'utils/Makefile',
         'LICENSE',
         'README'
+    ],
+    'mergesat3': [
+        '.clang-format',
+        '.github',
+        '.travis.yml',
+        '_core',
+        '_mtl',
+        '_simp',
+        '_utils',
+        'core/Makefile',
+        'core/ipasir.h',
+        'Dockerfile',
+        'doc',
+        'LICENSE',
+        'licence.txt',
+        'Makefile',
+        'minisat',
+        'mtl/config.mk',
+        'mtl/template.mk',
+        'README',
+        'simp',
+        'tools',
+        'utils/Makefile',
+        '.gitignore'
     ],
     'minicard': [
         '_core',
@@ -508,7 +615,7 @@ def extract_archive(archive, solver, put_inside = False):
         directory = directory.rstrip('/').split('/')[0]
         myzip.close()
 
-    if not put_inside:
+    if not put_inside and directory != solver:
         if os.path.exists(os.path.join('solvers', solver)):
             shutil.rmtree(os.path.join('solvers', solver))
 

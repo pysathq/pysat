@@ -4,12 +4,15 @@ from pysat.solvers import Solver, SolverNames
 
 # all available solvers
 solvers = ['cadical',
+           'gluecard30',
+           'gluecard41',
            'glucose30',
            'glucose41',
            'lingeling',
            'maplechrono',
            'maplecm',
            'maplesat',
+           'mergesat3',
            'minicard',
            'minisat22',
            'minisat-gh']
@@ -25,7 +28,7 @@ cnf2.append(range(1, 6))  # at least 1
 def test_cnfplus():
     # testing cnf1:
     for name in solvers:
-        if name != 'minicard':
+        if name not in ('minicard', 'gluecard30', 'gluecard41'):
             try:
                 with Solver(name=name, bootstrap_with=cnf1) as s:
                     s.solve()
@@ -39,7 +42,7 @@ def test_cnfplus():
             assert i == 5, 'there should be 5 models'
 
     for name in solvers:
-        if name != 'minicard':
+        if name not in ('minicard', 'gluecard30', 'gluecard41'):
             try:
                 with Solver(name=name) as s:
                     s.append_formula(cnf1)

@@ -136,8 +136,10 @@ class MCSls(object):
         # adding native cardinality constraints (if any) as hard clauses
         # this can be done only if the Minicard solver is in use
         if isinstance(formula, WCNFPlus) and formula.atms:
-            assert solver_name in SolverNames.minicard, \
-                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+            assert solver_name in SolverNames.minicard or \
+                    solver_name in SolverNames.gluecard3 or \
+                    solver_name in SolverNames.gluecard4, \
+                    '{0} does not support native cardinality constraints'.format(solver_name)
 
             for atm in formula.atms:
                 self.oracle.add_atmost(*atm)
@@ -231,8 +233,10 @@ class MCSls(object):
             else:
                 # this should be a native cardinality constraint,
                 # which can be used only together with Minicard
-                assert self.solver in SolverNames.minicard, \
-                        'Only Minicard supports native cardinality constraints.'
+                assert solver_name in SolverNames.minicard or \
+                        solver_name in SolverNames.gluecard3 or \
+                        solver_name in SolverNames.gluecard4, \
+                        '{0} does not support native cardinality constraints'.format(solver_name)
 
                 self.oracle.add_atmost(cl, clause[1])
         else:

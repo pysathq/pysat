@@ -1,6 +1,6 @@
 diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
 --- solvers/minicard/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/mc/Makefile	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/Makefile	2020-07-04 10:55:42.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -43,7 +43,7 @@ diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
 --- solvers/minicard/core/Solver.cc	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/core/Solver.cc	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/core/Solver.cc	2021-03-29 21:23:12.000000000 +1100
 @@ -27,10 +27,10 @@
  
  #include <math.h>
@@ -58,6 +58,15 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  
  //=================================================================================================
  // Options:
+@@ -49,7 +49,7 @@
+ static IntOption     opt_restart_first     (_cat, "rfirst",      "The base restart interval", 100, IntRange(1, INT32_MAX));
+ static DoubleOption  opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
+ static DoubleOption  opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
+-static BoolOption    opt_detect_clause     (_cat, "dt-clause",   "Treat AtLeast 1 cardinality constraints as regular clauses", false);
++static BoolOption    opt_detect_clause     (_cat, "dt-clause",   "Treat AtLeast 1 cardinality constraints as regular clauses", true);
+ 
+ //=================================================================================================
+ // Constructor/Destructor:
 @@ -73,7 +73,7 @@
    , restart_first    (opt_restart_first)
    , restart_inc      (opt_restart_inc)
@@ -425,7 +434,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  }
 diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
 --- solvers/minicard/core/Solver.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/core/Solver.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/core/Solver.h	2020-07-04 10:55:42.000000000 +1000
 @@ -25,18 +25,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -530,7 +539,7 @@ diff -Naur solvers/minicard/core/Solver.h solvers/mc/core/Solver.h
  
 diff -Naur solvers/minicard/core/SolverTypes.h solvers/mc/core/SolverTypes.h
 --- solvers/minicard/core/SolverTypes.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/core/SolverTypes.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/core/SolverTypes.h	2020-07-04 10:55:42.000000000 +1000
 @@ -26,19 +26,19 @@
  **************************************************************************************************/
  
@@ -669,7 +678,7 @@ diff -Naur solvers/minicard/core/SolverTypes.h solvers/mc/core/SolverTypes.h
  |       lit_Undef  - Clause subsumes 'other'
 diff -Naur solvers/minicard/mtl/Alg.h solvers/mc/mtl/Alg.h
 --- solvers/minicard/mtl/Alg.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Alg.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Alg.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -689,7 +698,7 @@ diff -Naur solvers/minicard/mtl/Alg.h solvers/mc/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur solvers/minicard/mtl/Alloc.h solvers/mc/mtl/Alloc.h
 --- solvers/minicard/mtl/Alloc.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Alloc.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Alloc.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -711,7 +720,7 @@ diff -Naur solvers/minicard/mtl/Alloc.h solvers/mc/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur solvers/minicard/mtl/Heap.h solvers/mc/mtl/Heap.h
 --- solvers/minicard/mtl/Heap.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Heap.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Heap.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -731,7 +740,7 @@ diff -Naur solvers/minicard/mtl/Heap.h solvers/mc/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/minicard/mtl/IntTypes.h solvers/mc/mtl/IntTypes.h
 --- solvers/minicard/mtl/IntTypes.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/IntTypes.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/IntTypes.h	2020-07-04 10:55:42.000000000 +1000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -759,7 +768,7 @@ diff -Naur solvers/minicard/mtl/IntTypes.h solvers/mc/mtl/IntTypes.h
  #endif
 diff -Naur solvers/minicard/mtl/Map.h solvers/mc/mtl/Map.h
 --- solvers/minicard/mtl/Map.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Map.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Map.h	2020-07-04 10:55:42.000000000 +1000
 @@ -17,28 +17,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -804,7 +813,7 @@ diff -Naur solvers/minicard/mtl/Map.h solvers/mc/mtl/Map.h
  //=================================================================================================
 diff -Naur solvers/minicard/mtl/Queue.h solvers/mc/mtl/Queue.h
 --- solvers/minicard/mtl/Queue.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Queue.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Queue.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -824,7 +833,7 @@ diff -Naur solvers/minicard/mtl/Queue.h solvers/mc/mtl/Queue.h
  
 diff -Naur solvers/minicard/mtl/Sort.h solvers/mc/mtl/Sort.h
 --- solvers/minicard/mtl/Sort.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Sort.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Sort.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -848,7 +857,7 @@ diff -Naur solvers/minicard/mtl/Sort.h solvers/mc/mtl/Sort.h
  struct LessThan_default {
 diff -Naur solvers/minicard/mtl/Vec.h solvers/mc/mtl/Vec.h
 --- solvers/minicard/mtl/Vec.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/Vec.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/Vec.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -882,7 +891,7 @@ diff -Naur solvers/minicard/mtl/Vec.h solvers/mc/mtl/Vec.h
  
 diff -Naur solvers/minicard/mtl/XAlloc.h solvers/mc/mtl/XAlloc.h
 --- solvers/minicard/mtl/XAlloc.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/mtl/XAlloc.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/mtl/XAlloc.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -902,7 +911,7 @@ diff -Naur solvers/minicard/mtl/XAlloc.h solvers/mc/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/minicard/utils/Options.cc solvers/mc/utils/Options.cc
 --- solvers/minicard/utils/Options.cc	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/utils/Options.cc	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/utils/Options.cc	2020-07-04 10:55:42.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -951,7 +960,7 @@ diff -Naur solvers/minicard/utils/Options.cc solvers/mc/utils/Options.cc
      if (usage != NULL)
 diff -Naur solvers/minicard/utils/Options.h solvers/mc/utils/Options.h
 --- solvers/minicard/utils/Options.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/utils/Options.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/utils/Options.h	2020-07-04 10:55:42.000000000 +1000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1008,7 +1017,7 @@ diff -Naur solvers/minicard/utils/Options.h solvers/mc/utils/Options.h
              fprintf(stderr, "\n");
 diff -Naur solvers/minicard/utils/ParseUtils.h solvers/mc/utils/ParseUtils.h
 --- solvers/minicard/utils/ParseUtils.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/utils/ParseUtils.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/utils/ParseUtils.h	2020-07-04 11:25:28.000000000 +1000
 @@ -18,80 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1115,7 +1124,7 @@ diff -Naur solvers/minicard/utils/ParseUtils.h solvers/mc/utils/ParseUtils.h
  
 diff -Naur solvers/minicard/utils/System.cc solvers/mc/utils/System.cc
 --- solvers/minicard/utils/System.cc	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/utils/System.cc	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/utils/System.cc	2020-07-04 10:55:42.000000000 +1000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1179,7 +1188,7 @@ diff -Naur solvers/minicard/utils/System.cc solvers/mc/utils/System.cc
  #endif
 diff -Naur solvers/minicard/utils/System.h solvers/mc/utils/System.h
 --- solvers/minicard/utils/System.h	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/utils/System.h	2020-07-04 11:29:34.000000000 +1000
++++ solvers/mc/utils/System.h	2020-07-04 10:55:42.000000000 +1000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/

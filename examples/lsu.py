@@ -88,7 +88,7 @@ from __future__ import print_function
 import getopt
 from pysat.card import ITotalizer
 from pysat.formula import CNF, WCNF, WCNFPlus
-from pysat.solvers import Solver
+from pysat.solvers import Solver, SolverNames
 from threading import Timer
 import os
 import sys
@@ -353,12 +353,16 @@ class LSUPlus(LSU, object):
         :type verbose: int
     """
 
-    def __init__(self, formula, expect_interrupt=False, verbose=0):
+    def __init__(self, formula, solver, expect_interrupt=False, verbose=0):
         """
             Constructor.
         """
 
-        super(LSUPlus, self).__init__(formula, solver='mc',
+        assert solver in SolverNames.gluecard3 or \
+                solver in SolverNames.gluecard4 or \
+                solver in SolverNames.minicard, '{0} does not support native cardinality constraints'.format(solver)
+
+        super(LSUPlus, self).__init__(formula, solver=solver,
                 expect_interrupt=expect_interrupt, verbose=verbose)
 
         # adding atmost constraints
@@ -454,8 +458,8 @@ if __name__ == '__main__':
         # reading WCNF+
         elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
-            lsu = LSUPlus(formula, expect_interrupt=(timeout != None),
-                    verbose=verbose)
+            lsu = LSUPlus(formula, solver=solver,
+                    expect_interrupt=(timeout != None), verbose=verbose)
 
         # setting a timer if necessary
         if timeout is not None:

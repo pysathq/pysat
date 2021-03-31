@@ -21,6 +21,14 @@
 #include "cadical/cadical.hpp"
 #endif
 
+#ifdef WITH_GLUECARD30
+#include "gluecard30/core/Solver.h"
+#endif
+
+#ifdef WITH_GLUECARD41
+#include "gluecard41/core/Solver.h"
+#endif
+
 #ifdef WITH_GLUCOSE30
 #include "glucose30/core/Solver.h"
 #endif
@@ -43,6 +51,10 @@
 
 #ifdef WITH_MAPLESAT
 #include "maplesat/core/Solver.h"
+#endif
+
+#ifdef WITH_MERGESAT3
+#include "mergesat3/core/Solver.h"
 #endif
 
 #ifdef WITH_MINICARD
@@ -101,6 +113,48 @@ extern "C" {
 	static PyObject *py_cadical_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_cadical_del       (PyObject *, PyObject *);
 	static PyObject *py_cadical_acc_stats (PyObject *, PyObject *);
+#endif
+#ifdef WITH_GLUECARD30
+	static PyObject *py_gluecard3_new       (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_add_am    (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_solve     (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_propagate (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_setphases (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_interrupt (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_clearint  (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_setincr   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_core      (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_model     (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_del       (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_acc_stats (PyObject *, PyObject *);
+#endif
+#ifdef WITH_GLUECARD41
+	static PyObject *py_gluecard41_new       (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_add_am    (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_solve     (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_propagate (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_setphases (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_interrupt (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_clearint  (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_setincr   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_core      (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_model     (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_del       (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUCOSE30
 	static PyObject *py_glucose3_new       (PyObject *, PyObject *);
@@ -212,6 +266,24 @@ extern "C" {
 	static PyObject *py_maplesat_del       (PyObject *, PyObject *);
 	static PyObject *py_maplesat_acc_stats (PyObject *, PyObject *);
 #endif
+#ifdef WITH_MERGESAT3
+	static PyObject *py_mergesat3_new       (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_solve     (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_propagate (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_setphases (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_interrupt (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_clearint  (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_core      (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_model     (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_del       (PyObject *, PyObject *);
+	static PyObject *py_mergesat3_acc_stats (PyObject *, PyObject *);
+#endif
 #ifdef WITH_MINICARD
 	static PyObject *py_minicard_new       (PyObject *, PyObject *);
 	static PyObject *py_minicard_add_cl    (PyObject *, PyObject *);
@@ -283,6 +355,48 @@ static PyMethodDef module_methods[] = {
 	{ "cadical_nof_cls",   py_cadical_nof_cls,   METH_VARARGS,     ncls_docstring },
 	{ "cadical_del",       py_cadical_del,       METH_VARARGS,      del_docstring },
 	{ "cadical_acc_stats", py_cadical_acc_stats, METH_VARARGS, acc_stat_docstring },
+#endif
+#ifdef WITH_GLUECARD30
+	{ "gluecard3_new",       py_gluecard3_new,       METH_VARARGS,       new_docstring },
+	{ "gluecard3_add_cl",    py_gluecard3_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "gluecard3_add_am",    py_gluecard3_add_am,    METH_VARARGS,     addam_docstring },
+	{ "gluecard3_solve",     py_gluecard3_solve,     METH_VARARGS,     solve_docstring },
+	{ "gluecard3_solve_lim", py_gluecard3_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "gluecard3_propagate", py_gluecard3_propagate, METH_VARARGS,      prop_docstring },
+	{ "gluecard3_setphases", py_gluecard3_setphases, METH_VARARGS,    phases_docstring },
+	{ "gluecard3_cbudget",   py_gluecard3_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "gluecard3_pbudget",   py_gluecard3_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "gluecard3_interrupt", py_gluecard3_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "gluecard3_clearint",  py_gluecard3_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "gluecard3_setincr",   py_gluecard3_setincr,   METH_VARARGS,   setincr_docstring },
+	{ "gluecard3_tracepr",   py_gluecard3_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "gluecard3_core",      py_gluecard3_core,      METH_VARARGS,      core_docstring },
+	{ "gluecard3_model",     py_gluecard3_model,     METH_VARARGS,     model_docstring },
+	{ "gluecard3_nof_vars",  py_gluecard3_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "gluecard3_nof_cls",   py_gluecard3_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "gluecard3_del",       py_gluecard3_del,       METH_VARARGS,       del_docstring },
+	{ "gluecard3_acc_stats", py_gluecard3_acc_stats, METH_VARARGS,  acc_stat_docstring },
+#endif
+#ifdef WITH_GLUECARD41
+	{ "gluecard41_new",       py_gluecard41_new,       METH_VARARGS,       new_docstring },
+	{ "gluecard41_add_cl",    py_gluecard41_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "gluecard41_add_am",    py_gluecard41_add_am,    METH_VARARGS,     addam_docstring },
+	{ "gluecard41_solve",     py_gluecard41_solve,     METH_VARARGS,     solve_docstring },
+	{ "gluecard41_solve_lim", py_gluecard41_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "gluecard41_propagate", py_gluecard41_propagate, METH_VARARGS,      prop_docstring },
+	{ "gluecard41_setphases", py_gluecard41_setphases, METH_VARARGS,    phases_docstring },
+	{ "gluecard41_cbudget",   py_gluecard41_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "gluecard41_pbudget",   py_gluecard41_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "gluecard41_interrupt", py_gluecard41_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "gluecard41_clearint",  py_gluecard41_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "gluecard41_setincr",   py_gluecard41_setincr,   METH_VARARGS,   setincr_docstring },
+	{ "gluecard41_tracepr",   py_gluecard41_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "gluecard41_core",      py_gluecard41_core,      METH_VARARGS,      core_docstring },
+	{ "gluecard41_model",     py_gluecard41_model,     METH_VARARGS,     model_docstring },
+	{ "gluecard41_nof_vars",  py_gluecard41_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "gluecard41_nof_cls",   py_gluecard41_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "gluecard41_del",       py_gluecard41_del,       METH_VARARGS,       del_docstring },
+	{ "gluecard41_acc_stats", py_gluecard41_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_GLUCOSE30
 	{ "glucose3_new",       py_glucose3_new,       METH_VARARGS,       new_docstring },
@@ -393,6 +507,24 @@ static PyMethodDef module_methods[] = {
 	{ "maplesat_nof_cls",   py_maplesat_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "maplesat_del",       py_maplesat_del,       METH_VARARGS,       del_docstring },
 	{ "maplesat_acc_stats", py_maplesat_acc_stats, METH_VARARGS,  acc_stat_docstring },
+#endif
+#ifdef WITH_MERGESAT3
+	{ "mergesat3_new",       py_mergesat3_new,       METH_VARARGS,       new_docstring },
+	{ "mergesat3_add_cl",    py_mergesat3_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "mergesat3_solve",     py_mergesat3_solve,     METH_VARARGS,     solve_docstring },
+	{ "mergesat3_solve_lim", py_mergesat3_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "mergesat3_propagate", py_mergesat3_propagate, METH_VARARGS,      prop_docstring },
+	{ "mergesat3_setphases", py_mergesat3_setphases, METH_VARARGS,    phases_docstring },
+	{ "mergesat3_cbudget",   py_mergesat3_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "mergesat3_pbudget",   py_mergesat3_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "mergesat3_interrupt", py_mergesat3_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "mergesat3_clearint",  py_mergesat3_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "mergesat3_core",      py_mergesat3_core,      METH_VARARGS,      core_docstring },
+	{ "mergesat3_model",     py_mergesat3_model,     METH_VARARGS,     model_docstring },
+	{ "mergesat3_nof_vars",  py_mergesat3_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "mergesat3_nof_cls",   py_mergesat3_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "mergesat3_del",       py_mergesat3_del,       METH_VARARGS,       del_docstring },
+	{ "mergesat3_acc_stats", py_mergesat3_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_MINICARD
 	{ "minicard_new",       py_minicard_new,       METH_VARARGS,       new_docstring },
@@ -946,6 +1078,1172 @@ static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
 	);
 }
 #endif  // WITH_CADICAL
+
+// API for Gluecard 3.0
+//=============================================================================
+#ifdef WITH_GLUECARD30
+static PyObject *py_gluecard3_new(PyObject *self, PyObject *args)
+{
+	Gluecard30::Solver *s = new Gluecard30::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void gluecard3_declare_vars(Gluecard30::Solver *s, const int max_id)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool gluecard3_iterate(
+	PyObject *obj,
+	Gluecard30::vec<Gluecard30::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? Gluecard30::mkLit(l, false) : Gluecard30::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	Gluecard30::vec<Gluecard30::Lit> cl;
+	int max_var = -1;
+
+	if (gluecard3_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_add_am(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+	int64_t rhs;
+
+	if (!PyArg_ParseTuple(args, "OOl", &s_obj, &c_obj, &rhs))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	Gluecard30::vec<Gluecard30::Lit> cl;
+	int max_var = -1;
+
+	if (gluecard3_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	bool res = s->addAtMost(cl, rhs);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	Gluecard30::vec<Gluecard30::Lit> a;
+	int max_var = -1;
+
+	if (gluecard3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	bool res = s->solve(a);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+	int expect_interrupt;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	Gluecard30::vec<Gluecard30::Lit> a;
+	int max_var = -1;
+
+	if (gluecard3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	Gluecard30::lbool res = Gluecard30::lbool((uint8_t)2);  // l_Undef
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
+
+	if (res != Gluecard30::lbool((uint8_t)2))  // l_Undef
+		return PyBool_FromLong((long)!(Gluecard30::toInt(res)));
+
+	Py_RETURN_NONE;  // return Python's None if l_Undef
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_propagate(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &save_phases,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	Gluecard30::vec<Gluecard30::Lit> a;
+	int max_var = -1;
+
+	if (gluecard3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	Gluecard30::vec<Gluecard30::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Gluecard30::var(p[i]) * (Gluecard30::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_setphases(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard3_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_setincr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	s->setIncrementalMode();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->certifiedOutput = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->certifiedOutput = fdopen(fd, "w+");
+	if (s->certifiedOutput == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->certifiedOutput);
+	Py_INCREF(p_obj);
+#endif
+
+	s->certifiedUNSAT  = true;
+	s->certifiedPyFile = (void *)p_obj;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	Gluecard30::vec<Gluecard30::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = Gluecard30::var((*c)[i]) * (Gluecard30::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
+
+	Py_DECREF(core);
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	Gluecard30::vec<Gluecard30::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		Gluecard30::lbool True = Gluecard30::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->certifiedUNSAT == true)
+		PyFile_DecUseCount((PyFileObject *)(s->certifiedPyFile));
+#else
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->certifiedUNSAT == true)
+		Py_DECREF((PyObject *)s->certifiedPyFile);
+#endif
+
+	delete s;
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
+#endif  // WITH_GLUECARD30
+
+// API for Gluecard 3.0
+//=============================================================================
+#ifdef WITH_GLUECARD41
+static PyObject *py_gluecard41_new(PyObject *self, PyObject *args)
+{
+	Gluecard41::Solver *s = new Gluecard41::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void gluecard41_declare_vars(Gluecard41::Solver *s, const int max_id)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool gluecard41_iterate(
+	PyObject *obj,
+	Gluecard41::vec<Gluecard41::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? Gluecard41::mkLit(l, false) : Gluecard41::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	Gluecard41::vec<Gluecard41::Lit> cl;
+	int max_var = -1;
+
+	if (gluecard41_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_add_am(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+	int64_t rhs;
+
+	if (!PyArg_ParseTuple(args, "OOl", &s_obj, &c_obj, &rhs))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	Gluecard41::vec<Gluecard41::Lit> cl;
+	int max_var = -1;
+
+	if (gluecard41_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	bool res = s->addAtMost(cl, rhs);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	Gluecard41::vec<Gluecard41::Lit> a;
+	int max_var = -1;
+
+	if (gluecard41_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	bool res = s->solve(a);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+	int expect_interrupt;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	Gluecard41::vec<Gluecard41::Lit> a;
+	int max_var = -1;
+
+	if (gluecard41_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	Gluecard41::lbool res = Gluecard41::lbool((uint8_t)2);  // l_Undef
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
+
+	if (res != Gluecard41::lbool((uint8_t)2))  // l_Undef
+		return PyBool_FromLong((long)!(Gluecard41::toInt(res)));
+
+	Py_RETURN_NONE;  // return Python's None if l_Undef
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_propagate(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &save_phases,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	Gluecard41::vec<Gluecard41::Lit> a;
+	int max_var = -1;
+
+	if (gluecard41_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	Gluecard41::vec<Gluecard41::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = Gluecard41::var(p[i]) * (Gluecard41::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_setphases(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		gluecard41_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_setincr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	s->setIncrementalMode();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	s->certifiedOutput = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	s->certifiedOutput = fdopen(fd, "w+");
+	if (s->certifiedOutput == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(s->certifiedOutput);
+	Py_INCREF(p_obj);
+#endif
+
+	s->certifiedUNSAT  = true;
+	s->certifiedPyFile = (void *)p_obj;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	Gluecard41::vec<Gluecard41::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = Gluecard41::var((*c)[i]) * (Gluecard41::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
+
+	Py_DECREF(core);
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	Gluecard41::vec<Gluecard41::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		Gluecard41::lbool True = Gluecard41::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCObject_AsVoidPtr(s_obj);
+
+	if (s->certifiedUNSAT == true)
+		PyFile_DecUseCount((PyFileObject *)(s->certifiedPyFile));
+#else
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+
+	if (s->certifiedUNSAT == true)
+		Py_DECREF((PyObject *)s->certifiedPyFile);
+#endif
+
+	delete s;
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
+#endif  // WITH_GLUECARD41
 
 // API for Glucose 3.0
 //=============================================================================
@@ -4047,6 +5345,493 @@ static PyObject *py_maplecm_acc_stats(PyObject *self, PyObject *args)
 	);
 }
 #endif  // WITH_MAPLECM
+
+// API for MergeSat 3
+//=============================================================================
+#ifdef WITH_MERGESAT3
+static PyObject *py_mergesat3_new(PyObject *self, PyObject *args)
+{
+	MergeSat3::Solver *s = new MergeSat3::Solver();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+// auxiliary function for declaring new variables
+//=============================================================================
+static inline void mergesat3_declare_vars(MergeSat3::Solver *s, const int max_id)
+{
+	while (s->nVars() < max_id + 1)
+		s->newVar();
+}
+
+// translating an iterable to vec<Lit>
+//=============================================================================
+static inline bool mergesat3_iterate(
+	PyObject *obj,
+	MergeSat3::vec<MergeSat3::Lit>& v,
+	int& max_var
+)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push((l > 0) ? MergeSat3::mkLit(l, false) : MergeSat3::mkLit(-l, true));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+	MergeSat3::vec<MergeSat3::Lit> cl;
+	int max_var = -1;
+
+	if (mergesat3_iterate(c_obj, cl, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		mergesat3_declare_vars(s, max_var);
+
+	bool res = s->addClause(cl);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+	MergeSat3::vec<MergeSat3::Lit> a;
+	int max_var = -1;
+
+	if (mergesat3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		mergesat3_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	bool res = s->solve(a);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+	int expect_interrupt;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+	MergeSat3::vec<MergeSat3::Lit> a;
+	int max_var = -1;
+
+	if (mergesat3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		mergesat3_declare_vars(s, max_var);
+
+	MergeSat3::lbool res = MergeSat3::lbool((uint8_t)2);  // l_Undef
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = s->solveLimited(a);
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = s->solveLimited(a);
+		Py_END_ALLOW_THREADS
+	}
+
+	if (res != MergeSat3::lbool((uint8_t)2))  // l_Undef
+		return PyBool_FromLong((long)!(MergeSat3::toInt(res)));
+
+	Py_RETURN_NONE;  // return Python's None if l_Undef
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_propagate(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &save_phases,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+	MergeSat3::vec<MergeSat3::Lit> a;
+	int max_var = -1;
+
+	if (mergesat3_iterate(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		mergesat3_declare_vars(s, max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	MergeSat3::vec<MergeSat3::Lit> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = MergeSat3::var(p[i]) * (MergeSat3::sign(p[i]) ? -1 : 1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_setphases(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (max_var > 0)
+		mergesat3_declare_vars(s, max_var);
+
+	for (size_t i = 0; i < p.size(); ++i)
+		s->setPolarity(abs(p[i]), p[i] < 0);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setConfBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->setPropBudget(budget);
+	else
+		s->budgetOff();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	s->interrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	s->clearInterrupt();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	MergeSat3::vec<MergeSat3::Lit> *c = &(s->conflict);  // minisat's conflict
+
+	PyObject *core = PyList_New(c->size());
+	for (int i = 0; i < c->size(); ++i) {
+		int l = MergeSat3::var((*c)[i]) * (MergeSat3::sign((*c)[i]) ? 1 : -1);
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i, lit);
+	}
+
+	if (c->size()) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
+
+	Py_DECREF(core);
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	// minisat's model
+	MergeSat3::vec<MergeSat3::lbool> *m = &(s->model);
+
+	if (m->size()) {
+		// l_True fails to work
+		MergeSat3::lbool True = MergeSat3::lbool((uint8_t)0);
+
+		PyObject *model = PyList_New(m->size() - 1);
+		for (int i = 1; i < m->size(); ++i) {
+			int l = i * ((*m)[i] == True ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	int nof_vars = s->nVars() - 1;  // 0 is a dummy variable
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	int nof_cls = s->nClauses();
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	MergeSat3::Solver *s = (MergeSat3::Solver *)pyobj_to_void(s_obj);
+
+	delete s;
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_mergesat3_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	MergeSat3::Solver *s = (MergeSat3::Solver *)PyCObject_AsVoidPtr(s_obj);
+#else
+	MergeSat3::Solver *s = (MergeSat3::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
+		"restarts", s->starts,
+		"conflicts", s->conflicts,
+		"decisions", s->decisions,
+		"propagations", s->propagations
+	);
+}
+#endif  // WITH_MERGESAT3
 
 // API for Minicard
 //=============================================================================

@@ -205,8 +205,10 @@ class FM(object):
         self.oracle = Solver(name=self.solver, bootstrap_with=self.hard, use_timer=True)
 
         if self.atm1:  # this check is needed at the beggining (before iteration 1)
-            assert self.solver in SolverNames.minicard, \
-                    'Only Minicard supports native cardinality constraints. Make sure you use the right type of formula.'
+            assert solver_name in SolverNames.minicard or \
+                    solver_name in SolverNames.gluecard3 or \
+                    solver_name in SolverNames.gluecard4, \
+                    '{0} does not support native cardinality constraints'.format(solver_name)
 
             # self.atm1 is not empty only in case of minicard
             for am in self.atm1:
@@ -467,7 +469,7 @@ def parse_options():
     cardenc = encmap[cardenc]
 
     # using minicard's native implementation of AtMost1 constraints
-    if solver in SolverNames.minicard:
+    if solver in SolverNames.minicard or solver in SolverNames.gluecard3 or solver in SolverNames.gluecard4:
         cardenc = encmap['native']
     else:
         assert cardenc != encmap['native'], 'Only Minicard can handle cardinality constraints natively'
