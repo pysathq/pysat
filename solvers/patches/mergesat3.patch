@@ -120,7 +120,7 @@ diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
  #endif
 diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineProofChecker.h
 --- solvers/mergesat3/core/OnlineProofChecker.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/OnlineProofChecker.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/core/OnlineProofChecker.h	2021-03-31 21:36:12.000000000 +1100
 @@ -2,19 +2,19 @@
  Copyright (c) 2020, Norbert Manthey
  **************************************************************************************************/
@@ -159,7 +159,16 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
      occ.push_back(std::vector<CRef>()); // there are no new clauses here yet
      occ.push_back(std::vector<CRef>());
      ma.resize(ma.size() + 2); // for each literal have a cell
-@@ -157,7 +157,7 @@
+@@ -150,14 +150,16 @@
+     DOUT(if (verbose > 3) std::cerr << "c [DRAT-OTFC] enqueue literal " << p << std::endl;);
+     assigns[var(p)] = lbool(!sign(p));
+     // prefetch watch lists
++#ifndef _MSC_VER
+     __builtin_prefetch(&watches[p]);
++#endif
+     trail.push_(p);
+ }
+ 
  inline void OnlineProofChecker::cancelUntil()
  {
      for (int c = trail.size() - 1; c >= 0; c--) {
@@ -168,7 +177,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
      }
      qhead = 0;
      trail.clear();
-@@ -178,9 +178,9 @@
+@@ -178,9 +180,9 @@
      DOUT(if (verbose > 4) std::cerr << "c [DRAT-OTFC] propagate " << unitClauses.size() << " units" << std::endl;);
      for (int i = 0; i < unitClauses.size(); ++i) { // propagate all known units
          const Lit l = unitClauses[i];
@@ -180,7 +189,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
              return true;
          } else {
              uncheckedEnqueue(l);
-@@ -202,7 +202,7 @@
+@@ -202,7 +204,7 @@
  
              // Try to avoid inspecting the clause:
              const Lit blocker = i->blocker;
@@ -189,7 +198,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
                  DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] clause is true by blocker " << blocker << " in "
                                                  << ca[i->cref] << std::endl;);
                  *j++ = *i++;
-@@ -222,7 +222,7 @@
+@@ -222,7 +224,7 @@
              // If 0th watch is true, then clause is already satisfied.
              Lit first = c[0];
              const Watcher &w = Watcher(cr, first);            // updates the blocking literal
@@ -198,7 +207,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
                  DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] clause is true by other watch " << first << " in "
                                                  << c << std::endl;);
                  *j++ = w;
-@@ -231,7 +231,7 @@
+@@ -231,7 +233,7 @@
  
              // Look for new watch:
              for (int k = 2; k < c.size(); k++)
@@ -207,7 +216,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
                      DOUT(if (verbose > 8) std::cerr << "c [DRAT-OTFC] found new watch for the clause: " << c[k]
                                                      << " in " << c << std::endl;);
                      c[1] = c[k];
-@@ -242,7 +242,7 @@
+@@ -242,7 +244,7 @@
  
              // Did not find watch -- clause is unit under assignment:
              *j++ = w;
@@ -216,7 +225,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -607,9 +607,9 @@
+@@ -607,9 +609,9 @@
      // enqueue all complementary literals!
      cancelUntil();
      for (int i = 0; i < cls.size(); ++i) {
@@ -228,7 +237,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
              conflict = true;
              break;
          }
-@@ -691,9 +691,9 @@
+@@ -691,9 +693,9 @@
                              resovleConflict = false;
                              cancelUntil();
                              for (int k = 0; k < lits.size(); ++k) {
@@ -240,7 +249,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
                                      resovleConflict = true;
                                      DOUT(if (verbose > 4) std::cerr << "c [DRAT-OTFC] the clause " << cls
                                                                      << " conflicts during enqueing its literals" << std::endl;);
-@@ -832,6 +832,6 @@
+@@ -832,6 +834,6 @@
      }
  }
  
@@ -250,7 +259,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
  #endif
 diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
 --- solvers/mergesat3/core/Solver.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.cc	2021-03-31 12:08:22.000000000 +1100
++++ solvers/mgs3/core/Solver.cc	2021-03-31 21:36:41.000000000 +1100
 @@ -50,14 +50,14 @@
  #include <signal.h>
  #include <unistd.h>
@@ -541,7 +550,14 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
      assert(level <= decisionLevel() && "do not enqueue literals on non-existing levels");
      assert((from == CRef_Undef || from < ca.size()) && "do not use reasons that are not located in the allocator");
      Var x = var(p);
-@@ -1679,6 +1680,57 @@
+@@ -1674,11 +1675,64 @@
+ 
+     assigns[x] = lbool(!sign(p));
+     vardata[x] = mkVarData(from, level);
++#ifndef _MSC_VER
+     __builtin_prefetch(&watches[p], 1, 0); // prefetch the watch, prepare for a write (1), the data is highly temoral (0)
++#endif
+     trail.push_(p);
  }
  
  
@@ -599,7 +615,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  /*_________________________________________________________________________________________________
  |
  |  propagate : [void]  ->  [Clause*]
-@@ -1721,7 +1773,7 @@
+@@ -1721,7 +1775,7 @@
                          old_reason = oldreasons[var(old_trail_top)];
                          if (old_reason == CRef_Undef) {
                              break;
@@ -608,7 +624,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                              const Clause &new_conflict = ca[old_reason];
                              if (new_conflict.size() != 2 && new_conflict[0] != old_trail_top) {
                                  /* We will hit a conflict here, the clause is just not structured correctly yet,
-@@ -1738,7 +1790,7 @@
+@@ -1738,7 +1792,7 @@
                                     "asserting literal is at position 1");
                              /* No need to touch watch lists, we will backtrack this level anyways! */
                              goto propagation_out;
@@ -617,7 +633,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                              Clause &new_conflict = ca[old_reason];
                              if (new_conflict.size() != 2 && new_conflict[0] != old_trail_top) {
                                  /* We will use this unit clause, the clause is just not structured correctly yet */
-@@ -1753,7 +1805,7 @@
+@@ -1753,7 +1807,7 @@
                              uncheckedEnqueue(old_trail_top, decisionLevel(), old_reason);
                          }
                      }
@@ -626,7 +642,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      reset_old_trail();
                  }
              }
-@@ -1763,10 +1815,10 @@
+@@ -1763,10 +1817,10 @@
          vec<Watcher> &ws_bin = watches_bin[p]; // Propagate binary clauses first.
          for (int k = 0; k < ws_bin.size(); k++) {
              Lit the_other = ws_bin[k].blocker;
@@ -639,7 +655,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                  uncheckedEnqueue(the_other, currLevel, ws_bin[k].cref);
  #ifdef PRINT_OUT
                  std::cout << "i " << the_other << " l " << currLevel << "\n";
-@@ -1777,7 +1829,7 @@
+@@ -1777,7 +1831,7 @@
          for (i = j = (Watcher *)ws, end = i + ws.size(); i != end;) {
              // Try to avoid inspecting the clause:
              const Lit blocker = i->blocker;
@@ -648,7 +664,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                  *j++ = *i++;
                  continue;
              }
-@@ -1794,7 +1846,7 @@
+@@ -1794,7 +1848,7 @@
              // If 0th watch is true, then clause is already satisfied.
              const Lit first = c[0];
              const Watcher w = Watcher(cr, first);
@@ -657,7 +673,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                  *j++ = w;
                  continue;
              }
-@@ -1802,7 +1854,7 @@
+@@ -1802,7 +1856,7 @@
              // Look for new watch:
              int watchPos = 0, avoidLevel = assumptions.size();
              for (int k = 2; k < c.size(); k++) {
@@ -666,7 +682,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      watchPos = k; /* memorize that we found one literal we can watch */
                      if (level(var(c[k])) > avoidLevel) break;
                  }
-@@ -1812,7 +1864,7 @@
+@@ -1812,7 +1866,7 @@
              if (watchPos != 0) {
                  c[1] = c[watchPos];
                  c[watchPos] = false_lit;
@@ -675,7 +691,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      lazySATwatch.push(watchItem(w, ~c[1]));
                  } else {
                      watches[~c[1]].push(w);
-@@ -1822,7 +1874,7 @@
+@@ -1822,7 +1876,7 @@
  
              // Did not find watch -- clause is unit under assignment:
              *j++ = w;
@@ -684,7 +700,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -1848,7 +1900,7 @@
+@@ -1848,7 +1902,7 @@
                      if (nMaxInd != 1) {
                          std::swap(c[1], c[nMaxInd]);
                          j--; // undo last watch
@@ -693,7 +709,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                              lazySATwatch.push(watchItem(w, ~c[1]));
                          } else {
                              watches[~c[1]].push(w);
-@@ -2023,7 +2075,7 @@
+@@ -2023,7 +2077,7 @@
              repeatReusedTrail = false; // get it right this time?
  
              // Activity based selection
@@ -702,7 +718,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                     !decision[next]) // found a yet unassigned variable with the highest activity among the unassigned variables
                  if (order_heap->empty()) {
                      // we cannot compare to any other variable, hence, we have SAT already
-@@ -2048,7 +2100,7 @@
+@@ -2048,7 +2102,7 @@
              if (restart.selection_type > 1 && restartLevel > 0) { // check whether jumping higher would be "more correct"
                  cancelUntil(restartLevel);
                  Var more = var_Undef;
@@ -711,7 +727,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      if (order_heap->empty()) {
                          more = var_Undef;
                          break;
-@@ -2116,7 +2168,7 @@
+@@ -2116,7 +2170,7 @@
      /* all unassigned variables present, no need to rebuild */
      if (decisionLevel() == 0 && (order_heap->size() + trail.size() >= nVars())) {
          TRACE(for (Var v = 0; v < nVars(); v++) {
@@ -720,7 +736,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                     "unassigned variables have to be present in the heap");
          });
          return;
-@@ -2124,7 +2176,7 @@
+@@ -2124,7 +2178,7 @@
  
      decision_rebuild_vars.clear();
      for (Var v = 0; v < nVars(); v++)
@@ -729,7 +745,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
      order_heap->build(decision_rebuild_vars);
      full_heap_size = order_heap->size();
-@@ -2204,10 +2256,10 @@
+@@ -2204,10 +2258,10 @@
  
                  if (reason(v) != CRef_Undef) {
                      Clause &rc = ca[reason(v)];
@@ -742,7 +758,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                          Lit tmp = rc[0];
                          rc[0] = rc[1], rc[1] = tmp;
                      }
-@@ -2281,7 +2333,7 @@
+@@ -2281,7 +2335,7 @@
  
      for (i = lits.size() - 1; i >= 0; i--) {
          lit = lits[i];
@@ -751,7 +767,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              newDecisionLevel();
              uncheckedEnqueue(lit, decisionLevel());
              CRef confl = propagate();
-@@ -2301,10 +2353,10 @@
+@@ -2301,10 +2355,10 @@
      bool conflict = false;
  
      // literal is a unit clause
@@ -765,7 +781,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
      // propagate on a new decision level, to be able to roll back
      newDecisionLevel();
-@@ -2329,14 +2381,14 @@
+@@ -2329,14 +2383,14 @@
              // Perform user provided assumption:
              Lit p = assumptions[decisionLevel()];
  
@@ -782,7 +798,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          }
  
          assert((decisionLevel() == 0 || decisionLevel() == assumptions.size()) &&
-@@ -2349,7 +2401,7 @@
+@@ -2349,7 +2403,7 @@
          }
      }
  
@@ -791,7 +807,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  }
  
  bool Solver::check_invariants()
-@@ -2622,13 +2674,13 @@
+@@ -2622,13 +2676,13 @@
                     learnts_core.size() + learnts_tier2.size() + learnts_local.size());
          nbSimplifyAll++;
          if (!simplifyAll()) {
@@ -807,7 +823,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
      // check whether we want to do inprocessing
      inprocessing();
-@@ -2658,7 +2710,7 @@
+@@ -2658,7 +2712,7 @@
              TRACE(printf("c hit conflict %ld\n", conflicts);)
              if (conflicts == 100000 && learnts_core.size() < 100) core_lbd_cut = 5;
              ConflictData data = FindConflictLevel(confl);
@@ -816,7 +832,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              // assert(prev_confl != this_confl && "we should not have duplicate conflicts in a row");
              if (data.bOnlyOneLitFromHighest) { //  && prev_confl != this_confl) {
                  int btLevel = (prev_confl != this_confl) ? data.nHighestLevel - 1 : data.secondHighestLevel - 1;
-@@ -2775,10 +2827,10 @@
+@@ -2775,10 +2829,10 @@
                  int var_nums = nVars();
                  for (int idx_i = 0; idx_i < var_nums; ++idx_i) {
                      lbool value_i = value(idx_i);
@@ -829,7 +845,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      }
                  }
              }
-@@ -2798,7 +2850,7 @@
+@@ -2798,7 +2852,7 @@
  
                      if (res) {
                          solved_by_ls = true;
@@ -838,7 +854,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      }
                  }
              }
-@@ -2823,11 +2875,11 @@
+@@ -2823,11 +2877,11 @@
                  restartLevel = (assumptions.size() && restartLevel <= assumptions.size()) ? assumptions.size() : restartLevel;
                  TRACE(std::cout << "c jump to level " << restartLevel << " for restart" << std::endl);
                  cancelUntil(restartLevel);
@@ -852,7 +868,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
              if (core_size_lim != -1 && learnts_core.size() > core_size_lim) {
                  TRACE(std::cout << "c reduce core learnt clauses" << std::endl);
-@@ -2852,12 +2904,12 @@
+@@ -2852,12 +2906,12 @@
              while (decisionLevel() < assumptions.size()) {
                  // Perform user provided assumption:
                  Lit p = assumptions[decisionLevel()];
@@ -868,7 +884,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                  } else {
                      next = p;
                      break;
-@@ -2871,7 +2923,7 @@
+@@ -2871,7 +2925,7 @@
  
                  if (next == lit_Undef)
                      // Model found:
@@ -877,7 +893,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
                  lastDecision = var(next);
              }
-@@ -2901,17 +2953,17 @@
+@@ -2901,17 +2955,17 @@
      receivedCls++;
  
      if (cls.size() == 1) {
@@ -898,7 +914,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          attachClause(cr);
          claBumpActivity(ca[cr]);
      }
-@@ -3075,7 +3127,7 @@
+@@ -3075,7 +3129,7 @@
  {
      model.clear();
      conflict.clear();
@@ -907,7 +923,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
      reset_old_trail();
      solves++;
-@@ -3089,7 +3141,7 @@
+@@ -3089,7 +3143,7 @@
      max_learnts = nClauses() * learntsize_factor;
      learntsize_adjust_confl = learntsize_adjust_start_confl;
      learntsize_adjust_cnt = (int)learntsize_adjust_confl;
@@ -916,7 +932,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  
      ls_mediation_soln.resize(nVars());
      ls_best_soln.resize(nVars());
-@@ -3116,7 +3168,7 @@
+@@ -3116,7 +3170,7 @@
      if (assumptions.size() == 0 && solves == 1 && initial_sls) {
          int fls_res = call_ls(false);
          if (fls_res) {
@@ -925,7 +941,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          }
      }
  
-@@ -3124,7 +3176,7 @@
+@@ -3124,7 +3178,7 @@
      if (solves == 1) {
          if (!usesVSIDS()) toggle_decision_heuristic(true);
          int init = VSIDS_props_init_limit;
@@ -934,7 +950,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          // do not use VSIDS now
          toggle_decision_heuristic(false);
      }
-@@ -3133,7 +3185,7 @@
+@@ -3133,7 +3187,7 @@
      uint64_t curr_props = 0;
      int curr_restarts = 0;
      last_switch_conflicts = starts;
@@ -943,7 +959,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          if (propagations - curr_props > VSIDS_props_limit) {
              curr_props = propagations;
              switch_mode = true;
-@@ -3168,14 +3220,14 @@
+@@ -3168,14 +3222,14 @@
      if (verbosity >= 1) printf("c ===============================================================================\n");
  
  #ifdef BIN_DRUP
@@ -961,7 +977,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          else
              for (int i = 0; i < nVars(); i++) model[i] = value(i);
  
-@@ -3188,12 +3240,12 @@
+@@ -3188,12 +3242,12 @@
                  printf("c validated SAT answer\n");
          }
  
@@ -976,7 +992,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          if (lcm_core_success) {
              int pre_conflict_size = conflict.size();
              simplifyLearnt(conflict);
-@@ -3228,7 +3280,7 @@
+@@ -3228,7 +3282,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -985,7 +1001,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
      fprintf(f, "0\n");
  }
  
-@@ -3263,7 +3315,7 @@
+@@ -3263,7 +3317,7 @@
          if (!satisfied(ca[clauses[i]])) {
              Clause &c = ca[clauses[i]];
              for (int j = 0; j < c.size(); j++)
@@ -994,7 +1010,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          }
  
      // Assumptions are added as unit clauses:
-@@ -3272,7 +3324,7 @@
+@@ -3272,7 +3326,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++) {
@@ -1003,7 +1019,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
      }
  
-@@ -3291,7 +3343,7 @@
+@@ -3291,7 +3345,7 @@
          int Z = 0, i, j, k, l = -1, p;
  
          if (verbosity > 0)
@@ -1012,7 +1028,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          // fill occurrence data structure
          O.resize(2 * nVars());
  
-@@ -3402,7 +3454,7 @@
+@@ -3402,7 +3456,7 @@
          if (add_tmp.size()) {
              cancelUntil(0, false);
              for (int i = 0; i < add_tmp.size(); ++i) {
@@ -1021,7 +1037,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      ok = false;
                      return false;
                  }
-@@ -3500,33 +3552,33 @@
+@@ -3500,33 +3554,33 @@
  
  void Solver::printStats()
  {
@@ -1082,7 +1098,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  }
  
  bool Solver::call_ls(bool use_up_build)
-@@ -3535,7 +3587,7 @@
+@@ -3535,7 +3589,7 @@
  
      called_initial_sls = true;
  
@@ -1091,7 +1107,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
      int ls_var_nums = nVars();
      int ls_cls_nums = nClauses() + learnts_core.size() + learnts_tier2.size();
  
-@@ -3572,7 +3624,7 @@
+@@ -3572,7 +3626,7 @@
              int cls_sz = c.size();
              for (int j = 0; j < cls_sz; j++) {
                  int cur_lit = toFormal(c[j]);
@@ -1100,7 +1116,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              }
              ct++;
          }
-@@ -3580,19 +3632,19 @@
+@@ -3580,19 +3634,19 @@
      if (trail_lim.size() > 0) {
          int cls_sz = trail_lim[0];
          for (int i = 0; i < cls_sz; i++) {
@@ -1123,7 +1139,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          ct++;
      }
  
-@@ -3600,16 +3652,16 @@
+@@ -3600,16 +3654,16 @@
      int topLevel = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
      for (int i = 0; i < topLevel; ++i) {
          Var v = var(trail[i]);
@@ -1143,7 +1159,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              int v = item.var_num;
              ccnr._vars[v].literals.push_back(item);
          }
-@@ -3633,11 +3685,11 @@
+@@ -3633,11 +3687,11 @@
          std::vector<int> undef_vars(var_nums - t_sz + 2);
          std::vector<int> idx_undef_vars(var_nums + 1, -1); // undef_vars' idx is not -1
          for (int i = 0; i < var_nums; ++i)
