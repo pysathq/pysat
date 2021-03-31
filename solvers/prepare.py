@@ -250,10 +250,6 @@ to_move = {
     ],
     'maplesat': [],
     'mergesat3': [
-        ('core', '_core'),
-        ('mtl', '_mtl'),
-        ('simp', '_simp'),
-        ('utils', '_utils'),
         ('minisat/core', 'core'),
         ('minisat/mtl', 'mtl'),
         ('minisat/simp', 'simp'),
@@ -452,7 +448,6 @@ to_remove = {
         '.travis.yml',
         'core/Makefile',
         'core/ipasir.h',
-        'Dockerfile',
         'doc',
         'LICENSE',
         'licence.txt',
@@ -611,6 +606,7 @@ def extract_archive(archive, solver, put_inside = False):
         directory = directory.rstrip('/').split('/')[0]
         myzip.close()
 
+    print(put_inside, directory, solver)
     if not put_inside and directory != solver:
         if os.path.exists(os.path.join('solvers', solver)):
             shutil.rmtree(os.path.join('solvers', solver))
