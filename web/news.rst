@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+20.04.2021 (*0.1.7.dev2*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Improved the sequential counters encoding based on Donald Knuth's
+  irredundant variant, following the suggestion of Alex Healy.
+
 31.03.2021 (*0.1.7.dev1*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
