@@ -98,44 +98,78 @@ void seqcounter_encode_atmostN(
 	// initialize the map
 	Pair2IntMap p2i_map;
 
-	// phase 1
-	int s11 = mk_yvar(top_id, p2i_map, make_pair(1, 1));
-	clset.create_binary_clause(s11, -vars[0]);
+	/* the new implementation follows Donald Knuth's irredundant */
+	/* variant of the encoding, as suggested by Alex Healy */
+	for (size_t j = 0; j < vars.size() - tval; ++j) {
+		// k = 0, eq 19:
+		int s0j = mk_yvar(top_id, p2i_map, make_pair(0, j));
+		clset.create_binary_clause(-vars[j], s0j);
 
-	// phase 2
-	for (int j = 2; j <= tval; j++) {
-		int s1j = mk_yvar(top_id, p2i_map, make_pair(1, j));
-		clset.create_unit_clause(-s1j);
-	}
+		// main part, i.e. when 0 <= k < tval - 1:
+		for (int k = 0; k < tval - 1; ++k) {
+			// eq 18:
+			int skj = mk_yvar(top_id, p2i_map, make_pair(k, j));
+			if (j < vars.size() - tval - 1) {
+				int skj1 = mk_yvar(top_id, p2i_map, make_pair(k, j + 1));
+				clset.create_binary_clause(-skj, skj1);
+			}
 
-	// phase 3
-	for (unsigned int i = 2; i < vars.size(); i++) {
-		// phase 3.1
-		int si1 = mk_yvar(top_id, p2i_map, make_pair(i, 1));
-		clset.create_binary_clause(-vars[i - 1], si1);
-
-		int sim11 = mk_yvar(top_id, p2i_map, make_pair(i - 1, 1));
-		clset.create_binary_clause(-sim11, si1);
-
-		// phase 3.2
-		for (int j = 2; j <= tval; j++) {
-			int sim1jm1 = mk_yvar(top_id, p2i_map, make_pair(i - 1, j - 1));
-			int sij = mk_yvar(top_id, p2i_map, make_pair(i, j));
-			clset.create_ternary_clause(-vars[i - 1], -sim1jm1, sij);
-			int sim1j = mk_yvar(top_id, p2i_map, make_pair(i - 1, j));
-			clset.create_binary_clause(-sim1j, sij);
+			// eq 19:
+			int sk1j = mk_yvar(top_id, p2i_map, make_pair(k + 1, j));
+			clset.create_ternary_clause(-vars[j + k + 1], -skj, sk1j);
 		}
 
-		// phase 3.3
-		int sim1k = mk_yvar(top_id, p2i_map, make_pair(i - 1, tval));
-		clset.create_binary_clause(-vars[i - 1], -sim1k);
+		// k = tval - 1, eq 18:
+		int stj = mk_yvar(top_id, p2i_map, make_pair(tval - 1, j));
+		if (j < vars.size() - tval - 1) {
+			int stj1 = mk_yvar(top_id, p2i_map, make_pair(tval - 1, j + 1));
+			clset.create_binary_clause(-stj, stj1);
+		}
+
+		// k = tval - 1, eq 19:
+		clset.create_binary_clause(-vars[j + tval], -stj);
 	}
 
+	/* the following implementation is perfectly correct and follows the
+	 * original paper of C. Sinz at CP'05 but it is somewhat redundant */
+	// phase 1
+	// int s11 = mk_yvar(top_id, p2i_map, make_pair(1, 1));
+	// clset.create_binary_clause(s11, -vars[0]);
+
+	// phase 2
+	// for (int j = 2; j <= tval; j++) {
+	// 	int s1j = mk_yvar(top_id, p2i_map, make_pair(1, j));
+	// 	clset.create_unit_clause(-s1j);
+	// }
+
+	// phase 3
+	// for (unsigned int i = 2; i < vars.size(); i++) {
+	// 	// phase 3.1
+	// 	int si1 = mk_yvar(top_id, p2i_map, make_pair(i, 1));
+	// 	clset.create_binary_clause(-vars[i - 1], si1);
+
+	// 	int sim11 = mk_yvar(top_id, p2i_map, make_pair(i - 1, 1));
+	// 	clset.create_binary_clause(-sim11, si1);
+
+	 	// phase 3.2
+	// 	for (int j = 2; j <= tval; j++) {
+	// 		int sim1jm1 = mk_yvar(top_id, p2i_map, make_pair(i - 1, j - 1));
+	// 		int sij = mk_yvar(top_id, p2i_map, make_pair(i, j));
+	// 		clset.create_ternary_clause(-vars[i - 1], -sim1jm1, sij);
+	// 		int sim1j = mk_yvar(top_id, p2i_map, make_pair(i - 1, j));
+	// 		clset.create_binary_clause(-sim1j, sij);
+	// 	}
+
+	 	// phase 3.3
+	// 	int sim1k = mk_yvar(top_id, p2i_map, make_pair(i - 1, tval));
+	// 	clset.create_binary_clause(-vars[i - 1], -sim1k);
+	// }
+
 	// fourth phase
-	int n = vars.size();
-	int snm1k = mk_yvar(top_id, p2i_map, make_pair(n - 1, tval));
-	clset.create_binary_clause(-vars[n - 1], -snm1k);
-	p2i_map.clear();
+	// int n = vars.size();
+	// int snm1k = mk_yvar(top_id, p2i_map, make_pair(n - 1, tval));
+	// clset.create_binary_clause(-vars[n - 1], -snm1k);
+	// p2i_map.clear();
 }
 
 //
