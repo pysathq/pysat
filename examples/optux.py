@@ -88,7 +88,7 @@
         >>> wcnf = WCNF(from_file='formula.wcnf.xz')
         >>>
         >>> with OptUx(wcnf) as optux:
-        ...     for m in optux.enumerate():
+        ...     for mus in optux.enumerate():
         ...         print('mus {0} has cost {1}'.format(mus, optux.cost))
         mus [1, 2] has cost 2
         mus [1, 3] has cost 2
