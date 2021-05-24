@@ -168,10 +168,12 @@ class FM(object):
         self.topv = self.orig_nv = formula.nv
         self.hard = copy.deepcopy(formula.hard)
         self.soft = copy.deepcopy(formula.soft)
-        self.atm1 = copy.deepcopy(formula.atms)
         self.wght = formula.wght[:]
         self.cenc = enc
         self.cost = 0
+
+        if isinstance(formula, WCNFPlus) and formula.atms:
+            self.atm1 = copy.deepcopy(formula.atms)
 
         # initialize SAT oracle with hard clauses only
         self.init(with_soft=False)
@@ -205,10 +207,8 @@ class FM(object):
         self.oracle = Solver(name=self.solver, bootstrap_with=self.hard, use_timer=True)
 
         if self.atm1:  # this check is needed at the beggining (before iteration 1)
-            assert solver_name in SolverNames.minicard or \
-                    solver_name in SolverNames.gluecard3 or \
-                    solver_name in SolverNames.gluecard4, \
-                    '{0} does not support native cardinality constraints'.format(solver_name)
+            assert self.oracle.supports_atmost(), \
+                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
 
             # self.atm1 is not empty only in case of minicard
             for am in self.atm1:
@@ -287,7 +287,7 @@ class FM(object):
         while True:
             if self.oracle.solve(assumptions=self.sels):
                 self.model = self.oracle.get_model()
-                self.model = filter(lambda l: abs(l) <= self.orig_nv, self.model)
+                self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
                 return
             else:
                 self.treat_core()

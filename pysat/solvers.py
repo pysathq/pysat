@@ -926,10 +926,17 @@ class Solver(object):
 
     def enum_models(self, assumptions=[]):
         """
-            This method can be used to enumerate models of a CNF formula. It
-            can be used as a standard Python iterator. The method can be used
-            without arguments but also with an argument ``assumptions``, which
-            is a list of literals to "assume".
+            This method can be used to enumerate models of a CNF formula and
+            it performs as a standard Python iterator. The method can be
+            called without arguments but also with an argument
+            ``assumptions``, which represents a list of literals to "assume".
+
+            .. warning::
+
+                Once finished, model enumeration results in the target formula
+                being *unsatisfiable*. This is because the enumeration process
+                *blocks* each previously computed model by adding a new
+                clause until no more models of the formula exist.
 
             :param assumptions: a list of assumption literals.
             :type assumptions: iterable(int)

@@ -145,10 +145,8 @@ class MUSX(object):
                 use_timer=True)
 
         if isinstance(formula, WCNFPlus) and formula.atms:
-            assert solver_name in SolverNames.minicard or \
-                    solver_name in SolverNames.gluecard3 or \
-                    solver_name in SolverNames.gluecard4, \
-                    '{0} does not support native cardinality constraints'.format(solver_name)
+            assert self.oracle.supports_atmost(), \
+                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
 
             for atm in formula.atms:
                 self.oracle.add_atmost(*atm)

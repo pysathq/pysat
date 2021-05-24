@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+24.05.2021 (*0.1.7.dev3*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added a warning in `enum_models()` regarding unsatisfiability of the formula
+  after model enumeration is finished.
+- Fixed a couple of bugs in :class:`FM`.
+- Similar changes in other example implementations.
+
 20.04.2021 (*0.1.7.dev2*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
