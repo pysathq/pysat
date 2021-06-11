@@ -135,7 +135,7 @@ diff -Naur solvers/cadical/make-build-header.sh solvers/cdc/make-build-header.sh
  # The version.
  #
 -VERSION="`cat ../VERSION`"
-+VERSION="`cat VERSION`"
++VERSION="`cat VERSION.txt`"
  if [ x"$VERSION" = x ]
  then
    warning "could not determine 'VERSION'"

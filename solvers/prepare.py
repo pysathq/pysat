@@ -222,7 +222,8 @@ to_move = {
         ('src/vivify.hpp', 'vivify.hpp'),
         ('src/walk.cpp', 'walk.cpp'),
         ('src/watch.cpp', 'watch.cpp'),
-        ('src/watch.hpp', 'watch.hpp')
+        ('src/watch.hpp', 'watch.hpp'),
+        ('VERSION', 'VERSION.txt')
     ],
     'gluecard30': [],
     'gluecard41': [],

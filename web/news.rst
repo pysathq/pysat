@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+11.06.2021 (*0.1.7.dev4*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed compilation issues occurring for cadical on macOS >= 11.3 with the
+  most recent version of clang. Thanks to András Salamon.
+
 24.05.2021 (*0.1.7.dev3*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
