@@ -953,19 +953,13 @@ class RC2(object):
                 # marking variable as being a part of the core
                 # so that next time it is not used as an assump
                 self.garbage.add(l)
-
-                # reuse assumption variable as relaxation
-                self.rels.append(-l)
             else:
                 # do not remove this variable from assumps
                 # since it has a remaining non-zero weight
                 self.wght[l] -= self.minw
 
-                # it is an unrelaxed soft clause,
-                # a new relaxed copy of which we add to the solver
-                self.topv += 1
-                self.oracle.add_clause([l, self.topv])
-                self.rels.append(self.topv)
+            # reuse assumption variable as relaxation
+            self.rels.append(-l)
 
     def process_sums(self):
         """
@@ -1488,9 +1482,6 @@ class RC2Stratified(RC2, object):
                 # marking variable as being a part of the core
                 # so that next time it is not used as an assump
                 self.garbage.add(l)
-
-                # reuse assumption variable as relaxation
-                self.rels.append(-l)
             else:
                 # do not remove this variable from assumps
                 # since it has a remaining non-zero weight
@@ -1502,11 +1493,8 @@ class RC2Stratified(RC2, object):
                     self.wstr[self.wght[l]].append(l)
                     to_deactivate.add(l)
 
-                # it is an unrelaxed soft clause,
-                # a new relaxed copy of which we add to the solver
-                self.topv += 1
-                self.oracle.add_clause([l, self.topv])
-                self.rels.append(self.topv)
+            # reuse assumption variable as relaxation
+            self.rels.append(-l)
 
         # deactivating unnecessary selectors
         self.sels = list(filter(lambda x: x not in to_deactivate, self.sels))

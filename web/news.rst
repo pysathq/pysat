@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+26.06.2021 (*0.1.7.dev5*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Got rid of relaxation variables in :class:`RC2` - minor issue, which might
+  still have affected the performance.
+
 11.06.2021 (*0.1.7.dev4*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
