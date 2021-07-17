@@ -800,31 +800,36 @@ class RC2(object):
             :type am1: list(int)
         """
 
-        # computing am1's weight
-        self.minw = min(map(lambda l: self.wght[l], am1))
-
-        # pretending am1 to be a core, and the bound is its size - 1
-        self.core_sels, b = am1, len(am1) - 1
-
-        # incrementing the cost
-        self.cost += b * self.minw
-
         # assumptions to remove
         self.garbage = set()
 
-        # splitting and relaxing if needed
-        self.process_sels()
+        while len(am1) > 1:
+            # computing am1's weight
+            self.minw = min(map(lambda l: self.wght[l], am1))
 
-        # new selector
-        self.topv += 1
-        selv = self.topv
+            # pretending am1 to be a core, and the bound is its size - 1
+            self.core_sels, b = am1, len(am1) - 1
 
-        self.oracle.add_clause([-l for l in self.rels] + [-selv])
+            # incrementing the cost
+            self.cost += b * self.minw
 
-        # integrating the new selector
-        self.sels.append(selv)
-        self.wght[selv] = self.minw
-        self.smap[selv] = len(self.wght) - 1
+            # splitting and relaxing if needed
+            self.process_sels()
+
+            # updating the list of literals in am1 after splitting the weights
+            am1 = list(filter(lambda l: l not in self.garbage, am1))
+
+            # new selector
+            self.topv += 1
+            selv = self.topv
+
+            # adding a new clause
+            self.oracle.add_clause([-l for l in self.rels] + [-selv])
+
+            # integrating the new selector
+            self.sels.append(selv)
+            self.wght[selv] = self.minw
+            self.smap[selv] = len(self.wght) - 1
 
         # removing unnecessary assumptions
         self.filter_assumps()
@@ -1430,34 +1435,55 @@ class RC2Stratified(RC2, object):
             this.
         """
 
-        # computing am1's weight
-        self.minw = min(map(lambda l: self.wght[l], am1))
-
-        # pretending am1 to be a core, and the bound is its size - 1
-        self.core_sels, b = am1, len(am1) - 1
-
-        # incrementing the cost
-        self.cost += b * self.minw
-
         # assumptions to remove
         self.garbage = set()
 
-        # splitting and relaxing if needed
-        self.process_sels()
+        # clauses to deactivate
+        to_deactivate = set([])
 
-        # new selector
-        self.topv += 1
-        selv = self.topv
+        while len(am1) > 1:
+            # computing am1's weight
+            self.minw = min(map(lambda l: self.wght[l], am1))
 
-        self.oracle.add_clause([-l for l in self.rels] + [-selv])
+            # pretending am1 to be a core, and the bound is its size - 1
+            self.core_sels, b = am1, len(am1) - 1
 
-        # integrating the new selector
-        self.sels.append(selv)
-        self.wght[selv] = self.minw
-        self.smap[selv] = len(self.wght) - 1
+            # incrementing the cost
+            self.cost += b * self.minw
 
-        # do not forget this newly selector!
-        self.bckp_set.add(selv)
+            # splitting and relaxing if needed
+            super(RC2Stratified, self).process_sels()
+
+            # updating the list of literals in am1 after splitting the weights
+            am1 = list(filter(lambda l: l not in self.garbage, am1))
+
+            # new selector
+            self.topv += 1
+            selv = self.topv
+
+            # adding a new clause
+            self.oracle.add_clause([-l for l in self.rels] + [-selv])
+
+            # integrating the new selector
+            self.sels.append(selv)
+            self.wght[selv] = self.minw
+            self.smap[selv] = len(self.wght) - 1
+
+            # do not forget this newly selector!
+            self.bckp_set.add(selv)
+
+            if self.done != -1 and self.wght[selv] < self.blop[self.levl]:
+                self.wstr[self.wght[selv]].append(selv)
+                to_deactivate.add(selv)
+
+        # marking all remaining literals with small weights to be deactivated
+        for l in am1:
+            if self.done != -1 and self.wght[l] < self.blop[self.levl]:
+                self.wstr[self.wght[l]].append(l)
+                to_deactivate.add(l)
+
+        # deactivating unnecessary selectors
+        self.sels = list(filter(lambda x: x not in to_deactivate, self.sels))
 
         # removing unnecessary assumptions
         self.filter_assumps()

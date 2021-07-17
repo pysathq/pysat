@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+17.07.2021 (*0.1.7.dev6*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Modified the implemention of the am1 heuristic in :class:`RC2`.
+
 26.06.2021 (*0.1.7.dev5*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
