@@ -131,7 +131,7 @@ import getopt
 import itertools
 from math import copysign
 import os
-from pysat.formula import CNFPlus, WCNFPlus
+from pysat.formula import CNFPlus, WCNFPlus, IDPool
 from pysat.card import ITotalizer
 from pysat.solvers import Solver, SolverNames
 import re
@@ -209,7 +209,7 @@ class RC2(object):
         self.sels, self.smap, self.sall, self.s2cl, self.sneg = [], {}, [], {}, set([])
 
         # other MaxSAT related stuff
-        self.topv = formula.nv
+        self.pool = IDPool(start_from=formula.nv + 1)
         self.wght = {}  # weights of soft clauses
         self.sums = []  # totalizer sum assumptions
         self.bnds = {}  # a mapping from sum assumptions to totalizer bounds
@@ -290,11 +290,10 @@ class RC2(object):
             selv = cl[0]  # if clause is unit, selector variable is its literal
 
             if len(cl) > 1:
-                self.topv += 1
-                selv = self.topv
+                selv = self.pool.id()
 
                 self.s2cl[selv] = cl[:]
-                cl.append(-self.topv)
+                cl.append(-selv)
                 self.oracle.add_clause(cl)
 
             if selv not in self.wght:
@@ -386,11 +385,10 @@ class RC2(object):
             selv = cl[0]  # for a unit clause, no selector is needed
 
             if len(cl) > 1:
-                self.topv += 1
-                selv = self.topv
+                selv = self.pool.id()
 
                 self.s2cl[selv] = cl[:]
-                cl.append(-self.topv)
+                cl.append(-selv)
                 self.oracle.add_clause(cl)
 
             if selv not in self.wght:
@@ -466,7 +464,7 @@ class RC2(object):
             # extracting a model
             self.model = self.oracle.get_model()
 
-            if self.model is None and self.topv == 0:
+            if self.model is None and self.pool.top == 0:
                 # we seem to have been given an empty formula
                 # so let's transform the None model returned to []
                 self.model = []
@@ -820,8 +818,7 @@ class RC2(object):
             am1 = list(filter(lambda l: l not in self.garbage, am1))
 
             # new selector
-            self.topv += 1
-            selv = self.topv
+            selv = self.pool.id()
 
             # adding a new clause
             self.oracle.add_clause([-l for l in self.rels] + [-selv])
@@ -1030,10 +1027,10 @@ class RC2(object):
 
         if not self.oracle.supports_atmost():  # standard totalizer-based encoding
             # new totalizer sum
-            t = ITotalizer(lits=self.rels, ubound=bound, top_id=self.topv)
+            t = ITotalizer(lits=self.rels, ubound=bound, top_id=self.pool.top)
 
             # updating top variable id
-            self.topv = t.top_id
+            self.pool.top = t.top_id
 
             # adding its clauses to oracle
             for cl in t.cnf.clauses:
@@ -1045,16 +1042,17 @@ class RC2(object):
             t = ITotalizer()
             t.lits = self.rels
 
-            self.topv += 1  # a new variable will represent the bound
+            # a new variable will represent the bound
+            bvar = self.pool.id()
 
             # proper initial bound
             t.rhs = [None] * (len(t.lits))
-            t.rhs[bound] = self.topv
+            t.rhs[bound] = bvar
 
             # new atmostb constraint instrumented with
             # an implication and represented natively
             rhs = len(t.lits)
-            amb = [[-self.topv] * (rhs - bound) + t.lits, rhs]
+            amb = [[-bvar] * (rhs - bound) + t.lits, rhs]
 
             # add constraint to the solver
             self.oracle.add_atmost(*amb)
@@ -1093,10 +1091,10 @@ class RC2(object):
 
         if not self.oracle.supports_atmost():  # the case of standard totalizer encoding
             # increasing its bound
-            t.increase(ubound=b, top_id=self.topv)
+            t.increase(ubound=b, top_id=self.pool.top)
 
             # updating top variable id
-            self.topv = t.top_id
+            self.pool.top = t.top_id
 
             # adding its clauses to oracle
             if t.nof_new:
@@ -1109,8 +1107,7 @@ class RC2(object):
             if b < rhs:
                 # creating an additional bound
                 if not t.rhs[b]:
-                    self.topv += 1
-                    t.rhs[b] = self.topv
+                    t.rhs[b] = self.pool.id()
 
                 # a new at-most-b constraint
                 amb = [[-t.rhs[b]] * (rhs - b) + t.lits, rhs]
@@ -1193,12 +1190,12 @@ class RC2(object):
         if v in self.vmap.e2i:
             return int(copysign(self.vmap.e2i[v], l))
         else:
-            self.topv += 1
+            i = self.pool.id()
 
-            self.vmap.e2i[v] = self.topv
-            self.vmap.i2e[self.topv] = v
+            self.vmap.e2i[v] = i
+            self.vmap.i2e[i] = v
 
-            return int(copysign(self.topv, l))
+            return int(copysign(i, l))
 
 
 #
@@ -1331,7 +1328,7 @@ class RC2Stratified(RC2, object):
         # extracting a model
         self.model = self.oracle.get_model()
 
-        if self.model is None and self.topv == 0:
+        if self.model is None and self.pool.top == 0:
             # we seem to have been given an empty formula
             # so let's transform the None model returned to []
             self.model = []
@@ -1458,8 +1455,7 @@ class RC2Stratified(RC2, object):
             am1 = list(filter(lambda l: l not in self.garbage, am1))
 
             # new selector
-            self.topv += 1
-            selv = self.topv
+            selv = self.pool.id()
 
             # adding a new clause
             self.oracle.add_clause([-l for l in self.rels] + [-selv])

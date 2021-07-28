@@ -278,14 +278,15 @@ class IDPool(object):
         # (if for whatever reason necessary)
         self.id2obj = {}
 
-    def id(self, obj):
+    def id(self, obj=None):
         """
             The method is to be used to assign an integer variable ID for a
             given new object. If the object already has an ID, no new ID is
             created and the old one is returned instead.
 
             An object can be anything. In some cases it is convenient to use
-            string variable names.
+            string variable names. Note that if the object is not provided,
+            the method will return a new id unassigned to any object.
 
             :param obj: an object to assign an ID to.
 
@@ -320,10 +321,14 @@ class IDPool(object):
                 21
         """
 
-        vid = self.obj2id[obj]
+        if obj:
+            vid = self.obj2id[obj]
 
-        if vid not in self.id2obj:
-            self.id2obj[vid] = obj
+            if vid not in self.id2obj:
+                self.id2obj[vid] = obj
+        else:
+            # no object is provided => simply return a new ID
+            vid = self._next()
 
         return vid
 
@@ -362,8 +367,9 @@ class IDPool(object):
             :type stop: int
         """
 
-        self._occupied.append([start, stop])
-        self._occupied.sort(key=lambda x: x[0])
+        if stop >= start:
+            self._occupied.append([start, stop])
+            self._occupied.sort(key=lambda x: x[0])
 
     def _next(self):
         """

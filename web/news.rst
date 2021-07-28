@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+28.07.2021 (*0.1.7.dev7*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Updated :class:`IDPool` to return a new variable ID without an object.
+- Updated :class:`RC2` to support IDPool instead of `self.topv`.
+
 17.07.2021 (*0.1.7.dev6*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
