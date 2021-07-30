@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+30.07.2021 (*0.1.7.dev8*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug in :class:`IDPool` introduced in ``0.1.7.dev7``, related to
+  ``None`` handling.
+
 28.07.2021 (*0.1.7.dev7*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

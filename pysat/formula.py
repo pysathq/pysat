@@ -321,7 +321,7 @@ class IDPool(object):
                 21
         """
 
-        if obj:
+        if obj is not None:
             vid = self.obj2id[obj]
 
             if vid not in self.id2obj:
