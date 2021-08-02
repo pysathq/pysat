@@ -11,6 +11,15 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+02.08.2021 (*0.1.7.dev9*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added proper handling of border cases when creating cardinality constraints.
+  Done for all encodings, and both AtMostK and AtLeastK constraints.
+- Added an ``UnsupportedBound`` exception to be raised whenever *pairwise*,
+  *bitwise*, or *ladder* encodings are created with the bound in :math:`(1, N
+  - 1)`.
+
 30.07.2021 (*0.1.7.dev8*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -104,8 +104,20 @@ import signal
 #==============================================================================
 class NoSuchEncodingError(Exception):
     """
-        This exception is raised when creating an unknown an AtMostk, AtLeastK,
+        This exception is raised when creating an unknown an AtMostK, AtLeastK,
         or EqualK constraint encoding.
+    """
+
+    pass
+
+
+#
+#==============================================================================
+class UnsupportedBound(Exception):
+    """
+        This exception is raised when creating a pairwise, or bitwise, or
+        ladder encoding of AtMostK, AtLeastK, or EqualsK with the bound
+        different from ``1`` and ``N - 1``.
     """
 
     pass
@@ -230,6 +242,9 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        if encoding in (0, 4, 5) and 1 < bound < len(lits) - 1:
+            raise(UnsupportedBound(encoding, bound))
+
         assert not top_id or not vpool, \
                 'Use either a top id or a pool of variables but not both.'
 
@@ -321,6 +336,9 @@ class CardEnc(object):
 
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
+
+        if encoding in (0, 4, 5) and 1 < bound < len(lits) - 1:
+            raise(UnsupportedBound(encoding, bound))
 
         assert not top_id or not vpool, \
                 'Use either a top id or a pool of variables but not both.'
