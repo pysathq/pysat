@@ -1,6 +1,6 @@
 diff -Naur solvers/mergesat3/Makefile solvers/mgs3/Makefile
 --- solvers/mergesat3/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/mgs3/Makefile	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/Makefile	2021-08-12 09:10:24.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -43,7 +43,7 @@ diff -Naur solvers/mergesat3/Makefile solvers/mgs3/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/mergesat3/core/BoundedQueue.h solvers/mgs3/core/BoundedQueue.h
 --- solvers/mergesat3/core/BoundedQueue.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/BoundedQueue.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/core/BoundedQueue.h	2021-08-12 09:10:24.000000000 +1000
 @@ -20,14 +20,14 @@
  **************************************************************************************************/
  
@@ -74,7 +74,7 @@ diff -Naur solvers/mergesat3/core/BoundedQueue.h solvers/mgs3/core/BoundedQueue.
  #endif
 diff -Naur solvers/mergesat3/core/Constants.h solvers/mgs3/core/Constants.h
 --- solvers/mergesat3/core/Constants.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Constants.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/core/Constants.h	2021-08-12 09:10:24.000000000 +1000
 @@ -19,8 +19,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -88,7 +88,7 @@ diff -Naur solvers/mergesat3/core/Constants.h solvers/mgs3/core/Constants.h
  #define CONSTANTREMOVECLAUSE
 diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
 --- solvers/mergesat3/core/Dimacs.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Dimacs.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/core/Dimacs.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -120,7 +120,7 @@ diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
  #endif
 diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineProofChecker.h
 --- solvers/mergesat3/core/OnlineProofChecker.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/OnlineProofChecker.h	2021-03-31 21:36:12.000000000 +1100
++++ solvers/mgs3/core/OnlineProofChecker.h	2021-08-12 09:10:24.000000000 +1000
 @@ -2,19 +2,19 @@
  Copyright (c) 2020, Norbert Manthey
  **************************************************************************************************/
@@ -259,7 +259,7 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
  #endif
 diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
 --- solvers/mergesat3/core/Solver.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.cc	2021-03-31 21:56:13.000000000 +1100
++++ solvers/mgs3/core/Solver.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -50,14 +50,14 @@
  #include <signal.h>
  #include <unistd.h>
@@ -1113,7 +1113,18 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          if (lcm_core_success) {
              int pre_conflict_size = conflict.size();
              simplifyLearnt(conflict);
-@@ -3228,7 +3282,7 @@
+@@ -3205,6 +3259,10 @@
+     systematic_branching_state = 0;
+     statistics.solveSeconds += cpuTime() - solve_start; // stop timer and record time consumed until now
+ 
++    use_ccnr = false;
++    allow_rephasing = false;
++    lcm_core = false;
++
+     return status;
+ }
+ 
+@@ -3228,7 +3286,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -1122,7 +1133,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
      fprintf(f, "0\n");
  }
  
-@@ -3263,7 +3317,7 @@
+@@ -3263,7 +3321,7 @@
          if (!satisfied(ca[clauses[i]])) {
              Clause &c = ca[clauses[i]];
              for (int j = 0; j < c.size(); j++)
@@ -1131,7 +1142,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          }
  
      // Assumptions are added as unit clauses:
-@@ -3272,7 +3326,7 @@
+@@ -3272,7 +3330,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++) {
@@ -1140,7 +1151,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
      }
  
-@@ -3291,7 +3345,7 @@
+@@ -3291,7 +3349,7 @@
          int Z = 0, i, j, k, l = -1, p;
  
          if (verbosity > 0)
@@ -1149,7 +1160,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          // fill occurrence data structure
          O.resize(2 * nVars());
  
-@@ -3402,7 +3456,7 @@
+@@ -3402,7 +3460,7 @@
          if (add_tmp.size()) {
              cancelUntil(0, false);
              for (int i = 0; i < add_tmp.size(); ++i) {
@@ -1158,7 +1169,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
                      ok = false;
                      return false;
                  }
-@@ -3500,33 +3554,33 @@
+@@ -3500,33 +3558,33 @@
  
  void Solver::printStats()
  {
@@ -1219,7 +1230,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
  }
  
  bool Solver::call_ls(bool use_up_build)
-@@ -3535,7 +3589,7 @@
+@@ -3535,7 +3593,7 @@
  
      called_initial_sls = true;
  
@@ -1228,7 +1239,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
      int ls_var_nums = nVars();
      int ls_cls_nums = nClauses() + learnts_core.size() + learnts_tier2.size();
  
-@@ -3572,7 +3626,7 @@
+@@ -3572,7 +3630,7 @@
              int cls_sz = c.size();
              for (int j = 0; j < cls_sz; j++) {
                  int cur_lit = toFormal(c[j]);
@@ -1237,7 +1248,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              }
              ct++;
          }
-@@ -3580,19 +3634,19 @@
+@@ -3580,19 +3638,19 @@
      if (trail_lim.size() > 0) {
          int cls_sz = trail_lim[0];
          for (int i = 0; i < cls_sz; i++) {
@@ -1260,7 +1271,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          ct++;
      }
  
-@@ -3600,16 +3654,16 @@
+@@ -3600,16 +3658,16 @@
      int topLevel = trail_lim.size() > 0 ? trail_lim[0] : trail.size();
      for (int i = 0; i < topLevel; ++i) {
          Var v = var(trail[i]);
@@ -1280,7 +1291,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              int v = item.var_num;
              ccnr._vars[v].literals.push_back(item);
          }
-@@ -3633,11 +3687,11 @@
+@@ -3633,11 +3691,11 @@
          std::vector<int> undef_vars(var_nums - t_sz + 2);
          std::vector<int> idx_undef_vars(var_nums + 1, -1); // undef_vars' idx is not -1
          for (int i = 0; i < var_nums; ++i)
@@ -1296,7 +1307,7 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
          while (undef_nums > 0) {
 diff -Naur solvers/mergesat3/core/Solver.h solvers/mgs3/core/Solver.h
 --- solvers/mergesat3/core/Solver.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.h	2021-03-31 14:48:11.000000000 +1100
++++ solvers/mgs3/core/Solver.h	2021-08-12 09:10:24.000000000 +1000
 @@ -43,8 +43,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1474,7 +1485,7 @@ diff -Naur solvers/mergesat3/core/Solver.h solvers/mgs3/core/Solver.h
  #endif
 diff -Naur solvers/mergesat3/core/SolverTypes.h solvers/mgs3/core/SolverTypes.h
 --- solvers/mergesat3/core/SolverTypes.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/SolverTypes.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/core/SolverTypes.h	2021-08-12 09:10:24.000000000 +1000
 @@ -29,21 +29,21 @@
  **************************************************************************************************/
  
@@ -1537,7 +1548,7 @@ diff -Naur solvers/mergesat3/core/SolverTypes.h solvers/mgs3/core/SolverTypes.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Alg.h solvers/mgs3/mtl/Alg.h
 --- solvers/mergesat3/mtl/Alg.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Alg.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Alg.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1565,7 +1576,7 @@ diff -Naur solvers/mergesat3/mtl/Alg.h solvers/mgs3/mtl/Alg.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Alloc.h solvers/mgs3/mtl/Alloc.h
 --- solvers/mergesat3/mtl/Alloc.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Alloc.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Alloc.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1595,7 +1606,7 @@ diff -Naur solvers/mergesat3/mtl/Alloc.h solvers/mgs3/mtl/Alloc.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Heap.h solvers/mgs3/mtl/Heap.h
 --- solvers/mergesat3/mtl/Heap.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Heap.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Heap.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1623,7 +1634,7 @@ diff -Naur solvers/mergesat3/mtl/Heap.h solvers/mgs3/mtl/Heap.h
  #endif
 diff -Naur solvers/mergesat3/mtl/IntTypes.h solvers/mgs3/mtl/IntTypes.h
 --- solvers/mergesat3/mtl/IntTypes.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/IntTypes.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/IntTypes.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1637,7 +1648,7 @@ diff -Naur solvers/mergesat3/mtl/IntTypes.h solvers/mgs3/mtl/IntTypes.h
  // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/mergesat3/mtl/Map.h solvers/mgs3/mtl/Map.h
 --- solvers/mergesat3/mtl/Map.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Map.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Map.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1667,7 +1678,7 @@ diff -Naur solvers/mergesat3/mtl/Map.h solvers/mgs3/mtl/Map.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Queue.h solvers/mgs3/mtl/Queue.h
 --- solvers/mergesat3/mtl/Queue.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Queue.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Queue.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1695,7 +1706,7 @@ diff -Naur solvers/mergesat3/mtl/Queue.h solvers/mgs3/mtl/Queue.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Sort.h solvers/mgs3/mtl/Sort.h
 --- solvers/mergesat3/mtl/Sort.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Sort.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Sort.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,10 +18,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1729,7 +1740,7 @@ diff -Naur solvers/mergesat3/mtl/Sort.h solvers/mgs3/mtl/Sort.h
  #endif
 diff -Naur solvers/mergesat3/mtl/Vec.h solvers/mgs3/mtl/Vec.h
 --- solvers/mergesat3/mtl/Vec.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Vec.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/Vec.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1762,7 +1773,7 @@ diff -Naur solvers/mergesat3/mtl/Vec.h solvers/mgs3/mtl/Vec.h
  #endif
 diff -Naur solvers/mergesat3/mtl/XAlloc.h solvers/mgs3/mtl/XAlloc.h
 --- solvers/mergesat3/mtl/XAlloc.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/XAlloc.h	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/mtl/XAlloc.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,18 +18,18 @@
  **************************************************************************************************/
  
@@ -1797,7 +1808,7 @@ diff -Naur solvers/mergesat3/mtl/XAlloc.h solvers/mgs3/mtl/XAlloc.h
  #endif
 diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
 --- solvers/mergesat3/utils/Options.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/Options.cc	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/utils/Options.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1850,7 +1861,7 @@ diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
  
 diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
 --- solvers/mergesat3/utils/Options.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/Options.h	2021-03-31 22:56:29.000000000 +1100
++++ solvers/mgs3/utils/Options.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,23 +17,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1982,7 +1993,7 @@ diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
  #endif
 diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
 --- solvers/mergesat3/utils/ParseUtils.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ParseUtils.h	2021-03-31 21:43:43.000000000 +1100
++++ solvers/mgs3/utils/ParseUtils.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2125,7 +2136,7 @@ diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
  #endif
 diff -Naur solvers/mergesat3/utils/System.cc solvers/mgs3/utils/System.cc
 --- solvers/mergesat3/utils/System.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/System.cc	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/utils/System.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2187,11 +2198,15 @@ diff -Naur solvers/mergesat3/utils/System.cc solvers/mgs3/utils/System.cc
  #endif
 diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
 --- solvers/mergesat3/utils/System.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/System.h	2021-03-31 12:07:03.000000000 +1100
-@@ -25,19 +25,19 @@
- #include <fpu_control.h>
- #endif
++++ solvers/mgs3/utils/System.h	2021-08-12 09:10:51.000000000 +1000
+@@ -21,23 +21,19 @@
+ #ifndef MergeSat_System_h
+ #define MergeSat_System_h
  
+-#if defined(__linux__)
+-#include <fpu_control.h>
+-#endif
+-
 -#include "mtl/IntTypes.h"
 -#include "mtl/XAlloc.h"
 +#include "mergesat3/mtl/IntTypes.h"
@@ -2212,7 +2227,7 @@ diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
  
  //-------------------------------------------------------------------------------------------------
  // Implementation of inline functions:
-@@ -45,14 +45,14 @@
+@@ -45,14 +41,14 @@
  #if defined(_MSC_VER) || defined(__MINGW32__)
  #include <time.h>
  
@@ -2231,7 +2246,7 @@ diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
      getrusage(RUSAGE_SELF, &ru);
 diff -Naur solvers/mergesat3/utils/ccnr.cc solvers/mgs3/utils/ccnr.cc
 --- solvers/mergesat3/utils/ccnr.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ccnr.cc	2021-03-31 12:07:03.000000000 +1100
++++ solvers/mgs3/utils/ccnr.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -1,7 +1,7 @@
  
 -#include "ccnr.h"
@@ -2244,7 +2259,7 @@ diff -Naur solvers/mergesat3/utils/ccnr.cc solvers/mgs3/utils/ccnr.cc
  
 diff -Naur solvers/mergesat3/utils/ccnr.h solvers/mgs3/utils/ccnr.h
 --- solvers/mergesat3/utils/ccnr.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ccnr.h	2021-03-31 21:24:49.000000000 +1100
++++ solvers/mgs3/utils/ccnr.h	2021-08-12 09:10:24.000000000 +1000
 @@ -1,5 +1,5 @@
 -#ifndef CCNR_H
 -#define CCNR_H

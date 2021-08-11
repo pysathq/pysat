@@ -1,6 +1,6 @@
 diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
 --- solvers/minisatgh/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/mgh/Makefile	2020-07-04 11:34:38.000000000 +1000
++++ solvers/mgh/Makefile	2021-08-12 09:10:25.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -42,8 +42,8 @@ diff -Naur solvers/minisatgh/Makefile solvers/mgh/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
---- solvers/minisatgh/core/Solver.cc	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/core/Solver.cc	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/core/Solver.cc	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/core/Solver.cc	2021-08-12 09:10:25.000000000 +1000
 @@ -20,12 +20,12 @@
  
  #include <math.h>
@@ -606,8 +606,8 @@ diff -Naur solvers/minisatgh/core/Solver.cc solvers/mgh/core/Solver.cc
      to.moveTo(ca);
  }
 diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
---- solvers/minisatgh/core/Solver.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/core/Solver.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/core/Solver.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/core/Solver.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -733,8 +733,8 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  
  inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
 diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
---- solvers/minisatgh/core/SolverTypes.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/core/SolverTypes.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/core/SolverTypes.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/core/SolverTypes.h	2021-08-12 09:10:25.000000000 +1000
 @@ -19,19 +19,20 @@
  **************************************************************************************************/
  
@@ -811,8 +811,8 @@ diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
  
  
 diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
---- solvers/minisatgh/mtl/Alg.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Alg.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Alg.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Alg.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -831,8 +831,8 @@ diff -Naur solvers/minisatgh/mtl/Alg.h solvers/mgh/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
---- solvers/minisatgh/mtl/Alloc.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Alloc.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Alloc.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Alloc.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -853,8 +853,8 @@ diff -Naur solvers/minisatgh/mtl/Alloc.h solvers/mgh/mtl/Alloc.h
  //=================================================================================================
  // Simple Region-based memory allocator:
 diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
---- solvers/minisatgh/mtl/Heap.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Heap.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Heap.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Heap.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,13 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -875,8 +875,8 @@ diff -Naur solvers/minisatgh/mtl/Heap.h solvers/mgh/mtl/Heap.h
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
 diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
---- solvers/minisatgh/mtl/IntMap.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/IntMap.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/IntMap.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/IntMap.h	2021-08-12 09:10:25.000000000 +1000
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -895,8 +895,8 @@ diff -Naur solvers/minisatgh/mtl/IntMap.h solvers/mgh/mtl/IntMap.h
      template<class T> struct MkIndexDefault {
          typename vec<T>::Size operator()(T t) const { return (typename vec<T>::Size)t; }
 diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
---- solvers/minisatgh/mtl/IntTypes.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/IntTypes.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/IntTypes.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/IntTypes.h	2021-08-12 09:10:25.000000000 +1000
 @@ -17,8 +17,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -911,8 +911,8 @@ diff -Naur solvers/minisatgh/mtl/IntTypes.h solvers/mgh/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
---- solvers/minisatgh/mtl/Map.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Map.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Map.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Map.h	2021-08-12 09:10:25.000000000 +1000
 @@ -17,13 +17,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -948,8 +948,8 @@ diff -Naur solvers/minisatgh/mtl/Map.h solvers/mgh/mtl/Map.h
  
  //=================================================================================================
 diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
---- solvers/minisatgh/mtl/Queue.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Queue.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Queue.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Queue.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -968,8 +968,8 @@ diff -Naur solvers/minisatgh/mtl/Queue.h solvers/mgh/mtl/Queue.h
  //=================================================================================================
  
 diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
---- solvers/minisatgh/mtl/Rnd.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Rnd.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Rnd.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Rnd.h	2021-08-12 09:10:25.000000000 +1000
 @@ -16,12 +16,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -988,8 +988,8 @@ diff -Naur solvers/minisatgh/mtl/Rnd.h solvers/mgh/mtl/Rnd.h
  // Generate a random double:
  static inline double drand(double& seed)
 diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
---- solvers/minisatgh/mtl/Sort.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Sort.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Sort.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Sort.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1012,8 +1012,8 @@ diff -Naur solvers/minisatgh/mtl/Sort.h solvers/mgh/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
---- solvers/minisatgh/mtl/Vec.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/Vec.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/Vec.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/Vec.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1038,8 +1038,8 @@ diff -Naur solvers/minisatgh/mtl/Vec.h solvers/mgh/mtl/Vec.h
  //=================================================================================================
  // Automatically resizable arrays
 diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
---- solvers/minisatgh/mtl/XAlloc.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/mtl/XAlloc.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/mtl/XAlloc.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/mtl/XAlloc.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1058,8 +1058,8 @@ diff -Naur solvers/minisatgh/mtl/XAlloc.h solvers/mgh/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
---- solvers/minisatgh/utils/Options.cc	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/utils/Options.cc	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/utils/Options.cc	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/utils/Options.cc	2021-08-12 09:10:25.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1093,8 +1093,8 @@ diff -Naur solvers/minisatgh/utils/Options.cc solvers/mgh/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
---- solvers/minisatgh/utils/Options.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/utils/Options.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/utils/Options.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/utils/Options.h	2021-08-12 09:10:25.000000000 +1000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1150,8 +1150,8 @@ diff -Naur solvers/minisatgh/utils/Options.h solvers/mgh/utils/Options.h
  
      operator      const char*  (void) const     { return value; }
 diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
---- solvers/minisatgh/utils/ParseUtils.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/utils/ParseUtils.h	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/utils/ParseUtils.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/utils/ParseUtils.h	2021-08-12 09:10:25.000000000 +1000
 @@ -18,87 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1264,8 +1264,8 @@ diff -Naur solvers/minisatgh/utils/ParseUtils.h solvers/mgh/utils/ParseUtils.h
  }
  
 diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
---- solvers/minisatgh/utils/System.cc	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/utils/System.cc	2020-07-04 11:34:38.000000000 +1000
+--- solvers/minisatgh/utils/System.cc	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/utils/System.cc	2021-08-12 09:14:04.000000000 +1000
 @@ -21,13 +21,13 @@
  #include <signal.h>
  #include <stdio.h>
@@ -1282,7 +1282,7 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
  
  static inline int memReadStat(int field)
  {
-@@ -66,36 +66,36 @@
+@@ -66,48 +66,37 @@
      return peak_kb;
  }
  
@@ -1326,20 +1326,23 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
  
  
 -void Minisat::setX86FPUPrecision()
-+void MinisatGH::setX86FPUPrecision()
- {
- #if defined(__linux__) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE) && defined(_FPU_GETCW)
-     // Only correct FPU precision on Linux architectures that needs and supports it:
-@@ -107,7 +107,7 @@
- 
- 
+-{
+-#if defined(__linux__) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE) && defined(_FPU_GETCW)
+-    // Only correct FPU precision on Linux architectures that needs and supports it:
+-    fpu_control_t oldcw, newcw;
+-    _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+-    printf("WARNING: for repeatability, setting FPU to use double precision\n");
+-#endif
+-}
+-
+-
  #if !defined(_MSC_VER) && !defined(__MINGW32__)
 -void Minisat::limitMemory(uint64_t max_mem_mb)
 +void MinisatGH::limitMemory(uint64_t max_mem_mb)
  {
  // FIXME: OpenBSD does not support RLIMIT_AS. Not sure how well RLIMIT_DATA works instead.
  #if defined(__OpenBSD__)
-@@ -131,7 +131,7 @@
+@@ -131,7 +120,7 @@
  #endif
  }
  #else
@@ -1348,7 +1351,7 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
  {
      printf("WARNING! Memory limit not supported on this architecture.\n");
  }
-@@ -139,7 +139,7 @@
+@@ -139,7 +128,7 @@
  
  
  #if !defined(_MSC_VER) && !defined(__MINGW32__)
@@ -1357,7 +1360,7 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
  {
      if (max_cpu_time != 0){
          rlimit rl;
-@@ -152,14 +152,14 @@
+@@ -152,14 +141,14 @@
      }
  }
  #else
@@ -1375,9 +1378,9 @@ diff -Naur solvers/minisatgh/utils/System.cc solvers/mgh/utils/System.cc
      signal(SIGINT, handler);
      signal(SIGTERM,handler);
 diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
---- solvers/minisatgh/utils/System.h	2020-07-04 11:34:29.000000000 +1000
-+++ solvers/mgh/utils/System.h	2020-07-04 11:34:38.000000000 +1000
-@@ -18,23 +18,23 @@
+--- solvers/minisatgh/utils/System.h	2021-08-12 09:27:32.000000000 +1000
++++ solvers/mgh/utils/System.h	2021-08-12 09:13:48.000000000 +1000
+@@ -18,26 +18,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
  
@@ -1386,10 +1389,10 @@ diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
 +#ifndef MinisatGH_System_h
 +#define MinisatGH_System_h
  
- #if defined(__linux__)
- #include <fpu_control.h>
- #endif
- 
+-#if defined(__linux__)
+-#include <fpu_control.h>
+-#endif
+-
 -#include "minisat/mtl/IntTypes.h"
 +#include "minisatgh/mtl/IntTypes.h"
  
@@ -1402,11 +1405,14 @@ diff -Naur solvers/minisatgh/utils/System.h solvers/mgh/utils/System.h
  
  extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
 -extern double memUsedPeak(bool strictlyPeak = false); // Peak-memory in mega bytes (returns 0 for unsupported architectures).
+-
+-extern void   setX86FPUPrecision(); // Make sure double's are represented with the same precision
+-                                    // in memory and registers.
 +extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
  
- extern void   setX86FPUPrecision(); // Make sure double's are represented with the same precision
-                                     // in memory and registers.
-@@ -55,14 +55,14 @@
+ extern void   limitMemory(uint64_t max_mem_mb); // Set a limit on total memory usage. The exact
+                                                 // semantics varies depending on architecture.
+@@ -55,14 +48,14 @@
  #if defined(_MSC_VER) || defined(__MINGW32__)
  #include <time.h>
  

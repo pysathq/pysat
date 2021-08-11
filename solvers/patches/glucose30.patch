@@ -1,6 +1,6 @@
 diff -Naur solvers/glucose30/Makefile solvers/g30/Makefile
 --- solvers/glucose30/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/g30/Makefile	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/Makefile	2021-08-12 09:10:24.000000000 +1000
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -43,7 +43,7 @@ diff -Naur solvers/glucose30/Makefile solvers/g30/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/glucose30/core/BoundedQueue.h solvers/g30/core/BoundedQueue.h
 --- solvers/glucose30/core/BoundedQueue.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/core/BoundedQueue.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/core/BoundedQueue.h	2021-08-12 09:10:24.000000000 +1000
 @@ -2,16 +2,16 @@
   Glucose -- Copyright (c) 2009, Gilles Audemard, Laurent Simon
                  CRIL - Univ. Artois, France
@@ -148,7 +148,7 @@ diff -Naur solvers/glucose30/core/BoundedQueue.h solvers/g30/core/BoundedQueue.h
      void clear(bool dealloc = false)   { elems.clear(dealloc); first = 0; maxsize=0; queuesize=0;sumofqueue=0;}
 diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
 --- solvers/glucose30/core/Solver.cc	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/core/Solver.cc	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/core/Solver.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -2,7 +2,7 @@
   Glucose -- Copyright (c) 2013, Gilles Audemard, Laurent Simon
  				CRIL - Univ. Artois, France
@@ -1222,7 +1222,7 @@ diff -Naur solvers/glucose30/core/Solver.cc solvers/g30/core/Solver.cc
  }
 diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
 --- solvers/glucose30/core/Solver.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/core/Solver.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/core/Solver.h	2021-08-12 09:10:24.000000000 +1000
 @@ -2,7 +2,7 @@
   Glucose -- Copyright (c) 2009, Gilles Audemard, Laurent Simon
  				CRIL - Univ. Artois, France
@@ -1424,7 +1424,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
  
 diff -Naur solvers/glucose30/core/SolverTypes.h solvers/g30/core/SolverTypes.h
 --- solvers/glucose30/core/SolverTypes.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/core/SolverTypes.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/core/SolverTypes.h	2021-08-12 09:10:24.000000000 +1000
 @@ -2,7 +2,7 @@
   Glucose -- Copyright (c) 2009, Gilles Audemard, Laurent Simon
  				CRIL - Univ. Artois, France
@@ -1616,7 +1616,7 @@ diff -Naur solvers/glucose30/core/SolverTypes.h solvers/g30/core/SolverTypes.h
  #endif
 diff -Naur solvers/glucose30/mtl/Alg.h solvers/g30/mtl/Alg.h
 --- solvers/glucose30/mtl/Alg.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Alg.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Alg.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1636,7 +1636,7 @@ diff -Naur solvers/glucose30/mtl/Alg.h solvers/g30/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur solvers/glucose30/mtl/Alloc.h solvers/g30/mtl/Alloc.h
 --- solvers/glucose30/mtl/Alloc.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Alloc.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Alloc.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1684,7 +1684,7 @@ diff -Naur solvers/glucose30/mtl/Alloc.h solvers/g30/mtl/Alloc.h
          throw OutOfMemoryException();
 diff -Naur solvers/glucose30/mtl/Heap.h solvers/g30/mtl/Heap.h
 --- solvers/glucose30/mtl/Heap.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Heap.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Heap.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1746,7 +1746,7 @@ diff -Naur solvers/glucose30/mtl/Heap.h solvers/g30/mtl/Heap.h
  
 diff -Naur solvers/glucose30/mtl/IntTypes.h solvers/g30/mtl/IntTypes.h
 --- solvers/glucose30/mtl/IntTypes.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/IntTypes.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/IntTypes.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,8 +17,11 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1763,7 +1763,7 @@ diff -Naur solvers/glucose30/mtl/IntTypes.h solvers/g30/mtl/IntTypes.h
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/glucose30/mtl/Map.h solvers/g30/mtl/Map.h
 --- solvers/glucose30/mtl/Map.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Map.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Map.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,13 +17,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1827,7 +1827,7 @@ diff -Naur solvers/glucose30/mtl/Map.h solvers/g30/mtl/Map.h
  
 diff -Naur solvers/glucose30/mtl/Queue.h solvers/g30/mtl/Queue.h
 --- solvers/glucose30/mtl/Queue.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Queue.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Queue.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1847,7 +1847,7 @@ diff -Naur solvers/glucose30/mtl/Queue.h solvers/g30/mtl/Queue.h
  
 diff -Naur solvers/glucose30/mtl/Sort.h solvers/g30/mtl/Sort.h
 --- solvers/glucose30/mtl/Sort.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Sort.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Sort.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1871,7 +1871,7 @@ diff -Naur solvers/glucose30/mtl/Sort.h solvers/g30/mtl/Sort.h
  struct LessThan_default {
 diff -Naur solvers/glucose30/mtl/Vec.h solvers/g30/mtl/Vec.h
 --- solvers/glucose30/mtl/Vec.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/Vec.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/Vec.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1905,7 +1905,7 @@ diff -Naur solvers/glucose30/mtl/Vec.h solvers/g30/mtl/Vec.h
      //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
 diff -Naur solvers/glucose30/mtl/XAlloc.h solvers/g30/mtl/XAlloc.h
 --- solvers/glucose30/mtl/XAlloc.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/mtl/XAlloc.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/mtl/XAlloc.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -1926,7 +1926,7 @@ diff -Naur solvers/glucose30/mtl/XAlloc.h solvers/g30/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/glucose30/utils/Options.cc solvers/g30/utils/Options.cc
 --- solvers/glucose30/utils/Options.cc	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/utils/Options.cc	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/utils/Options.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1970,7 +1970,7 @@ diff -Naur solvers/glucose30/utils/Options.cc solvers/g30/utils/Options.cc
      if (usage != NULL)
 diff -Naur solvers/glucose30/utils/Options.h solvers/g30/utils/Options.h
 --- solvers/glucose30/utils/Options.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/utils/Options.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/utils/Options.h	2021-08-12 09:10:24.000000000 +1000
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2171,7 +2171,7 @@ diff -Naur solvers/glucose30/utils/Options.h solvers/g30/utils/Options.h
  
 diff -Naur solvers/glucose30/utils/ParseUtils.h solvers/g30/utils/ParseUtils.h
 --- solvers/glucose30/utils/ParseUtils.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/utils/ParseUtils.h	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/utils/ParseUtils.h	2021-08-12 09:10:24.000000000 +1000
 @@ -18,109 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2307,7 +2307,7 @@ diff -Naur solvers/glucose30/utils/ParseUtils.h solvers/g30/utils/ParseUtils.h
  
 diff -Naur solvers/glucose30/utils/System.cc solvers/g30/utils/System.cc
 --- solvers/glucose30/utils/System.cc	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/utils/System.cc	2020-07-04 11:29:18.000000000 +1000
++++ solvers/g30/utils/System.cc	2021-08-12 09:10:24.000000000 +1000
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2363,8 +2363,8 @@ diff -Naur solvers/glucose30/utils/System.cc solvers/g30/utils/System.cc
  #endif
 diff -Naur solvers/glucose30/utils/System.h solvers/g30/utils/System.h
 --- solvers/glucose30/utils/System.h	2013-11-12 07:21:02.000000000 +1100
-+++ solvers/g30/utils/System.h	2020-07-04 11:29:18.000000000 +1000
-@@ -18,18 +18,18 @@
++++ solvers/g30/utils/System.h	2021-08-12 09:11:24.000000000 +1000
+@@ -18,18 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
  
@@ -2373,10 +2373,10 @@ diff -Naur solvers/glucose30/utils/System.h solvers/g30/utils/System.h
 +#ifndef Glucose30_System_h
 +#define Glucose30_System_h
  
- #if defined(__linux__)
- #include <fpu_control.h>
- #endif
- 
+-#if defined(__linux__)
+-#include <fpu_control.h>
+-#endif
+-
 -#include "mtl/IntTypes.h"
 +#include "glucose30/mtl/IntTypes.h"
  
@@ -2387,7 +2387,7 @@ diff -Naur solvers/glucose30/utils/System.h solvers/g30/utils/System.h
  
  static inline double cpuTime(void); // CPU-time in seconds.
  extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
-@@ -43,14 +43,14 @@
+@@ -43,14 +39,14 @@
  #if defined(_MSC_VER) || defined(__MINGW32__)
  #include <time.h>
  
