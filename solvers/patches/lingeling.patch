@@ -1,6 +1,6 @@
 diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
 --- solvers/lingeling/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/lgl/Makefile	2020-08-04 17:56:03.000000000 +1000
++++ solvers/lgl/Makefile	2021-08-12 09:10:25.000000000 +1000
 @@ -0,0 +1,38 @@
 +### Makefile ---
 +
@@ -41,8 +41,8 @@ diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/lingeling/druplig.c solvers/lgl/druplig.c
---- solvers/lingeling/druplig.c	2020-08-04 17:57:32.000000000 +1000
-+++ solvers/lgl/druplig.c	2020-07-26 00:05:51.000000000 +1000
+--- solvers/lingeling/druplig.c	2021-08-12 09:49:29.000000000 +1000
++++ solvers/lgl/druplig.c	2021-08-12 09:10:25.000000000 +1000
 @@ -15,9 +15,14 @@
  
  /*------------------------------------------------------------------------*/
@@ -112,8 +112,8 @@ diff -Naur solvers/lingeling/druplig.c solvers/lgl/druplig.c
  typedef struct Prof { char * name; long long calls; double time; } Prof;
  
 diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
---- solvers/lingeling/druplig.h	2020-08-04 17:57:32.000000000 +1000
-+++ solvers/lgl/druplig.h	2019-03-16 23:30:32.000000000 +1100
+--- solvers/lingeling/druplig.h	2021-08-12 09:49:29.000000000 +1000
++++ solvers/lgl/druplig.h	2021-08-12 09:10:25.000000000 +1000
 @@ -10,6 +10,10 @@
  
  typedef struct Druplig Druplig;
@@ -136,7 +136,7 @@ diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
  #endif
 diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
 --- solvers/lingeling/lglib.c	2016-07-07 18:21:31.000000000 +1000
-+++ solvers/lgl/lglib.c	2020-08-04 09:39:42.000000000 +1000
++++ solvers/lgl/lglib.c	2021-08-12 09:10:25.000000000 +1000
 @@ -20,11 +20,43 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -1608,8 +1608,18 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
    return lgl->stats->confs;
 diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
 --- solvers/lingeling/lglib.h	2016-04-28 06:01:55.000000000 +1000
-+++ solvers/lgl/lglib.h	2020-07-26 00:06:18.000000000 +1000
-@@ -20,6 +20,14 @@
++++ solvers/lgl/lglib.h	2021-08-12 09:49:11.000000000 +1000
+@@ -6,7 +6,8 @@
+ #define lglib_h_INCLUDED
+ 
+ #include <stdio.h>				// for 'FILE'
+-#include <stdlib.h>				// for 'int64_t'
++#include <stdint.h>                             // for 'int64_t' on some  systems
++#include <stdlib.h>				// for 'int64_t' on other systems
+ 
+ //--------------------------------------------------------------------------
+ 
+@@ -20,6 +21,14 @@
  
  //--------------------------------------------------------------------------
  
@@ -1624,7 +1634,7 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
  LGL * lglinit (void);				// constructor
  void lglrelease (LGL *);			// destructor
  
-@@ -104,7 +112,7 @@
+@@ -104,7 +113,7 @@
  void * lglfirstopt (LGL *);			// option iterator: first
  
  void * lglnextopt (LGL *, 			// option iterator: next
@@ -1633,7 +1643,7 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
                     const char ** nameptr,
  		   int *valptr, int *minptr, int *maxptr);
  
-@@ -114,7 +122,7 @@
+@@ -114,7 +123,7 @@
  
  // Set default phase of a literal.  Any decision on this literal will always
  // try this phase.  Note, that this function does not have any effect on
@@ -1642,7 +1652,7 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
  // phase and thus if they are set to different default phases, only the last
  // set operation will be kept.
  
-@@ -311,6 +319,7 @@
+@@ -311,6 +320,7 @@
  int64_t lglgetconfs (LGL *);
  int64_t lglgetdecs (LGL *);
  int64_t lglgetprops (LGL *);
@@ -1650,7 +1660,7 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
  size_t lglbytes (LGL *);
  int lglnvars (LGL *);
  int lglnclauses (LGL *);
-@@ -338,4 +347,8 @@
+@@ -338,4 +348,8 @@
  void lglsetmsglock (LGL *, void (*lock)(void*), void (*unlock)(void*), void*);
  void lglsetime (LGL *, double (*time)(void));
  
@@ -1661,7 +1671,7 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
  #endif
 diff -Naur solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
 --- solvers/lingeling/lglopts.h	2016-04-28 06:01:55.000000000 +1000
-+++ solvers/lgl/lglopts.h	2019-03-16 23:30:32.000000000 +1100
++++ solvers/lgl/lglopts.h	2021-08-12 09:10:25.000000000 +1000
 @@ -32,8 +32,16 @@
  
  /*------------------------------------------------------------------------*/
