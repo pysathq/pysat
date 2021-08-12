@@ -43,7 +43,7 @@ diff -Naur solvers/minicard/Makefile solvers/mc/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
 --- solvers/minicard/core/Solver.cc	2017-04-07 00:30:14.000000000 +1000
-+++ solvers/mc/core/Solver.cc	2021-08-12 09:10:25.000000000 +1000
++++ solvers/mc/core/Solver.cc	2021-08-12 09:59:13.000000000 +1000
 @@ -27,10 +27,10 @@
  
  #include <math.h>
@@ -152,26 +152,16 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  
  
  void Solver::removeClause(CRef cr) {
-@@ -320,13 +320,17 @@
- bool Solver::satisfied(const Clause& c) const {
-     if (c.is_atmost()) {
-         int numFalse = 0;
-+        printf("checking atmost");
-         // Scan through all literals
+@@ -324,7 +324,7 @@
          for (int i = 0 ; i < c.size() ; i++) {
-+            printf(" %d", sign(c[i] ? -1 : 1) * var(c[i]));
              if (value(c[i]) == l_False) {
-+                printf(" false");
                  numFalse++;
 -                if (numFalse >= c.atmost_watches() - 1) return true;
-+                if (numFalse >= c.atmost_watches() - 1) { printf(" satisfied\n"); return true; }
++                if (numFalse >= c.atmost_watches() - 1) { return true; }
              }
          }
-+        printf(" not satisfied\n");
      }
-     else {
-         for (int i = 0; i < c.size(); i++)
-@@ -343,7 +347,7 @@
+@@ -343,7 +343,7 @@
          for (int c = trail.size()-1; c >= trail_lim[level]; c--){
              Var      x  = var(trail[c]);
              assigns [x] = l_Undef;
@@ -180,7 +170,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                  polarity[x] = sign(trail[c]);
              insertVarOrder(x); }
          qhead = trail_lim[level];
-@@ -381,25 +385,25 @@
+@@ -381,25 +381,25 @@
  /*_________________________________________________________________________________________________
  |
  |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -212,7 +202,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
      // Generate conflict clause:
      //
      out_learnt.push();      // (leave room for the asserting literal)
-@@ -414,7 +418,7 @@
+@@ -414,7 +414,7 @@
                  if (value(c[j]) != l_True) continue;
  
                  Lit q = ~c[j];
@@ -221,7 +211,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                  if (!seen[var(q)] && level(var(q)) > 0){
                      varBumpActivity(var(q));
                      seen[var(q)] = 1;
-@@ -428,7 +432,7 @@
+@@ -428,7 +428,7 @@
          else {
              if (c.learnt())
                  claBumpActivity(c);
@@ -230,7 +220,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
              for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++){
                  Lit q = c[j];
  
-@@ -453,9 +457,9 @@
+@@ -453,9 +453,9 @@
      }while (pathC > 0);
      out_learnt[0] = ~p;
  
@@ -242,7 +232,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
      int i, j;
      out_learnt.copyTo(analyze_toclear);
      if (ccmin_mode == 2){
-@@ -466,7 +470,7 @@
+@@ -466,7 +466,7 @@
          for (i = j = 1; i < out_learnt.size(); i++)
              if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
                  out_learnt[j++] = out_learnt[i];
@@ -251,7 +241,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
      }else if (ccmin_mode == 1){
          for (i = j = 1; i < out_learnt.size(); i++){
              Var x = var(out_learnt[i]);
-@@ -476,7 +480,7 @@
+@@ -476,7 +476,7 @@
              else{
                  Clause& c = ca[reason(var(out_learnt[i]))];
                  assert(!c.is_atmost());
@@ -260,7 +250,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                  for (int k = 1; k < c.size(); k++)
                      if (!seen[var(c[k])] && level(var(c[k])) > 0){
                          out_learnt[j++] = out_learnt[i];
-@@ -567,7 +571,7 @@
+@@ -567,7 +567,7 @@
  /*_________________________________________________________________________________________________
  |
  |  analyzeFinal : (p : Lit)  ->  [void]
@@ -269,7 +259,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Description:
  |    Specialized analysis procedure to express the final conflict in terms of assumptions.
  |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-@@ -690,14 +694,64 @@
+@@ -690,14 +690,64 @@
      }
  }
  
@@ -336,7 +326,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -731,7 +785,7 @@
+@@ -731,7 +781,7 @@
  
                  if (newWatch == lit_Undef) {
                      // No new watch found, so we have reached the bound.
@@ -345,7 +335,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                      for (int k = 0 ; k < c.atmost_watches() ; k++) {
                          if (c[k] != p && value(c[k]) != l_False && (k==0 || c[k] != c[k-1])) {
                              assert(value(c[k]) == l_Undef);
-@@ -810,16 +864,16 @@
+@@ -810,16 +860,16 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -366,7 +356,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  };
  void Solver::reduceDB()
  {
-@@ -832,7 +886,7 @@
+@@ -832,7 +882,7 @@
      for (i = j = 0; i < learnts.size(); i++){
          Clause& c = ca[learnts[i]];
          assert(!c.is_atmost());
@@ -375,7 +365,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
          if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
              removeClause(learnts[i]);
          else
-@@ -870,7 +924,7 @@
+@@ -870,7 +920,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -384,7 +374,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -902,11 +956,11 @@
+@@ -902,11 +952,11 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -399,7 +389,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  |  Output:
  |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
  |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-@@ -950,15 +1004,15 @@
+@@ -950,15 +1000,15 @@
                  max_learnts             *= learntsize_inc;
  
                  if (verbosity >= 1)
@@ -419,7 +409,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
                  // Reached bound on number of conflicts:
                  progress_estimate = progressEstimate();
                  cancelUntil(0);
-@@ -1123,7 +1177,7 @@
+@@ -1123,7 +1173,7 @@
  
  //=================================================================================================
  // Writing CNF to DIMACS:
@@ -428,7 +418,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -1172,7 +1226,7 @@
+@@ -1172,7 +1222,7 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -437,7 +427,7 @@ diff -Naur solvers/minicard/core/Solver.cc solvers/mc/core/Solver.cc
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]])){
              Clause& c = ca[clauses[i]];
-@@ -1242,11 +1296,11 @@
+@@ -1242,11 +1292,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
