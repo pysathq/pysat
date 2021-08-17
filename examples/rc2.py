@@ -140,6 +140,11 @@ from six.moves import range
 import sys
 
 
+# names of BLO strategies
+#==============================================================================
+blomap = {'none': 0, 'basic': 1, 'div': 3, 'cluster': 5, 'full': 7}
+
+
 #
 #==============================================================================
 class RC2(object):
@@ -1210,17 +1215,26 @@ class RC2Stratified(RC2, object):
         two heuristics, namely
 
         1. Boolean lexicographic optimization (BLO) [5]_
-        2. stratification [6]_
+        2. diversity-based stratification [6]_
+        3. cluster-based stratification
 
-        There is no way to enable only one of them -- both heuristics
-        are applied at the same time. Except for the aforementioned
-        additional techniques, every other component of the solver
-        remains as in the base class :class:`RC2`. Therefore, a user
-        is referred to the documentation of :class:`RC2` for details.
+        To specify which heuristics to apply, a user can assign the ``blo``
+        parameter to one of the values (by default it is set to ``'div'``):
+
+        - ``'basic'`` ('BLO' only)
+        - ``div`` ('BLO' + diversity-based stratification)
+        - ``cluster`` ('BLO' + cluster-based stratification)
+        - ``full`` ('BLO' + diversity- + cluster-based stratification)
+
+        Except for the aforementioned additional techniques, every other
+        component of the solver remains as in the base class :class:`RC2`.
+        Therefore, a user is referred to the documentation of :class:`RC2` for
+        details.
     """
 
-    def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            incr=False, minz=False, nohard=False, trim=0, verbose=0):
+    def __init__(self, formula, solver='g3', adapt=False, blo='div',
+            exhaust=False, incr=False, minz=False, nohard=False, trim=0,
+            verbose=0):
         """
             Constructor.
         """
@@ -1230,8 +1244,12 @@ class RC2Stratified(RC2, object):
                 adapt=adapt, exhaust=exhaust, incr=incr, minz=minz, trim=trim,
                 verbose=verbose)
 
-        self.levl = 0   # initial optimization level
-        self.blop = []  # a list of blo levels
+        self.levl = 0    # initial optimization level
+        self.blop = []   # a list of blo levels
+
+        # BLO strategy
+        assert blo and blo in blomap, 'Unknown BLO strategy'
+        self.bstr = blomap[blo]
 
         # do clause hardening
         self.hard = nohard == False
@@ -1347,7 +1365,8 @@ class RC2Stratified(RC2, object):
             conditions holds:
 
             - partial BLO condition
-            - stratification condition
+            - diversity-based stratification condition
+            - cluster-based stratification condition
 
             If any of these holds, the loop stops.
         """
@@ -1356,20 +1375,45 @@ class RC2Stratified(RC2, object):
             self.levl = None
             return
 
+        # determining which heuristics to use
+        div_str, clu_str = (self.bstr >> 1) & 1, (self.bstr >> 2) & 1
+
+        # cluster of weights to build (if needed)
+        cluster = [self.levl]
+
         while self.levl < len(self.blop) - 1:
+            # current weight
+            wght = self.blop[self.levl]
+
             # number of selectors with weight less than current weight
-            numc = sum([len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+            numr = sum([len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
 
             # sum of their weights
-            sumw = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+            sumr = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
 
             # partial BLO
-            if self.blop[self.levl] > sumw and sumw != 0:
+            if wght > sumr and sumr != 0:
                 break
 
-            # stratification
-            if numc / float(len(self.blop) - self.levl - 1) > self.sdiv:
+            # diversity-based stratification
+            if div_str and numr / float(len(self.blop) - self.levl - 1) > self.sdiv:
                 break
+
+            # last resort = cluster-based stratification
+            if clu_str:
+                # is the distance from current weight to the cluster
+                # being built larger than the distance to the mean of
+                # smaller weights?
+                numc = sum([len(self.wstr[self.blop[l]]) for l in cluster])
+                sumc = sum([self.blop[l] * len(self.wstr[self.blop[l]]) for l in cluster])
+
+                if abs(wght - sumc / numc) > abs(wght - sumr / numr):
+                    # remaining weights are too far from the cluster; stop
+                    # here and report the splitting to be last-added weight
+                    self.levl = cluster[-1]
+                    break
+
+                cluster.append(self.levl)
 
             self.levl += 1
 
@@ -1579,9 +1623,9 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hilms:t:vx',
+        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hil:ms:t:vx',
                 ['adapt', 'block=', 'comp=', 'enum=', 'exhaust', 'help',
-                    'incr', 'blo', 'minimize', 'solver=', 'trim=', 'verbose',
+                    'incr', 'blo=', 'minimize', 'solver=', 'trim=', 'verbose',
                     'vnew'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
@@ -1594,7 +1638,7 @@ def parse_options():
     cmode = None
     to_enum = 1
     incr = False
-    blo = False
+    blo = 'none'
     minz = False
     solver = 'g3'
     trim = 0
@@ -1620,7 +1664,7 @@ def parse_options():
         elif opt in ('-i', '--incr'):
             incr = True
         elif opt in ('-l', '--blo'):
-            blo = True
+            blo = str(arg)
         elif opt in ('-m', '--minimize'):
             minz = True
         elif opt in ('-s', '--solver'):
@@ -1636,8 +1680,8 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
+    # solution blocking
     bmap = {'mcs': -1, 'mcses': -1, 'model': 0, 'models': 0, 'mss': 1, 'msses': 1}
-
     assert block in bmap, 'Unknown solution blocking'
     block = bmap[block]
 
@@ -1663,7 +1707,8 @@ def usage():
     print('                                 Available values: [1 .. INT_MAX], all (default = 1)')
     print('        -h, --help               Show this message')
     print('        -i, --incr               Use SAT solver incrementally (only for g3 and g4)')
-    print('        -l, --blo                Use BLO and stratification')
+    print('        -l, --blo=<string>       Use BLO and stratification')
+    print('                                 Available values: basic, div, cluster, none, full (default = none)')
     print('        -m, --minimize           Use a heuristic unsatisfiable core minimizer')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
@@ -1690,7 +1735,7 @@ if __name__ == '__main__':
         # enabling the competition mode
         if cmode:
             assert cmode in ('a', 'b'), 'Wrong MSE18 mode chosen: {0}'.format(cmode)
-            adapt, blo, exhaust, solver, verbose = True, True, True, 'g3', 3
+            adapt, blo, exhaust, solver, verbose = True, 'div', True, 'g3', 3
 
             if cmode == 'a':
                 trim = 5 if max(formula.wght) > min(formula.wght) else 0
@@ -1703,7 +1748,7 @@ if __name__ == '__main__':
                 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
         # deciding whether or not to stratify
-        if blo and max(formula.wght) > min(formula.wght):
+        if blo != 'none' and max(formula.wght) > min(formula.wght):
             MXS = RC2Stratified
         else:
             MXS = RC2
@@ -1712,10 +1757,12 @@ if __name__ == '__main__':
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
                 incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
 
-            # disable clause hardening in case we enumerate multiple models
-            if isinstance(rc2, RC2Stratified) and to_enum != 1:
-                print('c hardening is disabled for model enumeration')
-                rc2.hard = False
+            if isinstance(rc2, RC2Stratified):
+                rc2.bstr = blomap[blo]  # select blo strategy
+                if to_enum != 1:
+                    # no clause hardening in case we enumerate multiple models
+                    print('c hardening is disabled for model enumeration')
+                    rc2.hard = False
 
             optimum_found = False
             for i, model in enumerate(rc2.enumerate(block=block), 1):

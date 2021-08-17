@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+17.08.2021 (*0.1.7.dev10*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added cluster-based stratification to :class:`RC2`.
+- Made the selection of stratification strategy in :class:`RC2` optional.
+
 02.08.2021 (*0.1.7.dev9*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
