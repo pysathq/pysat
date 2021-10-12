@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+12.10.2021 (*0.1.7.dev11*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug related to meaningless bounds in cardinality constraints (both
+  AtMost and AtLeast).
+
 17.08.2021 (*0.1.7.dev10*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

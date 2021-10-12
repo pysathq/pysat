@@ -242,6 +242,10 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        # checking if the bound is meaningless for any encoding
+        if bound < 0:
+            raise ValueError('Wrong bound: {0}'.format(bound))
+
         if encoding in (0, 4, 5) and 1 < bound < len(lits) - 1:
             raise(UnsupportedBound(encoding, bound))
 
@@ -336,6 +340,10 @@ class CardEnc(object):
 
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
+
+        # checking if the bound is meaningless for any encoding
+        if bound > len(lits):
+            raise ValueError('Wrong bound: {0}'.format(bound))
 
         if encoding in (0, 4, 5) and 1 < bound < len(lits) - 1:
             raise(UnsupportedBound(encoding, bound))
