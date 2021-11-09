@@ -304,6 +304,7 @@ class PBEnc(object):
 
         # extracting clauses
         ret = CNF(from_clauses=result.get_clauses())
+        ret.nv = max(ret.nv, top_id)  # needed if no auxiliary variable is used
 
         # updating vpool if necessary
         if vpool:

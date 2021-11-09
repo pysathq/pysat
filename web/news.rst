@@ -11,6 +11,12 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+09.11.2021 (*0.1.7.dev12*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a bug related to handling CNF formulas and improper updating IDPool
+  for PB constraints in the case of no auxiliary variables.
+
 12.10.2021 (*0.1.7.dev11*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
