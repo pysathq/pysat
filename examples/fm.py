@@ -174,6 +174,8 @@ class FM(object):
 
         if isinstance(formula, WCNFPlus) and formula.atms:
             self.atm1 = copy.deepcopy(formula.atms)
+        else:
+            self.atm1 = None
 
         # initialize SAT oracle with hard clauses only
         self.init(with_soft=False)
