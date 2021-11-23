@@ -1109,19 +1109,19 @@ class WCNF(object):
                 else: # expecting the preamble
                     preamble = line.split(' ')
                     if len(preamble) == 5: # preamble should be "p wcnf nvars nclauses topw"
-                        self.topw = parse_wght([1])
+                        self.topw = parse_wght(preamble[-1])
                     else: # preamble should be "p wcnf nvars nclauses", with topw omitted
-                        self.topw = float('inf')
+                        self.topw = decimal.Decimal('+inf')
 
         # if there is any soft clause with negative weight
         # normalize it, i.e. transform into a set of clauses
         # with a positive weight
         if negs:
             self.normalize_negatives(negs)
-            
-        # if topw was unspecified and assigned to infinity
-        # we'll assign it to the sum of all soft clause weights plus one
-        if decimal.is_infinite(self.topw):
+
+        # if topw was unspecified and assigned to +infinity,
+        # we will assign it to the sum of all soft clause weights plus one
+        if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
             self.topw = 1 + sum(self.wght)
 
     def normalize_negatives(self, negatives):

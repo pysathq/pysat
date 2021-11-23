@@ -11,6 +11,11 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+24.11.2021 (*0.1.7.dev14*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Another attempt to fix the bug in topw handling if unspecified.
+
 24.11.2021 (*0.1.7.dev13*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
