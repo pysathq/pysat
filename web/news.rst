@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+24.11.2021 (*0.1.7.dev13*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor issue in fm.py related to handling native AM1 constraints.
+- Fixed a bug in WCNF parser, which caused incorrect top weight computation if
+  not specified in the preamble of the file explicitly.
+
 09.11.2021 (*0.1.7.dev12*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
