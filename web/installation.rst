@@ -50,6 +50,11 @@ following way:
 
     $ pip install -U python-sat
 
+.. note::
+
+    For some shells, e.g. *zsh*, you may need to put the package names into
+    single quotes, i.e. use ``pip install 'python-sat[pblib,aiger]'``.
+
 Alternatively, one can clone `the repository
 <https://github.com/pysathq/pysat>`__ and execute the following command in the
 local copy:
