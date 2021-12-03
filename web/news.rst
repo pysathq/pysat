@@ -11,6 +11,14 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+04.12.2021 (*0.1.7.dev15*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor bug in stratified RC2 related to model enumeration for empty
+  formulas.
+- Updated Hitman so that it opts for plain RC2 if all weights are the same.
+- Fixed cost MUS computation in OptUx.
+
 24.11.2021 (*0.1.7.dev14*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

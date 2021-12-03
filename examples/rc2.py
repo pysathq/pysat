@@ -1297,7 +1297,7 @@ class RC2Stratified(RC2, object):
             :func:`activate_clauses`.
         """
 
-        if self.done == 0:
+        if self.done == 0 and self.levl != None:
             # it is a fresh start of the solver
             # i.e. no optimization level is finished yet
 

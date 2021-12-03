@@ -309,7 +309,7 @@ class Hitman(object):
                     weight=1 if not weights else weights[self.idpool.obj(obj_id)])
 
         if self.htype == 'rc2':
-            if not weights:
+            if not weights or min(weights.values()) == max(weights.values()):
                 self.oracle = RC2(formula, solver=self.solver, adapt=self.adapt,
                         exhaust=self.exhaust, minz=self.minz, trim=self.trim)
             else:

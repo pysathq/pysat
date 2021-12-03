@@ -393,6 +393,9 @@ class OptUx(object):
             :rtype: list(int)
         """
 
+        # correctly computed cost of the unit-mcs component
+        units_cost = sum(map(lambda l: self.weights[l], (l for l in self.units)))
+
         while True:
             # computing a new optimal hitting set
             hs = self.hitman.get()
@@ -412,7 +415,7 @@ class OptUx(object):
                 # i.e. it is an optimal MUS we are searching for;
                 # therefore, blocking it and returning
                 self.hitman.block(hs)
-                self.cost = self.hitman.oracle.cost + len(self.units)
+                self.cost = self.hitman.oracle.cost + units_cost
                 return sorted(map(lambda s: self.smap[s], self.units + hs))
             else:
                 # the candidate subset is satisfiable,
@@ -532,8 +535,8 @@ if __name__ == '__main__':
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
-        if re.search('cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
-            if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+        if re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
                 formula = WCNFPlus(from_file=files[0])
             else:  # expecting '*.cnf[,p,+].*'
                 formula = CNFPlus(from_file=files[0]).weighted()
