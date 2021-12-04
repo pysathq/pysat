@@ -20,6 +20,11 @@ import sys
 #==============================================================================
 def pycall(cmd):
     fullcmd = sys.executable + ' ' + cmd
+
+    # trying to handle the issue of 'pysat.examples' module
+    if cmd == '-m pytest':
+        fullcmd = 'cd tests && ' + fullcmd
+
     ret = os.system(fullcmd)
 
     if ret != 0:
