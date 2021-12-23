@@ -463,3 +463,9 @@ diff -Naur solvers/cadical/version.cpp solvers/cdc/version.cpp
  #endif
  
  /*------------------------------------------------------------------------*/
+diff --git solvers/cadical/VERSION solvers/cdc/VERSION
+deleted file mode 100644
+--- solvers/cadical/VERSION
++++ /dev/null
+@@ -1 +0,0 @@
+-1.0.3
