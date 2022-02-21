@@ -11,6 +11,13 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+22.02.2022 (*0.1.7.dev16*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed a minor issue in RC2 related to making useless iterations in core
+  minimization.
+- Added support for WCNF+ formulas in OptUx.
+
 04.12.2021 (*0.1.7.dev15*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

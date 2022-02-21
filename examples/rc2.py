@@ -886,8 +886,10 @@ class RC2(object):
 
                 if self.oracle.solve_limited(assumptions=to_test) == False:
                     self.core = to_test
-                else:
+                elif self.oracle.get_status() == True:
                     i += 1
+                else:
+                    break
 
     def exhaust_core(self, tobj):
         """

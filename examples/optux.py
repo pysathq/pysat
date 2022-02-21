@@ -189,6 +189,7 @@ class OptUx(object):
         # constructing a local copy of the formula
         self.formula = WCNFPlus()
         self.formula.hard = formula.hard[:]
+        self.formula.atms = formula.atms[:]
         self.formula.wght = formula.wght[:]
         self.formula.topw = formula.topw
         self.formula.nv = formula.nv
@@ -221,6 +222,13 @@ class OptUx(object):
         # clauses of the unit-size MCSes are enforced to be enabled
         self.oracle = Solver(name=solver, bootstrap_with=unweighted.hard +
                 [[mcs] for mcs in self.units])
+
+        if unweighted.atms:
+            assert self.oracle.supports_atmost(), \
+                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
+
+            for atm in unweighted.atms:
+                self.oracle.add_atmost(*atm)
 
     def __del__(self):
         """
