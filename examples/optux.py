@@ -189,10 +189,13 @@ class OptUx(object):
         # constructing a local copy of the formula
         self.formula = WCNFPlus()
         self.formula.hard = formula.hard[:]
-        self.formula.atms = formula.atms[:]
         self.formula.wght = formula.wght[:]
         self.formula.topw = formula.topw
         self.formula.nv = formula.nv
+
+        # copying atmost constraints, if any
+        if isinstance(formula, WCNFPlus) and formula.atms:
+            self.formula.atms = formula.atms[:]
 
         # top variable identifier
         self.topv = formula.nv
