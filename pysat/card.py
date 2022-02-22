@@ -323,7 +323,7 @@ class CardEnc(object):
             identifiers ``vpool``, which is automatically updated during the
             method call. In many circumstances, this is more convenient than
             using ``top_id``. Also note that parameters ``top_id`` and
-            ``vpool`` **cannot** be specified *simultaneusly*.
+            ``vpool`` **cannot** be specified *simultaneously*.
 
             The default value of ``encoding`` is :attr:`Enctype.seqcounter`.
 
