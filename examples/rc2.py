@@ -59,7 +59,7 @@
     The file implements two classes: :class:`RC2` and
     :class:`RC2Stratified`. The former class is the basic
     implementation of the algorithm, which can be applied to a MaxSAT
-    formula in the :class:`.WCNF` format. The latter class
+    formula in the :class:`.WCNFPlus` format. The latter class
     additionally implements Boolean lexicographic optimization (BLO)
     [5]_ and stratification [6]_ on top of :class:`RC2`.
 
@@ -150,7 +150,7 @@ blomap = {'none': 0, 'basic': 1, 'div': 3, 'cluster': 5, 'full': 7}
 class RC2(object):
     """
         Implementation of the basic RC2 algorithm. Given a (weighted)
-        (partial) CNF formula, i.e. formula in the :class:`.WCNF`
+        (partial) CNF formula, i.e. formula in the :class:`.WCNFPlus`
         format, this class can be used to compute a given number of
         MaxSAT solutions for the input formula. :class:`RC2` roughly
         follows the implementation of algorithm OLLITI [1]_ [2]_ of
@@ -177,7 +177,7 @@ class RC2(object):
             Assumptions: Application to MUS Extraction*. SAT 2013.
             pp. 309-317
 
-        :param formula: (weighted) (partial) CNF formula
+        :param formula: (weighted) (partial) CNFPlus formula
         :param solver: SAT oracle name
         :param adapt: detect and adapt intrinsic AtMost1 constraints
         :param exhaust: do core exhaustion
@@ -186,7 +186,7 @@ class RC2(object):
         :param trim: do core trimming at most this number of times
         :param verbose: verbosity level
 
-        :type formula: :class:`.WCNF`
+        :type formula: :class:`.WCNFPlus`
         :type solver: str
         :type adapt: bool
         :type exhaust: bool
@@ -260,7 +260,7 @@ class RC2(object):
             Initialize the internal SAT oracle. The oracle is used
             incrementally and so it is initialized only once when
             constructing an object of class :class:`RC2`. Given an
-            input :class:`.WCNF` formula, the method bootstraps the
+            input :class:`.WCNFPlus` formula, the method bootstraps the
             oracle with its hard clauses. It also augments the soft
             clauses with "fresh" selectors and adds them to the oracle
             afterwards.
@@ -272,7 +272,7 @@ class RC2(object):
             :param formula: input formula
             :param incr: apply incremental mode of Glucose
 
-            :type formula: :class:`.WCNF`
+            :type formula: :class:`.WCNFPlus`
             :type incr: bool
         """
 
@@ -339,6 +339,10 @@ class RC2(object):
             ``weight`` is set to ``None`` by default meaning that the
             clause is hard).
 
+            Also note that besides pure clauses, the method can also expect
+            native cardinality constraints represented as a pair ``(lits,
+            bound)``. Only hard cardinality constraints can be added.
+
             :param clause: a clause to add
             :param weight: weight of the clause (if any)
 
@@ -372,10 +376,10 @@ class RC2(object):
 
         # first, map external literals to internal literals
         # introduce new variables if necessary
-        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) == list else clause[0]))
+        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set) else clause[0]))
 
         if not weight:
-            if not len(clause) == 2 or not type(clause[0]) == list:
+            if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set):
                 # the clause is hard, and so we simply add it to the SAT oracle
                 self.oracle.add_clause(cl)
             else:

@@ -158,11 +158,28 @@
 
 #
 #==============================================================================
-from pysat.formula import IDPool, WCNF
+from pysat.formula import IDPool, WCNFPlus
 from pysat.examples.rc2 import RC2, RC2Stratified
 from pysat.examples.lbx import LBX
 from pysat.examples.mcsls import MCSls
 import six
+
+
+#
+#==============================================================================
+class Atom(object):
+    """
+        Atoms are elementary (signed) objects necessary when dealing with
+        hitting sets subject to hard constraints.
+    """
+
+    def __init__(self, obj, sign=True):
+        """
+            Simple atom initialiser.
+        """
+
+        self.obj = obj
+        self.sign = sign
 
 
 #
@@ -196,12 +213,22 @@ class Hitman(object):
         well as their combinations. The bootstrapping phase is done in
         :func:`init`.
 
+        Another optional parameter ``subject_to`` can be used to specify
+        arbitrary hard constraints that must be respected when computing
+        hitting sets of the given sets. Note that ``subject_to`` should be an
+        iterable containing pure clauses and/or native AtMostK constraints.
+        Note that native cardinality constraints supported only by
+        MiniCard-like solvers. Finally, note that these hard constraints must
+        be defined over the set of signed atomic objects, i.e. instances of
+        class :class:`.Atom`.
+
         A few other optional parameters include the possible options for RC2
         as well as for LBX- and MCSls-like MCS enumerators that control the
         behaviour of the underlying solvers.
 
         :param bootstrap_with: input set of sets to hit
         :param weights: a mapping from objects to their weights (if weighted)
+        :param subject_to: hard constraints (either clauses or native AtMostK constraints)
         :param solver: name of SAT solver
         :param htype: enumerator type
         :param mxs_adapt: detect and process AtMost1 constraints in RC2
@@ -212,6 +239,7 @@ class Hitman(object):
 
         :type bootstrap_with: iterable(iterable(obj))
         :type weights: dict(obj)
+        :type subject_to: iterable(iterable(Atom))
         :type solver: str
         :type htype: str
         :type mxs_adapt: bool
@@ -221,9 +249,9 @@ class Hitman(object):
         :type mcs_usecld: bool
     """
 
-    def __init__(self, bootstrap_with=[], weights=None, solver='g3',
-            htype='sorted', mxs_adapt=False, mxs_exhaust=False, mxs_minz=False,
-            mxs_trim=0, mcs_usecld=False):
+    def __init__(self, bootstrap_with=[], weights=None, subject_to=[],
+            solver='g3', htype='sorted', mxs_adapt=False, mxs_exhaust=False,
+            mxs_minz=False, mxs_trim=0, mcs_usecld=False):
         """
             Constructor.
         """
@@ -253,7 +281,7 @@ class Hitman(object):
         self.idpool = IDPool()
 
         # initialize hitting set solver
-        self.init(bootstrap_with, weights)
+        self.init(bootstrap_with, weights=weights, subject_to=subject_to)
 
     def __del__(self):
         """
@@ -276,7 +304,7 @@ class Hitman(object):
 
         self.delete()
 
-    def init(self, bootstrap_with, weights=None):
+    def init(self, bootstrap_with, weights=None, subject_to=[]):
         """
             This method serves for initializing the hitting set solver with a
             given list of sets to hit. Concretely, the hitting set problem is
@@ -288,20 +316,39 @@ class Hitman(object):
             hit. This only works if ``'sorted'`` enumeration of hitting sets
             is applied.
 
+            Another optional parameter is available, namely, ``subject_to``.
+            It can be used to specify arbitrary hard constraints that must be
+            respected when computing hitting sets of the given sets. Note that
+            ``subject_to`` should be an iterable containing pure clauses
+            and/or native AtMostK constraints. Finally, note that these hard
+            constraints must be defined over the set of signed atomic objects,
+            i.e. instances of class :class:`.Atom`.
+
             :param bootstrap_with: input set of sets to hit
             :param weights: weights of the objects in case the problem is weighted
+            :param subject_to: hard constraints (either clauses or native AtMostK constraints)
             :type bootstrap_with: iterable(iterable(obj))
             :type weights: dict(obj)
+            :type subject_to: iterable(iterable(Atom))
         """
 
         # formula encoding the sets to hit
-        formula = WCNF()
+        formula = WCNFPlus()
 
         # hard clauses
         for to_hit in bootstrap_with:
             to_hit = list(map(lambda obj: self.idpool.id(obj), to_hit))
 
             formula.append(to_hit)
+
+        # additional hard constraints
+        for cl in subject_to:
+            if not len(cl) == 2 or not type(cl[0]) in (list, tuple, set):
+                # this is a pure clause
+                formula.append(list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), cl)))
+            else:
+                # this is a native AtMostK constraint
+                formula.append([list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), cl[0])), cl[1]], is_atmost=True)
 
         # soft clauses
         for obj_id in six.iterkeys(self.idpool.id2obj):
@@ -322,6 +369,49 @@ class Hitman(object):
         else:
             self.oracle = MCSls(formula, solver_name=self.solver,
                     use_cld=self.usecld)
+
+    def add_hard(self, clause, weights=None):
+        """
+            Add a hard constraint, which can be either a pure clause or an
+            AtMostK constraint.
+
+            Note that an optional parameter that can be passed to this method
+            is ``weights``, which contains a mapping the objects under
+            question into weights. Also note that the weight of an object must
+            not change from one call of :meth:`hit` to another.
+
+            :param clause: hard constraint (either a clause or a native AtMostK constraint)
+            :param weights: a mapping from objects to weights
+
+            :type clause: iterable(obj)
+            :type weights: dict(obj)
+        """
+
+        if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set):
+            # this is a pure clause
+            clause = list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), clause))
+
+            # a soft clause should be added for each new object
+            new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause)
+        else:
+            # this is a native AtMostK constraint
+            clause = [list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), clause[0])), clause[1]]
+
+            # a soft clause should be added for each new object
+            new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause[0])
+
+            # there may be duplicate literals if the constraint is weighted
+            new_obj = list(set(new_obj))
+
+        # some of the literals may also have the opposite polarity
+        new_obj = [l if l in self.idpool.obj2id else -l for l in new_obj]
+
+        # adding the hard clause
+        self.oracle.add_clause(clause)
+
+        # new soft clauses
+        for vid in new_obj:
+            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
 
     def delete(self):
         """

@@ -108,7 +108,7 @@
 from __future__ import print_function
 import getopt
 import os
-from pysat.examples.hitman import Hitman
+from pysat.examples.hitman import Atom, Hitman
 from pysat.examples.rc2 import RC2
 from pysat.formula import CNFPlus, WCNFPlus
 from pysat.solvers import Solver
@@ -151,6 +151,19 @@ class OptUx(object):
         integer. Finally, verbosity level can be set using the ``verbose``
         parameter.
 
+        Two additional optional parameters ``unsorted`` and ``dcalls`` can be
+        used to instruct the tool to enumerate MUSes in the unsorted fashion,
+        i.e. optimal MUSes are not guaranteed to go first. For this,
+        :class:`OptUx` applies LBX-like MCS enumeration (it uses :class:`.LBX`
+        directly). Parameter ``dcalls`` can be applied to instruct the
+        underlying MCS enumerator to apply clause D oracle calls.
+
+        Finally, one more optional input parameter ``cover`` is to be used
+        when exhaustive enumeration of MUSes is not necessary and the tool can
+        stop as soon as a given formula is covered by the set of currently
+        computed MUSes. This can be made to work if the soft clauses of
+        ``formula`` are of size 1.
+
         .. [5] Alexey Ignatiev, Antonio Morgado, Joao Marques-Silva. *RC2: an
             Efficient MaxSAT Solver*. J. Satisf. Boolean Model. Comput. 11(1).
             2019. pp. 53-64
@@ -160,25 +173,32 @@ class OptUx(object):
             Assumptions: Application to MUS Extraction*. SAT 2013.
             pp. 309-317
 
-        :param formula: (weighted) (partial) CNF formula
+        :param formula: (weighted) (partial) CNFPlus formula
         :param solver: SAT oracle name
         :param adapt: detect and adapt intrinsic AtMost1 constraints
+        :param cover: CNFPlus formula to cover when doing MUS enumeration
+        :param dcalls: apply clause D oracle calls (for unsorted enumeration only)
         :param exhaust: do core exhaustion
         :param minz: do heuristic core reduction
+        :param unsorted: apply unsorted MUS enumeration
         :param trim: do core trimming at most this number of times
         :param verbose: verbosity level
 
-        :type formula: :class:`.WCNF`
+        :type formula: :class:`.WCNFPlus`
         :type solver: str
         :type adapt: bool
+        :type cover: :class:`.CNFPlus`
+        :type dcalls: bool
         :type exhaust: bool
         :type minz: bool
+        :type unsorted: bool
         :type trim: int
         :type verbose: int
     """
 
-    def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            minz=False, trim=False, verbose=0):
+    def __init__(self, formula, solver='g3', adapt=False, cover=None,
+            dcalls=False, exhaust=False, minz=False, unsorted=False,
+            trim=False, verbose=0):
         """
             Constructor.
         """
@@ -216,10 +236,29 @@ class OptUx(object):
             print('c mcses: {0} unit, {1} disj'.format(len(self.units),
                 len(to_hit) + len(self.units)))
 
-        # hitting set enumerator
-        self.hitman = Hitman(bootstrap_with=to_hit, weights=self.weights,
-                solver=solver, htype='sorted', mxs_adapt=adapt,
-                mxs_exhaust=exhaust, mxs_minz=minz, mxs_trim=trim)
+        if not unsorted:
+            # MaxSAT-based hitting set enumerator
+            self.hitman = Hitman(bootstrap_with=to_hit, weights=self.weights,
+                    solver=solver, htype='sorted', mxs_adapt=adapt,
+                    mxs_exhaust=exhaust, mxs_minz=minz, mxs_trim=trim)
+        else:
+            # MCS-based hitting set enumerator
+            self.hitman = Hitman(bootstrap_with=to_hit, weights=self.weights,
+                    solver=solver, htype='lbx', mcs_usecld=dcalls)
+
+        # adding the formula to cover to the hitting set enumerator
+        self.cover = cover is not None
+        if cover:
+            # mapping literals to Hitman's atoms
+            m = lambda l: Atom(l, sign=True) if -l not in self.weights else Atom(-l, sign=False)
+
+            for cl in cover:
+                if len(cl) != 2 or not type(cl[0]) in (list, tuple, set):
+                    cl = [m(l) for l in cl]
+                else:
+                    cl = [[m(l) for l in cl[0]], cl[1]]
+
+                self.hitman.add_hard(cl, weights=self.weights)
 
         # SAT oracle bootstrapped with the hard clauses; note that
         # clauses of the unit-size MCSes are enforced to be enabled
@@ -405,7 +444,7 @@ class OptUx(object):
         """
 
         # correctly computed cost of the unit-mcs component
-        units_cost = sum(map(lambda l: self.weights[l], (l for l in self.units)))
+        units_cost = sum(map(lambda l: self.weights[l], self.units))
 
         while True:
             # computing a new optimal hitting set
@@ -426,8 +465,14 @@ class OptUx(object):
                 # i.e. it is an optimal MUS we are searching for;
                 # therefore, blocking it and returning
                 self.hitman.block(hs)
-                self.cost = self.hitman.oracle.cost + units_cost
-                return sorted(map(lambda s: self.smap[s], self.units + hs))
+                self.cost = sum(map(lambda l: self.weights[l], hs)) + units_cost
+
+                if self.units and self.cover:
+                    # due to additional constraints to cover and unit mcses,
+                    # there may be duplicate clauses in self.units + hs
+                    return sorted(map(lambda s: self.smap[s], sorted(set(self.units + hs))))
+                else:
+                    return sorted(map(lambda s: self.smap[s], self.units + hs))
             else:
                 # the candidate subset is satisfiable,
                 # thus extracting a correction subset
@@ -475,25 +520,34 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ae:hms:t:vx',
-                ['adapt', 'enum=', 'exhaust', 'help', 'minimize', 'solver=',
-                    'trim=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hms:t:uvx',
+                ['adapt', 'cover=', 'dcalls', 'enum=', 'exhaust', 'help',
+                    'minimize', 'solver=', 'unsorted', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize() + '\n')
         usage()
         sys.exit(1)
 
     adapt = False
+    cover = None
+    dcalls = False
     exhaust = False
     minz = False
     to_enum = 1
     solver = 'm22'
+    unsorted = False
     trim = 0
     verbose = 1
 
     for opt, arg in opts:
         if opt in ('-a', '--adapt'):
             adapt = True
+        elif opt in ('-c', '--cover'):
+            cover = str(arg)
+            if cover.lower() == 'none':
+                cover = None
+        elif opt in ('-d', '--dcalls'):
+            dcalls = True
         elif opt in ('-e', '--enum'):
             to_enum = str(arg)
             if to_enum != 'all':
@@ -505,6 +559,8 @@ def parse_options():
             minz = True
         elif opt in ('-s', '--solver'):
             solver = str(arg)
+        elif opt in ('-u', '--unsorted'):
+            unsorted = True
         elif opt in ('-t', '--trim'):
             trim = int(arg)
         elif opt in ('-v', '--verbose'):
@@ -514,7 +570,8 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, exhaust, minz, trim, to_enum, solver, verbose, args
+    return adapt, cover, dcalls, exhaust, minz, trim, to_enum, solver, \
+            unsorted, verbose, args
 
 
 #
@@ -526,23 +583,28 @@ def usage():
 
     print('Usage:', os.path.basename(sys.argv[0]), '[options] file')
     print('Options:')
-    print('        -a, --adapt            Try to adapt (simplify) input formula')
-    print('        -e, --enum=<string>    Enumerate top-k solutions')
-    print('                               Available values: [1 .. INT_MAX], all (default: 1)')
-    print('        -h, --help             Show this message')
-    print('        -m, --minimize         Use a heuristic unsatisfiable core minimizer')
-    print('        -s, --solver           SAT solver to use')
-    print('                               Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
-    print('        -t, --trim=<int>       How many times to trim unsatisfiable cores')
-    print('                               Available values: [0 .. INT_MAX] (default = 0)')
-    print('        -v, --verbose          Be verbose')
-    print('        -x, --exhaust          Exhaust new unsatisfiable cores')
+    print('        -a, --adapt             Try to adapt (simplify) input formula')
+    print('        -c, --cover=<string>    Stop MUS enumeration as soon as this formula is covered')
+    print('                                Available values: any valid file path, none (default = none)')
+    print('        -d, --dcalls            Apply clause D calls (in unsorted enumeration only)')
+    print('        -e, --enum=<string>     Enumerate top-k solutions')
+    print('                                Available values: [1 .. INT_MAX], all (default: 1)')
+    print('        -h, --help              Show this message')
+    print('        -m, --minimize          Use a heuristic unsatisfiable core minimizer')
+    print('        -s, --solver            SAT solver to use')
+    print('                                Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
+    print('        -t, --trim=<int>        How many times to trim unsatisfiable cores')
+    print('                                Available values: [0 .. INT_MAX] (default = 0)')
+    print('        -u, --unsorted          Enumerate MUSes in an unsorted way')
+    print('        -v, --verbose           Be verbose')
+    print('        -x, --exhaust           Exhaust new unsatisfiable cores')
 
 
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, exhaust, minz, trim, to_enum, solver, verbose, files = parse_options()
+    adapt, cover, dcalls, exhaust, minz, trim, to_enum, solver, unsorted, \
+            verbose, files = parse_options()
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
@@ -552,9 +614,14 @@ if __name__ == '__main__':
             else:  # expecting '*.cnf[,p,+].*'
                 formula = CNFPlus(from_file=files[0]).weighted()
 
+        if cover:  # expecting  '*.cnf[,p,+].*' only!
+            assert re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', cover), 'wrong file for formula to cover'
+            cover = CNFPlus(from_file=cover)
+
         # creating an object of OptUx
-        with OptUx(formula, solver=solver, adapt=adapt, exhaust=exhaust,
-                minz=minz, trim=trim, verbose=verbose) as optux:
+        with OptUx(formula, solver=solver, adapt=adapt, cover=cover,
+                dcalls=dcalls, exhaust=exhaust, minz=minz, unsorted=unsorted,
+                trim=trim, verbose=verbose) as optux:
 
             # iterating over the necessary number of optimal MUSes
             for i, mus in enumerate(optux.enumerate()):

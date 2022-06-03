@@ -209,6 +209,10 @@ class LBX(object):
             meaning the the clause being added is soft (note that parameter
             ``soft`` is set to ``False`` by default).
 
+            Also note that besides pure clauses, the method can also expect
+            native cardinality constraints represented as a pair ``(lits,
+            bound)``. Only hard cardinality constraints can be added.
+
             :param clause: a clause to add
             :param soft: whether or not the clause is soft
 
@@ -218,19 +222,17 @@ class LBX(object):
 
         # first, map external literals to internal literals
         # introduce new variables if necessary
-        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) == list else clause[0]))
+        cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set) else clause[0]))
 
         if not soft:
-            if not len(clause) == 2 or not type(clause[0]) == list:
+            if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set):
                 # the clause is hard, and so we simply add it to the SAT oracle
                 self.oracle.add_clause(cl)
             else:
                 # this should be a native cardinality constraint,
                 # which can be used only together with Minicard
-                assert solver_name in SolverNames.minicard or \
-                        solver_name in SolverNames.gluecard3 or \
-                        solver_name in SolverNames.gluecard4, \
-                        '{0} does not support native cardinality constraints'.format(solver_name)
+                assert self.oracle.supports_atmost(), \
+                        '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
                 self.oracle.add_atmost(cl, clause[1])
         else:
@@ -553,7 +555,7 @@ def usage():
 
     print('Usage:', os.path.basename(sys.argv[0]), '[options] file')
     print('Options:')
-    print('        -d, --dcalls           Try to bootstrap algorithm')
+    print('        -d, --dcalls           Apply clause D calls')
     print('        -e, --enum=<string>    How many solutions to compute')
     print('                               Available values: [1 .. all] (default: 1)')
     print('        -h, --help')
