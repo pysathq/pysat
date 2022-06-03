@@ -11,6 +11,17 @@ to date and then is good idea.
 Changelog and more
 ------------------
 
+03.06.2022 (*0.1.7.dev17*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Addition of AtMostK constraints on the fly is added to RC2, LBX and MCSls.
+- Added support for additional hard constraints in Hitman, both in the form of
+  clauses and AtMostK constraints.
+- Added the eMUS mode to OptUx, i.e. it can enumerate subset-minimal MUSes.
+- Added support for additional formula to be used in OptUx for stopping MUS
+  enumeration as soon as the additional formula is covered by the set of
+  MUSes.
+
 22.02.2022 (*0.1.7.dev16*)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
