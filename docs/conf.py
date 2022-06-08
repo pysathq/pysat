@@ -29,11 +29,14 @@ author = u'Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado'
 version = u''
 # The full version, including alpha/beta/rc tags
 release = pysat.__version__
+webpage = 'https://pysathq.github.io'
+docpage = 'https://pysathq.github.io/docs/html/index.html'
 
 # variables to be accessed from html
 html_context = {
     'release': release,
-    'webpage':  'https://pysathq.github.io'
+    'webpage': webpage,
+    'docpage': docpage
 }
 
 # -- General configuration ---------------------------------------------------
@@ -84,7 +87,10 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "pydata_sphinx_theme"
+
+html_logo = '_static/logo-dark.svg'
+html_favicon = '_static/favicon.ico'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -92,13 +98,26 @@ html_theme = 'alabaster'
 #
 # html_theme_options = {}
 html_theme_options = {
-    'logo': 'pysat.png',
-    'github_user': 'pysathq',
-    'github_repo': 'pysat',
-    'github_button': True,
-    'github_type': 'star',
-    'sidebar_width': '152px',
-    'body_text_align': 'justify'
+    "logo_link": webpage,
+    "github_url": "https://github.com/pysathq/pysat",
+    "show_nav_level": 2,
+    "navbar_start": ["navbar-logo"],
+    "navbar_center": ["version"],
+    "navbar_end": ["navbar-icon-links"],
+    "icon_links": [
+        {
+            "name": "PDF",
+            "url": "https://pysathq.github.io/docs/pysat.pdf",  # required
+            "icon": "fas fa-file",
+            "type": "fontawesome",  # Default is fontawesome
+        },
+        {
+            "name": "Issue tracker",
+            "url": "https://github.com/pysathq/pysat/issues",  # required
+            "icon": "fas fa-bug",
+            "type": "fontawesome",  # Default is fontawesome
+        },
+    ]
 }
 
 # Autodoc settings
@@ -119,10 +138,8 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 html_sidebars = {
-    '**': ['about.html', 'sidebar_version.html', 'sidebar_webpage.html',
-        'sidebar_contact.html']
+    "**": ["search-field.html", "sidebar-nav-bs.html"]
 }
-
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
