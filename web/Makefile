@@ -1,20 +1,34 @@
-# Minimal makefile for Sphinx documentation
-#
+.PHONY: help themes html serve clean
+.DEFAULT_GOAL := help
 
-# You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = PySAT
-SOURCEDIR     = .
-BUILDDIR      = _build
-
-# Put it first so that "make" without argument is like "make help".
 help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@grep ": ##" Makefile | grep -v grep | tr -d '#'
 
-.PHONY: help Makefile
+themes/scientific-python-hugo-theme:
+	@if [ ! -d "$<" ]; then \
+	  echo "*** ERROR: missing theme" ; \
+	  echo ; \
+	  echo "It looks as though you are missing the themes directory."; \
+	  echo "You need to add the scientific-python-hugo-theme as a submodule."; \
+	  echo ; \
+	  echo "Please see https://theme.scientific-python.org/getstarted/"; \
+	  echo ; \
+	  exit 1; \
+	fi
 
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+content/shortcodes.md:
+	cp content/shortcodes.md.stub content/shortcodes.md
+
+themes: themes/scientific-python-hugo-theme
+
+html: ## Build site in `./public`
+html: themes content/shortcodes.md
+	hugo
+
+serve: ## Serve site, typically on http://localhost:1313
+serve: themes content/shortcodes.md
+	@hugo --printI18nWarnings server
+
+clean: ## Remove built files
+clean:
+	rm -rf public
