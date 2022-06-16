@@ -1,0 +1,46 @@
+.notice {
+  margin-top: 0rem;
+  margin-bottom: 0rem;
+  color: #666;
+}
+
+.notice-type {
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0rem 1rem 0rem 1rem;
+  width: 100%;
+  color: white;
+  display: inline-block;
+}
+
+.notice-content {
+  padding: 0.5rem 1rem 0.5rem 1rem;
+}
+
+.note-notice .notice-type {
+  background: var(--colorNoteHeading);
+}
+.note-notice .notice-content {
+  background: var(--colorNoteContent);
+}
+
+.info-notice .notice-type {
+  background: var(--colorInfoHeading);
+}
+.info-notice .notice-content {
+  background: var(--colorInfoContent);
+}
+
+.warning-notice .notice-type {
+  background: var(--colorWarningHeading);
+}
+.warning-notice .notice-content {
+  background: var(--colorWarningContent);
+}
+
+.tip-notice .notice-type {
+  background: var(--colorTipHeading);
+}
+.tip-notice .notice-content {
+  background: var(--colorTipContent);
+}

@@ -1,0 +1,43 @@
+{{- $inServerMode := .Site.IsServer -}}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Custom JS -->
+<!-- All JS files under static/js are included -->
+{{- $jsFiles := resources.Match "js/*.js" -}}
+{{- if $inServerMode -}}
+{{- $js := $jsFiles | resources.Concat "js/bundle.js" }}
+<script type="text/javascript" src={{ $js.RelPermalink }}></script>
+{{ else }}
+{{- $js := $jsFiles | resources.Concat "js/bundle.js" | resources.Minify }}
+<script type="text/javascript" src={{ $js.RelPermalink }}></script>
+{{- end -}}
+
+<!-- UIkit -->
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.7.6/dist/js/uikit.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.7.6/dist/css/uikit.min.css" />
+
+<script type="text/javascript">setupShortcuts(maxLevel={{ default 2 .Page.Params.shortcutDepth }});</script>
+
+{{- if .HasShortcode "youtube" }}
+<script type="text/javascript">
+  var buttons = document.getElementsByClassName("video-transcript-button");
+  var i;
+
+  for (i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = this.nextElementSibling;
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+  }
+</script>
+{{ end -}}
+
+{{- if .HasShortcode "mermaid" }}
+<script async src="https://unpkg.com/mermaid@9.0.1/dist/mermaid.min.js"></script>
+{{ end -}}

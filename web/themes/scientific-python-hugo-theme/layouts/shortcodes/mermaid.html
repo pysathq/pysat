@@ -1,0 +1,24 @@
+{{/*
+
+doc: Generate diagrams and flowcharts from markdown.
+
+{{< mermaid >}}
+graph LR
+
+START[ ]--> |Propose| A[Accept]
+A--> |Draft| B[Endorse]
+B--> |Recommend| C[Adopt]
+
+click A callback "Steering Committee Action"
+click B callback "Core Project Action"
+click C callback "Ecosystem Action"
+
+style START fill:#FFFFFF, stroke:#FFFFFF;
+
+{{< /mermaid >}}
+
+*/}}
+
+<div class="mermaid">
+  {{.Inner}}
+</div>

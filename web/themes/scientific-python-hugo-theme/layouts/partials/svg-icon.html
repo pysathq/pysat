@@ -1,0 +1,7 @@
+<!-- Based on https://bitbanged.com/posts/how-to-use-inline-svgs-with-hugo/ -->
+{{ $svg := . }}
+{{ $class := print $svg "-icon" }}
+{{ $match := "<svg (.*)?>(.*)</svg>" }}
+
+{{ $replaceWith := printf `<svg class="icon %s" viewBox="0 0 24 24" ${1}>${2}</svg>` $class }}
+{{ (replaceRE $match $replaceWith (resources.Get (printf "/icons/%s.svg" $svg)).Content) | safeHTML }}

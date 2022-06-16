@@ -1,0 +1,11 @@
+table td:not(:last-child), table th {
+  padding-bottom: 0.25rem;
+}
+
+table td:not:first-child, table th:not:first-child {
+  padding-left: 0.5rem;
+}
+
+table td:not(:last-child), table th:not(:last-child) {
+  padding-right: 0.5rem;
+}

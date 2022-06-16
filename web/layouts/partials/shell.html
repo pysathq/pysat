@@ -1,0 +1,25 @@
+{{- $shell := .Site.Params.shell }}
+{{- $intro := index $shell "intro" }}
+<div class="hero-right">
+    <div class="flex-column shell-title-container">
+        {{- range $intro }}
+            <div class="shell-title">{{ .title }}</div>
+            <div class="shell-content-message">
+                <p>{{ .text }}</p>
+            </div>
+        {{- end }}
+    </div>
+    <div class="pysat-shell-canvas">
+        <div class="pysat-shell-container">
+            <div class="shell-lesson shell-content">
+                {{partial "shell-lesson.html" | print | markdownify}}
+            </div>
+            <!-- Interactive Shell -->
+            <iframe
+                class="pysat-shell"
+                src="https://jupyterlite.github.io/demo/repl/?toolbar=1&kernel=python&code=from%20pysat.formula%20import%20CNF%0Afrom%20pysat.solvers%20import%20Solver"
+            >
+            </iframe>
+        </div>
+    </div>
+</div>

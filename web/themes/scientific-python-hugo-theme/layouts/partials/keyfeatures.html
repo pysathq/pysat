@@ -1,0 +1,17 @@
+{{- $keyfeatures := .Site.Params.keyfeatures }}
+{{- $features := index $keyfeatures "features" }}
+
+<section class="keyfeatures">
+    <div class="container is-max-widescreen">
+        <div class="keyfeatures-box-container">
+            {{- range $features }}
+            <div class="keyfeatures-box-content keyfeatures-underline">
+                <p>
+                    <div class="keyfeatures-box-title">{{ .title }}</div>
+                    <div class="keyfeatures-box-text">{{ .text | markdownify }}</div>
+                </p>
+            </div>
+            {{- end }}
+        </div>
+    </div>
+</section>

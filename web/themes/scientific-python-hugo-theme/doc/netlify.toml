@@ -1,0 +1,25 @@
+[build]
+  # https://answers.netlify.com/t/build-canceled-due-to-no-content-change-when-using-submodule/25445/2
+  ignore = "false"
+
+[build.environment]
+  PYTHON_VERSION = "3.8"
+  HUGO_VERSION = "0.99.1"
+
+[[plugins]]
+  package = "netlify-plugin-checklinks"
+
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+
+  # optional, fails build when a category is below a threshold
+  [plugins.inputs.thresholds]
+    performance = 0.85
+    accessibility = 0.95
+    best-practices = 0.95
+    seo = 0.95
+    pwa = 0.2
+
+  # optional, deploy the lighthouse report to a path under your site
+  [plugins.inputs]
+    output_path = "reports/lighthouse.html"

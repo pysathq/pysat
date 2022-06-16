@@ -1,0 +1,22 @@
+{{- $panel := .Site.Params.panel }}
+{{- $title    := index $panel "title" }}
+{{- $subtitle := index $panel "subtitle" }}
+{{- $tiles    := index $panel "tiles" }}
+<section class="panel">
+  <div class="container is-max-widescreen">
+
+        <div class="panel-box-container">
+            {{- range $tiles }}
+            <div class="panel-box-content panel-underline">
+                <p>
+                    <div class="panel-box-action"> 
+                       <a href="{{ .url }}" class="panel-button">{{ .buttonText }}</a>
+                    </div>
+                    <div class="panel-box-text">{{ .text | markdownify }}</div>
+                </p>
+            </div>
+            {{- end }}
+        </div>
+
+    </div>
+</section>

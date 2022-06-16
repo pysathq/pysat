@@ -1,0 +1,3 @@
+[submodule "themes/scientific-python-hugo-theme"]
+	path = themes/scientific-python-hugo-theme
+	url = https://github.com/scientific-python/scientific-python-hugo-theme

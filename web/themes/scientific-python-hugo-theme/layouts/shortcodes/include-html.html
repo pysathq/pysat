@@ -1,0 +1,10 @@
+{{/*
+
+doc: Include an HTML file. The filename is specified relative to the root path.
+
+{{< include-html "static/example.html" >}}
+
+*/}}
+
+{{ $file := .Get 0 }}
+{{ $file | readFile | safeHTML }}

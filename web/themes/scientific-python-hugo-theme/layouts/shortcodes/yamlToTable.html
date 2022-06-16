@@ -1,0 +1,71 @@
+{{/*
+
+doc: Render YAML to HTML.
+
+{{< yamlToTable >}}
+headers:
+  - Project
+  - Available Packages
+  - Download location
+
+format:
+  - align: left
+  - align: left
+  - align: right
+
+rows:
+  - columns:
+      - "NumPy"
+      - |
+        Official *source code* (all platforms) and *binaries* for<br/>
+        **Windows**, **Linux**, and **Mac OS X**
+      - "[PyPi page for NumPy](https://pypi.python.org/pypi/numpy)"
+
+  - columns:
+      - SciPy
+      - |
+        Official *source code* (all platforms) and *binaries* for<br/>
+        **Windows**, **Linux** and **Mac OS X**
+      - |
+        [SciPy release page](https://github.com/scipy/scipy/releases) (sources)<br/>
+        [PyPI page for SciPy](https://pypi.python.org/pypi/scipy) (all)
+
+{{< /yamlToTable >}}
+
+*/}}
+
+{{ $arg := .Get 0 }}
+{{ $data := .Inner | transform.Unmarshal }}
+
+{{ with $data }}
+<table>
+  {{ range .format }}
+  <col
+    {{ range $key, $val := . }}
+    {{ $key }}="{{ $val}}"
+    {{ end }}
+  >
+  {{ end }}
+
+  {{ range .headers }}
+  <th>{{ . | markdownify }}</th>
+  {{ end }}
+
+  {{ range $row := .rows }}
+  <tr>
+    {{ range $col := .columns }}
+      {{ if reflect.IsMap $col }}
+      <td colspan="{{ $col.colspan }}" rowspan="{{ $col.rowspan }}">
+        {{ $col.text | markdownify }}
+      </td>
+      {{ else }}
+      <td>
+        {{ . | markdownify }}
+      </td>
+      {{ end }}
+    {{ end }}
+  </tr>
+  {{ end }}
+
+</table>
+{{ end }}

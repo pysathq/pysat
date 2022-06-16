@@ -1,0 +1,33 @@
+{{ define "main" }}
+    {{ if .Site.Params.hero }}
+    {{ partial "hero.html" . }}
+    {{ end }}
+
+    {{ if .Site.Params.panel }}
+    {{ partial "panel.html" . }}
+    {{ end }}
+
+    {{ if .Content }}
+    {{ partial "single/content.html" . }}
+    {{ end }}
+
+    {{ if .Site.GetPage "/news" }}
+    {{ partial "news.html" . }}
+    {{ end }}
+
+    {{ if .Site.Params.keyfeatures }}
+    {{ partial "keyfeatures.html" . }}
+    {{ end }}
+
+    {{ if .Site.Params.shell }}
+    {{ partial "shell.html" . }}
+    {{ end }}
+
+    {{ if .Site.Params.tabs }}
+    {{ partial "tabs.html" . }}
+    {{ end }}
+
+    {{ if .Site.Params.casestudies }}
+    {{ partial "casestudies.html" . }}
+    {{ end }}
+{{ end }}

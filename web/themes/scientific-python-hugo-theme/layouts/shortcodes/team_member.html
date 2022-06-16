@@ -1,0 +1,12 @@
+<div class="member">
+  <a href="{{ .Get "url" }}" class="name">
+    <div class="photo">
+      <img
+        src="{{ .Get "avatarUrl" }}"
+        loading="lazy"
+        alt="Avatar of {{ .Get "name" }}"
+      />
+    </div>
+    {{ .Get "name" }}
+  </a>
+</div>

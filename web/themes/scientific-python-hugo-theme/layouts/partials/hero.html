@@ -1,0 +1,32 @@
+{{- $navbarLogo     := .Site.Params.navbarlogo }}
+{{- $hero           := .Site.Params.hero }}
+{{- $title          := index $hero "title" }}
+{{- $subtitle       := index $hero "subtitle" }}
+{{- $buttonText     := index $hero "buttontext" }}
+{{- $buttonLink     := index $hero "buttonlink" }}
+{{- $image          := index $hero "image" }}
+
+<section class="hero">
+  <div class="hero-container">
+      <div class="hero-content">
+          <div class="hero-title-content">
+              <div class="hero-title">
+                  {{ $title }}
+                  <img class="hero-logo" src="{{ printf "/images/%s" $image | relURL }}" alt="{{ $title }} logo. {{ $navbarLogo.altText }}">
+              </div>
+              <div class="flex-column">
+                  {{ with $subtitle }}
+                  <div class="hero-subtitle">
+                      {{ . }}
+                  </div>
+                  {{ end }}
+                  {{ if $buttonText }}
+                  <div class="hero-cta">
+                      <a href="{{ $buttonLink }}"><button class="cta-button">{{ $buttonText }}</button></a>
+                  </div>
+                  {{ end }}
+              </div>
+          </div>
+      </div>
+  </div>
+</section>

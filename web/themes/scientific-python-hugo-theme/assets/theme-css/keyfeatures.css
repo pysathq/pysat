@@ -1,0 +1,111 @@
+.keyfeatures {
+    margin: 15px 0;
+}
+
+.keyfeatures .container {
+    display: flex;
+    flex-direction: column;
+}
+
+.keyfeatures-box-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.keyfeatures-box-content {
+    height: 200px;
+    min-width: 275px;
+    width: 335px;
+    margin: 25px auto;
+    border-radius: 3px;
+}
+
+.keyfeatures-box-title {
+    margin: 15px;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.keyfeatures-box-text > a {
+    color: var(--colorPrimary);
+}
+
+.keyfeatures-box-text {
+    margin: 15px;
+    font-size: 14px;
+    height: 6em;
+    overflow: hidden;
+}
+
+.keyfeatures-box-text:after {
+    content: "";
+    text-align: right;
+    position: absolute;
+    bottom:30px;
+    right: 0;
+    width: 70%;
+    height: 1.2em;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1) 50%);
+}
+
+.keyfeatures-box-content:hover > .keyfeatures-box-text, .keyfeatures-box-content:focus > .keyfeatures-box-text, .keyfeatures-box-content:active > .keyfeatures-box-text {
+    color: var(--colorSecondaryDark);
+}
+
+@media only screen and (max-width: 1280px) {
+    .keyfeatures .container {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .keyfeatures-box-container {
+        justify-content: center;
+    }
+}
+
+@media only screen and (max-width: 1090px) {
+    .keyfeatures .container {
+        margin: 0 6vw;
+    }
+}
+
+@media only screen and (max-width: 425px) {
+    .keyfeatures .container {
+        align-items: center;
+        justify-content: center;
+        margin: 0 10%;
+    }
+}
+
+.keyfeatures-underline {
+    display: inline-block;
+    vertical-align: middle;
+    -webkit-transform: perspective(1px) translateZ(0);
+    transform: perspective(1px) translateZ(0);
+    /* Black, with 10% opacity */
+    box-shadow: 0px 8px 15px var(--colorShadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.keyfeatures-underline:before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    right: 100%;
+    bottom: 0;
+    background: #013243;
+    height: 4px;
+    -webkit-transition-property: right;
+    transition-property: right;
+    -webkit-transition-duration: 0.3s;
+    transition-duration: 0.3s;
+    -webkit-transition-timing-function: ease-out;
+    transition-timing-function: ease-out;
+}
+
+.keyfeatures-underline:hover:before, .keyfeatures-underline:focus:before, .keyfeatures-underline:active:before {
+    right: 0;
+}

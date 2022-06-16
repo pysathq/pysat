@@ -1,0 +1,35 @@
+<section class="content-padding flex-row">
+<div class="shortcuts-container">
+  <div class="shortcuts-title"><img src="/images/icons/list-bulleted.svg"/>On this page</div>
+  <div id="shortcuts"></div>
+</div>
+<div class="content-container">
+  <div class="columns">
+    <div class="column is-centered-tablet-portrait">
+      <h1 class="title section-title">{{ .Title }}</h1>
+      <h5 class="subtitle is-5 is-muted">{{ .Params.Subtitle }}</h5>
+      <div class="divider"></div>
+    </div>
+  </div>
+  {{ if .Content }}
+  {{ .Content }}
+  {{ else }}
+  {{ range .Pages }}
+  <div class="post-list">
+    <article>
+      <div class="post-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></div>
+      <div class="post-authors">
+        {{- range .Params.Authors -}}
+        <div class="post-author">{{ . }}</div>
+        {{- end -}}
+      </div>
+      {{ if .Date }}
+      <div class="post-date">{{.Date.Format "January 2, 2006"}}</div>
+      {{ end }}
+      <div class="post-summary">{{ .Summary }}</div>
+    </article>
+  </div>
+  {{ end }}
+  {{ end }}
+</div>
+</section>

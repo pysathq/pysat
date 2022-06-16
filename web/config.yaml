@@ -1,0 +1,141 @@
+baseURL: "https://pysathq.github.io/"
+languageCode: "en-us"
+title: "PySAT: SAT technology in Python"
+theme: scientific-python-hugo-theme
+relativeURLs: true
+disableKinds: ["term", "taxonomy"]
+
+markup:
+  highlight:
+    noClasses: false
+
+params:
+  description: "PySAT - the power of SAT technology in Python."
+  authors: "Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado"
+  images:
+    - /images/logo-light.svg
+  navColor: blue
+  font:
+    name: "Lato"
+    sizes: [400,900]
+  plausible:
+    dataDomain: pysathq.github.io
+  navbarlogo:
+    image: logo-dark.svg
+    text: SAT technology in Python
+    link: /
+  hero:
+    title: PySAT
+    subtitle: The power of SAT technology in Python
+    buttontext: Get started
+    buttonlink: "/installation"
+    image: logo-dark.svg
+  navbar:
+    - title: Installation
+      url: /installation/
+    - title: Documentation
+      url: /docs/html/
+    - title: Features
+      url: /features/
+    - title: Usage
+      url: /usage/
+    - title: Updates
+      url: /updates/
+      # is_external: true
+    - title: Citing PySAT
+      url: /citation/
+    - title: To-Do
+      url: /todo/
+  keyfeatures:
+    features:
+      - title: Incremental SAT Solvers
+        text: PySAT aims at providing a simple and unified *incremental
+          interface* to a number of state-of-art [Boolean satisfiability
+          (SAT)](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem)
+          solvers.
+      - title: Linear and Other Constraints
+        text: The toolkit provides a range of propositional encodings for
+          linear (cardinality and pseudo-Boolean) constraints. It can also be
+          paired with other packages to encode non-clausal constraints.
+      - title: Performant Prototyping
+        text:
+          PySAT is designed for simple, fast, and effective Python-based
+          prototyping using SAT oracles.
+          {{< include-html "static/medals.html" >}}
+      - title: Easy To Use
+        text: Widely used [MiniSat-like](http://minisat.se/) incremental
+          assumption-based interface of PySAT comes in handy when solving
+          problems in [NP](https://en.wikipedia.org/wiki/NP_(complexity)) but
+          also [beyond NP](http://beyondnp.org/).
+      - title: Documented
+        text: The toolkit is [extensively documented](/docs/html/). PySAT API
+          description is additionally accompanied by a large number of
+          [examples
+          provided](https://github.com/pysathq/pysat/tree/master/examples),
+          including MaxSAT solvers as well as MCS and MUS enumerators.
+      - title: Open Source
+        text: Distributed under an [MIT
+          license](https://raw.githubusercontent.com/pysathq/pysat/master/LICENSE.txt),
+          the PySAT toolkit is developed and maintained [publicly on
+          GitHub](https://github.com/pysathq/pysat) by SAT practitioners. You
+          have a chance to improve PySAT. [Pull
+          requests](https://github.com/pysathq/pysat/compare) are welcome!
+
+  shell:  # functionality is taken from https://numpy.org/
+    title: placeholder
+
+    intro:
+    - title: Try PySAT
+      text: Use the interactive shell to try PySAT in the browser
+
+    docslink: Don't forget to check out the <a href="docs/html/" target="_blank">docs</a>.
+
+  footer:
+    logo: logo-light.svg
+    socialmediatitle: ""
+    socialmedia:
+      - link: https://github.com/pysathq/pysat
+        icon: github
+      - link: https://github.com/pysathq/pysat/issues
+        icon: bug-report
+      - link: mailto:pysathq@gmail.com
+        icon: mail
+    quicklinks:
+      column1:
+        title: ""
+        links:
+          - text: Installation
+            link: /installation/
+          - text: Documentation
+            link: /docs/html/
+          - text: Features
+            link: /features/
+      column2:
+        title: ""
+        links:
+          - text: Usage
+            link: /usage/
+          - text: Updates
+            link: /updates/
+          - text: Citing PySAT
+            link: /citation/
+
+security:
+  enableInlineShortcodes: false
+  exec:
+    allow:
+    - ^dart-sass-embedded$
+    - ^go$
+    - ^npx$
+    - ^postcss$
+    - ^rst2html.py$
+    osEnv:
+    - (?i)^(PATH|PATHEXT|APPDATA|TMP|TEMP|TERM)$
+  funcs:
+    getenv:
+    - ^HUGO_
+  http:
+    methods:
+    - (?i)GET|POST
+    urls:
+    - .*

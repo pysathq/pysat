@@ -1,0 +1,29 @@
+:root {
+  --fontFamily: {{ .Site.Params.font.name }};
+
+  --colorPrimaryDark:  rgb(37, 63, 90);
+  --colorPrimary: rgb(77, 119, 207);
+  --colorPrimaryLight: rgb(77, 171, 207);
+
+  --colorSecondaryDark: rgb(108, 122, 137);
+  --colorSecondary: rgb(238, 238, 238);
+  --colorSecondaryLight: rgb(255, 255, 255);
+
+  --colorHighlight: rgb(255, 197, 83);
+  --colorShadow: rgba(0, 0, 0, 0.1);
+  --colorContentLink: rgb(30, 135, 240);
+
+  --colorIcon: rgb(30, 135, 240);
+
+  --colorNoteHeading: #6AB0DE;
+  --colorNoteContent: #E7F2FA;
+
+  --colorInfoHeading: #F0B37E;
+  --colorInfoContent: #FFF2DB;
+
+  --colorWarningHeading: rgba(217, 83, 79, 0.8);
+  --colorWarningContent: #FAE2E2;
+
+  --colorTipHeading: rgba(92, 184, 92, 0.8);
+  --colorTipContent: #E6F9E6;
+}

@@ -1,0 +1,84 @@
+.content-padding {
+    display: flex;
+    justify-content: center;
+    padding: 75px 15px 125px 15px;
+}
+
+.content-container {
+    max-width: 850px;
+    margin: 0 30px;
+    overflow: hidden;
+}
+
+.content-container ul {
+    list-style-type: circle;
+    padding: 10px;
+    margin-left: 15px;
+}
+
+.content-container  ol {
+    padding: 10px;
+    margin-left: 15px;
+}
+
+.content-container h1 {
+    font-size: 2em;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: bold;
+}
+
+.content-container .divider {
+    height: 3px;
+    border-radius: 50px;
+    background: var(--colorPrimaryDark);
+    width: 60px;
+    &.is-centered {
+        margin: 0 auto;
+    }
+}
+
+.content-container h2 {
+    font-size: 1.4em;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    font-weight: bold;
+    margin-top:30px;
+}
+
+.content-container h3 {
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    font-weight: bold;
+    margin-top: 25px;
+}
+
+.content-container h4 {
+    font-size: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: bold;
+    margin-top: 23px;
+}
+
+.content-container h5 {
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    font-weight: bold;
+    margin-top: 22px;
+}
+
+.content-container h6 {
+    font-size: .9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+    margin-top: 21px;
+}
+
+/* Override bulma .label font-weight, which otherwise impacts on g.label used by mermaid */
+g.label {
+  font-weight: normal;
+}

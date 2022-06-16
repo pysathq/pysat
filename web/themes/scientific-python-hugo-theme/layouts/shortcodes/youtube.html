@@ -1,0 +1,116 @@
+{{/*
+
+doc: Embed YouTube videos, with foldable captions. The `levelOffset` parameter can be used to control the depth of the video heading and content. The shortcode can be invoked either with an `id` attribute, or by specifying `page`. In the latter case, that page's preamble should provide `youtube_id`, `title`, `venue`, and `date`, and its contents act as the video transcript. Remember the closing tag!
+
+{{< youtube id="EmGSSbwdCZQ" class="talk" title="YouTube: Open Data Science" venue="CU Denver Data Science Symposium 2020" author="Stefan van der Walt" levelOffset=3 >}}
+
+Here, I will give a transcript of the whole video, and say some things about it that you cannot know otherwise without watching the **video**.
+
+### But what is it?
+
+This is it!
+
+{{< /youtube >}}
+
+{{< youtube page="video-page" levelOffset=3 >}}{{< /youtube >}}
+
+*/}}
+
+{{- $id := .Get "id" -}}
+{{- $title := "" -}}
+{{- $venue := "" -}}
+{{- $author := "" -}}
+{{- $date := "" -}}
+{{- $transcript := "" -}}
+
+{{- if $id }}
+
+{{- $title = .Get "title" -}}
+{{- $venue = .Get "venue" -}}
+{{- $author = .Get "author" -}}
+{{- $date = .Get "date" -}}
+{{- $transcript = .Inner -}}
+
+{{- else -}}
+
+{{- $pageName := printf "%s.md" (.Get "page") -}}
+{{- $pageInBundle := .Page.Resources.GetMatch $pageName -}}
+{{- $pageInSite := .Site.GetPage $pageName -}}
+{{- $page := or $pageInBundle $pageInSite -}}
+
+{{- $id = $page.Params.youtube_id -}}
+{{- $title = $page.Params.title -}}
+{{- $venue = $page.Params.venue -}}
+{{- $author = $page.Params.author -}}
+{{ if $page.Params.date }}
+  {{- $date = time.Format "Jan 2, 2006" $page.Params.date -}}
+{{ end }}
+{{- $transcript = $page.RawContent -}}
+
+{{- end -}}
+
+
+{{/* Adjust the indentation of the transcript according to levelOffset */}}
+{{/* See https://discourse.gohugo.io/t/option-to-shift-headings/6136/2 */}}
+
+{{ $levelOffset := default 2 (.Get "levelOffset") }}
+
+{{/* get the Markdown without front matter  */}}
+{{ $s := $transcript }}
+
+{{/* the regex of start of line `^` doesn't work. (GoLang has a subset of regex)
+     Need to specify newlines via `\n`
+     Need to ensure  newlines at start and end of content */}}
+{{ $s :=  delimit (slice "\n" $s "\n") "" }}
+
+{{/*
+Search for any Markdown headings `#` at start of line
+and add (levelOffset - 2) `#`s to start of line.
+
+Why -1? Because the offsetLevel specifies the level for the title.
+Other headings start with ##, ###, etc.
+We want to shift the content so that it is one deeper than the title,
+and since there are already two, we need to add a further
+(levelOffset - 1) hashes.
+*/}}
+
+{{ $header_padding := (strings.Repeat (sub $levelOffset 1) "#") }}
+{{ $new_header := (printf "\n%s$1 " $header_padding) }}
+{{ $s := $s | replaceRE "\n(#+) " $new_header }}
+
+{{/* render the Markdown to HTML
+     declare it to be safe HTML and return */}}
+{{ $transcript := $s | markdownify | safeHTML }}
+
+<div class="youtube">
+  <h{{ $levelOffset }} id="transcript-{{ $title | anchorize }}" class="video-title">
+    {{ $title }}
+  </h{{ $levelOffset }}>
+  <iframe src="https://www.youtube.com/embed/{{ $id }}?enablejsapi=1&modestbranding=0" allowfullscreen class="youtube"></iframe>
+  {{ if $transcript }}
+  <button type="button" class="yp-video-transcript-button video-transcript-button">
+    <span class="video-transcript-button-pointer"></span>
+    Transcript
+  </button>
+  <div class="video-transcript">
+    {{ $transcript }}
+  </div>
+  {{ end }}
+  <div class="video-meta">
+    {{ if $author }}
+    <div class="video-author">
+      {{ $author }}
+    </div>
+    {{ end }}
+    {{ if $venue }}
+    <div class="video-venue">
+      {{ $venue }}
+    </div>
+    {{ end }}
+    {{ if $date }}
+    <div class="video-date">
+      {{ $date }}
+    </div>
+    {{ end }}
+  </div>
+</div>

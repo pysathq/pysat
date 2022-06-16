@@ -1,0 +1,61 @@
+.youtube {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.youtube iframe {
+  width: 640px;
+  max-width: 100%;
+  height: 360px;
+  margin-top: 1rem;
+  margin-bottom: 0rem;
+}
+
+.youtube .video-meta {
+  padding-top: 0.75rem;
+  padding-bottom: 1.5rem;
+  font-weight: bold;
+  padding-bottom: 0.5rem;
+}
+
+.youtube .video-title {
+}
+
+.video-transcript-button {
+  width: 640px;
+  max-width: 100%;
+  background-color: #ddd;
+  color: #444;
+  cursor: pointer;
+  padding: 1rem;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 1.25rem;
+}
+
+.video-transcript-button:hover {
+  background-color: #bbb;
+}
+
+/* The little triangle on the transcript button */
+.video-transcript-button-pointer {
+}
+
+.video-transcript-button .video-transcript-button-pointer::before{
+  content: "▶";
+}
+
+.video-transcript-button.active .video-transcript-button-pointer::before{
+  content: "▼";
+}
+
+.video-transcript {
+  max-width: 640px;
+  width: 100%;
+  display: none;
+  overflow: auto;
+  background-color: #f1f1f1;
+  padding: 1rem;
+}

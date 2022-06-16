@@ -1,0 +1,10 @@
+{{/*
+
+doc: Render and include a markdown file.
+
+{{< include-md "example-markdown.md" >}}
+
+*/}}
+
+{{ $file := .Get 0 }}
+{{ with .Page.GetPage $file }}{{ .Content }}{{ end }}

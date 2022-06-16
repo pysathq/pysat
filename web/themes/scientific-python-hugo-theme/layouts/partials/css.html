@@ -1,0 +1,47 @@
+<!-- Include all theme CSS filenames here -->
+{{- $page := . -}}
+
+{{- $inServerMode := .Site.IsServer -}}
+{{- $sass         := (slice "theme-css/fresh/core.scss") -}}
+{{- $cssOpts      := cond ($inServerMode) (dict "enableSourceMap" true) (dict "outputStyle" "compressed") -}}
+
+<!-- Fonts -->
+{{- $fontName     := .Site.Params.font.name | default "Open Sans" -}}
+{{- $fontFace     := replace $fontName " " "+" -}}
+{{- $fontSizes    := delimit (.Site.Params.font.sizes | default (slice 300 400 600 700)) "," -}}
+{{- $fontUrl      := printf "https://fonts.googleapis.com/css?family=%s:%s" $fontFace $fontSizes -}}
+
+<link rel="icon" href="{{ "images/favicon.ico" | relURL }}" />
+<link rel="stylesheet" href="{{ $fontUrl }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+
+<!-- SASS --- currently only for fresh -->
+{{- range $sass -}}
+
+{{- if $inServerMode -}}
+{{ $css := resources.Get . | toCSS $cssOpts -}}
+<link rel="stylesheet" type="text/css" href="{{ $css.RelPermalink }}">
+{{ else }}
+{{ $css := resources.Get . | toCSS $cssOpts | minify | fingerprint -}}
+<link rel="stylesheet" type="text/css" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}">
+{{- end -}}
+
+{{- end -}}
+
+{{- $themeCssFiles := resources.Match "theme-css/*.css" -}}
+{{- $userCssFiles := resources.Match "css/*.css" -}}
+{{- $cssFiles := $themeCssFiles | append $userCssFiles }}
+
+{{- range $cssFiles -}}
+
+{{- $targetFile := printf "css/%s.css" . -}}
+
+{{ if $inServerMode -}}
+{{ $custom_style := . | resources.ExecuteAsTemplate $targetFile $page -}}
+<link rel="stylesheet" href="{{ $custom_style.RelPermalink }}">
+{{ else }}
+{{ $custom_style := . | resources.ExecuteAsTemplate $targetFile $page | minify | fingerprint -}}
+<link rel="stylesheet" href="{{ $custom_style.RelPermalink }}" integrity="{{ $custom_style.Data.Integrity }}">
+{{- end -}}
+
+{{- end -}}

@@ -1,0 +1,19 @@
+{{ $crowdin := .Site.Params.crowdin }}
+
+<div class="navbar-item has-dropdown is-hoverable">
+ <a aria-label="Select language" class="navbar-link">{{ default .Language .Language.LanguageName }}</a>
+ <div class="navbar-dropdown">
+   {{- range .Translations }}
+
+   <a href="{{ .RelPermalink }}" class="navbar-item">
+     {{ default .Language .Language.LanguageName }}
+   </a>
+
+   {{- end }}
+   {{ if $crowdin }}
+   <a href="{{ $crowdin }}" class="navbar-item" target="_blank">
+     Help us translate
+   </a>
+   {{ end }}
+ </div>
+</div>

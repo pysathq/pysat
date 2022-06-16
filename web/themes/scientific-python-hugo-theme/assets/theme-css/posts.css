@@ -1,0 +1,29 @@
+.post-list article {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.post-list .post-title {
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+  padding-bottom: 0.5rem;
+}
+
+.post-author {
+  color: var(--colorSecondaryDark);
+  display: inline;
+}
+
+.post-author:not(:first-child):before {
+  content: ", ";
+}
+
+.post-list .post-date {
+  color: var(--colorSecondaryDark);
+}
+
+.post-list .post-summary {
+  padding-top: 0.5rem;
+}

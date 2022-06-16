@@ -1,0 +1,88 @@
+.hero-right {
+    display: flex;
+    flex-direction: column;
+    /* Black, with 10% opacity */
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+    background: rgb(238, 238, 238);
+    padding: 15px;
+}
+
+.pysat-shell-canvas {
+    min-height: 455px;
+}
+
+.pysat-shell-container {
+    height: 100%;
+    display: flex;
+    position: relative;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: stretch;
+    max-width: 1500px;
+    margin: auto;
+}
+
+.pysat-shell {
+    flex: 2;
+    padding: 0 15px;
+}
+
+.shell-title-container {
+    text-align: center;
+    align-items: center;
+}
+
+.shell-title {
+    font-size: 35px;
+    font-weight: bold;
+}
+
+.shell-lesson {
+    text-align: left;
+    flex: 1;
+    padding: 0 15px;
+}
+
+.shell-lesson .highlight {
+    height: 100%;
+}
+
+.shell-lesson .highlight pre {
+    height: 100%;
+}
+
+.shell-lesson > p {
+    margin: 2px 0 2px 0;
+}
+
+.highlight:not(:last-child) {
+    margin-bottom: 1px !important;
+}
+
+.CodeMirror {
+    max-height: 124px;
+}
+
+.CodeMirror-lines {
+    min-height: 30px!important;
+}
+
+.CodeMirror pre {
+    color: rgb(255, 255, 255) !important;
+}
+
+.CodeMirror-cursor {
+    color: rgb(255, 255, 255) !important;
+    border-left: 1px solid white !important;
+}
+
+@media only screen and (max-width: 800px) {
+    .pysat-shell-container {
+        flex-direction: column;
+        justify-content: space-around;
+    }
+
+    .pysat-shell {
+        min-height: 500px;
+    }
+}

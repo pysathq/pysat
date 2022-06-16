@@ -1,0 +1,333 @@
+body {
+    font-family: var(--fontFamily), sans-serif;
+}
+
+em {
+    color: var(--colorPrimaryDark) !important;
+}
+
+/* This color came from uikit; we re-specify it here
+   to show how to override it for the content section */
+.content-padding a {
+  color: var(--colorContentLink);
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hero-container {
+    width: 100vw;
+}
+
+.hero-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.hero-title-content {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: 1200px;
+    margin: 6vh auto;
+    justify-content: space-around;
+}
+
+.hero-headline {
+    display: flex;
+    flex-direction: row;
+}
+
+.hero-title {
+    display: flex;
+    font-family: var(--fontFamily), sans-serif;
+    font-weight: 900;
+    font-size: 6em;
+    color: var(--colorPrimaryDark);
+}
+
+.hero-logo {
+    max-height: 75px;
+    padding: 0px 0 0 15px;
+}
+
+.hero-subtitle {
+    font-size: 1em;
+    max-width: 550px;
+}
+
+.hero-cta {
+    padding: 15px 0;
+}
+
+.cta-button {
+    width: 175px;
+    height: 45px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    color: var(--colorSecondaryLight);
+    background-color: var(--colorPrimaryDark);
+    border: none;
+    border-radius: 25px;
+    outline: none;
+    /* Black, with 10% opacity */
+    box-shadow: 0px 8px 15px var(--colorShadow);
+    cursor: pointer;
+}
+
+.navbar-item {
+    color: var(--colorPrimaryDark);
+    text-decoration: none;
+}
+
+.navbar-item:hover {
+    color: var(--colorPrimaryLight) !important;
+    text-decoration: none;
+}
+
+.navbar-logo {
+  height: 28px;
+  padding-right: 1rem;
+}
+
+.navbar-logo-text {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.navbar.is-fresh .navbar-item.has-dropdown .navbar-dropdown {
+  border-top-color: var(--colorPrimaryDark);
+}
+
+.navbar.is-fresh .navbar-item.has-dropdown:hover .navbar-link {
+  color: var(--colorPrimaryDark);
+}
+
+.navbar.is-fresh .navbar-item.has-dropdown:hover .navbar-link:after {
+  border-color: var(--colorPrimaryDark);
+}
+
+#feature-card {
+    height: 475px;
+}
+#backtotop.visible #backtotop-color:hover {
+    background: var(--colorHighlight);
+}
+
+.mt-30 {
+    margin-top: 30px;
+}
+
+h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+    padding-top: 15px;
+}
+
+h3 {
+    font-size: 1.2em;
+    font-weight: bold;
+    padding-top: 10px;
+}
+
+p {
+    padding-top: 5px;
+}
+
+.content-container ul {
+    list-style-type: circle;
+    padding: 10px;
+    margin-left: 15px;
+}
+
+.content-container  ol {
+    padding: 10px;
+    margin-left: 15px;
+}
+
+@media only screen and (max-width: 1090px) {
+    .hero-content {
+        flex-direction: column;
+        padding: 0;
+        align-items: center;
+    }
+
+    .hero-title-content {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    .flex-column {
+        margin: 0 30px;
+    }
+
+    .hero-title {
+        font-size: 4em;
+    }
+
+    .hero-logo {
+        max-height: 60px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .hero-logo {
+        max-height: 50px;
+    }
+}
+
+@media only screen and (max-width: 320px) {
+    .hero-logo {
+        max-height: 40px;
+    }
+}
+
+/* Footer */
+#footer {
+    background-color: var(--colorPrimaryDark);
+}
+
+.footer-logo-column {
+    display: flex;
+    justify-content: center;
+    padding: 20px 5vw;
+    font-size: 1rem;
+}
+
+#footer-logo {
+    height: 75px;
+}
+
+.footer-column {
+    padding-left: 30px;
+    margin-top: 20px;
+}
+
+.link-column {
+    display: block;
+    flex-basis: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.footer-link, .footer-link:hover {
+    font-size: 1rem;
+    color: var(--colorSecondary);
+}
+
+.footer-actions {
+    max-width: 25vw;
+    margin: 20px 25px;
+}
+
+.footer-actions > p {
+    padding-top: 0;
+}
+
+.footer-actions p {
+    margin: 0;
+    color: var(--colorSecondary);
+}
+
+.social-media-icons {
+    display: flex;
+}
+
+.icon {
+    color: var(--colorIcon);
+}
+
+.copyright {
+    font-size: 12px;
+    color: var(--colorSecondary);
+}
+
+figcaption {
+    text-align: center;
+}
+
+.csfigcaption {
+    text-align: center;
+}
+
+.fig-center {
+    text-align: center;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+}
+
+blockquote {
+    border-left: 6px solid var(--colorSecondary);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+blockquote p {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+@media only screen and (max-width: 850px) {
+    #footer-columns {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer-actions {
+        max-width: 50vw;
+    }
+
+    .social-media-icons {
+        width: 100%;
+    }
+}
+
+/* Icon size for the whole document */
+svg.icon {
+  height: 0.75em;
+  width: 0.75em;
+  vertical-align: middle;
+}
+
+.navbar svg.icon {
+  width: 1.5rem;
+}
+
+/* Icon size slightly enlargened for footer */
+#footer .social-media-icons {
+  font-size: 1.5em;
+}
+
+#footer svg.icon {
+  fill: #1e87f0;
+  margin-right: 0.5rem;
+}
+
+/* For information ⓘ, when icon is missing */
+#footer .icon {
+  font-weight: 900;
+  color: #1e87f0;
+
+.highlight {
+    padding: 10px;
+}
+
+.chroma {
+    padding: 10px;
+}

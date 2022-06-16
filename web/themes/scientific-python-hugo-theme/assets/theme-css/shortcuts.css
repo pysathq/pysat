@@ -1,0 +1,53 @@
+.shortcuts-container {
+  position: sticky;
+  align-self: flex-start;
+  top: 6rem;
+  width: 100%;
+  max-width: 150px;
+  margin: 75px 15px;
+}
+
+.shortcuts-title {
+  font-size: 1.1rem;
+  opacity: 0.75;
+}
+
+.shortcuts-title img {
+  padding-right: 0.75rem;
+  opacity: 0.5;
+  vertical-align: middle;
+}
+
+#shortcuts {
+  margin-top: 10px;
+}
+
+#shortcuts > div:not(.active) {
+  margin-left: 2px;
+  border-left: 1px solid var(--colorPrimaryDark);
+  opacity: 0.75;
+}
+
+#shortcuts > div.active {
+  font-weight: bold;
+  color: var(--colorPrimaryDark);
+  border-left: 5px solid var(--colorPrimaryDark);
+}
+
+.shortcuts-H2 {
+  padding: 5px 5px 0 15px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.shortcuts-H3 {
+  padding: 5px 5px 0 25px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 1090px) {
+  .shortcuts-container {
+    display: none;
+  }
+}

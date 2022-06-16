@@ -1,0 +1,64 @@
+{{- $title          := .Site.Params.title }}
+{{- $navbar         := .Site.Params.navbar }}
+{{- $navbarLogo     := .Site.Params.navbarlogo }}
+<nav id="navbar-clone" class="navbar is-fresh is-transparent" role="navigation" aria-label="main navigation">
+  <div class="container is-max-widescreen">
+    <div class="navbar-brand">
+
+      {{- if $navbarLogo}}
+      <a class="navbar-item" href="{{ $navbarLogo.link }}">
+        <img class="navbar-logo" src="{{ printf "/images/%s" $navbarLogo.image | relURL }}" alt="{{ default (printf "%s logo" $title) $navbarLogo.altText }}">
+        <div class="navbar-logo-text">{{ default "" $navbarLogo.text }}</div>
+      </a>
+      {{- end}}
+
+
+      <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="cloned-navbar-menu">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div id="cloned-navbar-menu" class="navbar-menu is-fixed">
+
+      <div class="navbar-end">
+        {{- range $navbar }}
+        {{- if .sublinks }}
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link">
+            {{ .title }}
+            {{ if .is_external }}{{ partial "svg-icon" "launch" }}{{ end }}
+          </a>
+
+          <div class="navbar-dropdown">
+            {{- range .sublinks }}
+            <a href="{{ .url }}" class="navbar-item">
+              {{ .title }}
+              {{ if .is_external }}{{ partial "svg-icon" "launch" }}{{ end }}
+            </a>
+            {{- end }}
+          </div>
+        </div>
+        {{- else if .button }}
+        <a href="{{ .url }}" class="navbar-item">
+          <span class="button signup-button rounded secondary-btn raised">
+            {{ .title }}
+            {{ if .is_external }}{{ partial "svg-icon" "launch" }}{{ end }}
+          </span>
+        </a>
+        {{- else }}
+        <a href="{{ .url }}" class="navbar-item is-secondary">
+          {{ .title }}
+          {{ if .is_external }}{{ partial "svg-icon" "launch" }}{{ end }}
+        </a>
+        {{- end }}
+        {{- end }}
+
+        {{- if .IsTranslated }}
+        {{ partial "translation.html" . }}
+        {{- end }}
+      </div>
+    </div>
+  </div>
+</nav>
