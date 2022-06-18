@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 18.06.2022 (*0.1.7.dev18*)
+
+-   Fixed a couple of minor bugs in `pysat.card` and `pysat.pb` related to
+    variable ID update.
+
 ## 03.06.2022 (*0.1.7.dev17*)
 
 -   Addition of AtMostK constraints on the fly is added to RC2, LBX and
