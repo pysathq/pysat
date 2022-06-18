@@ -195,23 +195,36 @@ class CardEnc(object):
     """
 
     @classmethod
-    def _update_vids(cls, cnf, vpool):
+    def _update_vids(cls, cnf, inp, vpool):
         """
-            Update variable ids in the given formula and id pool.
+            Update variable ids in the given formula and id pool. The literals
+            serving as the input to the cardinality constraint are not
+            updated.
 
             :param cnf: a list of literals in the sum.
+            :param inp: the list of input literals
             :param vpool: the value of bound :math:`k`.
 
             :type cnf: :class:`.formula.CNFPlus`
+            :type inp: list(int)
             :type vpool: :class:`.formula.IDPool`
         """
 
-        top, vmap = vpool.top, {}  # current top and variable mapping
+        top, vmap = max(inp + [vpool.top]), {}  # current top and variable mapping
+
+        # we are going to use this to check if literals are input
+        inp = set([abs(l) for l in inp])
 
         # creating a new variable mapping, taking into
         # account variables marked as "occupied"
         while top < cnf.nv:
             top += 1
+
+            # skipping the input literals
+            if top in inp:
+                vmap[top] = top
+                continue
+
             vpool.top += 1
 
             while vpool._occupied and vpool.top >= vpool._occupied[0][0]:
@@ -220,6 +233,7 @@ class CardEnc(object):
 
                 vpool._occupied.pop(0)
 
+            # mapping this literal to a free one
             vmap[top] = vpool.top
 
         # updating the clauses
@@ -283,7 +297,7 @@ class CardEnc(object):
             # updating vpool if necessary
             if vpool:
                 if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                    cls._update_vids(ret, vpool)
+                    cls._update_vids(ret, lits, vpool)
                 else:
                     # here, ret.nv id is assumed to be larger than the top id
                     vpool.top = ret.nv - 1
@@ -382,7 +396,7 @@ class CardEnc(object):
             # updating vpool if necessary
             if vpool:
                 if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                    cls._update_vids(ret, vpool)
+                    cls._update_vids(ret, lits, vpool)
                 else:
                     # here, ret.nv id is assumed to be larger than the top id
                     vpool.top = ret.nv - 1
