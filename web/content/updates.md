@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 06.07.2022 (*0.1.7.dev19*)
+
+-   An attempt to fix statistics report when running in WebAssembly (type cast
+    to `Py_ssize_t`).
+
 ## 18.06.2022 (*0.1.7.dev18*)
 
 -   Fixed a couple of minor bugs in `pysat.card` and `pysat.pb` related to

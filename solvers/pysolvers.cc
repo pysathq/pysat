@@ -1070,11 +1070,11 @@ static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
 	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->restarts(),
-		"conflicts", s->conflicts(),
-		"decisions", s->decisions(),
-		"propagations", s->propagations()
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->restarts(),
+		"conflicts", (Py_ssize_t)s->conflicts(),
+		"decisions", (Py_ssize_t)s->decisions(),
+		"propagations", (Py_ssize_t)s->propagations()
 	);
 }
 #endif  // WITH_CADICAL
@@ -1653,11 +1653,11 @@ static PyObject *py_gluecard3_acc_stats(PyObject *self, PyObject *args)
 	Gluecard30::Solver *s = (Gluecard30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_GLUECARD30
@@ -2236,11 +2236,11 @@ static PyObject *py_gluecard41_acc_stats(PyObject *self, PyObject *args)
 	Gluecard41::Solver *s = (Gluecard41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_GLUECARD41
@@ -2791,11 +2791,11 @@ static PyObject *py_glucose3_acc_stats(PyObject *self, PyObject *args)
 	Glucose30::Solver *s = (Glucose30::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_GLUCOSE30
@@ -3346,11 +3346,11 @@ static PyObject *py_glucose41_acc_stats(PyObject *self, PyObject *args)
 	Glucose41::Solver *s = (Glucose41::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_GLUCOSE41
@@ -3720,11 +3720,11 @@ static PyObject *py_lingeling_acc_stats(PyObject *self, PyObject *args)
 	// get pointer to solver
 	LGL *s = (LGL *)pyobj_to_void(s_obj);
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", lglgetrests(s),
-		"conflicts", lglgetconfs(s),
-		"decisions", lglgetdecs(s),
-		"propagations", lglgetprops(s)
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)lglgetrests(s),
+		"conflicts", (Py_ssize_t)lglgetconfs(s),
+		"decisions", (Py_ssize_t)lglgetdecs(s),
+		"propagations", (Py_ssize_t)lglgetprops(s)
 	);
 }
 #endif  // WITH_LINGELING
@@ -4259,11 +4259,11 @@ static PyObject *py_maplechrono_acc_stats(PyObject *self, PyObject *args)
 	MapleChrono::Solver *s = (MapleChrono::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MAPLECHRONO
@@ -4798,11 +4798,11 @@ static PyObject *py_maplesat_acc_stats(PyObject *self, PyObject *args)
 	Maplesat::Solver *s = (Maplesat::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MAPLESAT
@@ -5337,11 +5337,11 @@ static PyObject *py_maplecm_acc_stats(PyObject *self, PyObject *args)
 	MapleCM::Solver *s = (MapleCM::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MAPLECM
@@ -5824,11 +5824,11 @@ static PyObject *py_mergesat3_acc_stats(PyObject *self, PyObject *args)
 	MergeSat3::Solver *s = (MergeSat3::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MERGESAT3
@@ -6339,11 +6339,11 @@ static PyObject *py_minicard_acc_stats(PyObject *self, PyObject *args)
 	Minicard::Solver *s = (Minicard::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MINICARD
@@ -6826,11 +6826,11 @@ static PyObject *py_minisat22_acc_stats(PyObject *self, PyObject *args)
 	Minisat22::Solver *s = (Minisat22::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MINISAT22
@@ -7313,11 +7313,11 @@ static PyObject *py_minisatgh_acc_stats(PyObject *self, PyObject *args)
 	MinisatGH::Solver *s = (MinisatGH::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
-	return Py_BuildValue("{s:l,s:l,s:l,s:l}",
-		"restarts", s->starts,
-		"conflicts", s->conflicts,
-		"decisions", s->decisions,
-		"propagations", s->propagations
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)s->starts,
+		"conflicts", (Py_ssize_t)s->conflicts,
+		"decisions", (Py_ssize_t)s->decisions,
+		"propagations", (Py_ssize_t)s->propagations
 	);
 }
 #endif  // WITH_MINISATGH
