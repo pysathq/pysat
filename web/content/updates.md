@@ -10,6 +10,10 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 18.11.2022 (*0.1.7.dev20*)
+
+-   Fixed the patch issue on macOS Ventura.
+
 ## 06.07.2022 (*0.1.7.dev19*)
 
 -   An attempt to fix statistics report when running in WebAssembly (type cast
