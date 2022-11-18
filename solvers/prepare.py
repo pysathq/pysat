@@ -651,9 +651,10 @@ def patch_solver(solver):
 
     print('patching {0}'.format(solver))
 
-    cmd = 'cd solvers/{0} && patch -p2 < ../patches/{0}.patch'.format(solver)
-    if platform.system() == 'Windows':
-        cmd = 'wsl ' + cmd
+    if platform.system() != 'Windows':
+        cmd = 'cd solvers/{0} && patch -p2 < ../patches/{0}.patch'.format(solver)
+    else:
+        cmd = 'wsl patch -p0 < solvers/patches/{0}.patch'.format(solver)
 
     os.system(cmd)
 
