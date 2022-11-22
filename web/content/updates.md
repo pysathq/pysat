@@ -10,6 +10,10 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 22.11.2022 (*0.1.7.dev21*)
+
+-   Made a number of minor tweaks in formula parsing.
+
 ## 18.11.2022 (*0.1.7.dev20*)
 
 -   Fixed the patch issue on macOS Ventura.
