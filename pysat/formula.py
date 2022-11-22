@@ -497,18 +497,17 @@ class CNF(object):
         self.nv = 0
         self.clauses = []
         self.comments = []
-        comment_lead = tuple('p') + tuple(comment_lead)
+        comment_lead = set(['p']).union(set(comment_lead))
 
         for line in file_pointer:
-            line = line.strip()
+            line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    cl = [int(l) for l in line.split()[:-1]]
-                    self.nv = max([abs(l) for l in cl] + [self.nv])
-
-                    self.clauses.append(cl)
+                    self.clauses.append(list(map(int, line.split()[:-1])))
                 elif not line.startswith('p cnf '):
                     self.comments.append(line)
+
+        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.clauses])))
 
     def from_string(self, string, comment_lead=['c']):
         """
@@ -1082,28 +1081,27 @@ class WCNF(object):
         self.wght = []
         self.topw = 1
         self.comments = []
-        comment_lead = tuple('p') + tuple(comment_lead)
+        comment_lead = set(['p']).union(set(comment_lead))
 
         # soft clauses with negative weights
         negs = []
 
         for line in file_pointer:
-            line = line.strip()
+            line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    items = line.split()[:-1]
-                    w, cl = parse_wght(items[0]), [int(l) for l in items[1:]]
-                    self.nv = max([abs(l) for l in cl] + [self.nv])
+                    w, items = line.split(sep=None, maxsplit=1)
+                    w = parse_wght(w)
 
-                    if w <= 0:
+                    if w >= self.topw:
+                        self.hard.append(list(map(int, items.split()[:-1])))
+                    elif w > 0:
+                        self.soft.append(list(map(int, items.split()[:-1])))
+                        self.wght.append(w)
+                    else:
                         # this clause has a negative weight
                         # it will be processed later
-                        negs.append(tuple([cl, -w]))
-                    elif w >= self.topw:
-                        self.hard.append(cl)
-                    else:
-                        self.soft.append(cl)
-                        self.wght.append(w)
+                        negs.append(tuple([list(map(int, items.split()[:-1])), -w]))
                 elif not line.startswith('p wcnf '):
                     self.comments.append(line)
                 else: # expecting the preamble
@@ -1112,6 +1110,8 @@ class WCNF(object):
                         self.topw = parse_wght(preamble[-1])
                     else: # preamble should be "p wcnf nvars nclauses", with topw omitted
                         self.topw = decimal.Decimal('+inf')
+
+        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.hard, self.soft])))
 
         # if there is any soft clause with negative weight
         # normalize it, i.e. transform into a set of clauses
@@ -1616,17 +1616,14 @@ class CNFPlus(CNF, object):
         self.clauses = []
         self.atmosts = []
         self.comments = []
-        comment_lead = tuple('p') + tuple(comment_lead)
+        comment_lead = set(['p']).union(set(comment_lead))
 
         for line in file_pointer:
-            line = line.strip()
+            line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    if int(line.rsplit(' ', 1)[-1]) == 0:  # normal clause
-                        cl = [int(l) for l in line.split()[:-1]]
-                        self.nv = max([abs(l) for l in cl] + [self.nv])
-
-                        self.clauses.append(cl)
+                    if line.endswith(' 0'):  # normal case
+                        self.clauses.append(list(map(int, line.split()[:-1])))
                     else:  # atmost/atleast constraint
                         items = [i for i in line.split()]
                         lits = [int(l) for l in items[:-2]]
@@ -1640,6 +1637,8 @@ class CNFPlus(CNF, object):
                         self.atmosts.append([lits, rhs])
                 elif not line.startswith('p cnf'):  # cnf is allowed here
                     self.comments.append(line)
+
+        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.clauses])))
 
     def to_fp(self, file_pointer, comments=None):
         """
@@ -2056,26 +2055,28 @@ class WCNFPlus(WCNF, object):
         self.wght = []
         self.topw = 1
         self.comments = []
-        comment_lead = tuple('p') + tuple(comment_lead)
+        comment_lead = set(['p']).union(set(comment_lead))
+
+        # soft clauses with negative weights
+        negs = []
 
         for line in file_pointer:
-            line = line.strip()
+            line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    if int(line.rsplit(' ', 1)[-1]) == 0:  # normal clause
-                        items = line.split()[:-1]
-                        w, cl = parse_wght(items[0]), [int(l) for l in items[1:]]
-                        self.nv = max([abs(l) for l in cl] + [self.nv])
+                    if line.endswith(' 0'):  # normal case
+                        w, items = line.split(sep=None, maxsplit=1)
+                        w = parse_wght(w)
 
-                        if w <= 0:
+                        if w >= self.topw:
+                            self.hard.append(list(map(int, items.split()[:-1])))
+                        elif w > 0:
+                            self.soft.append(list(map(int, items.split()[:-1])))
+                            self.wght.append(w)
+                        else:
                             # this clause has a negative weight
                             # it will be processed later
-                            negs.append(tuple([cl, -w]))
-                        elif w >= self.topw:
-                            self.hard.append(cl)
-                        else:
-                            self.soft.append(cl)
-                            self.wght.append(w)
+                            negs.append(tuple([list(map(int, items.split()[:-1])), -w]))
                     else:  # atmost/atleast constraint
                         items = [i for i in line.split()]
                         lits = [int(l) for l in items[1:-2]]
@@ -2090,7 +2091,24 @@ class WCNFPlus(WCNF, object):
                 elif not line.startswith('p wcnf'):  # wcnf is allowed here
                     self.comments.append(line)
                 else:  # expecting the preamble
-                    self.topw = parse_wght(line.rsplit(' ', 1)[1])
+                    preamble = line.split(' ')
+                    if len(preamble) == 5: # preamble should be "p wcnf nvars nclauses topw"
+                        self.topw = parse_wght(preamble[-1])
+                    else: # preamble should be "p wcnf nvars nclauses", with topw omitted
+                        self.topw = decimal.Decimal('+inf')
+
+        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.hard, self.soft])))
+
+        # if there is any soft clause with negative weight
+        # normalize it, i.e. transform into a set of clauses
+        # with a positive weight
+        if negs:
+            self.normalize_negatives(negs)
+
+        # if topw was unspecified and assigned to +infinity,
+        # we will assign it to the sum of all soft clause weights plus one
+        if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
+            self.topw = 1 + sum(self.wght)
 
     def to_fp(self, file_pointer, comments=None):
         """
