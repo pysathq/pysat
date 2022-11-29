@@ -347,6 +347,7 @@ class CardEnc(object):
             modified list of literals and the new bound.
 
             :raises CardEnc.NoSuchEncodingError: if encoding does not exist.
+            :raises ValueError: if bound is meaningless for encoding.
 
             :rtype: a :class:`.CNFPlus` object where the new \
             clauses (or the new native atmost constraint) are stored.
