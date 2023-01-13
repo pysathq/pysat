@@ -1,6 +1,6 @@
 diff -Naur solvers/gluecard41/Makefile solvers/gc41/Makefile
---- solvers/gluecard41/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/gc41/Makefile	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/Makefile	1970-01-01 10:00:00
++++ solvers/gc41/Makefile	2021-08-12 09:10:25
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -42,8 +42,8 @@ diff -Naur solvers/gluecard41/Makefile solvers/gc41/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/gluecard41/core/BoundedQueue.h solvers/gc41/core/BoundedQueue.h
---- solvers/gluecard41/core/BoundedQueue.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/core/BoundedQueue.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/core/BoundedQueue.h	2016-12-08 23:48:26
++++ solvers/gc41/core/BoundedQueue.h	2021-08-12 09:10:25
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -140,8 +140,8 @@ diff -Naur solvers/gluecard41/core/BoundedQueue.h solvers/gc41/core/BoundedQueue
  	  expComputed = true;
  	  return value;
 -	  
-+
  
++
  	}
  	void fastclear() {first = 0; last = 0; queuesize=0; sumofqueue=0;} // to be called after restarts... Discard the queue
 -	
@@ -159,8 +159,8 @@ diff -Naur solvers/gluecard41/core/BoundedQueue.h solvers/gc41/core/BoundedQueue
      }
  };
 diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
---- solvers/gluecard41/core/Solver.cc	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/core/Solver.cc	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/core/Solver.cc	2016-12-08 23:48:26
++++ solvers/gc41/core/Solver.cc	2023-01-13 18:45:27
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -221,7 +221,15 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  , certifiedUNSAT(false) // Not in the first parallel version
  , vbyte(false)
  , panicModeLastRemoved(0), panicModeLastRemovedShared(0)
-@@ -304,6 +306,7 @@
+@@ -180,6 +182,7 @@
+ , order_heap(VarOrderLt(activity))
+ , progress_estimate(0)
+ , remove_satisfied(true)
++, warm_start         (false)
+ ,lastLearntClause(CRef_Undef)
+ // Resource constraints:
+ //
+@@ -304,6 +307,7 @@
      s.order_heap.copyTo(order_heap);
      s.clauses.memCopyTo(clauses);
      s.learnts.memCopyTo(learnts);
@@ -229,7 +237,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      s.permanentLearnts.memCopyTo(permanentLearnts);
  
      s.lbdQueue.copyTo(lbdQueue);
-@@ -378,7 +381,7 @@
+@@ -378,7 +382,7 @@
      watchesBin.init(mkLit(v, true));
      unaryWatches.init(mkLit(v, false));
      unaryWatches.init(mkLit(v, true));
@@ -238,7 +246,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      vardata.push(mkVarData(CRef_Undef, 0));
      activity.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
      seen.push(0);
-@@ -386,6 +389,7 @@
+@@ -386,6 +390,7 @@
      polarity.push(sign);
      forceUNSAT.push(0);
      decision.push();
@@ -246,7 +254,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      trail.capacity(v + 1);
      setDecisionVar(v, dvar);
      return v;
-@@ -408,15 +412,15 @@
+@@ -408,15 +413,15 @@
      if(certifiedUNSAT) {
          for(i = j = 0, p = lit_Undef; i < ps.size(); i++) {
              oc.push(ps[i]);
@@ -265,7 +273,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              ps[j++] = p = ps[i];
      ps.shrink(i - j);
  
-@@ -434,12 +438,12 @@
+@@ -434,12 +439,12 @@
          }
          else {
              for(i = j = 0, p = lit_Undef; i < ps.size(); i++)
@@ -280,14 +288,14 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              fprintf(certifiedOutput, "0\n");
          }
      }
-@@ -459,20 +463,194 @@
+@@ -459,20 +464,194 @@
      return true;
  }
  
 +bool Solver::addAtMost_(vec<Lit>& ps, int k) {
 +    assert(decisionLevel() == 0);
 +    if (!ok) return false;
-+
+ 
 +    // Remove false or already-true variables; filter opposite literals
 +    sort(ps);
 +    Lit p; int i, j;
@@ -447,7 +455,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +    /* printf("at most %d\n", c.atmost_watches()); */
 +}
 +
- 
++
  void Solver::attachClause(CRef cr) {
      const Clause &c = ca[cr];
  
@@ -466,7 +474,9 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +            watches[l].push(Watcher(cr, lit_Undef));  // lit_Undef for no blocker on this Watcher (can't have just one blocker here)
 +        }
 +        stats[clauses_literals] += c.size();
-+    }
+     }
+-    if(c.learnt()) stats[learnts_literals] += c.size();
+-    else stats[clauses_literals] += c.size();
 +    else {
 +        if(c.size() == 2) {
 +            watchesBin[~c[0]].push(Watcher(cr, c[1]));
@@ -477,13 +487,11 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +        }
 +        if(c.learnt()) stats[learnts_literals] += c.size();
 +        else stats[clauses_literals] += c.size();
-     }
--    if(c.learnt()) stats[learnts_literals] += c.size();
--    else stats[clauses_literals] += c.size();
++    }
  }
  
  
-@@ -488,6 +666,9 @@
+@@ -488,6 +667,9 @@
  void Solver::detachClause(CRef cr, bool strict) {
      const Clause &c = ca[cr];
  
@@ -493,7 +501,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      assert(c.size() > 1);
      if(c.size() == 2) {
          if(strict) {
-@@ -526,46 +707,87 @@
+@@ -526,46 +708,87 @@
  }
  
  
@@ -517,12 +525,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -            for(int i = 0; i < c.size(); i++)
 -                write_lit(2 * (var(c[i]) + 1) + sign(c[i]));
 -            write_lit(0);
--        }
--        else {
--            fprintf(certifiedOutput, "d ");
--            for(int i = 0; i < c.size(); i++)
--                fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
--            fprintf(certifiedOutput, "0\n");
 +    if (c.is_atmost()) {
 +        /* printf("removing atmost %d\n", cr); */
 +        detachAtMost(cr);
@@ -534,6 +536,12 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                vardata[var(c[i])].reason = CRef_Undef;
 +            }
          }
+-        else {
+-            fprintf(certifiedOutput, "d ");
+-            for(int i = 0; i < c.size(); i++)
+-                fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
+-            fprintf(certifiedOutput, "0\n");
+-        }
      }
 +    else {
 +        if(certifiedUNSAT) {
@@ -607,7 +615,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      return false;
  }
  
-@@ -628,7 +850,7 @@
+@@ -628,7 +851,7 @@
          int nb = 0;
          for(int k = 0; k < wbin.size(); k++) {
              Lit imp = wbin[k].blocker;
@@ -616,7 +624,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  nb++;
                  permDiff[var(imp)] = MYFLAG - 1;
              }
-@@ -659,7 +881,7 @@
+@@ -659,7 +882,7 @@
      if(decisionLevel() > level) {
          for(int c = trail.size() - 1; c >= trail_lim[level]; c--) {
              Var x = var(trail[c]);
@@ -625,7 +633,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              if(phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last())) {
                  polarity[x] = sign(trail[c]);
              }
-@@ -681,12 +903,12 @@
+@@ -681,12 +904,12 @@
      // Random decision:
      if(((randomizeFirstDescent && conflicts == 0) || drand(random_seed) < random_var_freq) && !order_heap.empty()) {
          next = order_heap[irand(random_seed, order_heap.size())];
@@ -640,7 +648,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          if(order_heap.empty()) {
              next = var_Undef;
              break;
-@@ -718,19 +940,19 @@
+@@ -718,19 +941,19 @@
  /*_________________________________________________________________________________________________
  |
  |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -665,19 +673,23 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |________________________________________________________________________________________________@*/
  void Solver::analyze(CRef confl, vec <Lit> &out_learnt, vec <Lit> &selectors, int &out_btlevel, unsigned int &lbd, unsigned int &szWithoutSelectors) {
      int pathC = 0;
-@@ -744,74 +966,94 @@
+@@ -744,74 +967,94 @@
      do {
          assert(confl != CRef_Undef); // (otherwise should be UIP)
          Clause &c = ca[confl];
 -        // Special case for binary clauses
 -        // The first one has to be SAT
 -        if(p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
--
+ 
 -            assert(value(c[1]) == l_True);
 -            Lit tmp = c[0];
 -            c[0] = c[1], c[1] = tmp;
 -        }
--
++        if(c.is_atmost()) {
++            // Get the reason from the atmost
++            for (int j = 0; j < c.size(); j++){
++                if (value(c[j]) != gc41l_True) continue;
+ 
 -        if(c.learnt()) {
 -            parallelImportClauseDuringConflictAnalysis(c, confl);
 -            claBumpActivity(c);
@@ -685,29 +697,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -            if(!c.getSeen()) {
 -                stats[originalClausesSeen]++;
 -                c.setSeen(true);
--            }
--        }
- 
--        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
--        if(c.learnt() && c.lbd() > 2) {
--            unsigned int nblevels = computeLBD(c);
--            if(nblevels + 1 < c.lbd()) { // improve the LBD
--                if(c.lbd() <= lbLBDFrozenClause) {
--                    // seems to be interesting : keep it for the next round
--                    c.setCanBeDel(false);
--                }
--                if(chanseokStrategy && nblevels <= coLBDBound) {
--                    c.nolearnt();
--                    learnts.remove(confl);
--                    permanentLearnts.push(confl);
--                    stats[nbPermanentLearnts]++;
-+        if(c.is_atmost()) {
-+            // Get the reason from the atmost
-+            for (int j = 0; j < c.size(); j++){
-+                if (value(c[j]) != gc41l_True) continue;
- 
--                } else {
--                    c.setLBD(nblevels); // Update it
 +                Lit q = ~c[j];
 +
 +                if (!seen[var(q)] && level(var(q)) > 0){
@@ -717,14 +706,21 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                        pathC++;
 +                    else
 +                        out_learnt.push(q);
-                 }
++                }
              }
          }
 +        else {
 +            // Special case for binary clauses
 +            // The first one has to be SAT
 +            if(p != lit_Undef && c.size() == 2 && value(c[0]) == gc41l_False) {
-+
+ 
+-        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
+-        if(c.learnt() && c.lbd() > 2) {
+-            unsigned int nblevels = computeLBD(c);
+-            if(nblevels + 1 < c.lbd()) { // improve the LBD
+-                if(c.lbd() <= lbLBDFrozenClause) {
+-                    // seems to be interesting : keep it for the next round
+-                    c.setCanBeDel(false);
 +                assert(value(c[1]) == gc41l_True);
 +                Lit tmp = c[0];
 +                c[0] = c[1], c[1] = tmp;
@@ -737,9 +733,16 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                if(!c.getSeen()) {
 +                    stats[originalClausesSeen]++;
 +                    c.setSeen(true);
-+                }
+                 }
+-                if(chanseokStrategy && nblevels <= coLBDBound) {
+-                    c.nolearnt();
+-                    learnts.remove(confl);
+-                    permanentLearnts.push(confl);
+-                    stats[nbPermanentLearnts]++;
 +            }
  
+-                } else {
+-                    c.setLBD(nblevels); // Update it
 +            // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
 +            if(c.learnt() && c.lbd() > 2) {
 +                unsigned int nblevels = computeLBD(c);
@@ -753,26 +756,37 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                        learnts.remove(confl);
 +                        permanentLearnts.push(confl);
 +                        stats[nbPermanentLearnts]++;
- 
--        for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
--            Lit q = c[j];
++
 +                    } else {
 +                        c.setLBD(nblevels); // Update it
 +                    }
-+                }
-+            }
+                 }
+             }
+-        }
+ 
+ 
+-        for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+-            Lit q = c[j];
++            for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
++                Lit q = c[j];
  
 -            if(!seen[var(q)]) {
 -                if(level(var(q)) == 0) {
 -                } else { // Here, the old case
 -                    if(!isSelector(var(q)))
 -                        varBumpActivity(var(q));
++                if(!seen[var(q)]) {
++                    if(level(var(q)) == 0) {
++                    } else { // Here, the old case
++                        if(!isSelector(var(q)))
++                            varBumpActivity(var(q));
  
 -                    // This variable was responsible for a conflict,
 -                    // consider it as a UNSAT assignation for this literal
 -                    bumpForceUNSAT(~q); // Negation because q is false here
-+            for(int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
-+                Lit q = c[j];
++                        // This variable was responsible for a conflict,
++                        // consider it as a UNSAT assignation for this literal
++                        bumpForceUNSAT(~q); // Negation because q is false here
  
 -                    seen[var(q)] = 1;
 -                    if(level(var(q)) >= decisionLevel()) {
@@ -786,16 +800,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -                            selectors.push(q);
 -                        } else
 -                            out_learnt.push(q);
-+                if(!seen[var(q)]) {
-+                    if(level(var(q)) == 0) {
-+                    } else { // Here, the old case
-+                        if(!isSelector(var(q)))
-+                            varBumpActivity(var(q));
-+
-+                        // This variable was responsible for a conflict,
-+                        // consider it as a UNSAT assignation for this literal
-+                        bumpForceUNSAT(~q); // Negation because q is false here
-+
 +                        seen[var(q)] = 1;
 +                        if(level(var(q)) >= decisionLevel()) {
 +                            pathC++;
@@ -817,7 +821,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          }
  
          // Select next clause to look at:
-@@ -931,22 +1173,21 @@
+@@ -931,22 +1174,21 @@
          assert(reason(var(analyze_stack.last())) != CRef_Undef);
          Clause &c = ca[reason(var(analyze_stack.last()))];
          analyze_stack.pop(); //
@@ -851,7 +855,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                              seen[var(analyze_toclear[j])] = 0;
                          analyze_toclear.shrink(analyze_toclear.size() - top);
                          return false;
-@@ -954,6 +1195,31 @@
+@@ -954,6 +1196,31 @@
                  }
              }
          }
@@ -883,7 +887,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      }
  
      return true;
-@@ -963,7 +1229,7 @@
+@@ -963,7 +1230,7 @@
  /*_________________________________________________________________________________________________
  |
  |  analyzeFinal : (p : Lit)  ->  [void]
@@ -892,7 +896,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |  Description:
  |    Specialized analysis procedure to express the final conflict in terms of assumptions.
  |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-@@ -986,12 +1252,19 @@
+@@ -986,12 +1253,19 @@
                  out_conflict.push(~trail[i]);
              } else {
                  Clause &c = ca[reason(x)];
@@ -918,7 +922,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              }
  
              seen[x] = 0;
-@@ -1003,27 +1276,154 @@
+@@ -1003,27 +1277,154 @@
  
  
  void Solver::uncheckedEnqueue(Lit p, CRef from) {
@@ -1015,7 +1019,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
 +{
 +    prop.clear();
-+
+ 
 +    if (!ok)
 +        return false;
 +
@@ -1062,7 +1066,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +    return st && confl == CRef_Undef;
 +}
 +
- 
++
  /*_________________________________________________________________________________________________
  |
  |  propagate : [void]  ->  [Clause*]
@@ -1076,7 +1080,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |    Post-conditions:
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
-@@ -1046,11 +1446,11 @@
+@@ -1046,11 +1447,11 @@
  
              Lit imp = wbin[k].blocker;
  
@@ -1090,7 +1094,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  uncheckedEnqueue(imp, wbin[k].cref);
              }
          }
-@@ -1059,7 +1459,7 @@
+@@ -1059,7 +1460,7 @@
          for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
              // Try to avoid inspecting the clause:
              Lit blocker = i->blocker;
@@ -1099,7 +1103,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  *j++ = *i++;
                  continue;
              }
-@@ -1067,72 +1467,114 @@
+@@ -1067,72 +1468,114 @@
              // Make sure the false literal is data[1]:
              CRef cr = i->cref;
              Clause &c = ca[cr];
@@ -1109,21 +1113,20 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -                c[0] = c[1], c[1] = false_lit;
 -            assert(c[1] == false_lit);
 -            i++;
--
+ 
 -            // If 0th watch is true, then clause is already satisfied.
 -            Lit first = c[0];
 -            Watcher w = Watcher(cr, first);
 -            if(first != blocker && value(first) == l_True) {
- 
--                *j++ = w;
--                continue;
 +            if (c.is_atmost()) {
 +                // p is our new fact, and so we came here because
 +                // this AtMost includes p.
 +                // The first n-k+1 are being watched, and we need
 +                // to look for another to watch now.
 +                Lit newWatch = findNewWatch(cr, p);
-+
+ 
+-                *j++ = w;
+-                continue;
 +                if (newWatch == lit_Undef) {
 +                    // No new watch found, so we have reached the bound.
 +                    // Enque the negation of each remaining literal
@@ -1161,13 +1164,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -            if(incremental) { // ----------------- INCREMENTAL MODE
 -              int choosenPos = -1;
 -              for (int k = 2; k < c.size(); k++) {
--
--            if (value(c[k]) != l_False){
--              if(decisionLevel()>assumptions.size()) {
--                choosenPos = k;
--                break;
--              } else {
--                choosenPos = k;
 +            else {
 +                assert(!c.getOneWatched());
 +                Lit false_lit = ~p;
@@ -1175,7 +1171,13 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                    c[0] = c[1], c[1] = false_lit;
 +                assert(c[1] == false_lit);
 +                i++;
-+
+ 
+-            if (value(c[k]) != l_False){
+-              if(decisionLevel()>assumptions.size()) {
+-                choosenPos = k;
+-                break;
+-              } else {
+-                choosenPos = k;
 +                // If 0th watch is true, then clause is already satisfied.
 +                Lit first = c[0];
 +                Watcher w = Watcher(cr, first);
@@ -1191,13 +1193,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                if(incremental) { // ----------------- INCREMENTAL MODE
 +                  int choosenPos = -1;
 +                  for (int k = 2; k < c.size(); k++) {
-+
-+                if (value(c[k]) != gc41l_False){
-+                  if(decisionLevel()>assumptions.size()) {
-+                    choosenPos = k;
-+                    break;
-+                  } else {
-+                    choosenPos = k;
  
 -            }
 -              }
@@ -1206,6 +1201,13 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -            watches[~c[1]].push(w);
 -            goto NextClause; }
 -            } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
++                if (value(c[k]) != gc41l_False){
++                  if(decisionLevel()>assumptions.size()) {
++                    choosenPos = k;
++                    break;
++                  } else {
++                    choosenPos = k;
++
 +                    if(value(c[k])==gc41l_True || !isSelector(var(c[k]))) {
 +                      break;
 +                    }
@@ -1249,7 +1251,6 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 -                    *j++ = *i++;
 -            } else {
 -                uncheckedEnqueue(first, cr);
--
 +                // Did not find watch -- clause is unit under assignment:
 +                *j++ = w;
 +                if(value(first) == gc41l_False) {
@@ -1263,12 +1264,13 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +                }
 +                NextClause:;
  
+-
              }
 -            NextClause:;
          }
          ws.shrink(i - j);
  
-@@ -1155,11 +1597,11 @@
+@@ -1155,11 +1598,11 @@
  /*_________________________________________________________________________________________________
  |
  |  propagateUnaryWatches : [Lit]  ->  [Clause*]
@@ -1283,7 +1285,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |________________________________________________________________________________________________@*/
  
  CRef Solver::propagateUnaryWatches(Lit p) {
-@@ -1169,7 +1611,7 @@
+@@ -1169,7 +1612,7 @@
      for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
          // Try to avoid inspecting the clause:
          Lit blocker = i->blocker;
@@ -1292,7 +1294,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              *j++ = *i++;
              continue;
          }
-@@ -1186,7 +1628,7 @@
+@@ -1186,7 +1629,7 @@
          i++;
          Watcher w = Watcher(cr, c[0]);
          for(int k = 1; k < c.size(); k++) {
@@ -1301,7 +1303,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  c[0] = c[k];
                  c[k] = false_lit;
                  unaryWatches[~c[0]].push(w);
-@@ -1211,7 +1653,7 @@
+@@ -1211,7 +1654,7 @@
              int maxlevel = -1;
              int index = -1;
              for(int k = 1; k < c.size(); k++) {
@@ -1310,7 +1312,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  assert(level(var(c[k])) <= level(var(c[0])));
                  if(level(var(c[k])) > maxlevel) {
                      index = k;
-@@ -1240,7 +1682,7 @@
+@@ -1240,7 +1683,7 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -1319,7 +1321,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |  Description:
  |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
  |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
-@@ -1269,6 +1711,7 @@
+@@ -1269,6 +1712,7 @@
  
      for(i = j = 0; i < learnts.size(); i++) {
          Clause &c = ca[learnts[i]];
@@ -1327,7 +1329,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          if(c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
              removeClause(learnts[i]);
              stats[nbRemovedClauses]++;
-@@ -1290,7 +1733,7 @@
+@@ -1290,7 +1734,7 @@
      for(i = j = 0; i < cs.size(); i++) {
          Clause &c = ca[cs[i]];
  
@@ -1336,7 +1338,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          if(satisfied(c)) if(c.getOneWatched())
              removeClause(cs[i], true);
          else
-@@ -1305,7 +1748,7 @@
+@@ -1305,7 +1749,7 @@
  void Solver::rebuildOrderHeap() {
      vec <Var> vs;
      for(Var v = 0; v < nVars(); v++)
@@ -1345,7 +1347,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              vs.push(v);
      order_heap.build(vs);
  
-@@ -1315,7 +1758,7 @@
+@@ -1315,7 +1759,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -1354,7 +1356,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -1354,7 +1797,7 @@
+@@ -1354,7 +1798,7 @@
  void Solver::adaptSolver() {
      bool adjusted = false;
      bool reinit = false;
@@ -1363,7 +1365,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      /*  printf("c Adjusting solver for the SAT Race 2015 (alpha feature)\n");
      printf("c key successive Conflicts       : %" PRIu64"\n",stats[noDecisionConflict]);
      printf("c nb unary clauses learnt        : %" PRIu64"\n",stats[nbUn]);
-@@ -1365,7 +1808,7 @@
+@@ -1365,7 +1809,7 @@
          coLBDBound = 4;
          glureduce = true;
          adjusted = true;
@@ -1372,7 +1374,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          reinit = true;
          firstReduceDB = 2000;
          nbclausesbeforereduce = firstReduceDB;
-@@ -1379,10 +1822,10 @@
+@@ -1379,10 +1823,10 @@
          var_decay = 0.999;
          max_var_decay = 0.999;
          adjusted = true;
@@ -1385,7 +1387,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          chanseokStrategy = true;
          glureduce = true;
          coLBDBound = 3;
-@@ -1396,12 +1839,12 @@
+@@ -1396,12 +1840,12 @@
          var_decay = 0.91;
          max_var_decay = 0.91;
          adjusted = true;
@@ -1401,7 +1403,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      if(adjusted) { // Let's reinitialize the glucose restart strategy counters
          lbdQueue.fastclear();
          sumLBD = 0;
-@@ -1422,7 +1865,7 @@
+@@ -1422,7 +1866,7 @@
              }
          }
          learnts.shrink(i - j);
@@ -1410,7 +1412,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      }
  
      if(reinit) {
-@@ -1435,13 +1878,13 @@
+@@ -1435,13 +1879,13 @@
  /*
  	order_heap.clear();
  	for(int i=0;i<nVars();i++) {
@@ -1426,7 +1428,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      }
  
  }
-@@ -1450,15 +1893,15 @@
+@@ -1450,15 +1894,15 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1448,7 +1450,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  |________________________________________________________________________________________________@*/
  lbool Solver::search(int nof_conflicts) {
      assert(ok);
-@@ -1475,7 +1918,7 @@
+@@ -1475,7 +1919,7 @@
              parallelImportUnaryClauses();
  
              if(parallelImportClauses())
@@ -1457,7 +1459,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  
          }
          CRef confl = propagate();
-@@ -1483,7 +1926,7 @@
+@@ -1483,7 +1927,7 @@
          if(confl != CRef_Undef) {
              newDescent = false;
              if(parallelJobIsFinished())
@@ -1466,7 +1468,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
  
              if(!aDecisionWasMade)
                  stats[noDecisionConflict]++;
-@@ -1505,14 +1948,14 @@
+@@ -1505,14 +1949,14 @@
                         (int) stats[nbReduceDB], nLearnts(), (int) stats[nbDL2], (int) stats[nbRemovedClauses], progressEstimate() * 100);
              }
              if(decisionLevel() == 0) {
@@ -1483,7 +1485,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              }
  
              trailQueue.push(trail.size());
-@@ -1546,7 +1989,7 @@
+@@ -1546,7 +1990,7 @@
                  }
                  else {
                      for(int i = 0; i < learnt_clause.size(); i++)
@@ -1492,7 +1494,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                                                          (-2 * sign(learnt_clause[i]) + 1));
                      fprintf(certifiedOutput, "0\n");
                  }
-@@ -1603,13 +2046,13 @@
+@@ -1603,13 +2047,13 @@
                  }
  
                  cancelUntil(bt);
@@ -1508,7 +1510,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              }
              // Perform clause database reduction !
              if((chanseokStrategy && !glureduce && learnts.size() > firstReduceDB) ||
-@@ -1628,12 +2071,12 @@
+@@ -1628,12 +2072,12 @@
              while(decisionLevel() < assumptions.size()) {
                  // Perform user provided assumption:
                  Lit p = assumptions[decisionLevel()];
@@ -1524,7 +1526,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  } else {
                      next = p;
                      break;
-@@ -1645,9 +2088,9 @@
+@@ -1645,9 +2089,9 @@
                  decisions++;
                  next = pickBranchLit();
                  if(next == lit_Undef) {
@@ -1536,7 +1538,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                  }
              }
  
-@@ -1742,13 +2185,15 @@
+@@ -1742,13 +2186,15 @@
  
      model.clear();
      conflict.clear();
@@ -1554,7 +1556,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
      if(!incremental && verbosity >= 1) {
          printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
          printf("c | Constants are supposed to work well together :-)                                                      |\n");
-@@ -1786,7 +2231,7 @@
+@@ -1786,7 +2232,7 @@
  
      // Search:
      int curr_restarts = 0;
@@ -1563,7 +1565,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          status = search(
                  luby_restart ? luby(restart_inc, curr_restarts) * luby_restart_factor : 0); // the parameter is useless in glucose, kept to allow modifications
  
-@@ -1798,7 +2243,7 @@
+@@ -1798,7 +2244,7 @@
          printf("c =========================================================================================================\n");
  
      if(certifiedUNSAT) { // Want certified output
@@ -1572,7 +1574,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              if(vbyte) {
                  write_char('a');
                  write_lit(0);
-@@ -1807,15 +2252,15 @@
+@@ -1807,27 +2253,28 @@
                  fprintf(certifiedOutput, "0\n");
              }
          }
@@ -1591,7 +1593,9 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          ok = false;
  
  
-@@ -1823,11 +2268,11 @@
+-    cancelUntil(0);
++    if (!warm_start || status != gc41l_True)  // no 'default' backtracking in case of warm restarts
++        cancelUntil(0);
  
  
      double finalTime = cpuTime();
@@ -1605,16 +1609,209 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          nbUnsatCalls++;
          totalTime4Unsat += (finalTime - curTime);
      }
-@@ -1843,7 +2288,7 @@
+@@ -1838,12 +2285,200 @@
+ }
  
+ 
++//=================================================================================================
++// Add a clause in the warm start mode:
++bool Solver::addClauseWarm(vec<Lit>& ps)
++{
++    if (!ok) return false;
++    if (!warm_start || decisionLevel() == 0) return addClause(ps);
+ 
++    // checking if clause is satisfied and remove false/duplicate literals
++    sort(ps);
++    Lit p; int i, j, nws, max_i;
++    vec<int> ws(2, -1);  // potentially watched literals
++    for (i = j = nws = max_i = 0, p = lit_Undef; i < ps.size(); i++) {
++        Var x = var(ps[i]);
++        if ((value(ps[i]) == gc41l_True && level(x) == 0) || ps[i] == ~p)
++            return true;
++        else if ((value(ps[i]) != gc41l_False || level(x) > 0) && ps[i] != p) {
++            if (value(ps[i]) != gc41l_False && nws < 2)
++                ws[nws++] = j;
++            if (level(x) > level(var(ps[max_i])))
++                max_i = j;
+ 
++            ps[j++] = p = ps[i];
++        }
++    }
++    ps.shrink(i - j);
+ 
++    // analyzing which level to backtrack to (if any)
++    if (ps.size() != 0) {
++        if (ps.size() > 1) {
++            if (nws) {
++                p = ps[0]; ps[0] = ps[ws[0]]; ps[ws[0]] = p;
++                if (nws == 2) {
++                    p = ps[1]; ps[1] = ps[ws[1]]; ps[ws[1]] = p;
++                }
++            }
++            else {
++                // no satisfied literals in this clause
++                p = ps[max_i]; ps[max_i] = ps[0]; ps[0] = p;
++
++                max_i = 1;
++                for (int i = 2; i < ps.size(); ++i) {
++                    if (level(var(ps[i])) > level(var(ps[max_i])))
++                        max_i = i;
++                }
++
++                p = ps[max_i]; ps[max_i] = ps[1]; ps[1] = p;
++
++                cancelUntil(level(var(p)));
++            }
++            CRef cr = ca.alloc(ps, false);
++            clauses.push(cr);
++            attachClause(cr);
++
++            if (!nws) {
++                // if the clause was falsified
++                if (value(ps[0]) == gc41l_Undef)
++                    // enqueue unless already true
++                    uncheckedEnqueue(ps[0], cr);
++                else if (value(ps[0]) == gc41l_False && resolveConflicts(cr) == false)
++                    ok = false;
++            }
++        }
++        else {
++            // a single literal in the clause => enqueue it at level 0
++            cancelUntil(0);
++            uncheckedEnqueue(ps[0]);
++            ok = (propagate() == CRef_Undef);
++        }
++    }
++    else {
++        // there is no literal left in the clause!
++        cancelUntil(0);
++        ok = false;
++    }
++
++    return ok;
++}
++
  //=================================================================================================
++// Resolve conflicts, if appear after adding a clause in the warm start mode:
++bool Solver::resolveConflicts(CRef confl)
++{
++    int backtrack_level;
++    vec <Lit> learnt_clause, selectors;
++    unsigned int nblevels, szWithoutSelectors = 0;
++    bool blocked = false;
++    bool aDecisionWasMade = false;
++
++    while (confl != CRef_Undef) {
++        newDescent = false;
++        /* if(parallelJobIsFinished()) */
++        /*     return gc41l_Undef; */
++
++        if(!aDecisionWasMade)
++            stats[noDecisionConflict]++;
++        aDecisionWasMade = false;
++
++        stats[sumDecisionLevels] += decisionLevel();
++        stats[sumTrail] += trail.size();
++        // CONFLICT
++        conflicts++;
++        conflictsRestarts++;
++        if(conflicts % 5000 == 0 && var_decay < max_var_decay)
++            var_decay += 0.01;
++
++        if(decisionLevel() == 0) return false;
++
++        /* if(adaptStrategies && conflicts == 100000) { */
++        /*     cancelUntil(0); */
++        /*     adaptSolver(); */
++        /*     adaptStrategies = false; */
++        /*     return gc41l_Undef; */
++        /* } */
++
++        trailQueue.push(trail.size());
++        // BLOCK RESTART (CP 2012 paper)
++        if(conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
++            lbdQueue.fastclear();
++            stats[nbstopsrestarts]++;
++            if(!blocked) {
++                stats[lastblockatrestart] = starts;
++                stats[nbstopsrestartssame]++;
++                blocked = true;
++            }
++        }
++
++        learnt_clause.clear();
++        selectors.clear();
++
++        analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
++
++        lbdQueue.push(nblevels);
++        sumLBD += nblevels;
++
++        cancelUntil(backtrack_level);
++
++        if(certifiedUNSAT) {
++            if(vbyte) {
++                write_char('a');
++                for(int i = 0; i < learnt_clause.size(); i++)
++                    write_lit(2 * (var(learnt_clause[i]) + 1) + sign(learnt_clause[i]));
++                write_lit(0);
++            }
++            else {
++                for(int i = 0; i < learnt_clause.size(); i++)
++                    fprintf(certifiedOutput, "%i ", var(learnt_clause[i]) *
++                                                    (-2 * sign(learnt_clause[i]) + 1));
++                fprintf(certifiedOutput, "0\n");
++            }
++        }
++
++
++        if(learnt_clause.size() == 1) {
++            uncheckedEnqueue(learnt_clause[0]);
++            stats[nbUn]++;
++            parallelExportUnaryClause(learnt_clause[0]);
++        } else {
++            CRef cr;
++            if(chanseokStrategy && nblevels <= coLBDBound) {
++                cr = ca.alloc(learnt_clause, false);
++                permanentLearnts.push(cr);
++                stats[nbPermanentLearnts]++;
++            } else {
++                cr = ca.alloc(learnt_clause, true);
++                ca[cr].setLBD(nblevels);
++                ca[cr].setOneWatched(false);
++                learnts.push(cr);
++                claBumpActivity(ca[cr]);
++            }
++#ifdef INCREMENTAL
++            ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
++#endif
++            if(nblevels <= 2) { stats[nbDL2]++; } // stats
++            if(ca[cr].size() == 2) stats[nbBin]++; // stats
++            attachClause(cr);
++            lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
++            parallelExportClauseDuringSearch(ca[cr]);
++            uncheckedEnqueue(learnt_clause[0], cr);
++        }
++
++        varDecayActivity();
++        claDecayActivity();
++
++        confl = propagate();
++    }
++
++    return true;
++}
++
++
++
++//=================================================================================================
  // Writing CNF to DIMACS:
 -// 
 +//
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec <Var> &map, Var &max) {
-@@ -1859,7 +2304,7 @@
+@@ -1859,7 +2494,7 @@
      if(satisfied(c)) return;
  
      for(int i = 0; i < c.size(); i++)
@@ -1623,7 +1820,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
      fprintf(f, "0\n");
  }
-@@ -1895,7 +2340,7 @@
+@@ -1895,7 +2530,7 @@
          if(!satisfied(ca[clauses[i]])) {
              Clause &c = ca[clauses[i]];
              for(int j = 0; j < c.size(); j++)
@@ -1632,7 +1829,7 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -1905,7 +2350,7 @@
+@@ -1905,7 +2540,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for(int i = 0; i < assumptions.size(); i++) {
@@ -1641,10 +1838,11 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
      }
  
-@@ -1963,6 +2408,23 @@
+@@ -1962,6 +2597,23 @@
+     //
      for(int i = 0; i < clauses.size(); i++)
          ca.reloc(clauses[i], to);
- 
++
 +    // All atmosts:
 +    //
 +    for (int i = 0; i < atmosts.size(); ++i) {
@@ -1661,13 +1859,12 @@ diff -Naur solvers/gluecard41/core/Solver.cc solvers/gc41/core/Solver.cc
 +
 +        /* printf("new position %d (%u)\n", i, atmosts[i]); */
 +    }
-+
+ 
      for(int i = 0; i < unaryWatchedClauses.size(); i++)
          ca.reloc(unaryWatchedClauses[i], to);
- }
 diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
---- solvers/gluecard41/core/Solver.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/core/Solver.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/core/Solver.h	2016-12-08 23:48:26
++++ solvers/gc41/core/Solver.h	2023-01-13 18:43:51
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -1699,23 +1896,6 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
 -#define Glucose_Solver_h
 +#ifndef Gluecard41_Solver_h
 +#define Gluecard41_Solver_h
-+
-+#include "gluecard41/mtl/Heap.h"
-+#include "gluecard41/mtl/Alg.h"
-+#include "gluecard41/utils/Options.h"
-+#include "gluecard41/core/SolverTypes.h"
-+#include "gluecard41/core/BoundedQueue.h"
-+#include "gluecard41/core/Constants.h"
-+#include "gluecard41/mtl/Clone.h"
-+#include "gluecard41/core/SolverStats.h"
-+
-+#include <vector>
-+#include <unordered_map>
-+
-+using namespace std;
-+
-+namespace Gluecard41 {
-+// Core stats
  
 -#include "mtl/Heap.h"
 -#include "mtl/Alg.h"
@@ -1725,11 +1905,26 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
 -#include "core/Constants.h"
 -#include "mtl/Clone.h"
 -#include "core/SolverStats.h"
--
--
++#include "gluecard41/mtl/Heap.h"
++#include "gluecard41/mtl/Alg.h"
++#include "gluecard41/utils/Options.h"
++#include "gluecard41/core/SolverTypes.h"
++#include "gluecard41/core/BoundedQueue.h"
++#include "gluecard41/core/Constants.h"
++#include "gluecard41/mtl/Clone.h"
++#include "gluecard41/core/SolverStats.h"
+ 
++#include <vector>
++#include <unordered_map>
+ 
 -namespace Glucose {
 -// Core stats 
 -    
++using namespace std;
++
++namespace Gluecard41 {
++// Core stats
++
  enum CoreStats {
    sumResSeen,
    sumRes,
@@ -1804,7 +1999,19 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
      void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -198,7 +209,7 @@
+@@ -166,6 +177,11 @@
+     int     nVars      ()      const;       // The current number of variables.
+     int     nFreeVars  ()      ;
+ 
++    // Warm start mode:
++    void setStartMode(bool warm = false);
++    bool addClauseWarm(vec<Lit>& ps);
++    bool resolveConflicts(CRef confl);
++
+     inline char valuePhase(Var v) {return polarity[v];}
+ 
+     // Incremental mode
+@@ -198,7 +214,7 @@
      int       verbosity;
      int       verbEveryConflicts;
      int       showModel;
@@ -1813,7 +2020,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      // Constants For restarts
      double    K;
      double    R;
-@@ -228,13 +239,16 @@
+@@ -228,13 +244,16 @@
      bool      rnd_init_act;       // Initialize variable activities with a small random value.
      bool      randomizeFirstDescent; // the first decisions (until first cnflict) are made randomly
                                       // Useful for syrup!
@@ -1831,7 +2038,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      bool                certifiedUNSAT;
      bool                vbyte;
  
-@@ -242,15 +256,15 @@
+@@ -242,15 +261,15 @@
      void write_lit (int n);
  
  
@@ -1851,7 +2058,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      // Overide in ParallelSolver
      virtual void parallelImportClauseDuringConflictAnalysis(Clause &c,CRef confl);
      virtual bool parallelImportClauses(); // true if the empty clause was received
-@@ -259,13 +273,13 @@
+@@ -259,13 +278,13 @@
      virtual void parallelExportClauseDuringSearch(Clause &c);
      virtual bool parallelJobIsFinished();
      virtual bool panicModeIsEnabled();
@@ -1870,7 +2077,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      // Important stats completely related to search. Keep here
      uint64_t solves,starts,decisions,propagations,conflicts,conflictsRestarts;
  
-@@ -330,10 +344,12 @@
+@@ -330,10 +349,12 @@
                          unaryWatches;       //  Unary watch scheme (clauses are seen when they become empty
      vec<CRef>           clauses;          // List of problem clauses.
      vec<CRef>           learnts;          // List of learnt clauses.
@@ -1883,13 +2090,15 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      vec<char>           polarity;         // The preferred polarity of each variable.
      vec<char>           forceUNSAT;
      void                bumpForceUNSAT(Lit q); // Handles the forces
-@@ -351,15 +367,15 @@
+@@ -350,16 +371,17 @@
+     Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
      double              progress_estimate;// Set by 'search()'.
      bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
++    bool                warm_start;       // Warm start if set to true.
      vec<unsigned int>   permDiff;           // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 -    
-+
  
++
      // UPDATEVARACTIVITY trick (see competition'09 companion paper)
 -    vec<Lit> lastDecisionLevel; 
 +    vec<Lit> lastDecisionLevel;
@@ -1902,7 +2111,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      // Used for restart strategies
      bqueue<unsigned int> trailQueue,lbdQueue; // Bounded queues for restarts.
      float sumLBD; // used to compute the global average of LBD. Restarts...
-@@ -404,6 +420,7 @@
+@@ -404,6 +426,7 @@
      bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
      CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
      CRef     propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
@@ -1910,7 +2119,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      void     cancelUntil      (int level);                                             // Backtrack until a certain level.
      void     analyze          (CRef confl, vec<Lit>& out_learnt, vec<Lit> & selectors, int& out_btlevel,unsigned int &nblevels,unsigned int &szWithoutSelectors);    // (bt = backtrack)
      void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-@@ -429,6 +446,7 @@
+@@ -429,6 +452,7 @@
      void     attachClause     (CRef cr);               // Attach a clause to watcher lists.
      void     detachClause     (CRef cr, bool strict = false); // Detach a clause to watcher lists.
      void     detachClausePurgatory(CRef cr, bool strict = false);
@@ -1918,7 +2127,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      void     attachClausePurgatory(CRef cr);
      void     removeClause     (CRef cr, bool inPurgatory = false);               // Detach and free a clause.
      bool     locked           (const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
-@@ -447,7 +465,7 @@
+@@ -447,7 +471,7 @@
      int      level            (Var x) const;
      double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
      bool     withinBudget     ()      const;
@@ -1927,13 +2136,14 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
  
      // Static helpers:
      //
-@@ -501,19 +519,20 @@
+@@ -501,19 +525,20 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
 -inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
+-inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
 +inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != gc41l_Undef ? value(p) != gc41l_False : (uncheckedEnqueue(p, from), true); }
- inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
++inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); if (warm_start && decisionLevel()) return addClauseWarm(add_tmp); return addClause_(add_tmp); }
  inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
@@ -1956,7 +2166,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
   }
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
-@@ -527,12 +546,12 @@
+@@ -527,12 +552,12 @@
  inline int      Solver::nClauses      ()      const   { return clauses.size(); }
  inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
  inline int      Solver::nVars         ()      const   { return vardata.size(); }
@@ -1972,7 +2182,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
      if      ( b && !decision[v]) stats[dec_vars]++;
      else if (!b &&  decision[v]) stats[dec_vars]--;
  
-@@ -552,11 +571,11 @@
+@@ -552,11 +577,11 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -1989,14 +2199,16 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
-@@ -566,14 +585,13 @@
+@@ -565,6 +590,8 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
  
++// Warm start mode:
++inline void     Solver::setStartMode (bool warm) { warm_start = warm; cancelUntil(0); }
  
--
+ 
  //=================================================================================================
- // Debug etc:
- 
+@@ -573,7 +600,7 @@
  
  inline void Solver::printLit(Lit l)
  {
@@ -2005,7 +2217,7 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
  }
  
  
-@@ -639,7 +657,7 @@
+@@ -639,7 +666,7 @@
          return ca[x].activity() < ca[y].activity();
          //return x->size() < y->size();
  
@@ -2015,8 +2227,8 @@ diff -Naur solvers/gluecard41/core/Solver.h solvers/gc41/core/Solver.h
  };
  
 diff -Naur solvers/gluecard41/core/SolverStats.h solvers/gc41/core/SolverStats.h
---- solvers/gluecard41/core/SolverStats.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/core/SolverStats.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/core/SolverStats.h	2016-12-08 23:48:26
++++ solvers/gc41/core/SolverStats.h	2021-08-12 09:10:25
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -2088,8 +2300,8 @@ diff -Naur solvers/gluecard41/core/SolverStats.h solvers/gc41/core/SolverStats.h
 +#endif	/* Gluecard41_SolverStats_h */
  
 diff -Naur solvers/gluecard41/core/SolverTypes.h solvers/gc41/core/SolverTypes.h
---- solvers/gluecard41/core/SolverTypes.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/core/SolverTypes.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/core/SolverTypes.h	2016-12-08 23:48:26
++++ solvers/gc41/core/SolverTypes.h	2021-08-12 09:10:25
 @@ -9,19 +9,19 @@
                                  Labri - Univ. Bordeaux, France
  
@@ -2405,8 +2617,8 @@ diff -Naur solvers/gluecard41/core/SolverTypes.h solvers/gc41/core/SolverTypes.h
 +
  #endif
 diff -Naur solvers/gluecard41/mtl/Alg.h solvers/gc41/mtl/Alg.h
---- solvers/gluecard41/mtl/Alg.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Alg.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Alg.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Alg.h	2021-08-12 09:10:25
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2425,8 +2637,8 @@ diff -Naur solvers/gluecard41/mtl/Alg.h solvers/gc41/mtl/Alg.h
  //=================================================================================================
  // Useful functions on vector-like types:
 diff -Naur solvers/gluecard41/mtl/Alloc.h solvers/gc41/mtl/Alloc.h
---- solvers/gluecard41/mtl/Alloc.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Alloc.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Alloc.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Alloc.h	2021-08-12 09:10:25
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -2482,8 +2694,8 @@ diff -Naur solvers/gluecard41/mtl/Alloc.h solvers/gc41/mtl/Alloc.h
      if (sz < prev_sz)
          throw OutOfMemoryException();
 diff -Naur solvers/gluecard41/mtl/Clone.h solvers/gc41/mtl/Clone.h
---- solvers/gluecard41/mtl/Clone.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Clone.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Clone.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Clone.h	2021-08-12 09:10:25
 @@ -1,8 +1,8 @@
 -#ifndef Glucose_Clone_h
 -#define Glucose_Clone_h
@@ -2504,8 +2716,8 @@ diff -Naur solvers/gluecard41/mtl/Clone.h solvers/gc41/mtl/Clone.h
 \ No newline at end of file
 +#endif
 diff -Naur solvers/gluecard41/mtl/Heap.h solvers/gc41/mtl/Heap.h
---- solvers/gluecard41/mtl/Heap.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Heap.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Heap.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Heap.h	2021-08-12 09:10:25
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2566,8 +2778,8 @@ diff -Naur solvers/gluecard41/mtl/Heap.h solvers/gc41/mtl/Heap.h
  };
  
 diff -Naur solvers/gluecard41/mtl/IntTypes.h solvers/gc41/mtl/IntTypes.h
---- solvers/gluecard41/mtl/IntTypes.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/IntTypes.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/IntTypes.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/IntTypes.h	2021-08-12 09:10:25
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2580,8 +2792,8 @@ diff -Naur solvers/gluecard41/mtl/IntTypes.h solvers/gc41/mtl/IntTypes.h
  #ifdef __sun
      // Not sure if there are newer versions that support C99 headers. The
 diff -Naur solvers/gluecard41/mtl/Map.h solvers/gc41/mtl/Map.h
---- solvers/gluecard41/mtl/Map.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Map.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Map.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Map.h	2021-08-12 09:10:25
 @@ -17,15 +17,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2631,8 +2843,8 @@ diff -Naur solvers/gluecard41/mtl/Map.h solvers/gc41/mtl/Map.h
      }
  
 diff -Naur solvers/gluecard41/mtl/Queue.h solvers/gc41/mtl/Queue.h
---- solvers/gluecard41/mtl/Queue.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Queue.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Queue.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Queue.h	2021-08-12 09:10:25
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2680,8 +2892,8 @@ diff -Naur solvers/gluecard41/mtl/Queue.h solvers/gc41/mtl/Queue.h
          buf[end++] = elem;
          if (end == buf.size()) end = 0;
 diff -Naur solvers/gluecard41/mtl/Sort.h solvers/gc41/mtl/Sort.h
---- solvers/gluecard41/mtl/Sort.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Sort.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Sort.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Sort.h	2021-08-12 09:10:25
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2704,8 +2916,8 @@ diff -Naur solvers/gluecard41/mtl/Sort.h solvers/gc41/mtl/Sort.h
  template<class T>
  struct LessThan_default {
 diff -Naur solvers/gluecard41/mtl/Vec.h solvers/gc41/mtl/Vec.h
---- solvers/gluecard41/mtl/Vec.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/Vec.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/Vec.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/Vec.h	2021-08-12 09:10:25
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2775,8 +2987,8 @@ diff -Naur solvers/gluecard41/mtl/Vec.h solvers/gc41/mtl/Vec.h
   }
  
 diff -Naur solvers/gluecard41/mtl/VecThreads.h solvers/gc41/mtl/VecThreads.h
---- solvers/gluecard41/mtl/VecThreads.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/VecThreads.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/VecThreads.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/VecThreads.h	2021-08-12 09:10:25
 @@ -1,5 +1,5 @@
  /*******************************************************************************************[VecThreads.h]
 - * Threads safe  version used in Glucose-Syrup, 2015, Gilles Audemard, Laurent Simon
@@ -2909,8 +3121,8 @@ diff -Naur solvers/gluecard41/mtl/VecThreads.h solvers/gc41/mtl/VecThreads.h
  
  //=================================================================================================
 diff -Naur solvers/gluecard41/mtl/XAlloc.h solvers/gc41/mtl/XAlloc.h
---- solvers/gluecard41/mtl/XAlloc.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/mtl/XAlloc.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/mtl/XAlloc.h	2016-12-08 23:48:26
++++ solvers/gc41/mtl/XAlloc.h	2021-08-12 09:10:25
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -2930,8 +3142,8 @@ diff -Naur solvers/gluecard41/mtl/XAlloc.h solvers/gc41/mtl/XAlloc.h
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur solvers/gluecard41/utils/Options.cc solvers/gc41/utils/Options.cc
---- solvers/gluecard41/utils/Options.cc	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/utils/Options.cc	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/utils/Options.cc	2016-12-08 23:48:26
++++ solvers/gc41/utils/Options.cc	2021-08-12 09:10:25
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2987,8 +3199,8 @@ diff -Naur solvers/gluecard41/utils/Options.cc solvers/gc41/utils/Options.cc
      const char* usage = Option::getUsageString();
      if (usage != NULL)
 diff -Naur solvers/gluecard41/utils/Options.h solvers/gc41/utils/Options.h
---- solvers/gluecard41/utils/Options.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/utils/Options.h	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/utils/Options.h	2016-12-08 23:48:26
++++ solvers/gc41/utils/Options.h	2021-08-12 09:10:25
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -3174,9 +3386,9 @@ diff -Naur solvers/gluecard41/utils/Options.h solvers/gc41/utils/Options.h
              bool b = !match(span, "no-");
  
 diff -Naur solvers/gluecard41/utils/ParseUtils.h solvers/gc41/utils/ParseUtils.h
---- solvers/gluecard41/utils/ParseUtils.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/utils/ParseUtils.h	2021-08-12 09:10:25.000000000 +1000
-@@ -18,109 +18,13 @@
+--- solvers/gluecard41/utils/ParseUtils.h	2016-12-08 23:48:26
++++ solvers/gc41/utils/ParseUtils.h	2021-08-12 09:10:25
+@@ -18,110 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
  
@@ -3188,9 +3400,10 @@ diff -Naur solvers/gluecard41/utils/ParseUtils.h solvers/gc41/utils/ParseUtils.h
  #include <stdlib.h>
  #include <stdio.h>
 -#include <math.h>
--
+ 
 -#include <zlib.h>
--
++namespace Gluecard41 {
+ 
 -namespace Glucose {
 -
 -//-------------------------------------------------------------------------------------------------
@@ -3284,19 +3497,19 @@ diff -Naur solvers/gluecard41/utils/ParseUtils.h solvers/gc41/utils/ParseUtils.h
 -        val = val*10 + (*in - '0'),
 -        ++in;
 -    return neg ? -val : val; }
- 
-+namespace Gluecard41 {
- 
+-
+-
  // String matching: in case of a match the input iterator will be advanced the corresponding
  // number of characters.
-@@ -133,18 +37,9 @@
+ template<class B>
+@@ -133,17 +37,8 @@
  
      in += i;
  
 -    return true; 
 +    return true;
  }
- 
+-
 -// String matching: consumes characters eagerly, but does not require random access iterator.
 -template<class B>
 -static bool eagerMatch(B& in, const char* str) {
@@ -3305,13 +3518,12 @@ diff -Naur solvers/gluecard41/utils/ParseUtils.h solvers/gc41/utils/ParseUtils.h
 -            return false;
 -    return true; }
 -
--
+ 
  //=================================================================================================
  }
- 
 diff -Naur solvers/gluecard41/utils/System.cc solvers/gc41/utils/System.cc
---- solvers/gluecard41/utils/System.cc	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/utils/System.cc	2021-08-12 09:10:25.000000000 +1000
+--- solvers/gluecard41/utils/System.cc	2016-12-08 23:48:26
++++ solvers/gc41/utils/System.cc	2021-08-12 09:10:25
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -3363,8 +3575,8 @@ diff -Naur solvers/gluecard41/utils/System.cc solvers/gc41/utils/System.cc
      return 0; }
  #endif
 diff -Naur solvers/gluecard41/utils/System.h solvers/gc41/utils/System.h
---- solvers/gluecard41/utils/System.h	2016-12-08 23:48:26.000000000 +1100
-+++ solvers/gc41/utils/System.h	2021-08-12 09:12:51.000000000 +1000
+--- solvers/gluecard41/utils/System.h	2016-12-08 23:48:26
++++ solvers/gc41/utils/System.h	2021-08-12 09:12:51
 @@ -18,18 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -3377,10 +3589,10 @@ diff -Naur solvers/gluecard41/utils/System.h solvers/gc41/utils/System.h
 -#if defined(__linux__)
 -#include <fpu_control.h>
 -#endif
--
--#include "mtl/IntTypes.h"
 +#include "gluecard41/mtl/IntTypes.h"
  
+-#include "mtl/IntTypes.h"
+-
  //-------------------------------------------------------------------------------------------------
  
 -namespace Glucose {

@@ -191,7 +191,7 @@ class SolverNames(object):
 
             cadical     = ('cd', 'cdl', 'cadical')
             gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
-            gluecard41  = ('gc3', 'gc41', 'gluecard4', 'gluecard41')
+            gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
             lingeling   = ('lgl', 'lingeling')
@@ -205,8 +205,8 @@ class SolverNames(object):
 
         As a result, in order to select Glucose3, a user can specify the
         solver's name: either ``'g3'``, ``'g30'``, ``'glucose3'``, or
-        ``'glucose30'``. *Note that the capitalized versions of these names are
-        also allowed*.
+        ``'glucose30'``. *Note that the capitalized versions of these names
+        are also allowed*.
     """
 
     cadical     = ('cd', 'cdl', 'cadical')
@@ -318,6 +318,16 @@ class Solver(object):
         .. [3] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon. *Improving
             Glucose for Incremental SAT Solving with Assumptions: Application
             to MUS Extraction*. SAT 2013. pp. 309-317
+
+        Finally, most MiniSat-based solvers can be exploited in the
+        "warm-start" mode in the case of *satisfiable* formulas. This may come
+        in handy in various model enumeration settings. Note that warm-start
+        mode is disabled in the case of limited solving with *"unknown"*
+        outcomes. Warm-start mode can be set with the use of the `warm_start`
+        parameter:
+
+        :param warm_start: use the solver in the "warm-start" mode
+        :type warm_start: bool
     """
 
     def __init__(self, name='m22', bootstrap_with=None, use_timer=False, **kwargs):
@@ -355,7 +365,7 @@ class Solver(object):
         """
 
         # checking keyword arguments
-        kwallowed = set(['incr', 'with_proof'])
+        kwallowed = set(['incr', 'with_proof', 'warm_start'])
         for a in kwargs:
             if a not in kwallowed:
                 raise TypeError('Unexpected keyword argument \'{0}\''.format(a))
@@ -383,11 +393,11 @@ class Solver(object):
             elif name_ in SolverNames.mergesat3:
                 self.solver = Mergesat3(bootstrap_with, use_timer)
             elif name_ in SolverNames.minicard:
-                self.solver = Minicard(bootstrap_with, use_timer)
+                self.solver = Minicard(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.minisat22:
-                self.solver = Minisat22(bootstrap_with, use_timer)
+                self.solver = Minisat22(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.minisatgh:
-                self.solver = MinisatGH(bootstrap_with, use_timer)
+                self.solver = MinisatGH(bootstrap_with, use_timer, **kwargs)
             else:
                 raise(NoSuchSolverError(name))
 
@@ -1223,6 +1233,13 @@ class Cadical(object):
             self.prev_assumps = assumptions
             return self.status
 
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by CaDiCaL.')
+
     def solve_limited(self, assumptions=[], expect_interrupt=False):
         """
             Solve internal formula using given budgets for conflicts and
@@ -1426,7 +1443,7 @@ class Gluecard3(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -1435,7 +1452,7 @@ class Gluecard3(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, incr, with_proof)
+        self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -1453,7 +1470,7 @@ class Gluecard3(object):
         self.gluecard = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -1480,6 +1497,17 @@ class Gluecard3(object):
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.gluecard3_tracepr(self.gluecard, self.prfile)
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_set_start(self.gluecard, int(warm))
 
     def delete(self):
         """
@@ -1747,7 +1775,7 @@ class Gluecard4(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -1756,7 +1784,7 @@ class Gluecard4(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, incr, with_proof)
+        self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -1774,7 +1802,7 @@ class Gluecard4(object):
         self.gluecard = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -1801,6 +1829,17 @@ class Gluecard4(object):
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.gluecard41_tracepr(self.gluecard, self.prfile)
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_set_start(self.gluecard, int(warm))
 
     def delete(self):
         """
@@ -2068,7 +2107,7 @@ class Glucose3(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -2077,7 +2116,7 @@ class Glucose3(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, incr, with_proof)
+        self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -2095,7 +2134,7 @@ class Glucose3(object):
         self.glucose = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -2122,6 +2161,17 @@ class Glucose3(object):
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.glucose3_tracepr(self.glucose, self.prfile)
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.glucose:
+            pysolvers.glucose3_set_start(self.glucose, int(warm))
 
     def delete(self):
         """
@@ -2381,7 +2431,7 @@ class Glucose4(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -2390,7 +2440,7 @@ class Glucose4(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, incr, with_proof)
+        self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -2408,7 +2458,7 @@ class Glucose4(object):
         self.glucose = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -2435,6 +2485,17 @@ class Glucose4(object):
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.glucose41_tracepr(self.glucose, self.prfile)
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_set_start(self.glucose, int(warm))
 
     def delete(self):
         """
@@ -2777,6 +2838,13 @@ class Lingeling(object):
             self.prev_assumps = assumptions
             return self.status
 
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by Lingeling.')
+
     def solve_limited(self, assumptions=[], expect_interrupt=False):
         """
             Solve internal formula using given budgets for conflicts and
@@ -3016,6 +3084,13 @@ class MapleChrono(object):
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.maplechrono_tracepr(self.maplesat, self.prfile)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by MapleChrono.')
 
     def delete(self):
         """
@@ -3327,6 +3402,13 @@ class MapleCM(object):
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.maplecm_tracepr(self.maplesat, self.prfile)
 
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by MapleCM.')
+
     def delete(self):
         """
             Destructor.
@@ -3585,7 +3667,7 @@ class Maplesat(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -3597,7 +3679,7 @@ class Maplesat(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, with_proof)
+        self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -3614,7 +3696,8 @@ class Maplesat(object):
         self.delete()
         self.maplesat = None
 
-    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
+            warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -3633,9 +3716,20 @@ class Maplesat(object):
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
 
+            if warm_start:
+                self.start_mode(warm=True)
+
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.maplesat_tracepr(self.maplesat, self.prfile)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.maplesat:
+            pysolvers.maplesat_set_start(self.maplesat, int(warm))
 
     def delete(self):
         """
@@ -3938,6 +4032,13 @@ class Mergesat3(object):
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
 
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by Mergesat3.')
+
     def delete(self):
         """
             Destructor.
@@ -4190,7 +4291,7 @@ class Minicard(object):
         Minicard SAT solver.
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -4198,7 +4299,7 @@ class Minicard(object):
         self.minicard = None
         self.status = None
 
-        self.new(bootstrap_with, use_timer)
+        self.new(bootstrap_with, use_timer, warm_start)
 
     def __enter__(self):
         """
@@ -4215,7 +4316,7 @@ class Minicard(object):
         self.delete()
         self.minicard = None
 
-    def new(self, bootstrap_with=None, use_timer=False):
+    def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -4230,9 +4331,20 @@ class Minicard(object):
                     else:
                         self.add_atmost(clause[0], clause[1])
 
+            if warm_start:
+                self.start_mode(warm=True)
+
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.minicard:
+            pysolvers.minicard_set_start(self.minicard, int(warm))
 
     def delete(self):
         """
@@ -4494,7 +4606,7 @@ class Minisat22(object):
         MiniSat 2.2 SAT solver.
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -4502,7 +4614,7 @@ class Minisat22(object):
         self.minisat = None
         self.status = None
 
-        self.new(bootstrap_with, use_timer)
+        self.new(bootstrap_with, use_timer, warm_start)
 
     def __enter__(self):
         """
@@ -4519,7 +4631,7 @@ class Minisat22(object):
         self.delete()
         self.minisat = None
 
-    def new(self, bootstrap_with=None, use_timer=False):
+    def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -4534,9 +4646,20 @@ class Minisat22(object):
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
+            if warm_start:
+                self.start_mode(warm=True)
+
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.minisat:
+            pysolvers.minisat22_set_start(self.minisat, int(warm))
 
     def delete(self):
         """
@@ -4790,7 +4913,7 @@ class MinisatGH(object):
         MiniSat SAT solver (version from github).
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -4798,7 +4921,7 @@ class MinisatGH(object):
         self.minisat = None
         self.status = None
 
-        self.new(bootstrap_with, use_timer)
+        self.new(bootstrap_with, use_timer, warm_start)
 
     def __enter__(self):
         """
@@ -4815,7 +4938,7 @@ class MinisatGH(object):
         self.delete()
         self.minisat = None
 
-    def new(self, bootstrap_with=None, use_timer=False):
+    def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -4830,9 +4953,20 @@ class MinisatGH(object):
                 for clause in bootstrap_with:
                     self.add_clause(clause)
 
+            if warm_start:
+                self.start_mode(warm=True)
+
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.minisat:
+            pysolvers.minisatgh_set_start(self.minisat, int(warm))
 
     def delete(self):
         """

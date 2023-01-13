@@ -95,6 +95,7 @@ static char     nvars_docstring[] = "Get number of variables used by the solver.
 static char      ncls_docstring[] = "Get number of clauses used by the solver.";
 static char       del_docstring[] = "Delete a previously created solver object.";
 static char  acc_stat_docstring[] = "Get accumulated stats from the solver.";
+static char  setstart_docstring[] = "Set (warm) start mode for the solver.";
 
 static PyObject *SATError;
 static jmp_buf env;
@@ -116,6 +117,7 @@ extern "C" {
 #endif
 #ifdef WITH_GLUECARD30
 	static PyObject *py_gluecard3_new       (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_set_start (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_add_am    (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_solve     (PyObject *, PyObject *);
@@ -137,6 +139,7 @@ extern "C" {
 #endif
 #ifdef WITH_GLUECARD41
 	static PyObject *py_gluecard41_new       (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_set_start (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_add_am    (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_solve     (PyObject *, PyObject *);
@@ -158,6 +161,7 @@ extern "C" {
 #endif
 #ifdef WITH_GLUCOSE30
 	static PyObject *py_glucose3_new       (PyObject *, PyObject *);
+	static PyObject *py_glucose3_set_start (PyObject *, PyObject *);
 	static PyObject *py_glucose3_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_glucose3_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose3_solve_lim (PyObject *, PyObject *);
@@ -178,6 +182,7 @@ extern "C" {
 #endif
 #ifdef WITH_GLUCOSE41
 	static PyObject *py_glucose41_new       (PyObject *, PyObject *);
+	static PyObject *py_glucose41_set_start (PyObject *, PyObject *);
 	static PyObject *py_glucose41_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_glucose41_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose41_solve_lim (PyObject *, PyObject *);
@@ -249,6 +254,7 @@ extern "C" {
 #endif
 #ifdef WITH_MAPLESAT
 	static PyObject *py_maplesat_new       (PyObject *, PyObject *);
+	static PyObject *py_maplesat_set_start (PyObject *, PyObject *);
 	static PyObject *py_maplesat_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_maplesat_solve     (PyObject *, PyObject *);
 	static PyObject *py_maplesat_solve_lim (PyObject *, PyObject *);
@@ -286,6 +292,7 @@ extern "C" {
 #endif
 #ifdef WITH_MINICARD
 	static PyObject *py_minicard_new       (PyObject *, PyObject *);
+	static PyObject *py_minicard_set_start (PyObject *, PyObject *);
 	static PyObject *py_minicard_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_minicard_add_am    (PyObject *, PyObject *);
 	static PyObject *py_minicard_solve     (PyObject *, PyObject *);
@@ -305,6 +312,7 @@ extern "C" {
 #endif
 #ifdef WITH_MINISAT22
 	static PyObject *py_minisat22_new       (PyObject *, PyObject *);
+	static PyObject *py_minisat22_set_start (PyObject *, PyObject *);
 	static PyObject *py_minisat22_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_minisat22_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisat22_solve_lim (PyObject *, PyObject *);
@@ -323,6 +331,7 @@ extern "C" {
 #endif
 #ifdef WITH_MINISATGH
 	static PyObject *py_minisatgh_new       (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_set_start (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_solve     (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_solve_lim (PyObject *, PyObject *);
@@ -358,6 +367,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_GLUECARD30
 	{ "gluecard3_new",       py_gluecard3_new,       METH_VARARGS,       new_docstring },
+	{ "gluecard3_set_start", py_gluecard3_set_start, METH_VARARGS,  setstart_docstring },
 	{ "gluecard3_add_cl",    py_gluecard3_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "gluecard3_add_am",    py_gluecard3_add_am,    METH_VARARGS,     addam_docstring },
 	{ "gluecard3_solve",     py_gluecard3_solve,     METH_VARARGS,     solve_docstring },
@@ -379,6 +389,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_GLUECARD41
 	{ "gluecard41_new",       py_gluecard41_new,       METH_VARARGS,       new_docstring },
+	{ "gluecard41_set_start", py_gluecard41_set_start, METH_VARARGS,  setstart_docstring },
 	{ "gluecard41_add_cl",    py_gluecard41_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "gluecard41_add_am",    py_gluecard41_add_am,    METH_VARARGS,     addam_docstring },
 	{ "gluecard41_solve",     py_gluecard41_solve,     METH_VARARGS,     solve_docstring },
@@ -400,6 +411,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_GLUCOSE30
 	{ "glucose3_new",       py_glucose3_new,       METH_VARARGS,       new_docstring },
+	{ "glucose3_set_start", py_glucose3_set_start, METH_VARARGS,  setstart_docstring },
 	{ "glucose3_add_cl",    py_glucose3_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "glucose3_solve",     py_glucose3_solve,     METH_VARARGS,     solve_docstring },
 	{ "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,       lim_docstring },
@@ -420,6 +432,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_GLUCOSE41
 	{ "glucose41_new",       py_glucose41_new,       METH_VARARGS,       new_docstring },
+	{ "glucose41_set_start", py_glucose41_set_start, METH_VARARGS,  setstart_docstring },
 	{ "glucose41_add_cl",    py_glucose41_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "glucose41_solve",     py_glucose41_solve,     METH_VARARGS,     solve_docstring },
 	{ "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,       lim_docstring },
@@ -491,6 +504,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_MAPLESAT
 	{ "maplesat_new",       py_maplesat_new,       METH_VARARGS,       new_docstring },
+	{ "maplesat_set_start", py_maplesat_set_start, METH_VARARGS,  setstart_docstring },
 	{ "maplesat_add_cl",    py_maplesat_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "maplesat_solve",     py_maplesat_solve,     METH_VARARGS,     solve_docstring },
 	{ "maplesat_solve_lim", py_maplesat_solve_lim, METH_VARARGS,       lim_docstring },
@@ -528,6 +542,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_MINICARD
 	{ "minicard_new",       py_minicard_new,       METH_VARARGS,       new_docstring },
+	{ "minicard_set_start", py_minicard_set_start, METH_VARARGS,  setstart_docstring },
 	{ "minicard_add_cl",    py_minicard_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "minicard_solve",     py_minicard_solve,     METH_VARARGS,     solve_docstring },
 	{ "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,       lim_docstring },
@@ -547,6 +562,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_MINISAT22
 	{ "minisat22_new",       py_minisat22_new,       METH_VARARGS,       new_docstring },
+	{ "minisat22_set_start", py_minisat22_set_start, METH_VARARGS,  setstart_docstring },
 	{ "minisat22_add_cl",    py_minisat22_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "minisat22_solve",     py_minisat22_solve,     METH_VARARGS,     solve_docstring },
 	{ "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,       lim_docstring },
@@ -565,6 +581,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_MINISATGH
 	{ "minisatgh_new",       py_minisatgh_new,       METH_VARARGS,       new_docstring },
+	{ "minisatgh_set_start", py_minisatgh_set_start, METH_VARARGS,  setstart_docstring },
 	{ "minisatgh_add_cl",    py_minisatgh_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "minisatgh_solve",     py_minisatgh_solve,     METH_VARARGS,     solve_docstring },
 	{ "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,       lim_docstring },
@@ -1145,6 +1162,24 @@ static inline bool gluecard3_iterate(
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
 }
 
 //
@@ -1732,6 +1767,24 @@ static inline bool gluecard41_iterate(
 
 //
 //=============================================================================
+static PyObject *py_gluecard41_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_gluecard41_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2315,6 +2368,24 @@ static inline bool glucose3_iterate(
 
 //
 //=============================================================================
+static PyObject *py_glucose3_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_glucose3_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2866,6 +2937,24 @@ static inline bool glucose41_iterate(
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
 }
 
 //
@@ -4337,6 +4426,24 @@ static inline bool maplesat_iterate(
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplesat_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
 }
 
 //
@@ -5903,6 +6010,24 @@ static inline bool minicard_iterate(
 
 //
 //=============================================================================
+static PyObject *py_minicard_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_minicard_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -6418,6 +6543,24 @@ static inline bool minisat22_iterate(
 
 //
 //=============================================================================
+static PyObject *py_minisat22_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_minisat22_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -6901,6 +7044,24 @@ static inline bool minisatgh_iterate(
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
 }
 
 //

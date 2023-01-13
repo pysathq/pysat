@@ -66,9 +66,8 @@ import sys
 
 #
 #==============================================================================
-def enumerate_models(formula, to_enum, solver):
+def enumerate_models(formula, to_enum, solver, warm=False):
     """
-
         Enumeration procedure. It represents a loop iterating over satisfying
         assignment for a given formula until either all or a given number of
         them is enumerated.
@@ -76,13 +75,16 @@ def enumerate_models(formula, to_enum, solver):
         :param formula: input WCNF formula
         :param to_enum: number of models to compute
         :param solver: name of SAT solver
+        :param warm: warm start flag
 
         :type formula: :class:`.CNFPlus`
         :type to_enum: int or 'all'
         :type solver: str
+        :type warm: bool
     """
 
-    with Solver(name=solver, bootstrap_with=formula.clauses, use_timer=True) as s:
+    with Solver(name=solver, bootstrap_with=formula.clauses,
+                use_timer=True, wart_start=warm) as s:
         # adding native cardinality constraints if needed
         if formula.atmosts:
             assert solver_name in SolverNames.minicard or \
@@ -119,10 +121,11 @@ def parse_options():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   'e:h:s:',
+                                   'e:h:s:w',
                                    ['enum=',
                                     'help',
-                                    'solver='])
+                                    'solver=',
+                                    'warm'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -130,6 +133,7 @@ def parse_options():
 
     to_enum = 1
     solver = 'g3'
+    warm = False
 
     for opt, arg in opts:
         if opt in ('-e', '--enum'):
@@ -143,10 +147,12 @@ def parse_options():
             sys.exit(0)
         elif opt in ('-s', '--solver'):
             solver = str(arg)
+        elif opt in ('-w', '--warm'):
+            warm = True
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return to_enum, solver, args
+    return to_enum, solver, warm, args
 
 
 #
@@ -163,13 +169,14 @@ def usage():
     print('        -h, --help               Show this message')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: cd, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
+    print('        -w, --warm               Use solver\'s warm start mode')
 
 
 #
 #==============================================================================
 if __name__ == '__main__':
     # parsing command-line options
-    to_enum, solver, files = parse_options()
+    to_enum, solver, warm, files = parse_options()
 
     # reading an input formula either from a file or from stdin
     if files:
@@ -177,4 +184,4 @@ if __name__ == '__main__':
     else:
         formula = CNFPlus(from_fp=sys.stdin)
 
-    enumerate_models(formula, to_enum, solver)
+    enumerate_models(formula, to_enum, solver, warm)
