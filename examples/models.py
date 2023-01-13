@@ -104,10 +104,10 @@ def enumerate_models(formula, to_enum, solver):
 
         # some final statistics
         print('c nof models: {0}'.format(computed))
-        print('c accum time: {0:.2f}s'.format(s.time()))
+        print('c accum time: {0:.2f}s'.format(s.time_accum()))
 
         if computed:
-            print('c mean  time: {0:.2f}s'.format(s.time() / computed))
+            print('c mean  time: {0:.2f}s'.format(s.time_accum() / computed))
 
 
 #
