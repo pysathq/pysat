@@ -10,7 +10,7 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
-## xx.01.2023 (*0.1.7.dev22*)
+## 13.01.2023 (*0.1.7.dev22*)
 
 -   Fixed a time computation bug in `examples/models.py`.
 -   Added warm start mode to 'm22', 'mgh', 'mc', 'mpl', 'g30', 'g41', 'gc30',
