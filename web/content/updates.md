@@ -10,6 +10,10 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 13.01.2023 (*0.1.7.dev23*)
+
+-   Fixed a typo in `examples/models.py`.
+
 ## 13.01.2023 (*0.1.7.dev22*)
 
 -   Fixed a time computation bug in `examples/models.py`.

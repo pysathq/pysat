@@ -84,7 +84,7 @@ def enumerate_models(formula, to_enum, solver, warm=False):
     """
 
     with Solver(name=solver, bootstrap_with=formula.clauses,
-                use_timer=True, wart_start=warm) as s:
+                use_timer=True, warm_start=warm) as s:
         # adding native cardinality constraints if needed
         if formula.atmosts:
             assert solver_name in SolverNames.minicard or \
