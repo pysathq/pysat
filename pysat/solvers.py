@@ -3350,7 +3350,7 @@ class MapleCM(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
@@ -3362,7 +3362,7 @@ class MapleCM(object):
         self.status = None
         self.prfile = None
 
-        self.new(bootstrap_with, use_timer, with_proof)
+        self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
     def __enter__(self):
         """
@@ -3379,7 +3379,8 @@ class MapleCM(object):
         self.delete()
         self.maplesat = None
 
-    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
+            warm_start=False):
         """
             Actual constructor of the solver.
         """
@@ -3398,6 +3399,9 @@ class MapleCM(object):
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
 
+            if warm_start:
+                self.start_mode(warm=True)
+
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
                 pysolvers.maplecm_tracepr(self.maplesat, self.prfile)
@@ -3407,7 +3411,8 @@ class MapleCM(object):
             Set start mode: either warm or standard.
         """
 
-        raise NotImplementedError('Warm-start mode is currently unsupported by MapleCM.')
+        if self.maplesat:
+            pysolvers.maplecm_set_start(self.maplesat, int(warm))
 
     def delete(self):
         """

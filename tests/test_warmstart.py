@@ -6,7 +6,7 @@ def test_warmstart():
 
     cnf = CardEnc.atmost(range(1, n + 1), b)
 
-    for name in ['m22', 'mgh', 'mpl', 'mc', 'g30', 'g41', 'gc30', 'gc41']:
+    for name in ['m22', 'mgh', 'mpl', 'mcm', 'mc', 'g30', 'g41', 'gc30', 'gc41']:
         models1 = []
         with Solver(name=name, bootstrap_with=cnf, warm_start=False) as solver:
             models1 = [model for model in solver.enum_models()]
@@ -14,4 +14,4 @@ def test_warmstart():
         with Solver(name=name, bootstrap_with=cnf, warm_start=True) as solver:
             models2 = [model for model in solver.enum_models()]
 
-        assert sorted(models1) == sorted(models1), 'Wrong set/number of models for {0}'.format(name)
+        assert sorted(models1) == sorted(models2), 'Wrong set/number of models for {0}'.format(name)

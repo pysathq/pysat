@@ -235,6 +235,7 @@ extern "C" {
 #endif
 #ifdef WITH_MAPLECM
 	static PyObject *py_maplecm_new       (PyObject *, PyObject *);
+	static PyObject *py_maplecm_set_start (PyObject *, PyObject *);
 	static PyObject *py_maplecm_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_maplecm_solve     (PyObject *, PyObject *);
 	static PyObject *py_maplecm_solve_lim (PyObject *, PyObject *);
@@ -485,6 +486,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_MAPLECM
 	{ "maplecm_new",       py_maplecm_new,       METH_VARARGS,       new_docstring },
+	{ "maplecm_set_start", py_maplecm_set_start, METH_VARARGS,  setstart_docstring },
 	{ "maplecm_add_cl",    py_maplecm_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "maplecm_solve",     py_maplecm_solve,     METH_VARARGS,     solve_docstring },
 	{ "maplecm_solve_lim", py_maplecm_solve_lim, METH_VARARGS,       lim_docstring },
@@ -4983,6 +4985,24 @@ static inline bool maplecm_iterate(
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+//
+//=============================================================================
+static PyObject *py_maplecm_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
+
+	s->setStartMode((bool)warm_start);
+
+	Py_RETURN_NONE;
 }
 
 //
