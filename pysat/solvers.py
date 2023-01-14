@@ -411,6 +411,18 @@ class Solver(object):
             self.solver.delete()
             self.solver = None
 
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard. Note that warm start mode
+            is disabled in the case of limited solving with *"unknown"*
+            outcome outcomes. Moreover, warm start mode may lead to unexpected
+            results in case of assumption-based solving with a *varying* list
+            of assumption literals.
+        """
+
+        if self.solver:
+            self.solver.start_mode(warm)
+
     def accum_stats(self):
         """
             Get accumulated low-level stats from the solver. Currently, the
