@@ -413,11 +413,33 @@ class Solver(object):
 
     def start_mode(self, warm=False):
         """
-            Set start mode: either warm or standard. Note that warm start mode
-            is disabled in the case of limited solving with *"unknown"*
-            outcome outcomes. Moreover, warm start mode may lead to unexpected
-            results in case of assumption-based solving with a *varying* list
-            of assumption literals.
+            Set start mode: either warm or standard. Warm start mode can be
+            beneficial if one is interested in efficient model enumeration.
+
+            Note that warm start mode is disabled in the case of limited
+            solving with *"unknown"* outcomes. Moreover, warm start mode may
+            lead to unexpected results in case of assumption-based solving
+            with a *varying* list of assumption literals.
+
+            Example:
+
+            .. code-block:: python
+
+                >>> def model_count(solver, formula, vlimit=None, warm_start=False):
+                ...     with Solver(name=solver, bootstrap_with=formula, use_timer=True, warm_start=warm_start) as oracle:
+                ...         count = 0
+                ...         while oracle.solve() == True:
+                ...             model = oracle.get_model()
+                ...             if vlimit:
+                ...                 model = model[:vlimit]
+                ...             oracle.add_clause([-l for l in model])
+                ...             count += 1
+                ...         print('{0} models in {1:.4f}s'.format(count, oracle.time_accum()))
+                >>>
+                >>> model_count('mpl', cnf, vlimit=16, warm_start=False)
+                58651 models in 7.9903s
+                >>> model_count('mpl', cnf, vlimit=16, warm_start=True)
+                58651 models in 0.3951s
         """
 
         if self.solver:
