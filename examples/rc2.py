@@ -275,10 +275,14 @@ class RC2(object):
             :type formula: :class:`.WCNFPlus`
             :type incr: bool
         """
+        # Only set incr kwarg if it's enabled. Some solvers don't take it as an argument
+        kwargs = {}
+        if incr:
+            kwargs["incr"] = True
 
         # creating a solver object
         self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                incr=incr, use_timer=True)
+                use_timer=True, **kwargs)
 
         # adding native cardinality constraints (if any) as hard clauses
         # this can be done only if the Minicard solver is in use
