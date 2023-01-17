@@ -481,6 +481,13 @@ class Solver(object):
             literals. (**Note** that the ``assumptions`` argument is optional
             and disabled by default.)
 
+            **Note** that the method expects the list of assumption literals
+            (if any) to contain **no duplicate literals**. Otherwise, it is
+            not guaranteed to run correctly. As such, a user is recommended to
+            explicitly filter out duplicate literals from the assumptions list
+            before calling :meth:`solve`, :meth:`solve_limited`,
+            :meth:`propagate`, or :meth:`enum_models`.
+
             :param assumptions: a list of assumption literals.
             :type assumptions: iterable(int)
 
@@ -526,6 +533,13 @@ class Solver(object):
             Incremental SAT calls can be made with the use of assumption
             literals. (**Note** that the ``assumptions`` argument is optional
             and disabled by default.)
+
+            **Note** that the method expects the list of assumption literals
+            (if any) to contain **no duplicate literals**. Otherwise, it is
+            not guaranteed to run correctly. As such, a user is recommended to
+            explicitly filter out duplicate literals from the assumptions list
+            before calling :meth:`solve`, :meth:`solve_limited`,
+            :meth:`propagate`, or :meth:`enum_models`.
 
             **Note** that since SIGINT handling and :meth:`interrupt` are not
             configured to work *together* at this point, additional input
@@ -695,6 +709,13 @@ class Solver(object):
             Additionally, a user may specify an optional argument
             ``phase_saving`` (``0`` by default) to enable MiniSat-like phase
             saving.
+
+            **Note** that the method expects the list of assumption literals
+            (if any) to contain **no duplicate literals**. Otherwise, it is
+            not guaranteed to run correctly. As such, a user is recommended to
+            explicitly filter out duplicate literals from the assumptions list
+            before calling :meth:`solve`, :meth:`solve_limited`,
+            :meth:`propagate`, or :meth:`enum_models`.
 
             **Note** that only MiniSat-like solvers support this functionality
             (e.g. :class:`Cadical` and :class:`Lingeling` do not support it).
@@ -974,6 +995,13 @@ class Solver(object):
             it performs as a standard Python iterator. The method can be
             called without arguments but also with an argument
             ``assumptions``, which represents a list of literals to "assume".
+
+            **Note** that the method expects the list of assumption literals
+            (if any) to contain **no duplicate literals**. Otherwise, it is
+            not guaranteed to run correctly. As such, a user is recommended to
+            explicitly filter out duplicate literals from the assumptions list
+            before calling :meth:`solve`, :meth:`solve_limited`,
+            :meth:`propagate`, or :meth:`enum_models`.
 
             .. warning::
 
