@@ -4330,7 +4330,8 @@ class Minicard(object):
         Minicard SAT solver.
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 warm_start=False):
         """
             Basic constructor.
         """
@@ -4645,7 +4646,8 @@ class Minisat22(object):
         MiniSat 2.2 SAT solver.
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 warm_start=False):
         """
             Basic constructor.
         """
@@ -4952,7 +4954,8 @@ class MinisatGH(object):
         MiniSat SAT solver (version from github).
     """
 
-    def __init__(self, bootstrap_with=None, use_timer=False, warm_start=False):
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 warm_start=False):
         """
             Basic constructor.
         """
