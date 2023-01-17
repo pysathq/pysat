@@ -10,6 +10,14 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 17.01.2023 (*0.1.7.dev25*)
+
+-   Fixed a bug related to missing keyword arguments for Minisat22, MinisatGH,
+    and Minicard.
+-   Updated documentation of methods `solve()`, `solve_limited()`,
+    `propagate()`, and `enum_models()` saying that duplicate assumption
+    literals are forbidden.
+
 ## 15.01.2023 (*0.1.7.dev24*)
 
 -   Added warm start mode to MapleCM.
