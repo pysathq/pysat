@@ -6,13 +6,16 @@ build
 _build
 dist
 solvers/cadical
+solvers/gluecard30
+solvers/gluecard41
 solvers/glucose30
 solvers/glucose41
 solvers/lingeling
 solvers/maplechrono
 solvers/maplecm
 solvers/maplesat
+solvers/mergesat3
 solvers/minicard
 solvers/minisat22
 solvers/minisatgh
-
+temp
