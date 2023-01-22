@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 23.01.2023 (*0.1.7.dev26*)
+
+-   Added a few more warning messages for various solvers, related to missing
+    keyword arguments.
+
 ## 17.01.2023 (*0.1.7.dev25*)
 
 -   Fixed a bug related to missing keyword arguments for Minisat22, MinisatGH,
