@@ -1212,13 +1212,16 @@ class Cadical(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
 
         if incr:
             raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
 
         self.cadical = None
         self.status = None
@@ -2817,13 +2820,16 @@ class Lingeling(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
 
         if incr:
             raise NotImplementedError('Incremental mode is not supported by Lingeling.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by Lingeling.')
 
         self.lingeling = None
         self.status = None
@@ -3095,13 +3101,16 @@ class MapleChrono(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-            with_proof=False):
+            with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
 
         if incr:
             raise NotImplementedError('Incremental mode is not supported by MapleChrono.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by MapleChrono.')
 
         self.maplesat = None
         self.status = None
@@ -4359,10 +4368,16 @@ class Minicard(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-                 warm_start=False):
+                 with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
+
+        if incr:
+            raise NotImplementedError('Incremental model is not supported by Minicard.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by Minicard.')
 
         self.minicard = None
         self.status = None
@@ -4675,10 +4690,16 @@ class Minisat22(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-                 warm_start=False):
+                 with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Minisat22.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by Minisat22.')
 
         self.minisat = None
         self.status = None
@@ -4983,10 +5004,16 @@ class MinisatGH(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-                 warm_start=False):
+                 with_proof=False, warm_start=False):
         """
             Basic constructor.
         """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by MinisatGH.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by MinisatGH.')
 
         self.minisat = None
         self.status = None
