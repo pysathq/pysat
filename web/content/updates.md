@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## xx.02.2023 (*0.1.7.dev27*)
+
+-   Fixed the list of auxiliary variables reported as a result of formula
+    negation. Added a list of literals involved in the encoding of clauses.
+
 ## 23.01.2023 (*0.1.7.dev26*)
 
 -   Added a few more warning messages for various solvers, related to missing

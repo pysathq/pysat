@@ -915,6 +915,8 @@ class CNF(object):
             encoded to CNF with the use of *auxiliary* Tseitin variables [1]_.
             A new CNF formula is returned keeping all the newly introduced
             variables that can be accessed through the ``auxvars`` variable.
+            All the literals used to encode the negation of the original
+            clauses can be accessed through the ``enclits`` variable.
 
             **Note** that the negation of each clause is encoded with one
             auxiliary variable if it is not unit size. Otherwise, no auxiliary
@@ -937,6 +939,8 @@ class CNF(object):
                 >>> print(neg.clauses)
                 [[1, -4], [-2, -4], [-1, 2, 4], [4, -3]]
                 >>> print(neg.auxvars)
+                [4]
+                >>> print(neg.enclits)  # literals encoding the negation of clauses
                 [4, -3]
         """
 
@@ -948,6 +952,7 @@ class CNF(object):
 
         negated.clauses = []
         negated.auxvars = []
+        negated.enclits = []
 
         for cl in self.clauses:
             auxv = -cl[0]
@@ -962,10 +967,13 @@ class CNF(object):
                 # opposite implication
                 negated.clauses.append(cl + [auxv])
 
-            # keeping all Tseitin variables
-            negated.auxvars.append(auxv)
+                # keeping all Tseitin variables
+                negated.auxvars.append(auxv)
 
-        negated.clauses.append(negated.auxvars)
+            # literals representing negated clauses
+            negated.enclits.append(auxv)
+
+        negated.clauses.append(negated.enclits)
         return negated
 
 
