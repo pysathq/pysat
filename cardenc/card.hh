@@ -86,7 +86,7 @@ static inline void _encode_atleast(
 		return;
 	else if (rhs == 1)
 		common_encode_atleast1(dest, lhs);  // a single clause
-	else if (rhs == lhs.size())
+	else if ((unsigned)rhs == lhs.size())
 		common_encode_atleastN(dest, lhs);  // all literals must be true
 
 	// general case
