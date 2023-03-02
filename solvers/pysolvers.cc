@@ -17,8 +17,8 @@
 #include <stdio.h>
 #include <vector>
 
-#ifdef WITH_CADICAL
-#include "cadical/cadical.hpp"
+#ifdef WITH_CADICAL103
+#include "cadical103/cadical.hpp"
 #endif
 
 #ifdef WITH_GLUECARD30
@@ -85,7 +85,8 @@ static char      prop_docstring[] = "Propagate a given set of literals.";
 static char    phases_docstring[] = "Set variable polarities.";
 static char   cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char   pbudget_docstring[] = "Set limit on the number of propagations.";
-static char interrupt_docstring[] = "Interrupt SAT solver execution (not supported by lingeling and CaDiCaL).";
+static char interrupt_docstring[] = "Interrupt SAT solver execution "
+				    "(not supported by lingeling and CaDiCaL).";
 static char  clearint_docstring[] = "Clear interrupt indicator flag.";
 static char   setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
 static char   tracepr_docstring[] = "Trace resolution proof.";
@@ -103,17 +104,17 @@ static jmp_buf env;
 // function declaration for functions available in module
 //=============================================================================
 extern "C" {
-#ifdef WITH_CADICAL
-	static PyObject *py_cadical_new       (PyObject *, PyObject *);
-	static PyObject *py_cadical_add_cl    (PyObject *, PyObject *);
-	static PyObject *py_cadical_solve     (PyObject *, PyObject *);
-	static PyObject *py_cadical_tracepr   (PyObject *, PyObject *);
-	static PyObject *py_cadical_core      (PyObject *, PyObject *);
-	static PyObject *py_cadical_model     (PyObject *, PyObject *);
-	static PyObject *py_cadical_nof_vars  (PyObject *, PyObject *);
-	static PyObject *py_cadical_nof_cls   (PyObject *, PyObject *);
-	static PyObject *py_cadical_del       (PyObject *, PyObject *);
-	static PyObject *py_cadical_acc_stats (PyObject *, PyObject *);
+#ifdef WITH_CADICAL103
+	static PyObject *py_cadical103_new       (PyObject *, PyObject *);
+	static PyObject *py_cadical103_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_cadical103_solve     (PyObject *, PyObject *);
+	static PyObject *py_cadical103_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_cadical103_core      (PyObject *, PyObject *);
+	static PyObject *py_cadical103_model     (PyObject *, PyObject *);
+	static PyObject *py_cadical103_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_cadical103_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_cadical103_del       (PyObject *, PyObject *);
+	static PyObject *py_cadical103_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUECARD30
 	static PyObject *py_gluecard3_new       (PyObject *, PyObject *);
@@ -354,17 +355,17 @@ extern "C" {
 // module specification
 //=============================================================================
 static PyMethodDef module_methods[] = {
-#ifdef WITH_CADICAL
-	{ "cadical_new",       py_cadical_new,       METH_VARARGS,      new_docstring },
-	{ "cadical_add_cl",    py_cadical_add_cl,    METH_VARARGS,    addcl_docstring },
-	{ "cadical_solve",     py_cadical_solve,     METH_VARARGS,    solve_docstring },
-	{ "cadical_tracepr",   py_cadical_tracepr,   METH_VARARGS,  tracepr_docstring },
-	{ "cadical_core",      py_cadical_core,      METH_VARARGS,     core_docstring },
-	{ "cadical_model",     py_cadical_model,     METH_VARARGS,    model_docstring },
-	{ "cadical_nof_vars",  py_cadical_nof_vars,  METH_VARARGS,    nvars_docstring },
-	{ "cadical_nof_cls",   py_cadical_nof_cls,   METH_VARARGS,     ncls_docstring },
-	{ "cadical_del",       py_cadical_del,       METH_VARARGS,      del_docstring },
-	{ "cadical_acc_stats", py_cadical_acc_stats, METH_VARARGS, acc_stat_docstring },
+#ifdef WITH_CADICAL103
+	{ "cadical103_new",       py_cadical103_new,       METH_VARARGS,      new_docstring },
+	{ "cadical103_add_cl",    py_cadical103_add_cl,    METH_VARARGS,    addcl_docstring },
+	{ "cadical103_solve",     py_cadical103_solve,     METH_VARARGS,    solve_docstring },
+	{ "cadical103_tracepr",   py_cadical103_tracepr,   METH_VARARGS,  tracepr_docstring },
+	{ "cadical103_core",      py_cadical103_core,      METH_VARARGS,     core_docstring },
+	{ "cadical103_model",     py_cadical103_model,     METH_VARARGS,    model_docstring },
+	{ "cadical103_nof_vars",  py_cadical103_nof_vars,  METH_VARARGS,    nvars_docstring },
+	{ "cadical103_nof_cls",   py_cadical103_nof_cls,   METH_VARARGS,     ncls_docstring },
+	{ "cadical103_del",       py_cadical103_del,       METH_VARARGS,      del_docstring },
+	{ "cadical103_acc_stats", py_cadical103_acc_stats, METH_VARARGS, acc_stat_docstring },
 #endif
 #ifdef WITH_GLUECARD30
 	{ "gluecard3_new",       py_gluecard3_new,       METH_VARARGS,       new_docstring },
@@ -771,12 +772,12 @@ static bool pyiter_to_vector(PyObject *obj, vector<int>& vect, int& max_var)
 	return true;
 }
 
-// API for CaDiCaL
+// API for CaDiCaL 1.0.3
 //=============================================================================
-#ifdef WITH_CADICAL
-static PyObject *py_cadical_new(PyObject *self, PyObject *args)
+#ifdef WITH_CADICAL103
+static PyObject *py_cadical103_new(PyObject *self, PyObject *args)
 {
-	CaDiCaL::Solver *s = new CaDiCaL::Solver;
+	CaDiCaL103::Solver *s = new CaDiCaL103::Solver;
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -789,7 +790,7 @@ static PyObject *py_cadical_new(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_add_cl(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *c_obj;
@@ -798,7 +799,7 @@ static PyObject *py_cadical_add_cl(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	// clause iterator
 	PyObject *i_obj = PyObject_GetIter(c_obj);
@@ -838,7 +839,7 @@ static PyObject *py_cadical_add_cl(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_tracepr(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_tracepr(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *p_obj;
@@ -848,12 +849,12 @@ static PyObject *py_cadical_tracepr(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 #if PY_MAJOR_VERSION < 3
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCObject_AsVoidPtr(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCObject_AsVoidPtr(s_obj);
 
 	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 
 	int fd = PyObject_AsFileDescriptor(p_obj);
 	if (fd == -1) {
@@ -878,7 +879,7 @@ static PyObject *py_cadical_tracepr(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_solve(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_solve(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
@@ -888,7 +889,7 @@ static PyObject *py_cadical_solve(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	// assumptions iterator
 	PyObject *i_obj = PyObject_GetIter(a_obj);
@@ -942,7 +943,7 @@ static PyObject *py_cadical_solve(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_core(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_core(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *a_obj;  // assumptions
@@ -951,7 +952,7 @@ static PyObject *py_cadical_core(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	int size = (int)PyList_Size(a_obj);
 
@@ -982,7 +983,7 @@ static PyObject *py_cadical_core(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_model(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_model(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 
@@ -990,7 +991,7 @@ static PyObject *py_cadical_model(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	int maxvar = s->vars();
 	if (maxvar) {
@@ -1012,7 +1013,7 @@ static PyObject *py_cadical_model(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_nof_vars(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_nof_vars(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 
@@ -1020,7 +1021,7 @@ static PyObject *py_cadical_nof_vars(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	int nof_vars = s->vars();
 
@@ -1030,7 +1031,7 @@ static PyObject *py_cadical_nof_vars(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_nof_cls(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_nof_cls(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 
@@ -1038,7 +1039,7 @@ static PyObject *py_cadical_nof_cls(PyObject *self, PyObject *args)
 		return NULL;
 
 	// get pointer to solver
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)pyobj_to_void(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
 
 	int nof_cls = s->irredundant() + s->redundant();
 
@@ -1048,7 +1049,7 @@ static PyObject *py_cadical_nof_cls(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_del(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_del(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *p_obj;
@@ -1058,12 +1059,12 @@ static PyObject *py_cadical_del(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 #if PY_MAJOR_VERSION < 3
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCObject_AsVoidPtr(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCObject_AsVoidPtr(s_obj);
 
 	if (p_obj != Py_None)
 		PyFile_DecUseCount((PyFileObject *)p_obj);
 #else
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 
 	if (p_obj != Py_None)
 		Py_DECREF(p_obj);
@@ -1075,7 +1076,7 @@ static PyObject *py_cadical_del(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
+static PyObject *py_cadical103_acc_stats(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 
@@ -1084,9 +1085,9 @@ static PyObject *py_cadical_acc_stats(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 #if PY_MAJOR_VERSION < 3
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCObject_AsVoidPtr(s_obj);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCObject_AsVoidPtr(s_obj);
 #else
-	CaDiCaL::Solver *s = (CaDiCaL::Solver *)PyCapsule_GetPointer(s_obj, NULL);
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 #endif
 
 	return Py_BuildValue("{s:n,s:n,s:n,s:n}",

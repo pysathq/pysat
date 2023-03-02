@@ -28,9 +28,9 @@ except ImportError:  # Python 3
 #
 #==============================================================================
 sources = {
-    'cadical': (
+    'cadical103': (
         'https://github.com/arminbiere/cadical/archive/rel-1.0.3.tar.gz',
-        'solvers/cadical.tar.gz'
+        'solvers/cadical103.tar.gz'
     ),
     'gluecard30': (
         'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-3.0.tgz',
@@ -87,7 +87,7 @@ sources = {
 #
 #==============================================================================
 to_extract = {
-    'cadical': [],
+    'cadical103': [],
     'gluecard30': [],
     'gluecard41': [],
     'glucose30': [],
@@ -105,7 +105,7 @@ to_extract = {
 #
 #==============================================================================
 to_move = {
-    'cadical': [
+    'cadical103': [
         ('scripts/get-git-id.sh', 'get-git-id.sh'),
         ('scripts/make-build-header.sh', 'make-build-header.sh'),
         ('src/analyze.cpp', 'analyze.cpp'),
@@ -271,7 +271,7 @@ to_move = {
 #
 #==============================================================================
 to_remove = {
-    'cadical': [
+    'cadical103': [
         '.gitignore',
         '.travis.yml',
         'BUILD.md',

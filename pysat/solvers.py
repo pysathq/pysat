@@ -18,7 +18,7 @@
 
         SolverNames
         Solver
-        Cadical
+        Cadical103
         Gluecard3
         Gluecard4
         Glucose3
@@ -68,7 +68,7 @@
         solving*. Electr. Notes Theor. Comput. Sci. 89(4). 2003. pp. 543-560
 
     The module provides direct access to all supported solvers using the
-    corresponding classes :class:`Cadical`, :class:`Gluecard3`,
+    corresponding classes :class:`Cadical103`, :class:`Gluecard3`,
     :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
     :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
     :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
@@ -137,7 +137,7 @@
         [3, 1]
 
     In order to shorten the description of the module, the classes providing
-    direct access to the individual solvers, i.e. classes :class:`Cadical`,
+    direct access to the individual solvers, i.e. classes :class:`Cadical103`,
     :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
     :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
     :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
@@ -170,7 +170,7 @@ class NoSuchSolverError(Exception):
     """
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
-        solvers includes the names `'cadical'`, `'gluecard3'`, `'gluecard4'`,
+        solvers includes the names `'cadical103'`, `'gluecard3'`, `'gluecard4'`,
         `'glucose3'`, `'glucose4'`, `'lingeling'`, `'maplechrono'`,
         `'maplecm'`, `'maplesat'`, `'mergesat3'`, `'minicard'`, `'minisat22'`,
         and `'minisatgh'`.
@@ -189,7 +189,7 @@ class SolverNames(object):
 
         .. code-block:: python
 
-            cadical     = ('cd', 'cdl', 'cadical')
+            cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
             gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
             gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
@@ -209,7 +209,7 @@ class SolverNames(object):
         are also allowed*.
     """
 
-    cadical     = ('cd', 'cdl', 'cadical')
+    cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
     gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
@@ -282,7 +282,7 @@ class Solver(object):
 
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
-        :class:`Cadical`, :class:`Lingeling`, :class:`Gluecard3`,
+        :class:`Cadical103`, :class:`Lingeling`, :class:`Gluecard3`,
         :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
         :class:`MapleChrono`, :class:`MapleCM`, and :class:`Maplesat` can have
         additional default arguments. One such argument supported by is `DRUP
@@ -372,8 +372,8 @@ class Solver(object):
 
         if not self.solver:
             name_ = name.lower()
-            if name_ in SolverNames.cadical:
-                self.solver = Cadical(bootstrap_with, use_timer, **kwargs)
+            if name_ in SolverNames.cadical103:
+                self.solver = Cadical103(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.gluecard3:
                 self.solver = Gluecard3(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.gluecard4:
@@ -528,7 +528,7 @@ class Solver(object):
             ``False``.
 
             **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Cadical` and :class:`Lingeling` do not support it).
+            (e.g. :class:`Cadical103` and :class:`Lingeling` do not support it).
 
             Incremental SAT calls can be made with the use of assumption
             literals. (**Note** that the ``assumptions`` argument is optional
@@ -718,7 +718,7 @@ class Solver(object):
             :meth:`propagate`, or :meth:`enum_models`.
 
             **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Cadical` and :class:`Lingeling` do not support it).
+            (e.g. :class:`Cadical103` and :class:`Lingeling` do not support it).
 
             :param assumptions: a list of assumption literals.
             :param phase_saving: enable phase saving (can be ``0``, ``1``, and
@@ -768,7 +768,7 @@ class Solver(object):
             :class:`Minicard` can redefine the preferences in any of the
             following SAT calls due to the phase saving heuristic.
 
-            Also **note** that :class:`Cadical` does not support this
+            Also **note** that :class:`Cadical103` does not support this
             functionality.
 
             :param literals: a list of literals.
@@ -1206,9 +1206,9 @@ class Solver(object):
 
 #
 #==============================================================================
-class Cadical(object):
+class Cadical103(object):
     """
-        CaDiCaL SAT solver.
+        CaDiCaL 1.0.3 SAT solver.
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
@@ -1250,11 +1250,11 @@ class Cadical(object):
         """
 
         if not self.cadical:
-            self.cadical = pysolvers.cadical_new()
+            self.cadical = pysolvers.cadical103_new()
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.cadical_tracepr(self.cadical, self.prfile)
+                pysolvers.cadical103_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -1273,7 +1273,7 @@ class Cadical(object):
         """
 
         if self.cadical:
-            pysolvers.cadical_del(self.cadical, self.prfile)
+            pysolvers.cadical103_del(self.cadical, self.prfile)
             self.cadical = None
 
             if self.prfile:
@@ -1288,7 +1288,7 @@ class Cadical(object):
             if self.use_timer:
                 start_time = process_time()
 
-            self.status = pysolvers.cadical_solve(self.cadical, assumptions,
+            self.status = pysolvers.cadical103_solve(self.cadical, assumptions,
                     int(MainThread.check()))
 
             if self.use_timer:
@@ -1369,7 +1369,7 @@ class Cadical(object):
         """
 
         if self.cadical and self.status == True:
-            model = pysolvers.cadical_model(self.cadical)
+            model = pysolvers.cadical103_model(self.cadical)
             return model if model != None else []
 
     def get_core(self):
@@ -1379,7 +1379,7 @@ class Cadical(object):
         """
 
         if self.cadical and self.status == False:
-            return pysolvers.cadical_core(self.cadical, self.prev_assumps)
+            return pysolvers.cadical103_core(self.cadical, self.prev_assumps)
 
     def get_proof(self):
         """
@@ -1414,7 +1414,7 @@ class Cadical(object):
         """
 
         if self.cadical:
-            return pysolvers.cadical_nof_vars(self.cadical)
+            return pysolvers.cadical103_nof_vars(self.cadical)
 
     def nof_clauses(self):
         """
@@ -1422,7 +1422,7 @@ class Cadical(object):
         """
 
         if self.cadical:
-            return pysolvers.cadical_nof_cls(self.cadical)
+            return pysolvers.cadical103_nof_cls(self.cadical)
 
     def accum_stats(self):
         """
@@ -1431,7 +1431,7 @@ class Cadical(object):
         """
 
         if self.cadical:
-            return pysolvers.cadical_acc_stats(self.cadical)
+            return pysolvers.cadical103_acc_stats(self.cadical)
 
     def enum_models(self, assumptions=[]):
         """
@@ -1456,7 +1456,7 @@ class Cadical(object):
         """
 
         if self.cadical:
-            res = pysolvers.cadical_add_cl(self.cadical, clause)
+            res = pysolvers.cadical103_add_cl(self.cadical, clause)
 
             if res == False:
                 self.status = False
