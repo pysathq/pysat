@@ -5,7 +5,8 @@
 build
 _build
 dist
-solvers/cadical
+solvers/cadical103
+solvers/cadical153
 solvers/gluecard30
 solvers/gluecard41
 solvers/glucose30
