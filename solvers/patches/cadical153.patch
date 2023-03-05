@@ -1552,7 +1552,7 @@ diff -Naur solvers/cadical153/radix.hpp solvers/cdc153/radix.hpp
  
 diff -Naur solvers/cadical153/random.cpp solvers/cdc153/random.cpp
 --- solvers/cadical153/random.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/random.cpp	2023-03-03 21:46:11
++++ solvers/cdc153/random.cpp	2023-03-05 18:33:50
 @@ -44,7 +44,7 @@
  // does not have any effect.  TODO: add a similar machine identity hashing
  // function for other operating systems (Windows and macOS).
@@ -1562,6 +1562,15 @@ diff -Naur solvers/cadical153/random.cpp solvers/cdc153/random.cpp
  
  static uint64_t hash_machine_identifier () {
    FILE * file = fopen ("/var/lib/dbus/machine-id", "r");
+@@ -76,7 +76,7 @@
+ // work.  As an additional measure to increase the possibility to get
+ // different seeds we are now also using network addresses (explicitly).
+ 
+-#ifndef __WIN32
++#ifndef _MSC_VER
+ 
+ extern "C" {
+ #include <sys/socket.h>
 @@ -88,7 +88,7 @@
  
  #endif
@@ -1571,6 +1580,15 @@ diff -Naur solvers/cadical153/random.cpp solvers/cdc153/random.cpp
  
  static uint64_t hash_network_addresses () {
    uint64_t res = 0;
+@@ -99,7 +99,7 @@
+ // you really need to run 'mobical' on a Windows cluster where each node has
+ // identical IP addresses.
+ 
+-#ifndef __WIN32
++#ifndef _MSC_VER
+   struct ifaddrs * addrs;
+   if (!getifaddrs (&addrs)) {
+     for (struct ifaddrs * addr = addrs; addr; addr = addr->ifa_next) {
 @@ -138,7 +138,7 @@
  #include <time.h>
  }
