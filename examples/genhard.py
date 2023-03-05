@@ -163,7 +163,7 @@ class PHP(CNF, object):
         :type topv: int
         :type verb: bool
 
-        :returns: object of class :class:`pysat.formula.CNF`.
+        :return: object of class :class:`pysat.formula.CNF`.
     """
 
     def __init__(self, nof_holes, kval=1, topv=0, verb=False):
@@ -230,7 +230,7 @@ class GT(CNF, object):
         :type topv: int
         :type verb: bool
 
-        :returns: object of class :class:`pysat.formula.CNF`.
+        :return: object of class :class:`pysat.formula.CNF`.
     """
 
     def __init__(self, size, topv=0, verb=False):
@@ -311,7 +311,7 @@ class CB(CNF, object):
         :type topv: int
         :type verb: bool
 
-        :returns: object of class :class:`pysat.formula.CNF`.
+        :return: object of class :class:`pysat.formula.CNF`.
     """
 
     def __init__(self, size, exhaustive=False, topv=0, verb=False):
@@ -402,7 +402,7 @@ class PAR(CNF, object):
         :type topv: int
         :type verb: bool
 
-        :returns: object of class :class:`pysat.formula.CNF`.
+        :return: object of class :class:`pysat.formula.CNF`.
     """
 
     def __init__(self, size, topv=0, verb=False):

@@ -1602,6 +1602,33 @@ class Cadical153(object):
             self.prev_assumps = assumptions
             return self.status
 
+    def process(self, rounds=1, block=False, cover=False, condition=False,
+                decompose=True, elim=True, probe=True, probehbr=True,
+                subsume=True, vivify=True):
+        """
+            Apply the preprocessor for the internal formula. See the
+            documentation for the ``process`` module for details.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical153_process(self.cadical, rounds,
+                                                int(block), int(cover),
+                                                int(condition),
+                                                int(decompose), int(elim),
+                                                int(probe), int(probehbr),
+                                                int(subsume), int(vivify),
+                                                int(MainThread.check()))
+
+    def restore(self, model):
+        """
+            Given a model for the processed formula, reconstruct a model for
+            the original formula. See the documentation for the ``process``
+            module for details.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical153_restore(self.cadical, model)
+
     def start_mode(self, warm=False):
         """
             Set start mode: either warm or standard.

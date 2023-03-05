@@ -27,6 +27,7 @@ Core PySAT modules
     api/card
     api/formula
     api/pb
+    api/process
     api/solvers
 
 Supplementary :mod:`.examples` package

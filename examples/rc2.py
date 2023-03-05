@@ -441,7 +441,7 @@ class RC2(object):
             can enumerate top-:math:`k` MaxSAT solutions (this can
             also be done by calling :meth:`enumerate()`).
 
-            :returns: a MaxSAT model
+            :return: a MaxSAT model
             :rtype: list(int)
 
             .. code-block:: python
@@ -501,7 +501,7 @@ class RC2(object):
             :param block: preferred way to block solutions when enumerating
             :type block: int
 
-            :returns: a MaxSAT model
+            :return: a MaxSAT model
             :rtype: list(int)
 
             .. code-block:: python

@@ -87,7 +87,7 @@ static char     solve_docstring[] = "Solve a given CNF instance.";
 static char       lim_docstring[] = "Solve a given CNF instance within a budget.";
 static char   process_docstring[] = "(Pre)process a given CNF formula using "
                                     "the CaDiCaL 1.5.3 preprocessor";
-static char    extend_docstring[] = "Reconstruct the model to a CNF formula "
+static char   restore_docstring[] = "Reconstruct the model to a CNF formula "
                                     "from the model for its processed version";
 static char      prop_docstring[] = "Propagate a given set of literals.";
 static char    phases_docstring[] = "Set variable polarities.";
@@ -128,7 +128,7 @@ extern "C" {
 	static PyObject *py_cadical153_new       (PyObject *, PyObject *);
 	static PyObject *py_cadical153_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_cadical153_process   (PyObject *, PyObject *);
-	static PyObject *py_cadical153_extend    (PyObject *, PyObject *);
+	static PyObject *py_cadical153_restore   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve     (PyObject *, PyObject *);
 	static PyObject *py_cadical153_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_core      (PyObject *, PyObject *);
@@ -394,7 +394,7 @@ static PyMethodDef module_methods[] = {
 	{ "cadical153_add_cl",    py_cadical153_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical153_solve",     py_cadical153_solve,     METH_VARARGS,    solve_docstring },
 	{ "cadical153_process",   py_cadical153_process,   METH_VARARGS,  process_docstring },
-	{ "cadical153_extend",    py_cadical153_extend,    METH_VARARGS,   extend_docstring },
+	{ "cadical153_restore",   py_cadical153_restore,   METH_VARARGS,  restore_docstring },
 	{ "cadical153_tracepr",   py_cadical153_tracepr,   METH_VARARGS,  tracepr_docstring },
 	{ "cadical153_core",      py_cadical153_core,      METH_VARARGS,     core_docstring },
 	{ "cadical153_model",     py_cadical153_model,     METH_VARARGS,    model_docstring },
@@ -1246,29 +1246,37 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	int rounds;
-	int elim;
-	int probehbr;
-	int decompose;
-	int probe;
+	int block;
+	int cover;
 	int condition;
+	int decompose;
+	int elim;
+	int probe;
+	int probehbr;
+	int subsume;
+	int vivify;
 	int main_thread;
 
-	if (!PyArg_ParseTuple(args, "Oiiiiii", &s_obj, &rounds, &elim,
-				&probehbr, &decompose, &probe, &condition,
-				&main_thread))
-		return NULL;
+        if (!PyArg_ParseTuple(args, "Oiiiiiiiiiii", &s_obj, &rounds, &block,
+                              &cover, &condition, &decompose, &elim, &probe,
+                              &probehbr, &subsume, &vivify, &main_thread))
+          return NULL;
 
-	// get pointer to solver
+        // get pointer to solver
 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
 
 	// set the options
 	CaDiCaL153::State temp = s->state();
 	s->set_state(CaDiCaL153::State::CONFIGURING); // temporarily set state to configuring to enable option setting
-	s->set("elim", elim);
-	s->set("probehbr", probehbr);
-	s->set("decompose", decompose);
-	s->set("probe", probe);
+	s->set("block",     block    );
+	s->set("cover",     cover    );
 	s->set("condition", condition);
+	s->set("decompose", decompose);
+	s->set("elim",      elim     );
+	s->set("probe",     probe    );
+	s->set("probehbr",  probehbr );
+	s->set("subsume",   subsume  );
+	s->set("vivify",    vivify   );
 	s->set_state(temp);
 
 	PyOS_sighandler_t sig_save;
@@ -1301,20 +1309,14 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 		PyList_SetItem(dest_obj, i, cl_obj);
 	}
 
-	if (dest.size()) {
-		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)st, dest_obj);
-		Py_DECREF(dest_obj);
-		return ret;
-	}
-	else {
-		Py_DECREF(dest_obj);
-		Py_RETURN_NONE;
-	}
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)st, dest_obj);
+	Py_DECREF(dest_obj);
+	return ret;
 }
 
 //
 //=============================================================================
-static PyObject *py_cadical153_extend(PyObject *self, PyObject *args)
+static PyObject *py_cadical153_restore(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;  // solver
 	PyObject *m_obj;  // model for the processed formula
