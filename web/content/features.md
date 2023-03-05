@@ -101,3 +101,9 @@ Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
 [^14]: Norbert Manthey, Tobias Philipp, Peter Steinke. *A More Compact
     Translation of Pseudo-Boolean Constraints into CNF Such That Generalized
     Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
+
+Finally, PySAT now provides (pre-)processing functionality[^15] by exposing an
+interface to CaDiCaL's (version 1.5.3) preprocessor.
+
+[^15]: Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+     Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435

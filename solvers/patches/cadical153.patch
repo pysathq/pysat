@@ -275,7 +275,7 @@ diff -Naur solvers/cadical153/cadical.cpp solvers/cdc153/cadical.cpp
  }
 diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
 --- solvers/cadical153/cadical.hpp	2023-02-13 20:11:26
-+++ solvers/cdc153/cadical.hpp	2023-03-03 22:23:20
++++ solvers/cdc153/cadical.hpp	2023-03-05 17:47:32
 @@ -1,12 +1,14 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
@@ -324,6 +324,18 @@ diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
 +  void get_dimacs(vector<vector<int>>& dest);
  
    // The extension stack for reconstruction a solution can be written too.
+   //
+@@ -816,8 +827,9 @@
+   //
+   // TODO: support for other compilers (beside 'gcc' and 'clang').
+ 
+-# define CADICAL_ATTRIBUTE_FORMAT(FORMAT_POSITION,VARIADIC_ARGUMENT_POSITION) \
+-    __attribute__ ((format (PRINTF_FORMAT, FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION)))
++/* # define CADICAL_ATTRIBUTE_FORMAT(FORMAT_POSITION,VARIADIC_ARGUMENT_POSITION) \ */
++/*     __attribute__ ((format (PRINTF_FORMAT, FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION))) */
++# define CADICAL_ATTRIBUTE_FORMAT(FORMAT_POSITION,VARIADIC_ARGUMENT_POSITION) ;
+ 
+   // Messages in a common style.
    //
 diff -Naur solvers/cadical153/ccadical.cpp solvers/cdc153/ccadical.cpp
 --- solvers/cadical153/ccadical.cpp	2023-02-13 20:11:26

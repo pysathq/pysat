@@ -126,6 +126,12 @@ Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
     Translation of Pseudo-Boolean Constraints into CNF Such That
     Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
+Finally, PySAT now provides (pre-)processing functionality [22]_ by exposing
+an interface to CaDiCaL's (version 1.5.3) preprocessor.
+
+ .. [22] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+     Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
+
 Usage
 -----
 
@@ -342,8 +348,6 @@ features were implemented:
    <https://github.com/msoos/cryptominisat/>`__, `RISS
    <http://tools.computational-logic.org/content/riss.php>`__ among many
    others)
-
--  formula *(pre-)processing*
 
 -  lower level access to some of the solvers' internal parameters
    (e.g. *variable activities*, etc.)
