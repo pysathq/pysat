@@ -10,6 +10,12 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 05.03.2023 (*0.1.8.dev1*)
+
+-   Added CaDiCaL 1.5.3 (thanks to Christos Karamanos).
+-   Added the ``process`` module (thanks to Christos Karamanos).
+-   Added a build for Python 3.11 on Win64.
+
 ## xx.02.2023 (*0.1.7.dev27*)
 
 -   Fixed the list of auxiliary variables reported as a result of formula
