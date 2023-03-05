@@ -1488,7 +1488,7 @@ diff -Naur solvers/cadical153/proof.hpp solvers/cdc153/proof.hpp
  
 diff -Naur solvers/cadical153/propagate.cpp solvers/cdc153/propagate.cpp
 --- solvers/cadical153/propagate.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/propagate.cpp	2023-03-03 21:46:11
++++ solvers/cdc153/propagate.cpp	2023-03-05 18:23:39
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1497,6 +1497,16 @@ diff -Naur solvers/cadical153/propagate.cpp solvers/cdc153/propagate.cpp
  
  /*------------------------------------------------------------------------*/
  
+@@ -86,7 +86,9 @@
+     const Watches & ws = watches (-lit);
+     if (!ws.empty ()) {
+       const Watch & w = ws[0];
++#ifndef _MSC_VER
+       __builtin_prefetch (&w, 0, 1);
++#endif
+     }
+   }
+ }
 diff -Naur solvers/cadical153/queue.cpp solvers/cdc153/queue.cpp
 --- solvers/cadical153/queue.cpp	2023-02-13 20:11:26
 +++ solvers/cdc153/queue.cpp	2023-03-03 21:46:11
@@ -1623,6 +1633,27 @@ diff -Naur solvers/cadical153/range.hpp solvers/cdc153/range.hpp
  
  struct Clause;
  
+diff -Naur solvers/cadical153/reap.cpp solvers/cdc153/reap.cpp
+--- solvers/cadical153/reap.cpp	2023-02-13 20:11:26
++++ solvers/cdc153/reap.cpp	2023-03-05 18:21:28
+@@ -26,10 +26,16 @@
+   max_bucket = 0;
+ }
+ 
+-
++#ifndef _MSC_VER
+ static inline unsigned leading_zeroes_of_unsigned(unsigned x) {
+   return x ? __builtin_clz(x) : sizeof(unsigned) * 8;
+ }
++#else
++#include <intrin.h>
++static inline unsigned leading_zeroes_of_unsigned(unsigned x) {
++  return x ? __lzcnt(x) : sizeof(unsigned) * 8;
++}
++#endif
+ 
+ void Reap::push(unsigned e)
+ {
 diff -Naur solvers/cadical153/reap.hpp solvers/cdc153/reap.hpp
 --- solvers/cadical153/reap.hpp	2023-02-13 20:11:26
 +++ solvers/cdc153/reap.hpp	2023-03-03 22:23:20
