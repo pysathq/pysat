@@ -1732,7 +1732,16 @@ diff -Naur solvers/cadical153/report.cpp solvers/cdc153/report.cpp
  
 diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
 --- solvers/cadical153/resources.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/resources.cpp	2023-03-03 21:46:11
++++ solvers/cdc153/resources.cpp	2023-03-05 18:49:15
+@@ -8,7 +8,7 @@
+ 
+ extern "C" {
+ 
+-#ifdef __WIN32
++#ifdef _MSC_VER
+ 
+ #ifndef __WIN32_WINNT
+ #define __WIN32_WINNT 0x0600
 @@ -18,9 +18,15 @@
  #include <psapi.h>
  
@@ -1750,7 +1759,7 @@ diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
  #include <sys/types.h>
  #include <unistd.h>
  
-@@ -29,10 +35,43 @@
+@@ -29,12 +35,45 @@
  #include <string.h>
  }
  
@@ -1759,9 +1768,10 @@ diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
  
  /*------------------------------------------------------------------------*/
  
+-#ifdef __WIN32
 +#ifdef _MSC_VER
 +#define WIN32_LEAN_AND_MEAN
-+
+ 
 +#include <stdint.h> // portable: uint64_t   MSVC: __int64
 +
 +// MSVC defines this in winsock2.h!?
@@ -1792,9 +1802,11 @@ diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
 +}
 +#endif
 +
- #ifdef __WIN32
- 
++#ifdef _MSC_VER
++
  double absolute_real_time () {
+   FILETIME f;
+   GetSystemTimeAsFileTime(&f);
 @@ -74,12 +113,28 @@
  // etc.  For different variants of Unix not all fields are meaningful.
  
@@ -1824,7 +1836,28 @@ diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
  }
  
  #endif
-@@ -128,6 +183,7 @@
+@@ -115,9 +170,20 @@
+ // This seems to work on Linux (man page says since Linux 2.6.32).
+ 
+ uint64_t maximum_resident_set_size () {
++#ifndef _MSC_VER
+   struct rusage u;
+   if (getrusage (RUSAGE_SELF, &u)) return 0;
+   return ((uint64_t) u.ru_maxrss) << 10;
++#else
++HANDLE hProcess;
++PROCESS_MEMORY_COUNTERS processMemoryCounters;
++
++hProcess=GetCurrentProcess();
++if (GetProcessMemoryInfo(hProcess,  &processMemoryCounters, sizeof(processMemoryCounters))) {
++    return processMemoryCounters.PeakWorkingSetSize;
++    }
++return 0;
++#endif
+ }
+ 
+ // Unfortunately 'getrusage' on Linux does not support current resident set
+@@ -128,6 +194,7 @@
  // '_SC_PAGESIZE' are available).
  
  uint64_t current_resident_set_size () {
@@ -1832,7 +1865,7 @@ diff -Naur solvers/cadical153/resources.cpp solvers/cdc153/resources.cpp
    char path[40];
    sprintf (path, "/proc/%" PRId64 "/statm", (int64_t) getpid ());
    FILE * file = fopen (path, "r");
-@@ -136,6 +192,16 @@
+@@ -136,6 +203,16 @@
    int scanned = fscanf (file, "%" PRIu64 " %" PRIu64 "", &dummy, &rss);
    fclose (file);
    return scanned == 2 ? rss * sysconf (_SC_PAGESIZE) : 0;
