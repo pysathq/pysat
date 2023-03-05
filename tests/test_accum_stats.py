@@ -1,7 +1,8 @@
 from pysat.solvers import Solver
 from pysat.formula import CNF
 
-solvers = ['cadical',
+solvers = ['cadical103',
+           'cadical153',
            'gluecard30',
            'gluecard41',
            'glucose30',
