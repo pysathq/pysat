@@ -245,7 +245,6 @@ to_move = {
         ('src/bins.hpp', 'bins.hpp'),
         ('src/block.cpp', 'block.cpp'),
         ('src/block.hpp', 'block.hpp'),
-        ('src/cadical.cpp', 'cadical.cpp'),
         ('src/cadical.hpp', 'cadical.hpp'),
         ('src/ccadical.cpp', 'ccadical.cpp'),
         ('src/ccadical.h', 'ccadical.h'),

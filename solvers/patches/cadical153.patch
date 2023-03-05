@@ -1,6 +1,6 @@
 diff -Naur solvers/cadical153/Makefile solvers/cdc153/Makefile
 --- solvers/cadical153/Makefile	1970-01-01 10:00:00
-+++ solvers/cdc153/Makefile	2023-03-03 21:46:11
++++ solvers/cdc153/Makefile	2023-03-05 18:06:11
 @@ -0,0 +1,42 @@
 +### Makefile ---
 +
@@ -15,7 +15,7 @@ diff -Naur solvers/cadical153/Makefile solvers/cdc153/Makefile
 +CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
 +INCLUDES := -I.
 +LIBS     := -L.
-+SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backtrack.cpp backward.cpp bins.cpp block.cpp cadical.cpp ccadical.cpp checker.cpp clause.cpp collect.cpp compact.cpp condition.cpp config.cpp constrain.cpp contract.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp elim.cpp ema.cpp extend.cpp external.cpp file0.cpp flags.cpp format.cpp gates.cpp instantiate.cpp internal.cpp ipasir.cpp limit.cpp logging.cpp lookahead.cpp lucky.cpp message.cpp minimize.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reap.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp shrink.cpp signal.cpp solution.cpp solver.cpp stats.cpp subsume.cpp terminal.cpp ternary.cpp tracer.cpp transred.cpp util.cpp var.cpp version.cpp vivify.cpp walk.cpp watch.cpp
++SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backtrack.cpp backward.cpp bins.cpp block.cpp ccadical.cpp checker.cpp clause.cpp collect.cpp compact.cpp condition.cpp config.cpp constrain.cpp contract.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp elim.cpp ema.cpp extend.cpp external.cpp file0.cpp flags.cpp format.cpp gates.cpp instantiate.cpp internal.cpp ipasir.cpp limit.cpp logging.cpp lookahead.cpp lucky.cpp message.cpp minimize.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reap.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp shrink.cpp signal.cpp solution.cpp solver.cpp stats.cpp subsume.cpp terminal.cpp ternary.cpp tracer.cpp transred.cpp util.cpp var.cpp version.cpp vivify.cpp walk.cpp watch.cpp
 +OBJECTS  := $(SOURCES:.cpp=.o)
 +TRGT     := cadical153
 +
@@ -44,7 +44,6 @@ diff -Naur solvers/cadical153/Makefile solvers/cdc153/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-\ No newline at end of file
 diff -Naur solvers/cadical153/NEWS.md.orig solvers/cdc153/NEWS.md.orig
 --- solvers/cadical153/NEWS.md.orig	1970-01-01 10:00:00
 +++ solvers/cdc153/NEWS.md.orig	2023-03-03 21:46:11
@@ -225,54 +224,6 @@ diff -Naur solvers/cadical153/build.hpp solvers/cdc153/build.hpp
 +#define IDENTIFIER "93cea3a86d42697a35af7ea477ef5214332f059f"
 +#define DATE "Thu Jul 11 10:16:56 WEST 2019 Darwin antares.local 18.6.0 x86_64"
 \ No newline at end of file
-diff -Naur solvers/cadical153/cadical.cpp solvers/cdc153/cadical.cpp
---- solvers/cadical153/cadical.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/cadical.cpp	2023-03-03 21:50:44
-@@ -7,7 +7,7 @@
- 
- /*------------------------------------------------------------------------*/
- 
--namespace CaDiCaL {
-+namespace CaDiCaL153 {
- 
- // A wrapper app which makes up the CaDiCaL stand alone solver.  It in
- // essence only consists of the 'App::main' function.  So this class
-@@ -317,7 +317,7 @@
-       print_usage (true);
-       return 0;
-     } else if (!strcmp (arg, "--version")) {
--      printf ("%s\n", CaDiCaL::version ());
-+      printf ("%s\n", CaDiCaL153::version ());
-       return 0;
-     } else if (!strcmp (arg, "--build")) {
-       tout.disable ();
-@@ -559,7 +559,7 @@
-     solver->message ("%s%s%s",
-       tout.bright_magenta_code (), copyright (), tout.normal_code ());
-     solver->message ();
--    CaDiCaL::Solver::build (stdout, "c ");
-+    CaDiCaL153::Solver::build (stdout, "c ");
-   }
- #endif
-   if (preprocessing > 0 || localsearch > 0 ||
-@@ -862,7 +862,7 @@
-   // library usage it should remain 'false'.  See the explanation in
-   // 'options.hpp' related to 'reportdefault' for details.
- 
--  CaDiCaL::Options::reportdefault = 1;
-+  CaDiCaL153::Options::reportdefault = 1;
-   solver = new Solver ();
-   Signal::set (this);
- }
-@@ -929,7 +929,7 @@
- // options table 'Options::table'.  All are shared among solvers.
- 
- int main (int argc, char ** argv) {
--  CaDiCaL::App app;
-+  CaDiCaL153::App app;
-   int res = app.main (argc, argv);
-   return res;
- }
 diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
 --- solvers/cadical153/cadical.hpp	2023-02-13 20:11:26
 +++ solvers/cdc153/cadical.hpp	2023-03-05 17:47:32
