@@ -894,7 +894,7 @@ diff -Naur solvers/cadical153/logging.hpp solvers/cdc153/logging.hpp
  // there is a logging facility which is compiled in by './configure -l'.  It
 diff -Naur solvers/cadical153/lookahead.cpp solvers/cdc153/lookahead.cpp
 --- solvers/cadical153/lookahead.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/lookahead.cpp	2023-03-03 21:46:11
++++ solvers/cdc153/lookahead.cpp	2023-03-06 12:41:03
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -903,6 +903,15 @@ diff -Naur solvers/cadical153/lookahead.cpp solvers/cdc153/lookahead.cpp
  
  struct literal_occ {
    int lit;
+@@ -424,7 +424,7 @@
+   assert(ntab.empty());
+   std::vector<int> current_assumptions{assumptions};
+   std::vector<std::vector<int>> cubes {{assumptions}};
+-  auto loccs{lookahead_populate_locc()};
++  auto loccs = lookahead_populate_locc();
+   LOG("loccs populated\n");
+   assert(ntab.empty());
+ 
 diff -Naur solvers/cadical153/lucky.cpp solvers/cdc153/lucky.cpp
 --- solvers/cadical153/lucky.cpp	2023-02-13 20:11:26
 +++ solvers/cdc153/lucky.cpp	2023-03-03 21:46:11
