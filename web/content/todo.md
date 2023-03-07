@@ -11,7 +11,6 @@ features were implemented:
     [CryptoMiniSat](https://github.com/msoos/cryptominisat/),
     [RISS](http://tools.computational-logic.org/content/riss.php) among
     many others)
--   formula *(pre-)processing*
 -   lower level access to some of the solvers\' internal parameters
     (e.g. *variable activities*, etc.)
 -   high-level support for arbitrary Boolean formulas (e.g. by
