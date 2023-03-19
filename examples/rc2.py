@@ -1005,12 +1005,14 @@ class RC2(object):
             if b < len(t.rhs):
                 lnew = -t.rhs[b]
                 if lnew in self.garbage:
+                    # the previous bound l also participates in the core, i.e.
+                    # lnew is removed from garbage and keeps it weight (self.minw)
                     self.garbage.remove(lnew)
-                    self.wght[lnew] = 0
-
-                if lnew not in self.wght:
+                elif lnew not in self.wght:
+                    # this is a newly created bound literal
                     self.set_bound(t, b)
                 else:
+                    # a known literal whose weight should be inflated
                     self.wght[lnew] += self.minw
 
             # put this assumption to relaxation vars
@@ -1606,19 +1608,48 @@ class RC2Stratified(RC2, object):
             if b < len(t.rhs):
                 lnew = -t.rhs[b]
                 if lnew in self.garbage:
+                    # the previous bound l also participates in the core, i.e.
+                    # lnew is removed from garbage and keeps it weight (self.minw)
                     self.garbage.remove(lnew)
-                    self.wght[lnew] = 0
-
-                if lnew not in self.wght:
+                elif lnew not in self.wght:
+                    # this is a newly created bound literal
                     self.set_bound(t, b)
                 else:
-                    self.wght[lnew] += self.minw
+                    # a known literal whose weight should be inflated
+                    self.inflate_sum(lnew)
 
             # put this assumption to relaxation vars
             self.rels.append(-l)
 
         # deactivating unnecessary sums
         self.sums = list(filter(lambda x: x not in to_deactivate, self.sums))
+
+    def inflate_sum(self, lit):
+        """
+            Bump up the weight for a next-bound sum literal if it already
+            exists while the previous-bound sum literal is split up such that
+            ``lit`` gets an additional weight. If the literal was inactive
+            earlier, it is activated at the current level.
+        """
+
+        wght = self.wght[lit]
+
+        if wght < self.blop[self.levl]:
+            # removing the literal from its current stratum
+            for lid in range(len(self.wstr[wght]) - 1, -1, -1):
+                if self.wstr[wght][lid] == lit:
+                    self.wstr[wght][lid] = self.wstr[wght][-1]
+                    self.wstr[wght].pop()
+                    break
+            else:
+                assert 0, 'no literal {0} in the stratum for {1}'.format(lit, wght)
+
+            # the sum literal should be activated now since it is
+            # guaranteed that self.minw >= self.blop[self.levl]
+            self.sums.append(lit)
+
+        # incrementing the weight
+        self.wght[lit] += self.minw
 
 
 #

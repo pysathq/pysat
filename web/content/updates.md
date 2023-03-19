@@ -10,6 +10,13 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 19.03.2023 (*0.1.8.dev2*)
+
+-   Fixed a subtle bug in RC2Stratified (thanks to the feedback of Jeremias
+    Berg, Jakob Nordström, Bart Bogaerts, Andy Oertel, and Dieter Vandesande).
+    The bug led to erroneous hardening of some of the sum literals due to an
+    incorrect estimation of the sum of the weights in lower strata.
+
 ## 05.03.2023 (*0.1.8.dev1*)
 
 -   Added CaDiCaL 1.5.3 (thanks to Christos Karamanos).
