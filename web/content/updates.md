@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 21.04.2023 (*0.1.8.dev3*)
+
+-   Added a new module called ``pysat.allies``, which is meant to contain
+    external tools callable from PySAT. The first tool added is ApproxMCv4.
+
 ## 19.03.2023 (*0.1.8.dev2*)
 
 -   Fixed a subtle bug in RC2Stratified (thanks to the feedback of Jeremias
