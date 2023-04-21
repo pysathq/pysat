@@ -37,6 +37,13 @@
         Lazy CNF-XOR Solving and Its Applications to Counting and Sampling*.
         CAV 2020. pp. 463-484
 
+    Note that to be functional, the module requires package ``pyapproxmc`` to
+    be installed:
+
+    ::
+
+        $ pip install pyapproxmc
+
     The interface gives access to :class:`Counter`, which expects a formula in
     :class:`.CNF` as input. Given a few additional (optional) arguments,
     including a random seed, *tolerance factor* :math:`\\varepsilon`, and
