@@ -44,3 +44,12 @@ Supplementary :mod:`.examples` package
     api/examples/musx
     api/examples/optux
     api/examples/rc2
+
+Supplementary :mod:`.allies` package
+------------------------------------
+
+This module provides interface to a list of external tools useful in practical
+SAT-based problem solving.
+
+.. toctree::
+    api/allies/approxmc

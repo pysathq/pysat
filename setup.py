@@ -72,10 +72,11 @@ to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
               'glucose30', 'glucose41', 'lingeling', 'maplechrono', 'maplecm',
               'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
 
-# example scripts to install as standalone executables
+# example and allies scripts to install as standalone executables
 #==============================================================================
-scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx', 'optux',
-        'rc2']
+example_scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx',
+                   'optux', 'rc2']
+allies_scripts = ['approxmc']
 
 
 # we need to redefine the build command to
@@ -181,11 +182,13 @@ setup(name='python-sat',
     author_email='alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com',
     url='https://github.com/pysathq/pysat',
     ext_modules=[pycard_ext, pysolvers_ext],
-    scripts=['examples/{0}.py'.format(s) for s in scripts],
+    scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
+            ['allies/{0}.py'.format(s) for s in allies_scripts],
     cmdclass={'build': build, 'build_ext': build_ext},
     install_requires=['six'],
     extras_require = {
         'aiger': ['py-aiger-cnf>=2.0.0'],
+        'approxmc': ['pyapproxmc>=4.1.8'],
         'pblib': ['pypblib>=0.0.3']
     }
 )
