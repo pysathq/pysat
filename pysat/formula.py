@@ -259,6 +259,12 @@ class IDPool(object):
 
         self.restart(start_from=start_from, occupied=occupied)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        return f"IDPool(start_from={self.top+1}, occupied={self._occupied})"
+
     def restart(self, start_from=1, occupied=[]):
         """
             Restart the manager from scratch. The arguments replicate those of
@@ -432,6 +438,12 @@ class CNF(object):
             self.from_clauses(from_clauses)
         elif from_aiger:
             self.from_aiger(from_aiger)
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        return f"CNF(from_clauses={self.clauses})"
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
