@@ -1179,7 +1179,7 @@ class WCNF(object):
 
                 >>> from pysat.formula import WCNF
                 >>> cnf1 = WCNF()
-                >>> cnf1.from_string(='p wcnf 2 2 2\\n 2 -1 2 0\\n1 1 -2 0')
+                >>> cnf1.from_string('p wcnf 2 2 2\\n 2 -1 2 0\\n1 1 -2 0')
                 >>> print(cnf1.hard)
                 [[-1, 2]]
                 >>> print(cnf1.soft)
