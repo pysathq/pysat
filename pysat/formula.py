@@ -443,7 +443,8 @@ class CNF(object):
         """
             State reproducible string representaion of object.
         """
-        return f"CNF(from_clauses={self.clauses})"
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"CNF(from_string=\"{s}\")"
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -745,6 +746,39 @@ class CNF(object):
 
         for cl in self.clauses:
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example file
+                p cnf 3 2
+                -1 2 0
+                -2 3 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example: Two cardinality constraints followed by a clause
+                p cnf 3 3
+                -1 2 0
+                -2 3 0
+                -3 0
+
+        """
+        header_lines = [f"p cnf {self.nv} {len(self.clauses)}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
+        lines = "\n".join(comment_lines + header_lines + clause_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
