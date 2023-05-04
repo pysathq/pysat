@@ -528,11 +528,11 @@ class CNF(object):
 
                 >>> from pysat.formula import CNF
                 >>> cnf1 = CNF()
-                >>> cnf1.from_string('p cnf 2 2\n-1 2 0\n1 -2 0')
+                >>> cnf1.from_string('p cnf 2 2\\n-1 2 0\\n1 -2 0')
                 >>> print(cnf1.clauses)
                 [[-1, 2], [1, -2]]
                 >>>
-                >>> cnf2 = CNF(from_string='p cnf 3 3\n-1 2 0\n-2 3 0\n-3 0\n')
+                >>> cnf2 = CNF(from_string='p cnf 3 3\\n-1 2 0\\n-2 3 0\\n-3 0\\n')
                 >>> print(cnf2.clauses)
                 [[-1, 2], [-2, 3], [-3]]
                 >>> print(cnf2.nv)
