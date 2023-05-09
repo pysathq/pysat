@@ -87,9 +87,10 @@
         ...     print(counter.counter(projection=range(1, 10))
         448
 
-    As can be seen in the above example, the counter supports *projected*
-    model counting, i.e. when one needs to approximate the number of models
-    with respect to a given list of variables rather than with respect to all
+    As can be seen in the above example, besides model counting across all the
+    variables in a given input formula, the counter supports *projected* model
+    counting, i.e. when one needs to approximate the number of models with
+    respect to a given list of variables rather than with respect to all
     variables appearing in the formula. This feature comes in handy when the
     formula is obtained, for example, through Tseitin transformation [3]_ with
     a number of auxiliary variables introduced.
