@@ -1065,6 +1065,13 @@ class WCNF(object):
         elif from_string:
             self.from_string(from_string, comment_lead)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"WCNF(from_string=\"{s}\")"
+
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
             Read a WCNF formula from a file in the DIMACS format. A file name
@@ -1360,6 +1367,41 @@ class WCNF(object):
 
         for cl in self.hard:
             print(self.topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p wcnf 2 3 10
+                1 -1 0
+                2 -2 0
+                10 1 2 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p wcnf 2 3 10
+                10 1 2 0
+                1 -1 0
+                2 -2 0
+
+        """
+        header_lines = [f"p wcnf {self.nv} {len(self.hard)+len(self.soft)} {self.topw}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
+        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
+        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
