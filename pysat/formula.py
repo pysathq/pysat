@@ -2158,6 +2158,13 @@ class WCNFPlus(WCNF, object):
         super(WCNFPlus, self).__init__(from_file=from_file, from_fp=from_fp,
                 from_string=from_string, comment_lead=comment_lead)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"WCNFPlus(from_string=\"{s}\")"
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a WCNF+ formula from a file pointer. A file pointer should be
@@ -2298,6 +2305,43 @@ class WCNFPlus(WCNF, object):
         # atmost constraints are hard
         for am in self.atms:
             print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p wcnf+ 7 3 10
+                10 1 -2 3 5 -7 <= 3
+                10 4 5 6 -7 >= 2
+                5 3 5 7 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p wcnf+ 7 4 10
+                10 -1 3 5 0
+                5 3 5 7 0
+                10 1 -2 3 5 -7 <= 3
+                10 -4 -5 -6 7 <= 2
+
+        """
+        header_lines = [f"p wcnf+ {self.nv} {len(self.hard)+len(self.soft)+len(self.atms)} {self.topw}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
+        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
+        atmost_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atms]
+        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
