@@ -1386,8 +1386,8 @@ class WCNF(object):
 
             .. code-block:: python
 
-                >>> from pysat.formula import CNF
-                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> from pysat.formula import WCNF
+                >>> cnf = WCNF(from_file='some-file.cnf')
                 >>> print(cnf.to_dimacs())
                 c Example
                 p wcnf 2 3 10
@@ -1806,8 +1806,8 @@ class CNFPlus(CNF, object):
 
             .. code-block:: python
 
-                >>> from pysat.formula import CNF
-                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> from pysat.formula import CNFPlus
+                >>> cnf = CNFPlus(from_file='some-file.cnf')
                 >>> print(cnf.to_dimacs())
                 c Example
                 p cnf+ 7 3
@@ -2324,8 +2324,8 @@ class WCNFPlus(WCNF, object):
 
             .. code-block:: python
 
-                >>> from pysat.formula import CNF
-                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> from pysat.formula import WCNFPlus
+                >>> cnf = WCNFPlus(from_file='some-file.cnf')
                 >>> print(cnf.to_dimacs())
                 c Example
                 p wcnf+ 7 4 10
