@@ -755,10 +755,11 @@ class CNF(object):
 
             ::
 
-                c Example file
-                p cnf 3 2
+                c Example
+                p cnf 3 3
                 -1 2 0
                 -2 3 0
+                -3 0
 
             Then you can obtain the DIMACS with:
 
@@ -767,7 +768,7 @@ class CNF(object):
                 >>> from pysat.formula import CNF
                 >>> cnf = CNF(from_file='some-file.cnf')
                 >>> print(cnf.to_dimacs())
-                c Example: Two cardinality constraints followed by a clause
+                c Example
                 p cnf 3 3
                 -1 2 0
                 -2 3 0
