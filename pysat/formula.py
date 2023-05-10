@@ -1642,6 +1642,13 @@ class CNFPlus(CNF, object):
         super(CNFPlus, self).__init__(from_file=from_file, from_fp=from_fp,
                 from_string=from_string, comment_lead=comment_lead)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"CNFPlus(from_string=\"{s}\")"
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a CNF+ formula from a file pointer. A file pointer should be
@@ -1738,6 +1745,41 @@ class CNFPlus(CNF, object):
 
         for am in self.atmosts:
             print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p cnf+ 7 3
+                1 -2 3 5 -7 <= 3
+                4 5 6 -7 >= 2
+                3 5 7 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p cnf+ 7 3
+                3 5 7 0
+                1 -2 3 5 -7 <= 3
+                -4 -5 -6 7 <= 2
+
+        """
+        header_lines = [f"p cnf+ {self.nv} {len(self.clauses) + len(self.atmosts)}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
+        atmost_lines = [" ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atmosts]
+        lines = "\n".join(comment_lines + header_lines + clause_lines + atmost_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
