@@ -259,6 +259,12 @@ class IDPool(object):
 
         self.restart(start_from=start_from, occupied=occupied)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        return f"IDPool(start_from={self.top+1}, occupied={self._occupied})"
+
     def restart(self, start_from=1, occupied=[]):
         """
             Restart the manager from scratch. The arguments replicate those of
@@ -432,6 +438,13 @@ class CNF(object):
             self.from_clauses(from_clauses)
         elif from_aiger:
             self.from_aiger(from_aiger)
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"CNF(from_string=\"{s}\")"
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -734,6 +747,40 @@ class CNF(object):
         for cl in self.clauses:
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
 
+    def to_dimacs(self):
+        """
+            Return the current state of the object in DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p cnf 3 3
+                -1 2 0
+                -2 3 0
+                -3 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNF
+                >>> cnf = CNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p cnf 3 3
+                -1 2 0
+                -2 3 0
+                -3 0
+
+        """
+        header_lines = [f"p cnf {self.nv} {len(self.clauses)}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
+        lines = "\n".join(comment_lines + header_lines + clause_lines) + "\n"
+        return lines
+
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
             The method can be used to dump a CNF formula into a file pointer
@@ -1017,6 +1064,13 @@ class WCNF(object):
             self.from_fp(from_fp, comment_lead)
         elif from_string:
             self.from_string(from_string, comment_lead)
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"WCNF(from_string=\"{s}\")"
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -1314,6 +1368,41 @@ class WCNF(object):
         for cl in self.hard:
             print(self.topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
 
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p wcnf 2 3 10
+                1 -1 0
+                2 -2 0
+                10 1 2 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import WCNF
+                >>> cnf = WCNF(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p wcnf 2 3 10
+                10 1 2 0
+                1 -1 0
+                2 -2 0
+
+        """
+        header_lines = [f"p wcnf {self.nv} {len(self.hard)+len(self.soft)} {self.topw}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
+        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
+        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines) + "\n"
+        return lines
+
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
             The method can be used to dump a WCNF formula into a file pointer
@@ -1595,6 +1684,13 @@ class CNFPlus(CNF, object):
         super(CNFPlus, self).__init__(from_file=from_file, from_fp=from_fp,
                 from_string=from_string, comment_lead=comment_lead)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"CNFPlus(from_string=\"{s}\")"
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a CNF+ formula from a file pointer. A file pointer should be
@@ -1691,6 +1787,41 @@ class CNFPlus(CNF, object):
 
         for am in self.atmosts:
             print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p cnf+ 7 3
+                1 -2 3 5 -7 <= 3
+                4 5 6 -7 >= 2
+                3 5 7 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import CNFPlus
+                >>> cnf = CNFPlus(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p cnf+ 7 3
+                3 5 7 0
+                1 -2 3 5 -7 <= 3
+                -4 -5 -6 7 <= 2
+
+        """
+        header_lines = [f"p cnf+ {self.nv} {len(self.clauses) + len(self.atmosts)}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
+        atmost_lines = [" ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atmosts]
+        lines = "\n".join(comment_lines + header_lines + clause_lines + atmost_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
@@ -2027,6 +2158,13 @@ class WCNFPlus(WCNF, object):
         super(WCNFPlus, self).__init__(from_file=from_file, from_fp=from_fp,
                 from_string=from_string, comment_lead=comment_lead)
 
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+        s = self.to_dimacs().replace('\n', '\\n')
+        return f"WCNFPlus(from_string=\"{s}\")"
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a WCNF+ formula from a file pointer. A file pointer should be
@@ -2167,6 +2305,43 @@ class WCNFPlus(WCNF, object):
         # atmost constraints are hard
         for am in self.atms:
             print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+
+    def to_dimacs(self):
+        """
+            Return the current state of the object in extended DIMACS format.
+
+            For example, if 'some-file.cnf' contains:
+
+            ::
+
+                c Example
+                p wcnf+ 7 3 10
+                10 1 -2 3 5 -7 <= 3
+                10 4 5 6 -7 >= 2
+                5 3 5 7 0
+
+            Then you can obtain the DIMACS with:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import WCNFPlus
+                >>> cnf = WCNFPlus(from_file='some-file.cnf')
+                >>> print(cnf.to_dimacs())
+                c Example
+                p wcnf+ 7 4 10
+                10 -1 3 5 0
+                5 3 5 7 0
+                10 1 -2 3 5 -7 <= 3
+                10 -4 -5 -6 7 <= 2
+
+        """
+        header_lines = [f"p wcnf+ {self.nv} {len(self.hard)+len(self.soft)+len(self.atms)} {self.topw}"]
+        comment_lines = [f"{comment}" for comment in self.comments]
+        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
+        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
+        atmost_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atms]
+        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines) + "\n"
+        return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
         """
