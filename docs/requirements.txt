@@ -1,2 +1,2 @@
 sphinx
-pydata_sphinx_theme
+pydata_sphinx_theme==0.8.1
