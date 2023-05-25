@@ -10,6 +10,13 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 25.05.2023 (*0.1.8.dev4*)
+
+-   Another attempt to fix the bug in RC2 related to stratification and weight
+    splitting (thanks to Bart Bogaerts, Andy Oertel, Jeremias Berg, Jakob
+    Nordström, and Dieter Vandesande).
+-   Multiple slight amendments in the formula API (thanks to Rex Yuan).
+
 ## 21.04.2023 (*0.1.8.dev3*)
 
 -   Added a new module called ``pysat.allies``, which is meant to contain
