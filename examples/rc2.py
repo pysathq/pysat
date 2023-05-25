@@ -219,6 +219,7 @@ class RC2(object):
         self.sums = []  # totalizer sum assumptions
         self.bnds = {}  # a mapping from sum assumptions to totalizer bounds
         self.tobj = {}  # a mapping from sum assumptions to totalizer objects
+        self.swgt = {}  # a mapping from sum assumptions to their core weights
         self.cost = 0
 
         # mappings between internal and external variables
@@ -671,7 +672,7 @@ class RC2(object):
                 if b:
                     # save the info about this sum and
                     # add its assumption literal
-                    self.set_bound(t, b)
+                    self.set_bound(t, b, self.minw)
                 else:
                     # impossible to satisfy any of these clauses
                     # they must become hard
@@ -1004,16 +1005,8 @@ class RC2(object):
             # updating bounds and weights
             if b < len(t.rhs):
                 lnew = -t.rhs[b]
-                if lnew in self.garbage:
-                    # the previous bound l also participates in the core, i.e.
-                    # lnew is removed from garbage and keeps it weight (self.minw)
-                    self.garbage.remove(lnew)
-                elif lnew not in self.wght:
-                    # this is a newly created bound literal
-                    self.set_bound(t, b)
-                else:
-                    # a known literal whose weight should be inflated
-                    self.wght[lnew] += self.minw
+                if lnew not in self.swgt:
+                    self.set_bound(t, b, self.swgt[l])
 
             # put this assumption to relaxation vars
             self.rels.append(-l)
@@ -1128,7 +1121,7 @@ class RC2(object):
 
         return t, b
 
-    def set_bound(self, tobj, rhs):
+    def set_bound(self, tobj, rhs, weight):
         """
             Given a totalizer sum and its right-hand side to be
             enforced, the method creates a new sum assumption literal,
@@ -1144,7 +1137,8 @@ class RC2(object):
         # saving the sum and its weight in a mapping
         self.tobj[-tobj.rhs[rhs]] = tobj
         self.bnds[-tobj.rhs[rhs]] = rhs
-        self.wght[-tobj.rhs[rhs]] = self.minw
+        self.wght[-tobj.rhs[rhs]] = weight
+        self.swgt[-tobj.rhs[rhs]] = weight
 
         # adding a new assumption to force the sum to be at most rhs
         self.sums.append(-tobj.rhs[rhs])
@@ -1607,49 +1601,14 @@ class RC2Stratified(RC2, object):
             # updating bounds and weights
             if b < len(t.rhs):
                 lnew = -t.rhs[b]
-                if lnew in self.garbage:
-                    # the previous bound l also participates in the core, i.e.
-                    # lnew is removed from garbage and keeps it weight (self.minw)
-                    self.garbage.remove(lnew)
-                elif lnew not in self.wght:
-                    # this is a newly created bound literal
-                    self.set_bound(t, b)
-                else:
-                    # a known literal whose weight should be inflated
-                    self.inflate_sum(lnew)
+                if lnew not in self.swgt:
+                    self.set_bound(t, b, self.swgt[l])
 
             # put this assumption to relaxation vars
             self.rels.append(-l)
 
         # deactivating unnecessary sums
         self.sums = list(filter(lambda x: x not in to_deactivate, self.sums))
-
-    def inflate_sum(self, lit):
-        """
-            Bump up the weight for a next-bound sum literal if it already
-            exists while the previous-bound sum literal is split up such that
-            ``lit`` gets an additional weight. If the literal was inactive
-            earlier, it is activated at the current level.
-        """
-
-        wght = self.wght[lit]
-
-        if wght < self.blop[self.levl]:
-            # removing the literal from its current stratum
-            for lid in range(len(self.wstr[wght]) - 1, -1, -1):
-                if self.wstr[wght][lid] == lit:
-                    self.wstr[wght][lid] = self.wstr[wght][-1]
-                    self.wstr[wght].pop()
-                    break
-            else:
-                assert 0, 'no literal {0} in the stratum for {1}'.format(lit, wght)
-
-            # the sum literal should be activated now since it is
-            # guaranteed that self.minw >= self.blop[self.levl]
-            self.sums.append(lit)
-
-        # incrementing the weight
-        self.wght[lit] += self.minw
 
 
 #
