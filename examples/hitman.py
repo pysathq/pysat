@@ -50,6 +50,10 @@
     is done through the *minimal correction subset* (MCS) enumeration, e.g.
     using the :class:`.LBX`- [5]_ or :class:`.MCSls`-like [6]_ MCS enumerators.
 
+    Note that this implementation additionally supports *pure* SAT-based
+    minimal hitting set enumeration with the use of preferred variable
+    polarity setting following the approach of [7]_.
+
     .. [1] Erick Moreno-Centeno, Richard M. Karp. *The Implicit Hitting Set
         Approach to Solve Combinatorial Optimization Problems with an
         Application to Multigenome Alignment*. Operations Research 61(2). 2013.
@@ -70,6 +74,9 @@
     .. [6] Joao Marques-Silva, Federico Heras, Mikolás Janota,
         Alessandro Previti, Anton Belov. *On Computing Minimal Correction
         Subsets*. IJCAI. 2013. pp. 615-622
+
+    .. [7] Enrico Giunchiglia, Marco Maratea. *Solving Optimization Problems
+        with DLL*. ECAI 2006. pp. 377-381
 
     :class:`Hitman` supports hitting set enumeration in the *implicit* manner,
     i.e. when sets to hit can be added on the fly as well as hitting sets can
@@ -121,7 +128,7 @@
         [2, 4, 5]
 
     Finally, implicit hitting set enumeration can be used in practical problem
-    solving. As an example, let us show the basic flow of a MaxHS-like [7]_
+    solving. As an example, let us show the basic flow of a MaxHS-like [8]_
     algorithm for MaxSAT:
 
     .. code-block:: python
@@ -148,7 +155,7 @@
         ...         core = oracle.get_core()
         ...         hitman.hit(core)
 
-    .. [7] Jessica Davies, Fahiem Bacchus. *Solving MAXSAT by Solving a
+    .. [8] Jessica Davies, Fahiem Bacchus. *Solving MAXSAT by Solving a
         Sequence of Simpler SAT Instances*. CP 2011. pp. 225-239
 
     ==============
@@ -158,10 +165,12 @@
 
 #
 #==============================================================================
-from pysat.formula import IDPool, WCNFPlus
+import collections
 from pysat.examples.rc2 import RC2, RC2Stratified
 from pysat.examples.lbx import LBX
 from pysat.examples.mcsls import MCSls
+from pysat.formula import IDPool, WCNFPlus
+from pysat.solvers import Solver, SolverNames
 import six
 
 
@@ -186,25 +195,31 @@ class Atom(object):
 #==============================================================================
 class Hitman(object):
     """
+
         A cardinality-/subset-minimal hitting set enumerator. The enumerator
         can be set up to use either a MaxSAT solver :class:`.RC2` or an MCS
         enumerator (either :class:`.LBX` or :class:`.MCSls`). In the former
         case, the hitting sets enumerated are ordered by size (smallest size
         hitting sets are computed first), i.e. *sorted*. In the latter case,
         subset-minimal hitting are enumerated in an arbitrary order, i.e.
-        *unsorted*.
+        *unsorted*. Additionally, Hitman supports pure SAT-based minimal
+        hitting set enumeration with the use of polarity preferences.
 
-        This is handled with the use of parameter ``htype``, which is set to be
-        ``'sorted'`` by default. The MaxSAT-based enumerator can be chosen by
-        setting ``htype`` to one of the following values: ``'maxsat'``,
-        ``'mxsat'``, or ``'rc2'``. Alternatively, by setting it to ``'mcs'`` or
-        ``'lbx'``, a user can enforce using the :class:`.LBX` MCS enumerator.
-        If ``htype`` is set to ``'mcsls'``, the :class:`.MCSls` enumerator is
-        used.
+        This is handled with the use of parameter ``htype``, which is set to
+        be ``'sorted'`` by default. The MaxSAT-based enumerator can be chosen
+        by setting ``htype`` to one of the following values: ``'maxsat'``,
+        ``'mxsat'``, or ``'rc2'``. Alternatively, by setting it to ``'mcs'``
+        or ``'lbx'``, a user can enforce using the :class:`.LBX` MCS
+        enumerator. If ``htype`` is set to ``'mcsls'``, the :class:`.MCSls`
+        enumerator is used. Finally, value ``'sat'`` can be given, in which
+        case minimal hitting set enumeration will performed by means of a SAT
+        solver (can be either MiniSat-GH or Lingeling) with polarity setting.
 
-        In either case, an underlying problem solver can use a SAT oracle
-        specified as an input parameter ``solver``. The default SAT solver is
-        Glucose3 (specified as ``g3``, see :class:`.SolverNames` for details).
+        In either case, unless pure SAT-based hitting set enumeration is
+        selected, an underlying problem solver can use a SAT oracle specified
+        as an input parameter ``solver``. The default SAT solver is Glucose3
+        (specified as ``g3``, see :class:`.SolverNames` for details). For
+        SAT-based enumeration, MinisatGH is used as an underlying SAT solver.
 
         Objects of class :class:`Hitman` can be bootstrapped with an iterable
         of iterables, e.g. a list of lists. This is handled using the
@@ -274,8 +289,10 @@ class Hitman(object):
             self.htype = 'rc2'
         elif htype in ('mcs', 'lbx'):
             self.htype = 'lbx'
-        else:  # 'mcsls'
+        elif htype == 'mcsls':
             self.htype = 'mcsls'
+        else:  # 'sat'
+            self.htype = 'sat'
 
         # pool of variable identifiers (for objects to hit)
         self.idpool = IDPool()
@@ -366,9 +383,37 @@ class Hitman(object):
         elif self.htype == 'lbx':
             self.oracle = LBX(formula, solver_name=self.solver,
                     use_cld=self.usecld)
-        else:
+        elif self.htype == 'mcsls':
             self.oracle = MCSls(formula, solver_name=self.solver,
                     use_cld=self.usecld)
+        else:  # 'sat'
+            assert self.solver in SolverNames.minisatgh + SolverNames.lingeling, \
+                    'Hard polarity setting is unsupported by {0}'.format(self.solver)
+
+            assert formula.atms == [], 'Native AtMostK constraints aren\'t' \
+            'supported by MinisatGH, Lingeling'
+
+            # setting up a SAT solver, so that it supports the same interface
+            self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
+                                 use_timer=True)
+
+            # MinisatGH supports warm start mode
+            if self.solver in SolverNames.minisatgh:
+                self.oracle.start_mode(warm=True)
+
+            # soft clauses are enforced by means of setting polarities
+            self.oracle.set_phases(literals=[cl[0] for cl in formula.soft])
+
+            # "adding" the missing compute() and oracle_time() methods
+            self.oracle.compute = lambda: [self.oracle.solve(), self.oracle.get_model()][-1]
+            self.oracle.oracle_time = self.oracle.time_accum
+
+            # adding a dummy VariableMap, as is in RC2 and LBX/MCSls
+            VariableMap = collections.namedtuple('VariableMap', ['e2i', 'i2e'])
+            self.oracle.vmap = VariableMap(e2i={}, i2e={})
+            for vid in self.idpool.id2obj.keys():
+                self.oracle.vmap.e2i[vid] = vid
+                self.oracle.vmap.i2e[vid] = vid
 
     def add_hard(self, clause, weights=None):
         """
@@ -409,9 +454,18 @@ class Hitman(object):
         # adding the hard clause
         self.oracle.add_clause(clause)
 
-        # new soft clauses
-        for vid in new_obj:
-            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        if self.htype != 'sat':
+            # new soft clauses
+            for vid in new_obj:
+                self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        else:
+            # dummy variable id mapping
+            for vid in new_obj:
+                self.oracle.vmap.e2i[vid] = vid
+                self.oracle.vmap.i2e[vid] = vid
+
+            # setting variable polarities
+            self.oracle.set_phases(literals=[-vid for vid in new_obj])
 
     def delete(self):
         """
@@ -435,7 +489,7 @@ class Hitman(object):
         model = self.oracle.compute()
 
         if model is not None:
-            if self.htype == 'rc2':
+            if self.htype in ('rc2', 'sat'):
                 # extracting a hitting set
                 self.hset = filter(lambda v: v > 0, model)
             else:
@@ -471,8 +525,18 @@ class Hitman(object):
         self.oracle.add_clause(to_hit)
 
         # new soft clauses
-        for vid in new_obj:
-            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        if self.htype != 'sat':
+            # new soft clauses
+            for vid in new_obj:
+                self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        else:
+            # dummy variable id mapping
+            for vid in new_obj:
+                self.oracle.vmap.e2i[vid] = vid
+                self.oracle.vmap.i2e[vid] = vid
+
+            # setting variable polarities
+            self.oracle.set_phases(literals=[-vid for vid in new_obj])
 
     def block(self, to_block, weights=None):
         """
@@ -503,8 +567,17 @@ class Hitman(object):
         self.oracle.add_clause([-vid for vid in to_block])
 
         # new soft clauses
-        for vid in new_obj:
-            self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        if self.htype != 'sat':
+            for vid in new_obj:
+                self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+        else:
+            # dummy variable id mapping
+            for vid in new_obj:
+                self.oracle.vmap.e2i[vid] = vid
+                self.oracle.vmap.i2e[vid] = vid
+
+            # setting variable polarities
+            self.oracle.set_phases(literals=[-vid for vid in new_obj])
 
     def enumerate(self):
         """
