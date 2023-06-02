@@ -1123,15 +1123,17 @@ class RC2(object):
 
     def set_bound(self, tobj, rhs, weight):
         """
-            Given a totalizer sum and its right-hand side to be
-            enforced, the method creates a new sum assumption literal,
-            which will be used in the following SAT oracle calls.
+            Given a totalizer sum, its right-hand side to be enforced, and a
+            weight, the method creates a new sum assumption literal, which
+            will be used in the following SAT oracle calls.
 
             :param tobj: totalizer sum
             :param rhs: right-hand side
+            :param weight: numeric weight of the assumption
 
             :type tobj: :class:`.ITotalizer`
             :type rhs: int
+            :type weight: int
         """
 
         # saving the sum and its weight in a mapping
