@@ -634,7 +634,7 @@ class Solver(object):
             the next limited SAT call (see :meth:`solve_limited`). The limit
             value is given as a ``budget`` variable and is an integer greater
             than ``0``. If the budget is set to ``0`` or ``-1``, the upper
-            bound on the number of conflicts is disabled.
+            bound on the number of propagations is disabled.
 
             :param budget: the upper bound on the number of propagations.
             :type budget: int
@@ -657,6 +657,39 @@ class Solver(object):
 
         if self.solver:
             self.solver.prop_budget(budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit (i.e. the upper bound) on the number of decisions in
+            the next limited SAT call (see :meth:`solve_limited`). The limit
+            value is given as a ``budget`` variable and is an integer greater
+            than ``0``. If the budget is set to ``0`` or ``-1``, the upper
+            bound on the number of decisions is disabled.
+
+            Note that this functionality is supported by :class:`Cadical103`
+            and :class:`Cadical153` only!
+
+            :param budget: the upper bound on the number of decisions.
+            :type budget: int
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Cadical153
+                >>> from pysat.examples.genhard import Parity
+                >>>
+                >>> cnf = Parity(size=10)  # too hard for a SAT solver
+                >>> c = Cadical153(bootstrap_with=cnf.clauses)
+                >>>
+                >>> c.dec_budget(500)  # doing at most 500 decisions
+                >>> print(c.solve_limited())  # making a limited oracle call
+                None
+                >>> c.delete()
+        """
+
+        if self.solver:
+            self.solver.dec_budget(budget)
 
     def interrupt(self):
         """
@@ -1306,6 +1339,43 @@ class Cadical103(object):
             self.prev_assumps = assumptions
             return self.status
 
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            decisions.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.cadical103_solve_lim(self.cadical,
+                    assumptions, int(MainThread.check()))
+
+            self.status = None if self.status == 0 else bool((self.status + 1) / 2)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.cadical:
+            pysolvers.cadical103_cbudget(self.cadical, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.cadical:
+            pysolvers.cadical103_dbudget(self.cadical, budget)
+
     def start_mode(self, warm=False):
         """
             Set start mode: either warm or standard.
@@ -1313,27 +1383,12 @@ class Cadical103(object):
 
         raise NotImplementedError('Warm-start mode is currently unsupported by CaDiCaL.')
 
-    def solve_limited(self, assumptions=[], expect_interrupt=False):
-        """
-            Solve internal formula using given budgets for conflicts and
-            propagations.
-        """
-
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
-
-    def conf_budget(self, budget):
-        """
-            Set limit on the number of conflicts.
-        """
-
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
-
     def prop_budget(self, budget):
         """
             Set limit on the number of propagations.
         """
 
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+        raise NotImplementedError('Limit on propagations is currently unsupported by CaDiCaL.')
 
     def interrupt(self):
         """
@@ -1602,6 +1657,43 @@ class Cadical153(object):
             self.prev_assumps = assumptions
             return self.status
 
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            decisions.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.cadical153_solve_lim(self.cadical,
+                    assumptions, int(MainThread.check()))
+
+            self.status = None if self.status == 0 else bool((self.status + 1) / 2)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.cadical:
+            pysolvers.cadical153_cbudget(self.cadical, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.cadical:
+            pysolvers.cadical153_dbudget(self.cadical, budget)
+
     def process(self, rounds=1, block=False, cover=False, condition=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
                 subsume=True, vivify=True):
@@ -1636,27 +1728,12 @@ class Cadical153(object):
 
         raise NotImplementedError('Warm-start mode is currently unsupported by CaDiCaL.')
 
-    def solve_limited(self, assumptions=[], expect_interrupt=False):
-        """
-            Solve internal formula using given budgets for conflicts and
-            propagations.
-        """
-
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
-
-    def conf_budget(self, budget):
-        """
-            Set limit on the number of conflicts.
-        """
-
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
-
     def prop_budget(self, budget):
         """
             Set limit on the number of propagations.
         """
 
-        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+        raise NotImplementedError('Limit on propagations is currently unsupported by CaDiCaL.')
 
     def interrupt(self):
         """
@@ -1969,6 +2046,13 @@ class Gluecard3(object):
 
         if self.gluecard:
             pysolvers.gluecard3_pbudget(self.gluecard, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Gluecard3.')
 
     def interrupt(self):
         """
@@ -2302,6 +2386,13 @@ class Gluecard4(object):
         if self.gluecard:
             pysolvers.gluecard41_pbudget(self.gluecard, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Gluecard4.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -2634,6 +2725,13 @@ class Glucose3(object):
         if self.glucose:
             pysolvers.glucose3_pbudget(self.glucose, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Glucose3.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -2958,6 +3056,13 @@ class Glucose4(object):
         if self.glucose:
             pysolvers.glucose41_pbudget(self.glucose, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Glucose4.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -3266,6 +3371,13 @@ class Lingeling(object):
 
         raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by Lingeling.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -3558,6 +3670,13 @@ class MapleChrono(object):
 
         if self.maplesat:
             pysolvers.maplechrono_pbudget(self.maplesat, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by MapleChrono.')
 
     def interrupt(self):
         """
@@ -3881,6 +4000,13 @@ class MapleCM(object):
         if self.maplesat:
             pysolvers.maplecm_pbudget(self.maplesat, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by MapleCM.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -4203,6 +4329,13 @@ class Maplesat(object):
         if self.maplesat:
             pysolvers.maplesat_pbudget(self.maplesat, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Maplesat.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -4507,6 +4640,13 @@ class Mergesat3(object):
 
         if self.mergesat:
             pysolvers.mergesat3_pbudget(self.mergesat, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Mergesat3.')
 
     def interrupt(self):
         """
@@ -4821,6 +4961,13 @@ class Minicard(object):
 
         if self.minicard:
             pysolvers.minicard_pbudget(self.minicard, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Minicard.')
 
     def interrupt(self):
         """
@@ -5144,6 +5291,13 @@ class Minisat22(object):
         if self.minisat:
             pysolvers.minisat22_pbudget(self.minisat, budget)
 
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by Minisat22.')
+
     def interrupt(self):
         """
             Interrupt solver execution.
@@ -5457,6 +5611,13 @@ class MinisatGH(object):
 
         if self.minisat:
             pysolvers.minisatgh_pbudget(self.minisat, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by MinisatGH.')
 
     def interrupt(self):
         """

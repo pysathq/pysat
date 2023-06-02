@@ -93,6 +93,8 @@ static char      prop_docstring[] = "Propagate a given set of literals.";
 static char    phases_docstring[] = "Set variable polarities.";
 static char   cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char   pbudget_docstring[] = "Set limit on the number of propagations.";
+static char   dbudget_docstring[] = "Set limit on the number of decisions "
+                                    "(CaDiCaL only).";
 static char interrupt_docstring[] = "Interrupt SAT solver execution "
                                     "(not supported by lingeling and CaDiCaL).";
 static char  clearint_docstring[] = "Clear interrupt indicator flag.";
@@ -116,6 +118,9 @@ extern "C" {
 	static PyObject *py_cadical103_new       (PyObject *, PyObject *);
 	static PyObject *py_cadical103_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_cadical103_solve     (PyObject *, PyObject *);
+	static PyObject *py_cadical103_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_cadical103_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_cadical103_dbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical103_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_cadical103_core      (PyObject *, PyObject *);
 	static PyObject *py_cadical103_model     (PyObject *, PyObject *);
@@ -130,6 +135,9 @@ extern "C" {
 	static PyObject *py_cadical153_process   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_restore   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve     (PyObject *, PyObject *);
+	static PyObject *py_cadical153_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_cadical153_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_cadical153_dbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_core      (PyObject *, PyObject *);
 	static PyObject *py_cadical153_model     (PyObject *, PyObject *);
@@ -381,6 +389,9 @@ static PyMethodDef module_methods[] = {
 	{ "cadical103_new",       py_cadical103_new,       METH_VARARGS,      new_docstring },
 	{ "cadical103_add_cl",    py_cadical103_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical103_solve",     py_cadical103_solve,     METH_VARARGS,    solve_docstring },
+	{ "cadical103_solve_lim", py_cadical103_solve_lim, METH_VARARGS,      lim_docstring },
+	{ "cadical103_cbudget",   py_cadical103_cbudget,   METH_VARARGS,  cbudget_docstring },
+	{ "cadical103_dbudget",   py_cadical103_dbudget,   METH_VARARGS,  dbudget_docstring },
 	{ "cadical103_tracepr",   py_cadical103_tracepr,   METH_VARARGS,  tracepr_docstring },
 	{ "cadical103_core",      py_cadical103_core,      METH_VARARGS,     core_docstring },
 	{ "cadical103_model",     py_cadical103_model,     METH_VARARGS,    model_docstring },
@@ -393,6 +404,9 @@ static PyMethodDef module_methods[] = {
 	{ "cadical153_new",       py_cadical153_new,       METH_VARARGS,      new_docstring },
 	{ "cadical153_add_cl",    py_cadical153_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical153_solve",     py_cadical153_solve,     METH_VARARGS,    solve_docstring },
+	{ "cadical153_solve_lim", py_cadical153_solve_lim, METH_VARARGS,      lim_docstring },
+	{ "cadical153_cbudget",   py_cadical153_cbudget,   METH_VARARGS,  cbudget_docstring },
+	{ "cadical153_dbudget",   py_cadical153_dbudget,   METH_VARARGS,  dbudget_docstring },
 	{ "cadical153_process",   py_cadical153_process,   METH_VARARGS,  process_docstring },
 	{ "cadical153_restore",   py_cadical153_restore,   METH_VARARGS,  restore_docstring },
 	{ "cadical153_tracepr",   py_cadical153_tracepr,   METH_VARARGS,  tracepr_docstring },
@@ -979,6 +993,113 @@ static PyObject *py_cadical103_solve(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_cadical103_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
+
+	// assumptions iterator
+	PyObject *i_obj = PyObject_GetIter(a_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		s->assume(l);
+	}
+
+	Py_DECREF(i_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	int res = s->solve();
+	res = (res == 10 ? 1 : (res == 20 ? -1 : 0));
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = pyint_from_cint(res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical103_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->limit("conflicts", (int)budget);
+	else
+		s->limit("conflicts", -1);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical103_dbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->limit("decisions", (int)budget);
+	else
+		s->limit("decisions", -1);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_cadical103_core(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -1405,6 +1526,113 @@ static PyObject *py_cadical153_solve(PyObject *self, PyObject *args)
 
 	PyObject *ret = PyBool_FromLong((long)res);
 	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical153_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
+
+	// assumptions iterator
+	PyObject *i_obj = PyObject_GetIter(a_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		s->assume(l);
+	}
+
+	Py_DECREF(i_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	int res = s->solve();
+	res = (res == 10 ? 1 : (res == 20 ? -1 : 0));
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = pyint_from_cint(res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical153_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->limit("conflicts", (int)budget);
+	else
+		s->limit("conflicts", -1);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical153_dbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		s->limit("decisions", (int)budget);
+	else
+		s->limit("decisions", -1);
+
+	Py_RETURN_NONE;
 }
 
 //
