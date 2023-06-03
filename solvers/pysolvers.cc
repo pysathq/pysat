@@ -136,6 +136,7 @@ extern "C" {
 	static PyObject *py_cadical153_restore   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve     (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve_lim (PyObject *, PyObject *);
+	/* static PyObject *py_cadical153_setphases (PyObject *, PyObject *); */
 	static PyObject *py_cadical153_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_dbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_tracepr   (PyObject *, PyObject *);
@@ -405,6 +406,7 @@ static PyMethodDef module_methods[] = {
 	{ "cadical153_add_cl",    py_cadical153_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical153_solve",     py_cadical153_solve,     METH_VARARGS,    solve_docstring },
 	{ "cadical153_solve_lim", py_cadical153_solve_lim, METH_VARARGS,      lim_docstring },
+	/* { "cadical153_setphases", py_cadical153_setphases, METH_VARARGS,   phases_docstring }, */
 	{ "cadical153_cbudget",   py_cadical153_cbudget,   METH_VARARGS,  cbudget_docstring },
 	{ "cadical153_dbudget",   py_cadical153_dbudget,   METH_VARARGS,  dbudget_docstring },
 	{ "cadical153_process",   py_cadical153_process,   METH_VARARGS,  process_docstring },
@@ -1592,6 +1594,52 @@ static PyObject *py_cadical153_solve_lim(PyObject *self, PyObject *args)
 	PyObject *ret = pyint_from_cint(res);
 	return ret;
 }
+
+// calling phase() does not seem to work for now!
+//=============================================================================
+/* static PyObject *py_cadical153_setphases(PyObject *self, PyObject *args) */
+/* { */
+/* 	PyObject *s_obj; */
+/* 	PyObject *p_obj;  // polarities given as a list of integer literals */
+
+/* 	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj)) */
+/* 		return NULL; */
+
+/* 	// get pointer to solver */
+/* 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj); */
+
+/* 	// assumptions iterator */
+/* 	PyObject *i_obj = PyObject_GetIter(p_obj); */
+/* 	if (i_obj == NULL) { */
+/* 		PyErr_SetString(PyExc_RuntimeError, */
+/* 				"Object does not seem to be an iterable."); */
+/* 		return NULL; */
+/* 	} */
+
+/* 	PyObject *l_obj; */
+/* 	while ((l_obj = PyIter_Next(i_obj)) != NULL) { */
+/* 		if (!pyint_check(l_obj)) { */
+/* 			Py_DECREF(l_obj); */
+/* 			Py_DECREF(i_obj); */
+/* 			PyErr_SetString(PyExc_TypeError, "integer expected"); */
+/* 			return NULL; */
+/* 		} */
+
+/* 		int l = pyint_to_cint(l_obj); */
+/* 		Py_DECREF(l_obj); */
+
+/* 		if (l == 0) { */
+/* 			Py_DECREF(i_obj); */
+/* 			PyErr_SetString(PyExc_ValueError, "non-zero integer expected"); */
+/* 			return NULL; */
+/* 		} */
+
+/* 		s->phase(l); */
+/* 	} */
+
+/* 	Py_DECREF(i_obj); */
+/* 	Py_RETURN_NONE; */
+/* } */
 
 //
 //=============================================================================

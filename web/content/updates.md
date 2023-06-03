@@ -10,6 +10,12 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 03.06.2023 (*0.1.8.dev5*)
+
+-   Exposed cadical's limited solving capability.
+-   Added pure SAT-based minimal hitting set enumeration through the use of
+    phase preferences.
+
 ## 25.05.2023 (*0.1.8.dev4*)
 
 -   Another attempt to fix the bug in RC2 related to stratification and weight
