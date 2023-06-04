@@ -213,7 +213,8 @@ class Hitman(object):
         enumerator. If ``htype`` is set to ``'mcsls'``, the :class:`.MCSls`
         enumerator is used. Finally, value ``'sat'`` can be given, in which
         case minimal hitting set enumeration will performed by means of a SAT
-        solver (can be either MiniSat-GH or Lingeling) with polarity setting.
+        solver (can be either MiniSat-GH, or Lingeling, or CaDiCaL 153) with
+        polarity setting.
 
         In either case, unless pure SAT-based hitting set enumeration is
         selected, an underlying problem solver can use a SAT oracle specified
@@ -283,6 +284,10 @@ class Hitman(object):
         self.minz     = mxs_minz
         self.trim     = mxs_trim
         self.usecld   = mcs_usecld
+
+        # enumeration phase, for SAT-based oracles only
+        # (can be equal either to 1 or to -1)
+        self.phase = 1
 
         # hitman type: either a MaxSAT solver or an MCS enumerator
         if htype in ('maxsat', 'mxsat', 'rc2', 'sorted'):
@@ -354,9 +359,9 @@ class Hitman(object):
 
         # hard clauses
         for to_hit in bootstrap_with:
-            to_hit = list(map(lambda obj: self.idpool.id(obj), to_hit))
+            to_hit = map(lambda obj: self.idpool.id(obj), to_hit)
 
-            formula.append(to_hit)
+            formula.append([self.phase * vid for vid in to_hit])
 
         # additional hard constraints
         for cl in subject_to:
@@ -387,11 +392,12 @@ class Hitman(object):
             self.oracle = MCSls(formula, solver_name=self.solver,
                     use_cld=self.usecld)
         else:  # 'sat'
-            assert self.solver in SolverNames.minisatgh + SolverNames.lingeling, \
+            assert self.solver in SolverNames.minisatgh + \
+                    SolverNames.lingeling + SolverNames.cadical153, \
                     'Hard polarity setting is unsupported by {0}'.format(self.solver)
 
             assert formula.atms == [], 'Native AtMostK constraints aren\'t' \
-            'supported by MinisatGH, Lingeling'
+            'supported by MinisatGH, Lingeling, or CaDiCaL 153'
 
             # setting up a SAT solver, so that it supports the same interface
             self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
@@ -402,7 +408,7 @@ class Hitman(object):
                 self.oracle.start_mode(warm=True)
 
             # soft clauses are enforced by means of setting polarities
-            self.oracle.set_phases(literals=[cl[0] for cl in formula.soft])
+            self.oracle.set_phases(literals=[self.phase * cl[0] for cl in formula.soft])
 
             # "adding" the missing compute() and oracle_time() methods
             self.oracle.compute = lambda: [self.oracle.solve(), self.oracle.get_model()][-1]
@@ -414,6 +420,25 @@ class Hitman(object):
             for vid in self.idpool.id2obj.keys():
                 self.oracle.vmap.e2i[vid] = vid
                 self.oracle.vmap.i2e[vid] = vid
+
+    def switch_phase(self):
+        """
+            If a pure SAT-based hitting set enumeration is used, it is
+            possible to instruct it to switch from enumerating target sets to
+            enumerating dual sets, by polarity switching. This is what this
+            method enables a user to do.
+        """
+
+        if self.htype == 'sat':
+            if self.solver in SolverNames.minisatgh:
+                # resetting the mode forces the solver to backtrack to level 0
+                self.oracle.start_mode(warm=True)
+
+            # switching the phase value
+            self.phase *= -1
+
+            # updating the preferences
+            self.oracle.set_phases(literals=[self.phase * (-v) for v in self.idpool.id2obj])
 
     def add_hard(self, clause, weights=None):
         """
@@ -465,7 +490,7 @@ class Hitman(object):
                 self.oracle.vmap.i2e[vid] = vid
 
             # setting variable polarities
-            self.oracle.set_phases(literals=[-vid for vid in new_obj])
+            self.oracle.set_phases(literals=[self.phase * (-vid) for vid in new_obj])
 
     def delete(self):
         """
@@ -490,8 +515,9 @@ class Hitman(object):
 
         if model is not None:
             if self.htype in ('rc2', 'sat'):
-                # extracting a hitting set
-                self.hset = filter(lambda v: v > 0, model)
+                # extracting a hitting set; the use of map may look
+                # silly but this is to support negative phases too
+                self.hset = map(lambda v: abs(v), filter(lambda v: v * self.phase > 0, model))
             else:
                 self.hset = model
 
@@ -521,8 +547,9 @@ class Hitman(object):
         # a soft clause should be added for each new object
         new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_hit))
 
-        # new hard clause
-        self.oracle.add_clause(to_hit)
+        # new hard clause; phase multiplication is needed
+        # for making phase switching possible (pure SAT only)
+        self.oracle.add_clause([self.phase * vid for vid in to_hit])
 
         # new soft clauses
         if self.htype != 'sat':
@@ -536,7 +563,7 @@ class Hitman(object):
                 self.oracle.vmap.i2e[vid] = vid
 
             # setting variable polarities
-            self.oracle.set_phases(literals=[-vid for vid in new_obj])
+            self.oracle.set_phases(literals=[self.phase * (-vid) for vid in new_obj])
 
     def block(self, to_block, weights=None):
         """
@@ -563,8 +590,9 @@ class Hitman(object):
         # a soft clause should be added for each new object
         new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_block))
 
-        # new hard clause
-        self.oracle.add_clause([-vid for vid in to_block])
+        # new hard clause; phase multiplication is needed
+        # for making phase switching possible (pure SAT only)
+        self.oracle.add_clause([self.phase * (-vid) for vid in to_block])
 
         # new soft clauses
         if self.htype != 'sat':
@@ -577,7 +605,7 @@ class Hitman(object):
                 self.oracle.vmap.i2e[vid] = vid
 
             # setting variable polarities
-            self.oracle.set_phases(literals=[-vid for vid in new_obj])
+            self.oracle.set_phases(literals=[self.phase * (-vid) for vid in new_obj])
 
     def enumerate(self):
         """
