@@ -15,6 +15,8 @@ keep it up to date and then is good idea.
 -   Added parameter setting for CaDiCaL 153.
 -   Added an interface for preferred polarity setting in CaDiCaL 153.
 -   Added CaDiCaL 153 as a possible oracle to Hitman.
+-   Added phase switching in Hitman when pure SAT-based enumeration is used.
+-   Added an option to use pure SAT-based hitting set enumeration in OptUx.
 
 ## 03.06.2023 (*0.1.8.dev5*)
 
