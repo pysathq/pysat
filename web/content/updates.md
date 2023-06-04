@@ -10,6 +10,12 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 04.06.2023 (*0.1.8.dev6*)
+
+-   Added parameter setting for CaDiCaL 153.
+-   Added an interface for preferred polarity setting in CaDiCaL 153.
+-   Added CaDiCaL 153 as a possible oracle to Hitman.
+
 ## 03.06.2023 (*0.1.8.dev5*)
 
 -   Exposed cadical's limited solving capability.

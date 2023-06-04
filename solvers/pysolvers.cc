@@ -80,6 +80,8 @@ using namespace std;
 static char    module_docstring[] = "This module provides a wrapper interface "
                                     "for several SAT solvers.";
 static char       new_docstring[] = "Create a new solver object.";
+static char       set_docstring[] = "Set a value of a solver's parameter "
+                                    "(for CaDiCaL 153 only).";
 static char     addcl_docstring[] = "Add a clause to formula.";
 static char     addam_docstring[] = "Add an atmost constraint to formula "
                                     "(for Minicard only).";
@@ -131,12 +133,13 @@ extern "C" {
 #endif
 #ifdef WITH_CADICAL153
 	static PyObject *py_cadical153_new       (PyObject *, PyObject *);
+	static PyObject *py_cadical153_set       (PyObject *, PyObject *);
 	static PyObject *py_cadical153_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_cadical153_process   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_restore   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve     (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve_lim (PyObject *, PyObject *);
-	/* static PyObject *py_cadical153_setphases (PyObject *, PyObject *); */
+	static PyObject *py_cadical153_setphases (PyObject *, PyObject *);
 	static PyObject *py_cadical153_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_dbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_tracepr   (PyObject *, PyObject *);
@@ -403,10 +406,11 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_CADICAL153
 	{ "cadical153_new",       py_cadical153_new,       METH_VARARGS,      new_docstring },
+	{ "cadical153_set",       py_cadical153_set,       METH_VARARGS,      set_docstring },
 	{ "cadical153_add_cl",    py_cadical153_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical153_solve",     py_cadical153_solve,     METH_VARARGS,    solve_docstring },
 	{ "cadical153_solve_lim", py_cadical153_solve_lim, METH_VARARGS,      lim_docstring },
-	/* { "cadical153_setphases", py_cadical153_setphases, METH_VARARGS,   phases_docstring }, */
+	{ "cadical153_setphases", py_cadical153_setphases, METH_VARARGS,   phases_docstring },
 	{ "cadical153_cbudget",   py_cadical153_cbudget,   METH_VARARGS,  cbudget_docstring },
 	{ "cadical153_dbudget",   py_cadical153_dbudget,   METH_VARARGS,  dbudget_docstring },
 	{ "cadical153_process",   py_cadical153_process,   METH_VARARGS,  process_docstring },
@@ -1276,6 +1280,29 @@ static PyObject *py_cadical153_new(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_cadical153_set(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	const char *name;
+	int64_t value;
+
+	if (!PyArg_ParseTuple(args, "Osl", &s_obj, &name, &value))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
+
+	// set the parameter
+	CaDiCaL153::State temp = s->state();
+	s->set_state(CaDiCaL153::State::CONFIGURING); // temporarily set state to configuring to enable option setting
+	s->set(name, value);
+	s->set_state(temp); // restore the original state
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_cadical153_add_cl(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -1595,51 +1622,51 @@ static PyObject *py_cadical153_solve_lim(PyObject *self, PyObject *args)
 	return ret;
 }
 
-// calling phase() does not seem to work for now!
+//
 //=============================================================================
-/* static PyObject *py_cadical153_setphases(PyObject *self, PyObject *args) */
-/* { */
-/* 	PyObject *s_obj; */
-/* 	PyObject *p_obj;  // polarities given as a list of integer literals */
+static PyObject *py_cadical153_setphases(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
 
-/* 	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj)) */
-/* 		return NULL; */
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
 
-/* 	// get pointer to solver */
-/* 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj); */
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
 
-/* 	// assumptions iterator */
-/* 	PyObject *i_obj = PyObject_GetIter(p_obj); */
-/* 	if (i_obj == NULL) { */
-/* 		PyErr_SetString(PyExc_RuntimeError, */
-/* 				"Object does not seem to be an iterable."); */
-/* 		return NULL; */
-/* 	} */
+	// assumptions iterator
+	PyObject *i_obj = PyObject_GetIter(p_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return NULL;
+	}
 
-/* 	PyObject *l_obj; */
-/* 	while ((l_obj = PyIter_Next(i_obj)) != NULL) { */
-/* 		if (!pyint_check(l_obj)) { */
-/* 			Py_DECREF(l_obj); */
-/* 			Py_DECREF(i_obj); */
-/* 			PyErr_SetString(PyExc_TypeError, "integer expected"); */
-/* 			return NULL; */
-/* 		} */
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
 
-/* 		int l = pyint_to_cint(l_obj); */
-/* 		Py_DECREF(l_obj); */
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
 
-/* 		if (l == 0) { */
-/* 			Py_DECREF(i_obj); */
-/* 			PyErr_SetString(PyExc_ValueError, "non-zero integer expected"); */
-/* 			return NULL; */
-/* 		} */
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
 
-/* 		s->phase(l); */
-/* 	} */
+		s->phase(l);
+	}
 
-/* 	Py_DECREF(i_obj); */
-/* 	Py_RETURN_NONE; */
-/* } */
+	Py_DECREF(i_obj);
+	Py_RETURN_NONE;
+}
 
 //
 //=============================================================================

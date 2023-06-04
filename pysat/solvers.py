@@ -451,6 +451,27 @@ class Solver(object):
         if self.solver:
             self.solver.start_mode(warm)
 
+    def configure(self, parameters):
+        """
+            Configure :class:`Cadical153` by setting some of the predefined
+            parameters to selected values. Note that this method can be
+            invoked only for :class:`Cadical153` -- no other solvers support
+            this for now.
+
+            Also note that this call must follow the creation of the new
+            solver object; otherwise, an exception may be thrown.
+
+            The list of available options of :class:`Cadical153` and the
+            corresponding values they can be assigned to is provided `here
+            <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
+
+            :param parameters: parameter names mapped to integer values
+            :type parameters: dict
+        """
+
+        if self.solver and type(self.solver) == Cadical153:
+            self.solver.configure(parameters)
+
     def accum_stats(self):
         """
             Get accumulated low-level stats from the solver. Currently, the
@@ -1626,6 +1647,24 @@ class Cadical153(object):
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
 
+    def configure(self, parameters):
+        """
+            Configure Cadical153 by setting some of the predefined parameters.
+            This call must follow the creation of the new solver object;
+            otherwise, an exception will be thrown.
+
+            The list of available options and the corresponding
+            values they can be assigned to is provided `here
+            <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
+
+            :param parameters: parameter names mapped to integer values
+            :type parameters: dict
+        """
+
+        if self.cadical:
+            for name, value in parameters.items():
+                pysolvers.cadical153_set(self.cadical, name, value)
+
     def delete(self):
         """
             Destructor.
@@ -1761,7 +1800,12 @@ class Cadical153(object):
             Sets polarities of a given list of variables.
         """
 
-        raise NotImplementedError('Setting preferred phases is not yet implemented for CaDiCaL.')
+        if self.cadical:
+            # making sure 'lucky' phases don't interfere with our preferences
+            self.configure({'lucky': 0})
+
+            # setting preferred phases
+            pysolvers.cadical153_setphases(self.cadical, literals)
 
     def get_status(self):
         """
