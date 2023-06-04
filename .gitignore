@@ -1,3 +1,4 @@
+.DS_Store
 *.pyc
 *.zip
 *.tar.gz
@@ -5,6 +6,7 @@
 build
 _build
 dist
+solvers/._glucose-syrup-4.1
 solvers/cadical103
 solvers/cadical153
 solvers/gluecard30
@@ -20,3 +22,5 @@ solvers/minicard
 solvers/minisat22
 solvers/minisatgh
 temp
+web/.hugo_build.lock
+wheelhouse
