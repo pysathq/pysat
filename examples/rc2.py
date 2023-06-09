@@ -1121,11 +1121,13 @@ class RC2(object):
 
         return t, b
 
-    def set_bound(self, tobj, rhs, weight):
+    def set_bound(self, tobj, rhs, weight=None):
         """
             Given a totalizer sum, its right-hand side to be enforced, and a
             weight, the method creates a new sum assumption literal, which
-            will be used in the following SAT oracle calls.
+            will be used in the following SAT oracle calls. If ``weight`` is
+            left unspecified, the current core's weight, i.e. ``self.minw``,
+            is used.
 
             :param tobj: totalizer sum
             :param rhs: right-hand side
@@ -1135,6 +1137,10 @@ class RC2(object):
             :type rhs: int
             :type weight: int
         """
+
+        if weight is None:
+            # if no specific weight is provided, use the core's weight
+            weight = self.minw
 
         # saving the sum and its weight in a mapping
         self.tobj[-tobj.rhs[rhs]] = tobj

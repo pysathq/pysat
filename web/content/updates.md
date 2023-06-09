@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 09.06.2023 (*0.1.8.dev7*)
+
+-   Minor fix in RC2 making the new version backward compatible with the old
+    API.
+
 ## 04.06.2023 (*0.1.8.dev6*)
 
 -   Added parameter setting for CaDiCaL 153.
