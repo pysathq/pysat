@@ -217,6 +217,7 @@ class SolverNames(object):
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
+    glucose421  = ('g421', 'g42', 'glucose421', 'glucose42')
     lingeling   = ('lgl', 'lingeling')
     maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
     maplecm     = ('mcm', 'maplecm')
