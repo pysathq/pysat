@@ -1,0 +1,676 @@
+diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/BoundedQueue.h
+--- build/solvers/glucose421/core/BoundedQueue.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/BoundedQueue.h	2023-06-19 12:09:28.296057024 +0200
+@@ -48,14 +48,14 @@
+  **************************************************************************************************/
+ 
+ 
+-#ifndef BoundedQueue_h
+-#define BoundedQueue_h
++#ifndef Glucose421_BoundedQueue_h
++#define Glucose421_BoundedQueue_h
+ 
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/Vec.h"
+ 
+ //=================================================================================================
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ template <class T>
+ class bqueue {
+diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
+--- build/solvers/glucose421/core/lcm.cc	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/lcm.cc	2023-06-19 12:09:28.296057024 +0200
+@@ -1,6 +1,6 @@
+-#include "Solver.h"
+-#include "mtl/Sort.h"
+-using namespace Glucose;
++#include "glucose421/Solver.h"
++#include "glucose421/mtl/Sort.h"
++using namespace Glucose421;
+ 
+ 
+ 
+diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solver.cc
+--- build/solvers/glucose421/core/Solver.cc	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/Solver.cc	2023-06-19 12:10:03.161287999 +0200
+@@ -49,13 +49,12 @@
+ 
+ #include <math.h>
+ 
+-#include "utils/System.h"
+-#include "mtl/Sort.h"
+-#include "core/Solver.h"
+-#include "core/Constants.h"
+-#include"simp/SimpSolver.h"
++#include "glucose421/utils/System.h"
++#include "glucose421/mtl/Sort.h"
++#include "glucose421/core/Solver.h"
++#include "glucose421/core/Constants.h"
+ 
+-using namespace Glucose;
++using namespace Glucose421;
+ 
+ 
+ //=================================================================================================
+@@ -962,6 +961,58 @@
+     return;
+ }
+ 
++//=================================================================================================
++// Propagate and check (added for PySat):
++bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
++{
++    prop.clear();
++
++    if (!ok)
++        return false;
++
++    bool    st = true;
++    int  level = decisionLevel();
++    CRef confl = CRef_Undef;
++
++    // dealing with phase saving
++    int psaving_copy = phase_saving;
++    phase_saving = psaving;
++
++    // propagate each assumption at a new decision level
++    for (int i = 0; st && confl == CRef_Undef && i < assumps.size(); ++i) {
++        Lit p = assumps[i];
++
++        if (value(p) == l_False)
++            st = false;
++        else if (value(p) != l_True) {
++            newDecisionLevel ();
++            uncheckedEnqueue(p);
++            confl = propagate();
++        }
++    }
++
++    // copying the result
++    if (decisionLevel() > level) {
++        for (int c = trail_lim[level]; c < trail.size(); ++c)
++            prop.push(trail[c]);
++
++        // if there is a conflict, pushing
++        // the conflicting literal as well
++        // here we may choose a wrong literal
++        // in Glucose if the clause is binary!
++        if (confl != CRef_Undef)
++            prop.push(ca[confl][0]);
++
++        // backtracking
++        cancelUntil(level);
++    }
++
++    // restoring phase saving
++    phase_saving = psaving_copy;
++
++    return st && confl == CRef_Undef;
++}
++
+ 
+ /*_________________________________________________________________________________________________
+ |
+diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver.h
+--- build/solvers/glucose421/core/Solver.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/Solver.h	2023-06-19 12:09:28.296057024 +0200
+@@ -47,20 +47,20 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  **************************************************************************************************/
+ 
+-#ifndef Glucose_Solver_h
+-#define Glucose_Solver_h
++#ifndef Glucose421_Solver_h
++#define Glucose421_Solver_h
+ 
+-#include "mtl/Heap.h"
+-#include "mtl/Alg.h"
+-#include "utils/Options.h"
+-#include "core/SolverTypes.h"
+-#include "core/BoundedQueue.h"
+-#include "core/Constants.h"
+-#include "mtl/Clone.h"
+-#include "core/SolverStats.h"
++#include "glucose421/mtl/Heap.h"
++#include "glucose421/mtl/Alg.h"
++#include "glucose421/utils/Options.h"
++#include "glucose421/core/SolverTypes.h"
++#include "glucose421/core/BoundedQueue.h"
++#include "glucose421/core/Constants.h"
++#include "glucose421/mtl/Clone.h"
++#include "glucose421/core/SolverStats.h"
+ 
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ // Core stats 
+ 
+ enum CoreStats {
+@@ -137,6 +137,7 @@
+     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+     bool    okay         () const;                  // FALSE means solver is in a conflicting state
++    bool    prop_check   (const vec<Lit>& assumps, vec<Lit>& prop, int psaving = 0); // compute a list of propagated literals given a set of assumptions
+ 
+        // Convenience versions of 'toDimacs()':
+     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/SolverStats.h
+--- build/solvers/glucose421/core/SolverStats.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/SolverStats.h	2023-06-19 12:09:28.296057024 +0200
+@@ -47,12 +47,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  **************************************************************************************************/
+ 
+-#ifndef SOLVERSTATS_H
+-#define	SOLVERSTATS_H
++#ifndef Glucose421_SOLVERSTATS_H
++#define	Glucose421_SOLVERSTATS_H
+ 
+-#include "mtl/Map.h"
++#include "glucose421/mtl/Map.h"
+ #include <string>
+-namespace Glucose {
++namespace Glucose421 {
+ 
+     class SolverStats {
+     protected:
+diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/SolverTypes.h
+--- build/solvers/glucose421/core/SolverTypes.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/core/SolverTypes.h	2023-06-19 12:09:28.296057024 +0200
+@@ -48,21 +48,21 @@
+  **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_SolverTypes_h
+-#define Glucose_SolverTypes_h
++#ifndef Glucose421_SolverTypes_h
++#define Glucose421_SolverTypes_h
+ 
+ #include <assert.h>
+ #include <stdint.h>
+ #include <pthread.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Alg.h"
+-#include "mtl/Vec.h"
+-#include "mtl/Map.h"
+-#include "mtl/Alloc.h"
++#include "glucose421/mtl/IntTypes.h"
++#include "glucose421/mtl/Alg.h"
++#include "glucose421/mtl/Vec.h"
++#include "glucose421/mtl/Map.h"
++#include "glucose421/mtl/Alloc.h"
+ 
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Variables, literals, lifted booleans, clauses:
+@@ -113,9 +113,9 @@
+ //       does enough constant propagation to produce sensible code, and this appears to be somewhat
+ //       fragile unfortunately.
+ 
+-#define l_True  (Glucose::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+-#define l_False (Glucose::lbool((uint8_t)1))
+-#define l_Undef (Glucose::lbool((uint8_t)2))
++#define l_True  (Glucose421::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
++#define l_False (Glucose421::lbool((uint8_t)1))
++#define l_Undef (Glucose421::lbool((uint8_t)2))
+ 
+ class lbool {
+     uint8_t value;
+diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
+--- build/solvers/glucose421/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/glucose421/Makefile	2023-06-19 12:09:28.296057024 +0200
+@@ -0,0 +1,37 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DINCREMENTAL
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     :=  glucose421
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
+diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
+--- build/solvers/glucose421/mtl/Alg.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Alg.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Alg_h
+-#define Glucose_Alg_h
++#ifndef Glucose421_Alg_h
++#define Glucose421_Alg_h
+ 
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Useful functions on vector-like types:
+diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
+--- build/solvers/glucose421/mtl/Alloc.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Alloc.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,13 +18,13 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_Alloc_h
+-#define Glucose_Alloc_h
++#ifndef Glucose421_Alloc_h
++#define Glucose421_Alloc_h
+ 
+-#include "mtl/XAlloc.h"
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/XAlloc.h"
++#include "glucose421/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Simple Region-based memory allocator:
+diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
+--- build/solvers/glucose421/mtl/Clone.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Clone.h	2023-06-19 12:09:28.296057024 +0200
+@@ -1,8 +1,8 @@
+-#ifndef Glucose_Clone_h
+-#define Glucose_Clone_h
++#ifndef Glucose421_Clone_h
++#define Glucose421_Clone_h
+ 
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+     class Clone {
+         public:
+diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
+--- build/solvers/glucose421/mtl/Heap.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Heap.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Heap_h
+-#define Glucose_Heap_h
++#ifndef Glucose421_Heap_h
++#define Glucose421_Heap_h
+ 
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // A heap implementation with support for decrease/increase key.
+diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
+--- build/solvers/glucose421/mtl/Map.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Map.h	2023-06-19 12:09:28.296057024 +0200
+@@ -17,15 +17,15 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Map_h
+-#define Glucose_Map_h
++#ifndef Glucose421_Map_h
++#define Glucose421_Map_h
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/IntTypes.h"
++#include "glucose421/mtl/Vec.h"
+ #include <string>
+ #include <unordered_map>
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Default hash/equals functions
+diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
+--- build/solvers/glucose421/mtl/Queue.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Queue.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,12 +18,12 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Queue_h
+-#define Glucose_Queue_h
++#ifndef Glucose421_Queue_h
++#define Glucose421_Queue_h
+ 
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/Vec.h"
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ 
+diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
+--- build/solvers/glucose421/mtl/Sort.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Sort.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,16 +18,16 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Sort_h
+-#define Glucose_Sort_h
++#ifndef Glucose421_Sort_h
++#define Glucose421_Sort_h
+ 
+-#include "mtl/Vec.h"
++#include "glucose421/mtl/Vec.h"
+ 
+ //=================================================================================================
+ // Some sorting algorithms for vec's
+ 
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ template<class T>
+ struct LessThan_default {
+diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
+--- build/solvers/glucose421/mtl/Vec.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/Vec.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,17 +18,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Vec_h
+-#define Glucose_Vec_h
++#ifndef Glucose421_Vec_h
++#define Glucose421_Vec_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "glucose421/mtl/IntTypes.h"
++#include "glucose421/mtl/XAlloc.h"
+ #include<string.h>
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecThreads.h
+--- build/solvers/glucose421/mtl/VecThreads.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/VecThreads.h	2023-06-19 12:09:28.296057024 +0200
+@@ -19,17 +19,17 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_VecThreads_h
+-#define Glucose_VecThreads_h
++#ifndef Glucose421_VecThreads_h
++#define Glucose421_VecThreads_h
+ 
+ #include <assert.h>
+ #include <new>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/XAlloc.h"
++#include "glucose421/mtl/IntTypes.h"
++#include "glucose421/mtl/XAlloc.h"
+ #include<string.h>
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Automatically resizable arrays
+diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
+--- build/solvers/glucose421/mtl/XAlloc.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/mtl/XAlloc.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,14 +18,14 @@
+ **************************************************************************************************/
+ 
+ 
+-#ifndef Glucose_XAlloc_h
+-#define Glucose_XAlloc_h
++#ifndef Glucose421_XAlloc_h
++#define Glucose421_XAlloc_h
+ 
+ #include <errno.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //=================================================================================================
+ // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Options.cc
+--- build/solvers/glucose421/utils/Options.cc	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/utils/Options.cc	2023-06-19 12:09:28.296057024 +0200
+@@ -17,13 +17,13 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "mtl/Sort.h"
+-#include "utils/Options.h"
+-#include "utils/ParseUtils.h"
++#include "glucose421/mtl/Sort.h"
++#include "glucose421/utils/Options.h"
++#include "glucose421/utils/ParseUtils.h"
+ 
+-using namespace Glucose;
++using namespace Glucose421;
+ 
+-void Glucose::parseOptions(int& argc, char** argv, bool strict)
++void Glucose421::parseOptions(int& argc, char** argv, bool strict)
+ {
+     int i, j;
+     for (i = j = 1; i < argc; i++){
+@@ -54,9 +54,9 @@
+ }
+ 
+ 
+-void Glucose::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+-void Glucose::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+-void Glucose::printUsageAndExit (int argc, char** argv, bool verbose)
++void Glucose421::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
++void Glucose421::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
++void Glucose421::printUsageAndExit (int argc, char** argv, bool verbose)
+ {
+     const char* usage = Option::getUsageString();
+     if (usage != NULL)
+diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Options.h
+--- build/solvers/glucose421/utils/Options.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/utils/Options.h	2023-06-19 12:09:28.296057024 +0200
+@@ -17,19 +17,19 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_Options_h
+-#define Glucose_Options_h
++#ifndef Glucose421_Options_h
++#define Glucose421_Options_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+ #include <string.h>
+ 
+-#include "mtl/IntTypes.h"
+-#include "mtl/Vec.h"
+-#include "utils/ParseUtils.h"
++#include "glucose421/mtl/IntTypes.h"
++#include "glucose421/mtl/Vec.h"
++#include "glucose421/utils/ParseUtils.h"
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //==================================================================================================
+ // Top-level option parse/help functions:
+diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/ParseUtils.h
+--- build/solvers/glucose421/utils/ParseUtils.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/utils/ParseUtils.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,8 +18,8 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_ParseUtils_h
+-#define Glucose_ParseUtils_h
++#ifndef Glucose421_ParseUtils_h
++#define Glucose421_ParseUtils_h
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+@@ -27,7 +27,7 @@
+ 
+ #include <zlib.h>
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ //-------------------------------------------------------------------------------------------------
+ // A simple buffered character stream class:
+diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/System.cc
+--- build/solvers/glucose421/utils/System.cc	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/utils/System.cc	2023-06-19 12:09:28.296057024 +0200
+@@ -18,14 +18,14 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#include "utils/System.h"
++#include "glucose421/utils/System.h"
+ 
+ #if defined(__linux__)
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-using namespace Glucose;
++using namespace Glucose421;
+ 
+ // TODO: split the memory reading functions into two: one for reading high-watermark of RSS, and
+ // one for reading the current virtual memory size.
+@@ -67,14 +67,14 @@
+     return peak_kb;
+ }
+ 
+-double Glucose::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
+-double Glucose::memUsedPeak() { 
++double Glucose421::memUsed() { return (double)memReadStat(0) * (double)getpagesize() / (1024*1024); }
++double Glucose421::memUsedPeak() { 
+     double peak = memReadPeak() / 1024;
+     return peak == 0 ? memUsed() : peak; }
+ 
+ #elif defined(__FreeBSD__)
+ 
+-double Glucose::memUsed(void) {
++double Glucose421::memUsed(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_maxrss / 1024; }
+@@ -84,12 +84,12 @@
+ #elif defined(__APPLE__)
+ #include <malloc/malloc.h>
+ 
+-double Glucose::memUsed(void) {
++double Glucose421::memUsed(void) {
+     malloc_statistics_t t;
+     malloc_zone_statistics(NULL, &t);
+     return (double)t.max_size_in_use / (1024*1024); }
+ 
+ #else
+-double Glucose::memUsed() { 
++double Glucose421::memUsed() { 
+     return 0; }
+ #endif
+diff -Naur build/solvers/glucose421/utils/System.h solvers/glucose421/utils/System.h
+--- build/solvers/glucose421/utils/System.h	2023-05-09 15:19:52.000000000 +0200
++++ solvers/glucose421/utils/System.h	2023-06-19 12:09:28.296057024 +0200
+@@ -18,18 +18,18 @@
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+ 
+-#ifndef Glucose_System_h
+-#define Glucose_System_h
++#ifndef Glucose421_System_h
++#define Glucose421_System_h
+ 
+ #if defined(__linux__)
+ #include <fpu_control.h>
+ #endif
+ 
+-#include "mtl/IntTypes.h"
++#include "glucose421/mtl/IntTypes.h"
+ 
+ //-------------------------------------------------------------------------------------------------
+ 
+-namespace Glucose {
++namespace Glucose421 {
+ 
+ static inline double cpuTime(void); // CPU-time in seconds.
+ static inline double realTime(void);
+@@ -44,14 +44,14 @@
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+ #include <time.h>
+ 
+-static inline double Glucose::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
++static inline double Glucose421::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+ 
+ #else
+ #include <sys/time.h>
+ #include <sys/resource.h>
+ #include <unistd.h>
+ 
+-static inline double Glucose::cpuTime(void) {
++static inline double Glucose421::cpuTime(void) {
+     struct rusage ru;
+     getrusage(RUSAGE_SELF, &ru);
+     return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
+@@ -59,7 +59,7 @@
+ #endif
+ 
+ // Laurent: I know that this will not compile directly under Windows... sorry for that
+-static inline double Glucose::realTime() {
++static inline double Glucose421::realTime() {
+     struct timeval tv;
+     gettimeofday(&tv, NULL);
+     return (double)tv.tv_sec + (double) tv.tv_usec / 1000000; }
