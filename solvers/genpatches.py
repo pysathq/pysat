@@ -21,9 +21,10 @@ import prepare
 
 # solvers to install
 #==============================================================================
-to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
-              'glucose30', 'glucose41', 'lingeling', 'maplechrono', 'maplecm',
-              'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
+#to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
+#              'glucose30', 'glucose41', 'lingeling', 'maplechrono', 'maplecm',
+#              'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
+to_install = ['glucose421']
 
 
 #
@@ -57,11 +58,13 @@ def main():
 
     shutil.rmtree('build/solvers', ignore_errors=True)
 
+    file_types = ['*.obj', '*.o', '*.a'] # *.o and *.a are required for Glucose421
     with chdir('solvers'):
         for solver in to_install:
             with chdir(solver):
-                for filename in glob.glob('*.obj'):
-                    os.unlink(filename)
+                for ft in file_types:
+                    for filename in glob.glob("**/" + ft, recursive = True):
+                        os.unlink(filename)
 
     shutil.copytree('solvers', 'build/solvers')
 
