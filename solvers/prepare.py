@@ -685,7 +685,6 @@ def do(to_install):
         
         if platform.system() != 'Windows':
             compile_solver(solver)
-    #exit()
 
 #
 #==============================================================================
@@ -792,18 +791,13 @@ def adapt_files(solver):
         arch = os.path.join(root, arch)
         extract_archive(arch, solver, put_inside=True)
 
-    print("to_move")
     for fnames in to_move[solver]:
-        print("fnams = {}".format(fnames))
-        print("---")
         old = os.path.join(root, fnames[0])
         new = os.path.join(root, fnames[1])
         os.rename(old, new)
 
-    print("to_remove")
     for f in to_remove[solver]:
         f = os.path.join(root, f)
-        print("remove {}".format(f))
         if os.path.isdir(f):
             shutil.rmtree(f)
         else:
