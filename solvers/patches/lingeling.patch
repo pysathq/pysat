@@ -1,48 +1,6 @@
-diff -Naur solvers/lingeling/Makefile solvers/lgl/Makefile
---- solvers/lingeling/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/lgl/Makefile	2021-08-12 09:10:25.000000000 +1000
-@@ -0,0 +1,38 @@
-+### Makefile ---
-+
-+## Author: aign
-+## Keywords:
-+
-+# main parameters
-+CC       := cc
-+CFLAGS   := -std=gnu11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
-+LFLAGS   := -DNLGLOG -DNDEBUG -DNCHKSOL -DNLGLYALSAT -DNLGLFILES -DNLGLDEMA
-+VERSION  := -DVERSION=\"PYSAT\"
-+INCLUDES := -I.
-+LIBS     := -L.
-+SOURCES  := lglib.c lglopts.c druplig.c
-+OBJECTS  := $(SOURCES:.c=.o)
-+TRGT     := lingeling
-+
-+# gather compiler options
-+CARGS := $(CFLAGS) $(INCLUDES) $(LFLAGS) $(VERSION)
-+
-+# targets
-+.PHONY: all clean lib
-+
-+all: lib
-+
-+lib: $(OBJECTS)
-+	@-ar cr lib$(TRGT).a $(OBJECTS)
-+
-+%.o: %.c
-+	$(CC) $(CARGS) -c $< -o $@
-+
-+clean:
-+	@-rm $(OBJECTS)
-+
-+allclean:
-+	@-find . -name '*.o' -delete
-+	@-find . -name '*.a' -delete
-+
-+#-------------------------------------------------------------------------------
-diff -Naur solvers/lingeling/druplig.c solvers/lgl/druplig.c
---- solvers/lingeling/druplig.c	2021-08-12 09:49:29.000000000 +1000
-+++ solvers/lgl/druplig.c	2021-08-12 09:10:25.000000000 +1000
+diff -Naur build/solvers/lingeling/druplig.c solvers/lingeling/druplig.c
+--- build/solvers/lingeling/druplig.c	2023-06-20 14:19:21.113859802 +0200
++++ solvers/lingeling/druplig.c	2023-06-19 13:15:16.383034970 +0200
 @@ -15,9 +15,14 @@
  
  /*------------------------------------------------------------------------*/
@@ -111,9 +69,9 @@ diff -Naur solvers/lingeling/druplig.c solvers/lgl/druplig.c
  
  typedef struct Prof { char * name; long long calls; double time; } Prof;
  
-diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
---- solvers/lingeling/druplig.h	2021-08-12 09:49:29.000000000 +1000
-+++ solvers/lgl/druplig.h	2021-08-12 09:10:25.000000000 +1000
+diff -Naur build/solvers/lingeling/druplig.h solvers/lingeling/druplig.h
+--- build/solvers/lingeling/druplig.h	2023-06-20 14:19:21.113859802 +0200
++++ solvers/lingeling/druplig.h	2023-06-19 13:15:16.383034970 +0200
 @@ -10,6 +10,10 @@
  
  typedef struct Druplig Druplig;
@@ -134,9 +92,9 @@ diff -Naur solvers/lingeling/druplig.h solvers/lgl/druplig.h
 +#endif
 +
  #endif
-diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
---- solvers/lingeling/lglib.c	2016-07-07 18:21:31.000000000 +1000
-+++ solvers/lgl/lglib.c	2021-08-12 09:10:25.000000000 +1000
+diff -Naur build/solvers/lingeling/lglib.c solvers/lingeling/lglib.c
+--- build/solvers/lingeling/lglib.c	2016-07-07 10:21:31.000000000 +0200
++++ solvers/lingeling/lglib.c	2023-06-19 13:15:16.383034970 +0200
 @@ -20,11 +20,43 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -1606,9 +1564,9 @@ diff -Naur solvers/lingeling/lglib.c solvers/lgl/lglib.c
  int64_t lglgetconfs (LGL * lgl) {
    REQINITNOTFORKED ();
    return lgl->stats->confs;
-diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
---- solvers/lingeling/lglib.h	2016-04-28 06:01:55.000000000 +1000
-+++ solvers/lgl/lglib.h	2021-08-12 09:49:11.000000000 +1000
+diff -Naur build/solvers/lingeling/lglib.h solvers/lingeling/lglib.h
+--- build/solvers/lingeling/lglib.h	2016-04-27 22:01:55.000000000 +0200
++++ solvers/lingeling/lglib.h	2023-06-19 13:15:16.383034970 +0200
 @@ -6,7 +6,8 @@
  #define lglib_h_INCLUDED
  
@@ -1669,9 +1627,9 @@ diff -Naur solvers/lingeling/lglib.h solvers/lgl/lglib.h
 +#endif
 +
  #endif
-diff -Naur solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
---- solvers/lingeling/lglopts.h	2016-04-28 06:01:55.000000000 +1000
-+++ solvers/lgl/lglopts.h	2021-08-12 09:10:25.000000000 +1000
+diff -Naur build/solvers/lingeling/lglopts.h solvers/lingeling/lglopts.h
+--- build/solvers/lingeling/lglopts.h	2016-04-27 22:01:55.000000000 +0200
++++ solvers/lingeling/lglopts.h	2023-06-19 13:15:16.383034970 +0200
 @@ -32,8 +32,16 @@
  
  /*------------------------------------------------------------------------*/
@@ -1689,3 +1647,45 @@ diff -Naur solvers/lingeling/lglopts.h solvers/lgl/lglopts.h
  /*------------------------------------------------------------------------*/
  
  #endif
+diff -Naur build/solvers/lingeling/Makefile solvers/lingeling/Makefile
+--- build/solvers/lingeling/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/lingeling/Makefile	2023-06-19 13:15:16.383034970 +0200
+@@ -0,0 +1,38 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CC       := cc
++CFLAGS   := -std=gnu11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++LFLAGS   := -DNLGLOG -DNDEBUG -DNCHKSOL -DNLGLYALSAT -DNLGLFILES -DNLGLDEMA
++VERSION  := -DVERSION=\"PYSAT\"
++INCLUDES := -I.
++LIBS     := -L.
++SOURCES  := lglib.c lglopts.c druplig.c
++OBJECTS  := $(SOURCES:.c=.o)
++TRGT     := lingeling
++
++# gather compiler options
++CARGS := $(CFLAGS) $(INCLUDES) $(LFLAGS) $(VERSION)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.c
++	$(CC) $(CARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------

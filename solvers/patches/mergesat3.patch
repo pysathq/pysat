@@ -1,49 +1,6 @@
-diff -Naur solvers/mergesat3/Makefile solvers/mgs3/Makefile
---- solvers/mergesat3/Makefile	1970-01-01 10:00:00.000000000 +1000
-+++ solvers/mgs3/Makefile	2021-08-12 09:10:24.000000000 +1000
-@@ -0,0 +1,39 @@
-+### Makefile ---
-+
-+## Author: aign
-+## Keywords:
-+
-+# main parameters
-+CXX      := c++
-+CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
-+CXXOPT   := -O3 -DNDEBUG
-+CXXDEBUG := -O0 -g3
-+CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
-+INCLUDES := -I..
-+LIBS     := -L.
-+SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc utils/ccnr.cc
-+OBJECTS  := $(SOURCES:.cc=.o)
-+TRGT     := mergesat3
-+
-+# gather compiler options
-+CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
-+
-+# targets
-+.PHONY: all clean lib
-+
-+all: lib
-+
-+lib: $(OBJECTS)
-+	@-ar cr lib$(TRGT).a $(OBJECTS)
-+
-+%.o: %.cc
-+	$(CXX) $(CXXARGS) -c $< -o $@
-+
-+clean:
-+	@-rm $(OBJECTS)
-+
-+allclean:
-+	@-find . -name '*.o' -delete
-+	@-find . -name '*.a' -delete
-+
-+#-------------------------------------------------------------------------------
-diff -Naur solvers/mergesat3/core/BoundedQueue.h solvers/mgs3/core/BoundedQueue.h
---- solvers/mergesat3/core/BoundedQueue.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/BoundedQueue.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/BoundedQueue.h solvers/mergesat3/core/BoundedQueue.h
+--- build/solvers/mergesat3/core/BoundedQueue.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/BoundedQueue.h	2023-06-19 13:15:22.167233991 +0200
 @@ -20,14 +20,14 @@
  **************************************************************************************************/
  
@@ -72,9 +29,9 @@ diff -Naur solvers/mergesat3/core/BoundedQueue.h solvers/mgs3/core/BoundedQueue.
  //=================================================================================================
  
  #endif
-diff -Naur solvers/mergesat3/core/Constants.h solvers/mgs3/core/Constants.h
---- solvers/mergesat3/core/Constants.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Constants.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/Constants.h solvers/mergesat3/core/Constants.h
+--- build/solvers/mergesat3/core/Constants.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/Constants.h	2023-06-19 13:15:22.167233991 +0200
 @@ -19,8 +19,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -86,9 +43,9 @@ diff -Naur solvers/mergesat3/core/Constants.h solvers/mgs3/core/Constants.h
  
  #define DYNAMICNBLEVEL
  #define CONSTANTREMOVECLAUSE
-diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
---- solvers/mergesat3/core/Dimacs.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Dimacs.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/Dimacs.h solvers/mergesat3/core/Dimacs.h
+--- build/solvers/mergesat3/core/Dimacs.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/Dimacs.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,15 +18,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -118,9 +75,9 @@ diff -Naur solvers/mergesat3/core/Dimacs.h solvers/mgs3/core/Dimacs.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineProofChecker.h
---- solvers/mergesat3/core/OnlineProofChecker.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/OnlineProofChecker.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/OnlineProofChecker.h solvers/mergesat3/core/OnlineProofChecker.h
+--- build/solvers/mergesat3/core/OnlineProofChecker.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/OnlineProofChecker.h	2023-06-19 13:15:22.167233991 +0200
 @@ -2,19 +2,19 @@
  Copyright (c) 2020, Norbert Manthey
  **************************************************************************************************/
@@ -257,9 +214,9 @@ diff -Naur solvers/mergesat3/core/OnlineProofChecker.h solvers/mgs3/core/OnlineP
 +}; // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
---- solvers/mergesat3/core/Solver.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.cc	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/Solver.cc solvers/mergesat3/core/Solver.cc
+--- build/solvers/mergesat3/core/Solver.cc	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/Solver.cc	2023-06-19 13:15:22.167233991 +0200
 @@ -50,14 +50,14 @@
  #include <signal.h>
  #include <unistd.h>
@@ -1305,9 +1262,9 @@ diff -Naur solvers/mergesat3/core/Solver.cc solvers/mgs3/core/Solver.cc
              }
  
          while (undef_nums > 0) {
-diff -Naur solvers/mergesat3/core/Solver.h solvers/mgs3/core/Solver.h
---- solvers/mergesat3/core/Solver.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/Solver.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/Solver.h solvers/mergesat3/core/Solver.h
+--- build/solvers/mergesat3/core/Solver.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/Solver.h	2023-06-19 13:15:22.167233991 +0200
 @@ -43,8 +43,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1483,9 +1440,9 @@ diff -Naur solvers/mergesat3/core/Solver.h solvers/mgs3/core/Solver.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/core/SolverTypes.h solvers/mgs3/core/SolverTypes.h
---- solvers/mergesat3/core/SolverTypes.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/core/SolverTypes.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/core/SolverTypes.h solvers/mergesat3/core/SolverTypes.h
+--- build/solvers/mergesat3/core/SolverTypes.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/core/SolverTypes.h	2023-06-19 13:15:22.167233991 +0200
 @@ -29,21 +29,21 @@
  **************************************************************************************************/
  
@@ -1546,9 +1503,52 @@ diff -Naur solvers/mergesat3/core/SolverTypes.h solvers/mgs3/core/SolverTypes.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Alg.h solvers/mgs3/mtl/Alg.h
---- solvers/mergesat3/mtl/Alg.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Alg.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/Makefile solvers/mergesat3/Makefile
+--- build/solvers/mergesat3/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ solvers/mergesat3/Makefile	2023-06-19 13:15:22.167233991 +0200
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc utils/ccnr.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := mergesat3
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur build/solvers/mergesat3/mtl/Alg.h solvers/mergesat3/mtl/Alg.h
+--- build/solvers/mergesat3/mtl/Alg.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Alg.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1574,9 +1574,9 @@ diff -Naur solvers/mergesat3/mtl/Alg.h solvers/mgs3/mtl/Alg.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Alloc.h solvers/mgs3/mtl/Alloc.h
---- solvers/mergesat3/mtl/Alloc.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Alloc.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Alloc.h solvers/mergesat3/mtl/Alloc.h
+--- build/solvers/mergesat3/mtl/Alloc.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Alloc.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1604,9 +1604,9 @@ diff -Naur solvers/mergesat3/mtl/Alloc.h solvers/mgs3/mtl/Alloc.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Heap.h solvers/mgs3/mtl/Heap.h
---- solvers/mergesat3/mtl/Heap.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Heap.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Heap.h solvers/mergesat3/mtl/Heap.h
+--- build/solvers/mergesat3/mtl/Heap.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Heap.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1632,9 +1632,9 @@ diff -Naur solvers/mergesat3/mtl/Heap.h solvers/mgs3/mtl/Heap.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/IntTypes.h solvers/mgs3/mtl/IntTypes.h
---- solvers/mergesat3/mtl/IntTypes.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/IntTypes.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/IntTypes.h solvers/mergesat3/mtl/IntTypes.h
+--- build/solvers/mergesat3/mtl/IntTypes.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/IntTypes.h	2023-06-19 13:15:22.167233991 +0200
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1646,9 +1646,9 @@ diff -Naur solvers/mergesat3/mtl/IntTypes.h solvers/mgs3/mtl/IntTypes.h
  
  #ifdef __sun
  // Not sure if there are newer versions that support C99 headers. The
-diff -Naur solvers/mergesat3/mtl/Map.h solvers/mgs3/mtl/Map.h
---- solvers/mergesat3/mtl/Map.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Map.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Map.h solvers/mergesat3/mtl/Map.h
+--- build/solvers/mergesat3/mtl/Map.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Map.h	2023-06-19 13:15:22.167233991 +0200
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1676,9 +1676,9 @@ diff -Naur solvers/mergesat3/mtl/Map.h solvers/mgs3/mtl/Map.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Queue.h solvers/mgs3/mtl/Queue.h
---- solvers/mergesat3/mtl/Queue.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Queue.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Queue.h solvers/mergesat3/mtl/Queue.h
+--- build/solvers/mergesat3/mtl/Queue.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Queue.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1704,9 +1704,9 @@ diff -Naur solvers/mergesat3/mtl/Queue.h solvers/mgs3/mtl/Queue.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Sort.h solvers/mgs3/mtl/Sort.h
---- solvers/mergesat3/mtl/Sort.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Sort.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Sort.h solvers/mergesat3/mtl/Sort.h
+--- build/solvers/mergesat3/mtl/Sort.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Sort.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,10 +18,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1738,9 +1738,9 @@ diff -Naur solvers/mergesat3/mtl/Sort.h solvers/mgs3/mtl/Sort.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/Vec.h solvers/mgs3/mtl/Vec.h
---- solvers/mergesat3/mtl/Vec.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/Vec.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/Vec.h solvers/mergesat3/mtl/Vec.h
+--- build/solvers/mergesat3/mtl/Vec.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/Vec.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1771,9 +1771,9 @@ diff -Naur solvers/mergesat3/mtl/Vec.h solvers/mgs3/mtl/Vec.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/mtl/XAlloc.h solvers/mgs3/mtl/XAlloc.h
---- solvers/mergesat3/mtl/XAlloc.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/mtl/XAlloc.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/mtl/XAlloc.h solvers/mergesat3/mtl/XAlloc.h
+--- build/solvers/mergesat3/mtl/XAlloc.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/mtl/XAlloc.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,18 +18,18 @@
  **************************************************************************************************/
  
@@ -1806,9 +1806,48 @@ diff -Naur solvers/mergesat3/mtl/XAlloc.h solvers/mgs3/mtl/XAlloc.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
---- solvers/mergesat3/utils/Options.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/Options.cc	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/utils/ccnr.cc solvers/mergesat3/utils/ccnr.cc
+--- build/solvers/mergesat3/utils/ccnr.cc	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/ccnr.cc	2023-06-19 13:15:22.167233991 +0200
+@@ -1,7 +1,7 @@
+ 
+-#include "ccnr.h"
++#include "mergesat3/utils/ccnr.h"
+ 
+-using namespace CCNR;
++using namespace MergeSat3_CCNR;
+ using namespace std;
+ 
+ 
+diff -Naur build/solvers/mergesat3/utils/ccnr.h solvers/mergesat3/utils/ccnr.h
+--- build/solvers/mergesat3/utils/ccnr.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/ccnr.h	2023-06-19 13:15:22.167233991 +0200
+@@ -1,5 +1,5 @@
+-#ifndef CCNR_H
+-#define CCNR_H
++#ifndef MergeSat3_CCNR_H
++#define MergeSat3_CCNR_H
+ 
+ // heads
+ #include <cmath>
+@@ -12,12 +12,12 @@
+ #include <string.h>
+ #include <vector>
+ // these two h files are for timing under linux
+-#include <sys/times.h>
++/* #include <sys/times.h> */
+ #include <unistd.h>
+ 
+ //---------------------
+ 
+-namespace CCNR
++namespace MergeSat3_CCNR
+ {
+ 
+ //--------------------------
+diff -Naur build/solvers/mergesat3/utils/Options.cc solvers/mergesat3/utils/Options.cc
+--- build/solvers/mergesat3/utils/Options.cc	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/Options.cc	2023-06-19 13:15:22.167233991 +0200
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1859,9 +1898,9 @@ diff -Naur solvers/mergesat3/utils/Options.cc solvers/mgs3/utils/Options.cc
  {
      sort(Option::getOptionList(), Option::OptionLt());
  
-diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
---- solvers/mergesat3/utils/Options.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/Options.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/utils/Options.h solvers/mergesat3/utils/Options.h
+--- build/solvers/mergesat3/utils/Options.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/Options.h	2023-06-19 13:15:22.167233991 +0200
 @@ -17,23 +17,23 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1991,9 +2030,9 @@ diff -Naur solvers/mergesat3/utils/Options.h solvers/mgs3/utils/Options.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
---- solvers/mergesat3/utils/ParseUtils.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ParseUtils.h	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/utils/ParseUtils.h solvers/mergesat3/utils/ParseUtils.h
+--- build/solvers/mergesat3/utils/ParseUtils.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/ParseUtils.h	2023-06-19 13:15:22.167233991 +0200
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2134,9 +2173,9 @@ diff -Naur solvers/mergesat3/utils/ParseUtils.h solvers/mgs3/utils/ParseUtils.h
 +} // namespace MergeSat3
  
  #endif
-diff -Naur solvers/mergesat3/utils/System.cc solvers/mgs3/utils/System.cc
---- solvers/mergesat3/utils/System.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/System.cc	2021-08-12 09:10:24.000000000 +1000
+diff -Naur build/solvers/mergesat3/utils/System.cc solvers/mergesat3/utils/System.cc
+--- build/solvers/mergesat3/utils/System.cc	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/System.cc	2023-06-19 13:15:22.167233991 +0200
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -2196,9 +2235,9 @@ diff -Naur solvers/mergesat3/utils/System.cc solvers/mgs3/utils/System.cc
 -double MERGESAT_NSPACE::memUsed() { return 0; }
 +double MergeSat3::memUsed() { return 0; }
  #endif
-diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
---- solvers/mergesat3/utils/System.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/System.h	2021-08-12 09:10:51.000000000 +1000
+diff -Naur build/solvers/mergesat3/utils/System.h solvers/mergesat3/utils/System.h
+--- build/solvers/mergesat3/utils/System.h	2021-03-25 08:15:00.000000000 +0100
++++ solvers/mergesat3/utils/System.h	2023-06-19 13:15:22.167233991 +0200
 @@ -21,23 +21,19 @@
  #ifndef MergeSat_System_h
  #define MergeSat_System_h
@@ -2244,42 +2283,3 @@ diff -Naur solvers/mergesat3/utils/System.h solvers/mgs3/utils/System.h
  {
      struct rusage ru;
      getrusage(RUSAGE_SELF, &ru);
-diff -Naur solvers/mergesat3/utils/ccnr.cc solvers/mgs3/utils/ccnr.cc
---- solvers/mergesat3/utils/ccnr.cc	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ccnr.cc	2021-08-12 09:10:24.000000000 +1000
-@@ -1,7 +1,7 @@
- 
--#include "ccnr.h"
-+#include "mergesat3/utils/ccnr.h"
- 
--using namespace CCNR;
-+using namespace MergeSat3_CCNR;
- using namespace std;
- 
- 
-diff -Naur solvers/mergesat3/utils/ccnr.h solvers/mgs3/utils/ccnr.h
---- solvers/mergesat3/utils/ccnr.h	2021-03-25 18:15:00.000000000 +1100
-+++ solvers/mgs3/utils/ccnr.h	2021-08-12 09:10:24.000000000 +1000
-@@ -1,5 +1,5 @@
--#ifndef CCNR_H
--#define CCNR_H
-+#ifndef MergeSat3_CCNR_H
-+#define MergeSat3_CCNR_H
- 
- // heads
- #include <cmath>
-@@ -12,12 +12,12 @@
- #include <string.h>
- #include <vector>
- // these two h files are for timing under linux
--#include <sys/times.h>
-+/* #include <sys/times.h> */
- #include <unistd.h>
- 
- //---------------------
- 
--namespace CCNR
-+namespace MergeSat3_CCNR
- {
- 
- //--------------------------
