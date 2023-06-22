@@ -1,6 +1,6 @@
 diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/BoundedQueue.h
 --- build/solvers/glucose421/core/BoundedQueue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/BoundedQueue.h	2023-06-19 16:01:37.736387929 +0200
++++ solvers/glucose421/core/BoundedQueue.h	2023-06-22 17:40:23.332280846 +0200
 @@ -48,14 +48,14 @@
   **************************************************************************************************/
  
@@ -22,28 +22,29 @@ diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/
  class bqueue {
 diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
 --- build/solvers/glucose421/core/lcm.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/lcm.cc	2023-06-20 14:13:12.805307817 +0200
-@@ -1,6 +1,6 @@
++++ solvers/glucose421/core/lcm.cc	2023-06-22 17:40:23.336280987 +0200
+@@ -1,6 +1,7 @@
 -#include "Solver.h"
 -#include "mtl/Sort.h"
 -using namespace Glucose;
-+#include "glucose421/Solver.h"
++#include "glucose421/core/Solver.h"
 +#include "glucose421/mtl/Sort.h"
++
 +using namespace Glucose421;
  
  
  
-@@ -25,18 +25,18 @@
+@@ -25,18 +26,18 @@
  
              Lit imp = wbin[k].blocker;
  
 -            if (value(imp) == l_False){
-+            if (value(imp) == g421_l_False){
++            if (value(imp) == g421l_False){
                  return wbin[k].cref;
              }
  
 -            if (value(imp) == l_Undef){
-+            if (value(imp) == g421_l_Undef){
++            if (value(imp) == g421l_Undef){
                  simpleUncheckEnqueue(imp, wbin[k].cref);
              }
          }
@@ -51,183 +52,183 @@ diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
              // Try to avoid inspecting the clause:
              Lit blocker = i->blocker;
 -            if (value(blocker) == l_True){
-+            if (value(blocker) == g421_l_True){
++            if (value(blocker) == g421l_True){
                  *j++ = *i++; continue;
              }
  
-@@ -54,7 +54,7 @@
+@@ -54,7 +55,7 @@
              // why not simply do i->blocker=first in this case?
              Lit     first = c[0];
              //  Watcher w     = Watcher(cr, first);
 -            if (first != blocker && value(first) == l_True){
-+            if (first != blocker && value(first) == g421_l_True){
++            if (first != blocker && value(first) == g421l_True){
                  i->blocker = first;
                  *j++ = *i++; continue;
              }
-@@ -63,7 +63,7 @@
+@@ -63,7 +64,7 @@
              if (incremental){ // ----------------- INCREMENTAL MODE
                  int choosenPos = -1;
                  for (int k = 2; k < c.size(); k++){
 -                    if (value(c[k]) != l_False){
-+                    if (value(c[k]) != g421_l_False){
++                    if (value(c[k]) != g421l_False){
                          if (decisionLevel()>assumptions.size()){
                              choosenPos = k;
                              break;
-@@ -71,7 +71,7 @@
+@@ -71,7 +72,7 @@
                          else{
                              choosenPos = k;
  
 -                            if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
-+                            if (value(c[k]) == g421_l_True || !isSelector(var(c[k]))) {
++                            if (value(c[k]) == g421l_True || !isSelector(var(c[k]))) {
                                  break;
                              }
                          }
-@@ -91,7 +91,7 @@
+@@ -91,7 +92,7 @@
              else{  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
                  for (int k = 2; k < c.size(); k++){
  
 -                    if (value(c[k]) != l_False){
-+                    if (value(c[k]) != g421_l_False){
++                    if (value(c[k]) != g421l_False){
                          // watcher i is abandonned using i++, because cr watches now ~c[k] instead of p
                          // the blocker is first in the watcher. However,
                          // the blocker in the corresponding watcher in ~first is not c[1]
-@@ -106,7 +106,7 @@
+@@ -106,7 +107,7 @@
              // Did not find watch -- clause is unit under assignment:
              i->blocker = first;
              *j++ = *i++;
 -            if (value(first) == l_False){
-+            if (value(first) == g421_l_False){
++            if (value(first) == g421l_False){
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -138,7 +138,7 @@
+@@ -138,7 +139,7 @@
      for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
          // Try to avoid inspecting the clause:
          Lit blocker = i->blocker;
 -        if(value(blocker) == l_True) {
-+        if(value(blocker) == g421_l_True) {
++        if(value(blocker) == g421l_True) {
              *j++ = *i++;
              continue;
          }
-@@ -155,7 +155,7 @@
+@@ -155,7 +156,7 @@
          i++;
          Watcher w = Watcher(cr, c[0]);
          for(int k = 1; k < c.size(); k++) {
 -            if(value(c[k]) != l_False) {
-+            if(value(c[k]) != g421_l_False) {
++            if(value(c[k]) != g421l_False) {
                  c[0] = c[k];
                  c[k] = false_lit;
                  unaryWatches[~c[0]].push(w);
-@@ -181,7 +181,7 @@
+@@ -181,7 +182,7 @@
  
  
  void Solver::simpleUncheckEnqueue(Lit p, CRef from){
 -    assert(value(p) == l_Undef);
-+    assert(value(p) == g421_l_Undef);
++    assert(value(p) == g421l_Undef);
      assigns[var(p)] = lbool(!sign(p)); // this makes a lbool object whose value is sign(p)
      vardata[var(p)].reason = from;
      trail.push_(p);
-@@ -192,7 +192,7 @@
+@@ -192,7 +193,7 @@
      for (int c = trail.size() - 1; c >= trailRecord; c--)
      {
          Var x = var(trail[c]);
 -        assigns[x] = l_Undef;
-+        assigns[x] = g421_l_Undef;
++        assigns[x] = g421l_Undef;
  
      }
      qhead = trailRecord;
-@@ -224,9 +224,9 @@
+@@ -224,9 +225,9 @@
              Clause& c = ca[confl];
              // Special case for binary clauses
              // The first one has to be SAT
 -            if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
-+            if (p != lit_Undef && c.size() == 2 && value(c[0]) == g421_l_False) {
++            if (p != lit_Undef && c.size() == 2 && value(c[0]) == g421l_False) {
  
 -                assert(value(c[1]) == l_True);
-+                assert(value(c[1]) == g421_l_True);
++                assert(value(c[1]) == g421l_True);
                  Lit tmp = c[0];
                  c[0] = c[1], c[1] = tmp;
              }
-@@ -274,8 +274,8 @@
+@@ -274,8 +275,8 @@
      CRef confl;
  
      for (i = 0, j = 0; i < c.size(); i++){
 -        if (value(c[i]) == l_Undef){
 -            //printf("///@@@ uncheckedEnqueue:index = %d. l_Undef\n", i);
-+        if (value(c[i]) == g421_l_Undef){
-+            //printf("///@@@ uncheckedEnqueue:index = %d. g421_l_Undef\n", i);
++        if (value(c[i]) == g421l_Undef){
++            //printf("///@@@ uncheckedEnqueue:index = %d. g421l_Undef\n", i);
              simpleUncheckEnqueue(~c[i]);
              c[j++] = c[i];
              confl = simplePropagate();
-@@ -284,8 +284,8 @@
+@@ -284,8 +285,8 @@
              }
          }
          else{
 -            if (value(c[i]) == l_True){
 -                //printf("///@@@ uncheckedEnqueue:index = %d. l_True\n", i);
-+            if (value(c[i]) == g421_l_True){
-+                //printf("///@@@ uncheckedEnqueue:index = %d. g421_l_True\n", i);
++            if (value(c[i]) == g421l_True){
++                //printf("///@@@ uncheckedEnqueue:index = %d. g421l_True\n", i);
                  c[j++] = c[i];
                  True_confl = true;
                  confl = reason(var(c[i]));
-@@ -293,7 +293,7 @@
+@@ -293,7 +294,7 @@
              }
              else{
                  falseLit.push(c[i]);
 -                //printf("///@@@ uncheckedEnqueue:index = %d. l_False\n", i);
-+                //printf("///@@@ uncheckedEnqueue:index = %d. g421_l_False\n", i);
++                //printf("///@@@ uncheckedEnqueue:index = %d. g421l_False\n", i);
              }
          }
      }
-@@ -350,11 +350,11 @@
+@@ -350,11 +351,11 @@
              if (!removed(cr)){
                  sat = false_lit = false;
                  for (int i = 0; i < c.size(); i++){
 -                    if (value(c[i]) == l_True){
-+                    if (value(c[i]) == g421_l_True){
++                    if (value(c[i]) == g421l_True){
                          sat = true;
                          break;
                      }
 -                    else if (value(c[i]) == l_False){
-+                    else if (value(c[i]) == g421_l_False){
++                    else if (value(c[i]) == g421l_False){
                          false_lit = true;
                      }
                  }
-@@ -366,7 +366,7 @@
+@@ -366,7 +367,7 @@
  
                      if (false_lit){
                          for (li = lj = 0; li < c.size(); li++){
 -                            if (value(c[li]) != l_False){
-+                            if (value(c[li]) != g421_l_False){
++                            if (value(c[li]) != g421l_False){
                                  c[lj++] = c[li];
                              }
                          }
-@@ -444,11 +444,11 @@
+@@ -444,11 +445,11 @@
              if (!removed(cr)){
                  sat = false_lit = false;
                  for (int i = 0; i < c.size(); i++){
 -                    if (value(c[i]) == l_True){
-+                    if (value(c[i]) == g421_l_True){
++                    if (value(c[i]) == g421l_True){
                          sat = true;
                          break;
                      }
 -                    else if (value(c[i]) == l_False){
-+                    else if (value(c[i]) == g421_l_False){
++                    else if (value(c[i]) == g421l_False){
                          false_lit = true;
                      }
                  }
-@@ -460,7 +460,7 @@
+@@ -460,7 +461,7 @@
  
                      if (false_lit){
                          for (li = lj = 0; li < c.size(); li++){
 -                            if (value(c[li]) != l_False){
-+                            if (value(c[li]) != g421_l_False){
++                            if (value(c[li]) != g421l_False){
                                  c[lj++] = c[li];
                              }
                          }
 diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solver.cc
 --- build/solvers/glucose421/core/Solver.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.cc	2023-06-20 14:17:45.806604858 +0200
++++ solvers/glucose421/core/Solver.cc	2023-06-22 17:40:23.336280987 +0200
 @@ -49,13 +49,12 @@
  
  #include <math.h>
@@ -694,7 +695,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
 diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver.h
 --- build/solvers/glucose421/core/Solver.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.h	2023-06-20 14:18:41.608510147 +0200
++++ solvers/glucose421/core/Solver.h	2023-06-22 17:40:23.336280987 +0200
 @@ -47,20 +47,20 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -787,7 +788,7 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  
 diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/SolverStats.h
 --- build/solvers/glucose421/core/SolverStats.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverStats.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/core/SolverStats.h	2023-06-22 17:40:23.336280987 +0200
 @@ -47,12 +47,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -807,7 +808,7 @@ diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/S
      protected:
 diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/SolverTypes.h
 --- build/solvers/glucose421/core/SolverTypes.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverTypes.h	2023-06-20 14:15:41.086351920 +0200
++++ solvers/glucose421/core/SolverTypes.h	2023-06-22 17:40:23.336280987 +0200
 @@ -48,21 +48,21 @@
   **************************************************************************************************/
  
@@ -853,8 +854,8 @@ diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/S
      uint8_t value;
 diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 --- build/solvers/glucose421/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile	2023-06-19 16:01:37.740388147 +0200
-@@ -0,0 +1,40 @@
++++ solvers/glucose421/Makefile	2023-06-22 17:55:02.911725269 +0200
+@@ -0,0 +1,42 @@
 +### Makefile ---
 +
 +## Author: aign
@@ -865,13 +866,14 @@ diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 +#CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DINCREMENTAL
 +
 +CXX      := g++
-+CXXFLAGS := -Wall -Wno-parentheses -std=c++11 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
++#CXXFLAGS := -Wall -Wno-parentheses -std=c++11 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
++CXXFLAGS := -Wall -Wno-parentheses -std=c++11 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -Wl,--no-undefined -lm
 +CXXOPT   := -O3 -DNDEBUG
 +CXXDEBUG := -O0 -g3
 +CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
 +INCLUDES := -I..
 +LIBS     := -L.
-+SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc  #core/lmc.cc 
++SOURCES  := core/lcm.cc core/Solver.cc utils/Options.cc utils/System.cc
 +OBJECTS  := $(SOURCES:.cc=.o)
 +TRGT     :=  glucose421
 +
@@ -884,21 +886,21 @@ diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 +all: lib
 +
 +lib: $(OBJECTS)
-+	@-ar cr lib$(TRGT).a $(OBJECTS)
++	@-ar cvq lib$(TRGT).a $(OBJECTS)
++	## @-ar cr lib$(TRGT).a $(OBJECTS)
 +
 +%.o: %.cc
 +	$(CXX) $(CXXARGS) -c $< -o $@
 +
 +clean:
-+	@-rm $(OBJECTS)
++	@-rm $(OBJECTS) lib$(TRGT).a
 +
 +allclean:
 +	@-find . -name '*.o' -delete
 +	@-find . -name '*.a' -delete
-\ No newline at end of file
 diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 --- build/solvers/glucose421/Makefile.old	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile.old	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/Makefile.old	2023-06-22 17:40:23.336280987 +0200
 @@ -0,0 +1,37 @@
 +### Makefile ---
 +
@@ -939,7 +941,7 @@ diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 +	@-find . -name '*.a' -delete
 diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
 --- build/solvers/glucose421/mtl/Alg.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alg.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Alg.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -959,7 +961,7 @@ diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
 --- build/solvers/glucose421/mtl/Alloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alloc.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Alloc.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -981,7 +983,7 @@ diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
 --- build/solvers/glucose421/mtl/Clone.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Clone.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Clone.h	2023-06-22 17:40:23.336280987 +0200
 @@ -1,8 +1,8 @@
 -#ifndef Glucose_Clone_h
 -#define Glucose_Clone_h
@@ -996,7 +998,7 @@ diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
          public:
 diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
 --- build/solvers/glucose421/mtl/Heap.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Heap.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Heap.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1016,7 +1018,7 @@ diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
 --- build/solvers/glucose421/mtl/Map.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Map.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Map.h	2023-06-22 17:40:23.336280987 +0200
 @@ -17,15 +17,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1040,7 +1042,7 @@ diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
  // Default hash/equals functions
 diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
 --- build/solvers/glucose421/mtl/Queue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Queue.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Queue.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1060,7 +1062,7 @@ diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
  
 diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
 --- build/solvers/glucose421/mtl/Sort.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Sort.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Sort.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1084,7 +1086,7 @@ diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
  struct LessThan_default {
 diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
 --- build/solvers/glucose421/mtl/Vec.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Vec.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/Vec.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1110,7 +1112,7 @@ diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
  // Automatically resizable arrays
 diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecThreads.h
 --- build/solvers/glucose421/mtl/VecThreads.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/VecThreads.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/VecThreads.h	2023-06-22 17:40:23.336280987 +0200
 @@ -19,17 +19,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1136,7 +1138,7 @@ diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecT
  // Automatically resizable arrays
 diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
 --- build/solvers/glucose421/mtl/XAlloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/XAlloc.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/mtl/XAlloc.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -1157,7 +1159,7 @@ diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Options.cc
 --- build/solvers/glucose421/utils/Options.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.cc	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/utils/Options.cc	2023-06-22 17:40:23.336280987 +0200
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1177,7 +1179,7 @@ diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Op
  {
      int i, j;
      for (i = j = 1; i < argc; i++){
-@@ -54,9 +54,9 @@
+@@ -54,15 +54,15 @@
  }
  
  
@@ -1190,9 +1192,16 @@ diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Op
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
+         fprintf(stderr, usage, argv[0]);
+ 
+-        sort(Option::getOptionList(), Option::OptionLt());
++    sort(Option::getOptionList(), Option::OptionLt());
+ 
+     const char* prev_cat  = NULL;
+     const char* prev_type = NULL;
 diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Options.h
 --- build/solvers/glucose421/utils/Options.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/utils/Options.h	2023-06-22 17:40:23.336280987 +0200
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1221,7 +1230,7 @@ diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Opt
  // Top-level option parse/help functions:
 diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/ParseUtils.h
 --- build/solvers/glucose421/utils/ParseUtils.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/ParseUtils.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/utils/ParseUtils.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1242,9 +1251,41 @@ diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/
  
  //-------------------------------------------------------------------------------------------------
  // A simple buffered character stream class:
+@@ -91,20 +91,18 @@
+     if      (*in == '-') neg = true, ++in;
+     else if (*in == '+') ++in;
+     if (*in < '1' || *in > '9') printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+-	accu = (double)(*in - '0');
+-	++in;
+-	if (*in != '.') printf("PARSE ERROR! Unexpected char: %c\n", *in),exit(3);
+-	++in; // skip dot
+-	currentExponent = 0.1;
++    accu = (double)(*in - '0');
++    ++in;
++    if (*in != '.') printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
++    ++in; // skip dot
++    currentExponent = 0.1;
+     while (*in >= '0' && *in <= '9')
+-        accu = accu + currentExponent * ((double)(*in - '0')),
+-		currentExponent /= 10,
+-        ++in;
+-	if (*in != 'e') printf("PARSE ERROR! Unexpected char: %c\n", *in),exit(3);
+-	++in; // skip dot
+-	exponent = parseInt(in); // read exponent
+-	accu *= pow(10,exponent);
+-	return neg ? -accu:accu;
++        accu = accu + currentExponent * ((double)(*in - '0')), currentExponent /= 10, ++in;
++    if (*in != 'e') printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
++    ++in; // skip dot
++    exponent = parseInt(in); // read exponent
++    accu *= pow(10,exponent);
++    return neg ? -accu:accu;
+ }
+ 
+ 
 diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/System.cc
 --- build/solvers/glucose421/utils/System.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.cc	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/utils/System.cc	2023-06-22 17:40:23.336280987 +0200
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1297,7 +1338,7 @@ diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/Sys
  #endif
 diff -Naur build/solvers/glucose421/utils/System.h solvers/glucose421/utils/System.h
 --- build/solvers/glucose421/utils/System.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.h	2023-06-19 16:01:37.740388147 +0200
++++ solvers/glucose421/utils/System.h	2023-06-22 17:40:23.336280987 +0200
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
