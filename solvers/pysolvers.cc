@@ -242,7 +242,7 @@ extern "C" {
 #endif
 #ifdef WITH_GLUCOSE421
 	static PyObject *py_glucose421_new       (PyObject *, PyObject *);
-	//static PyObject *py_glucose421_set_start (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_start (PyObject *, PyObject *);
 	static PyObject *py_glucose421_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_glucose421_solve     (PyObject *, PyObject *);
 	static PyObject *py_glucose421_solve_lim (PyObject *, PyObject *);
@@ -536,7 +536,7 @@ static PyMethodDef module_methods[] = {
 #endif
 #ifdef WITH_GLUCOSE421
 	{ "glucose421_new",       py_glucose421_new,       METH_VARARGS,       new_docstring },
-	//{ "glucose421_set_start", py_glucose421_set_start, METH_VARARGS,  setstart_docstring },
+	{ "glucose421_set_start", py_glucose421_set_start, METH_VARARGS,  setstart_docstring },
 	{ "glucose421_add_cl",    py_glucose421_add_cl,    METH_VARARGS,     addcl_docstring },
 	{ "glucose421_solve",     py_glucose421_solve,     METH_VARARGS,     solve_docstring },
 	{ "glucose421_solve_lim", py_glucose421_solve_lim, METH_VARARGS,       lim_docstring },
@@ -4333,7 +4333,7 @@ static inline bool glucose421_iterate(
 
 //
 //=============================================================================
-/*static PyObject *py_glucose421_set_start(PyObject *self, PyObject *args)
+static PyObject *py_glucose421_set_start(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	int warm_start;
@@ -4347,7 +4347,7 @@ static inline bool glucose421_iterate(
 	s->setStartMode((bool)warm_start);
 
 	Py_RETURN_NONE;
-}*/
+}
 
 //
 //=============================================================================

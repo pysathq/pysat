@@ -1,6 +1,6 @@
 diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/BoundedQueue.h
 --- build/solvers/glucose421/core/BoundedQueue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/BoundedQueue.h	2023-07-03 18:28:32.626218817 +0200
++++ solvers/glucose421/core/BoundedQueue.h	2023-07-04 16:12:37.708327670 +0200
 @@ -48,14 +48,14 @@
   **************************************************************************************************/
  
@@ -22,7 +22,7 @@ diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/
  class bqueue {
 diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
 --- build/solvers/glucose421/core/lcm.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/lcm.cc	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/core/lcm.cc	2023-07-04 16:12:37.708327670 +0200
 @@ -1,6 +1,7 @@
 -#include "Solver.h"
 -#include "mtl/Sort.h"
@@ -228,7 +228,7 @@ diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
                          }
 diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solver.cc
 --- build/solvers/glucose421/core/Solver.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.cc	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/core/Solver.cc	2023-07-04 16:25:01.196127093 +0200
 @@ -49,13 +49,12 @@
  
  #include <math.h>
@@ -248,7 +248,15 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
  
  //=================================================================================================
-@@ -389,7 +388,7 @@
+@@ -183,6 +182,7 @@
+ , order_heap(VarOrderLt(activity))
+ , progress_estimate(0)
+ , remove_satisfied(true)
++, warm_start(false)
+ ,lastLearntClause(CRef_Undef)
+ // Resource constraints:
+ //
+@@ -389,7 +389,7 @@
      watchesBin.init(mkLit(v, true));
      unaryWatches.init(mkLit(v, false));
      unaryWatches.init(mkLit(v, true));
@@ -257,7 +265,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
      vardata.push(mkVarData(CRef_Undef, 0));
      activity.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
      seen.push(0);
-@@ -421,15 +420,15 @@
+@@ -421,15 +421,15 @@
      if(certifiedUNSAT) {
          for(i = j = 0, p = lit_Undef; i < ps.size(); i++) {
              oc.push(ps[i]);
@@ -276,7 +284,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              ps[j++] = p = ps[i];
      ps.shrink(i - j);
  
-@@ -543,12 +542,12 @@
+@@ -543,12 +543,12 @@
  bool Solver::satisfied(const Clause &c) const {
  #ifdef INCREMENTAL
      if(incremental)
@@ -291,7 +299,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              return true;
      return false;
  }
-@@ -575,7 +574,7 @@
+@@ -575,7 +575,7 @@
          int nb = 0;
          for(int k = 0; k < wbin.size(); k++) {
              Lit imp = wbin[k].blocker;
@@ -300,7 +308,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  nb++;
                  permDiff[var(imp)] = MYFLAG - 1;
              }
-@@ -606,7 +605,7 @@
+@@ -606,7 +606,7 @@
      if(decisionLevel() > level) {
          for(int c = trail.size() - 1; c >= trail_lim[level]; c--) {
              Var x = var(trail[c]);
@@ -309,7 +317,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              if(phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last())) {
                  polarity[x] = sign(trail[c]);
              }
-@@ -628,12 +627,12 @@
+@@ -628,12 +628,12 @@
      // Random decision:
      if(((randomizeFirstDescent && conflicts == 0) || drand(random_seed) < random_var_freq) && !order_heap.empty()) {
          next = order_heap[irand(random_seed, order_heap.size())];
@@ -324,7 +332,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
          if(order_heap.empty()) {
              next = var_Undef;
              break;
-@@ -693,9 +692,9 @@
+@@ -693,9 +693,9 @@
          Clause &c = ca[confl];
          // Special case for binary clauses
          // The first one has to be SAT
@@ -336,7 +344,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              Lit tmp = c[0];
              c[0] = c[1], c[1] = tmp;
          }
-@@ -752,7 +751,7 @@
+@@ -752,7 +752,7 @@
                              lastDecisionLevel.push(q);
                      } else {
                          if(isSelector(var(q))) {
@@ -345,7 +353,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                              selectors.push(q);
                          } else
                              out_learnt.push(q);
-@@ -878,8 +877,8 @@
+@@ -878,8 +878,8 @@
          assert(reason(var(analyze_stack.last())) != CRef_Undef);
          Clause &c = ca[reason(var(analyze_stack.last()))];
          analyze_stack.pop(); //
@@ -356,7 +364,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              Lit tmp = c[0];
              c[0] = c[1], c[1] = tmp;
          }
-@@ -950,7 +949,7 @@
+@@ -950,7 +950,7 @@
  
  
  void Solver::uncheckedEnqueue(Lit p, CRef from) {
@@ -365,7 +373,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
      assigns[var(p)] = lbool(!sign(p));
      vardata[var(p)] = mkVarData(from, decisionLevel());
      trail.push_(p);
-@@ -962,6 +961,58 @@
+@@ -962,6 +962,58 @@
      return;
  }
  
@@ -424,7 +432,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
  /*_________________________________________________________________________________________________
  |
-@@ -993,11 +1044,11 @@
+@@ -993,11 +1045,11 @@
  
              Lit imp = wbin[k].blocker;
  
@@ -438,7 +446,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  uncheckedEnqueue(imp, wbin[k].cref);
              }
          }
-@@ -1006,7 +1057,7 @@
+@@ -1006,7 +1058,7 @@
          for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
              // Try to avoid inspecting the clause:
              Lit blocker = i->blocker;
@@ -447,7 +455,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  *j++ = *i++;
                  continue;
              }
-@@ -1024,7 +1075,7 @@
+@@ -1024,7 +1076,7 @@
              // If 0th watch is true, then clause is already satisfied.
              Lit first = c[0];
              Watcher w = Watcher(cr, first);
@@ -456,7 +464,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
                  *j++ = w;
                  continue;
-@@ -1034,7 +1085,7 @@
+@@ -1034,7 +1086,7 @@
                int choosenPos = -1;
                for (int k = 2; k < c.size(); k++) {
  
@@ -465,7 +473,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                if(decisionLevel()>assumptions.size()) {
                  choosenPos = k;
                  break;
-@@ -1056,7 +1107,7 @@
+@@ -1056,7 +1108,7 @@
  #endif
              for(int k = 2; k < c.size(); k++) {
  
@@ -474,7 +482,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                      c[1] = c[k];
                      c[k] = false_lit;
                      watches[~c[1]].push(w);
-@@ -1068,7 +1119,7 @@
+@@ -1068,7 +1120,7 @@
  #endif
              // Did not find watch -- clause is unit under assignment:
              *j++ = w;
@@ -483,7 +491,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  confl = cr;
                  qhead = trail.size();
                  // Copy the remaining watches:
-@@ -1116,7 +1167,7 @@
+@@ -1116,7 +1168,7 @@
      for(i = j = (Watcher *) ws, end = i + ws.size(); i != end;) {
          // Try to avoid inspecting the clause:
          Lit blocker = i->blocker;
@@ -492,7 +500,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              *j++ = *i++;
              continue;
          }
-@@ -1133,7 +1184,7 @@
+@@ -1133,7 +1185,7 @@
          i++;
          Watcher w = Watcher(cr, c[0]);
          for(int k = 1; k < c.size(); k++) {
@@ -501,7 +509,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  c[0] = c[k];
                  c[k] = false_lit;
                  unaryWatches[~c[0]].push(w);
-@@ -1158,7 +1209,7 @@
+@@ -1158,7 +1210,7 @@
              int maxlevel = -1;
              int index = -1;
              for(int k = 1; k < c.size(); k++) {
@@ -510,7 +518,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  assert(level(var(c[k])) <= level(var(c[0])));
                  if(level(var(c[k])) > maxlevel) {
                      index = k;
-@@ -1267,7 +1318,7 @@
+@@ -1267,7 +1319,7 @@
  void Solver::rebuildOrderHeap() {
      vec <Var> vs;
      for(Var v = 0; v < nVars(); v++)
@@ -519,7 +527,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              vs.push(v);
      order_heap.build(vs);
  
-@@ -1442,7 +1493,7 @@
+@@ -1442,7 +1494,7 @@
          //printf("nbClauses : %d, nbLearnts : %d\n", clauses.size(), learnts.size());
          if (!simplifyAll())
          {
@@ -528,7 +536,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
          }
          performLCM = 0;
      }
-@@ -1453,7 +1504,7 @@
+@@ -1453,7 +1505,7 @@
              parallelImportUnaryClauses();
  
              if(parallelImportClauses())
@@ -537,7 +545,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
          }
          CRef confl = propagate();
-@@ -1461,7 +1512,7 @@
+@@ -1461,7 +1513,7 @@
          if(confl != CRef_Undef) {
              newDescent = false;
              if(parallelJobIsFinished())
@@ -546,7 +554,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
              if(!aDecisionWasMade)
                  stats[noDecisionConflict]++;
-@@ -1483,14 +1534,14 @@
+@@ -1483,14 +1535,14 @@
                         (int) stats[nbReduceDB], nLearnts(), (int) stats[nbDL2], (int) stats[nbRemovedClauses], progressEstimate() * 100);
              }
              if(decisionLevel() == 0) {
@@ -563,7 +571,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              }
  
              trailQueue.push(trail.size());
-@@ -1573,13 +1624,13 @@
+@@ -1573,13 +1625,13 @@
                  }
  
                  cancelUntil(bt);
@@ -579,7 +587,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              }
              // Perform clause database reduction !
              if((chanseokStrategy && !glureduce && learnts.size() > firstReduceDB) ||
-@@ -1599,12 +1650,12 @@
+@@ -1599,12 +1651,12 @@
              while(decisionLevel() < assumptions.size()) {
                  // Perform user provided assumption:
                  Lit p = assumptions[decisionLevel()];
@@ -595,7 +603,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  } else {
                      next = p;
                      break;
-@@ -1618,7 +1669,7 @@
+@@ -1618,7 +1670,7 @@
                  if(next == lit_Undef) {
                      printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
                      // Model found:
@@ -604,7 +612,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                  }
              }
  
-@@ -1713,13 +1764,13 @@
+@@ -1713,13 +1765,13 @@
  
      model.clear();
      conflict.clear();
@@ -620,7 +628,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
      if(!incremental && verbosity >= 1) {
          printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
          printf("c | Constants are supposed to work well together :-)                                                      |\n");
-@@ -1757,7 +1808,7 @@
+@@ -1757,7 +1809,7 @@
  
      // Search:
      int curr_restarts = 0;
@@ -629,7 +637,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
          status = search(
                  luby_restart ? luby(restart_inc, curr_restarts) * luby_restart_factor : 0); // the parameter is useless in glucose, kept to allow modifications
  
-@@ -1769,7 +1820,7 @@
+@@ -1769,7 +1821,7 @@
          printf("c =========================================================================================================\n");
  
      if(certifiedUNSAT) { // Want certified output
@@ -638,7 +646,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              if(vbyte) {
                  write_char('a');
                  write_lit(0);
-@@ -1782,11 +1833,11 @@
+@@ -1782,23 +1834,23 @@
      }
  
  
@@ -651,9 +659,12 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
 +    } else if(status == g421l_False && conflict.size() == 0)
          ok = false;
  
- 
-@@ -1794,11 +1845,11 @@
- 
+-
+-    cancelUntil(0);
+-
++    //cancelUntil(0);
++    if (!warm_start || status != g421l_True)  // no 'default' backtracking in case of warm restarts
++        cancelUntil(0);
  
      double finalTime = cpuTime();
 -    if(status == l_True) {
@@ -666,7 +677,202 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
          nbUnsatCalls++;
          totalTime4Unsat += (finalTime - curTime);
      }
-@@ -1830,7 +1881,7 @@
+@@ -1808,7 +1860,194 @@
+ 
+ }
+ 
++//=================================================================================================
++// Add a clause in the warm start mode:
++bool Solver::addClauseWarm(vec<Lit>& ps)
++{
++    if (!ok) return false;
++    if (!warm_start || decisionLevel() == 0) return addClause(ps);
+ 
++    // checking if clause is satisfied and remove false/duplicate literals
++    sort(ps);
++    Lit p; int i, j, nws, max_i;
++    vec<int> ws(2, -1);  // potentially watched literals
++    for (i = j = nws = max_i = 0, p = lit_Undef; i < ps.size(); i++) {
++        Var x = var(ps[i]);
++        if ((value(ps[i]) == g421l_True && level(x) == 0) || ps[i] == ~p)
++            return true;
++        else if ((value(ps[i]) != g421l_False || level(x) > 0) && ps[i] != p) {
++            if (value(ps[i]) != g421l_False && nws < 2)
++                ws[nws++] = j;
++            if (level(x) > level(var(ps[max_i])))
++                max_i = j;
++
++            ps[j++] = p = ps[i];
++        }
++    }
++    ps.shrink(i - j);
++
++    // analyzing which level to backtrack to (if any)
++    if (ps.size() != 0) {
++        if (ps.size() > 1) {
++            if (nws) {
++                p = ps[0]; ps[0] = ps[ws[0]]; ps[ws[0]] = p;
++                if (nws == 2) {
++                    p = ps[1]; ps[1] = ps[ws[1]]; ps[ws[1]] = p;
++                }
++            }
++            else {
++                // no satisfied literals in this clause
++                p = ps[max_i]; ps[max_i] = ps[0]; ps[0] = p;
++
++                max_i = 1;
++                for (int i = 2; i < ps.size(); ++i) {
++                    if (level(var(ps[i])) > level(var(ps[max_i])))
++                        max_i = i;
++                }
++
++                p = ps[max_i]; ps[max_i] = ps[1]; ps[1] = p;
++
++                cancelUntil(level(var(p)));
++            }
++            CRef cr = ca.alloc(ps, false);
++            clauses.push(cr);
++            attachClause(cr);
++
++            if (!nws) {
++                // if the clause was falsified
++                if (value(ps[0]) == g421l_Undef)
++                    // enqueue unless already true
++                    uncheckedEnqueue(ps[0], cr);
++                else if (value(ps[0]) == g421l_False && resolveConflicts(cr) == false)
++                    ok = false;
++            }
++        }
++        else {
++            // a single literal in the clause => enqueue it at level 0
++            cancelUntil(0);
++            uncheckedEnqueue(ps[0]);
++            ok = (propagate() == CRef_Undef);
++        }
++    }
++    else {
++        // there is no literal left in the clause!
++        cancelUntil(0);
++        ok = false;
++    }
++
++    return ok;
++}
++
++//=================================================================================================
++// Resolve conflicts, if appear after adding a clause in the warm start mode:
++bool Solver::resolveConflicts(CRef confl)
++{
++    int backtrack_level;
++    vec <Lit> learnt_clause, selectors;
++    unsigned int nblevels, szWithoutSelectors = 0;
++    bool blocked = false;
++    bool aDecisionWasMade = false;
++
++    while (confl != CRef_Undef) {
++        newDescent = false;
++        /* if(parallelJobIsFinished()) */
++        /*     return g421l_Undef; */
++
++        if(!aDecisionWasMade)
++            stats[noDecisionConflict]++;
++        aDecisionWasMade = false;
++
++        stats[sumDecisionLevels] += decisionLevel();
++        stats[sumTrail] += trail.size();
++        // CONFLICT
++        conflicts++;
++        conflictsRestarts++;
++        if(conflicts % 5000 == 0 && var_decay < max_var_decay)
++            var_decay += 0.01;
++
++        if(decisionLevel() == 0) return false;
++
++        /* if(adaptStrategies && conflicts == 100000) { */
++        /*     cancelUntil(0); */
++        /*     adaptSolver(); */
++        /*     adaptStrategies = false; */
++        /*     return g421l_Undef; */
++        /* } */
++
++        trailQueue.push(trail.size());
++        // BLOCK RESTART (CP 2012 paper)
++        if(conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
++            lbdQueue.fastclear();
++            stats[nbstopsrestarts]++;
++            if(!blocked) {
++                stats[lastblockatrestart] = starts;
++                stats[nbstopsrestartssame]++;
++                blocked = true;
++            }
++        }
++
++        learnt_clause.clear();
++        selectors.clear();
++
++        analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
++
++        lbdQueue.push(nblevels);
++        sumLBD += nblevels;
++
++        cancelUntil(backtrack_level);
++
++        if(certifiedUNSAT) {
++            if(vbyte) {
++                write_char('a');
++                for(int i = 0; i < learnt_clause.size(); i++)
++                    write_lit(2 * (var(learnt_clause[i]) + 1) + sign(learnt_clause[i]));
++                write_lit(0);
++            }
++            else {
++                for(int i = 0; i < learnt_clause.size(); i++)
++                    fprintf(certifiedOutput, "%i ", var(learnt_clause[i]) *
++                                                    (-2 * sign(learnt_clause[i]) + 1));
++                fprintf(certifiedOutput, "0\n");
++            }
++        }
++
++
++        if(learnt_clause.size() == 1) {
++            uncheckedEnqueue(learnt_clause[0]);
++            stats[nbUn]++;
++            parallelExportUnaryClause(learnt_clause[0]);
++        } else {
++            CRef cr;
++            if(chanseokStrategy && nblevels <= coLBDBound) {
++                cr = ca.alloc(learnt_clause, false);
++                permanentLearnts.push(cr);
++                stats[nbPermanentLearnts]++;
++            } else {
++                cr = ca.alloc(learnt_clause, true);
++                ca[cr].setLBD(nblevels);
++                ca[cr].setOneWatched(false);
++                learnts.push(cr);
++                claBumpActivity(ca[cr]);
++            }
++#ifdef INCREMENTAL
++            ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
++#endif
++            if(nblevels <= 2) { stats[nbDL2]++; } // stats
++            if(ca[cr].size() == 2) stats[nbBin]++; // stats
++            attachClause(cr);
++            lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
++            parallelExportClauseDuringSearch(ca[cr]);
++            uncheckedEnqueue(learnt_clause[0], cr);
++        }
++
++        varDecayActivity();
++        claDecayActivity();
++
++        confl = propagate();
++    }
++
++    return true;
++}
+ 
+ 
+ 
+@@ -1830,7 +2069,7 @@
      if(satisfied(c)) return;
  
      for(int i = 0; i < c.size(); i++)
@@ -675,7 +881,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
      fprintf(f, "0\n");
  }
-@@ -1866,7 +1917,7 @@
+@@ -1866,7 +2105,7 @@
          if(!satisfied(ca[clauses[i]])) {
              Clause &c = ca[clauses[i]];
              for(int j = 0; j < c.size(); j++)
@@ -684,7 +890,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -1876,7 +1927,7 @@
+@@ -1876,7 +2115,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for(int i = 0; i < assumptions.size(); i++) {
@@ -695,7 +901,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
 diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver.h
 --- build/solvers/glucose421/core/Solver.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/core/Solver.h	2023-07-04 16:17:31.345745020 +0200
 @@ -47,20 +47,20 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -736,7 +942,27 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  
         // Convenience versions of 'toDimacs()':
      void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
-@@ -537,7 +538,7 @@
+@@ -169,6 +170,11 @@
+     int     nVars      ()      const;       // The current number of variables.
+     int     nFreeVars  ()      ;
+ 
++    // Warm start mode:
++    void setStartMode(bool warm = false);
++    bool addClauseWarm(vec<Lit>& ps);
++    bool resolveConflicts(CRef confl);
++
+     inline char valuePhase(Var v) {return polarity[v];}
+ 
+     // Incremental mode
+@@ -357,6 +363,7 @@
+     Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+     double              progress_estimate;// Set by 'search()'.
+     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
++    bool                warm_start;       // Warm start if set to true.
+     vec<unsigned int>   permDiff;           // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+ 
+ 
+@@ -537,7 +544,7 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -745,7 +971,7 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
  inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
-@@ -545,11 +546,11 @@
+@@ -545,11 +552,11 @@
  inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
   inline bool     Solver::locked          (const Clause& c) const {
     if(c.size()>2)
@@ -760,7 +986,7 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
   }
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
-@@ -588,11 +589,11 @@
+@@ -588,11 +595,11 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -777,7 +1003,17 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
  inline bool     Solver::okay          ()      const   { return ok; }
  
-@@ -646,7 +647,7 @@
+@@ -601,6 +608,9 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
+ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+ 
++// Warm start mode:
++inline void     Solver::setStartMode (bool warm) { warm_start = warm; cancelUntil(0); }
++
+ 
+ /************************************************************
+  * Compute LBD functions
+@@ -646,7 +656,7 @@
  
  inline void Solver::printLit(Lit l)
  {
@@ -788,7 +1024,7 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  
 diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/SolverStats.h
 --- build/solvers/glucose421/core/SolverStats.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverStats.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/core/SolverStats.h	2023-07-04 16:12:37.708327670 +0200
 @@ -47,12 +47,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -808,7 +1044,7 @@ diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/S
      protected:
 diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/SolverTypes.h
 --- build/solvers/glucose421/core/SolverTypes.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverTypes.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/core/SolverTypes.h	2023-07-04 16:12:37.708327670 +0200
 @@ -48,21 +48,21 @@
   **************************************************************************************************/
  
@@ -854,7 +1090,7 @@ diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/S
      uint8_t value;
 diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 --- build/solvers/glucose421/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile	2023-07-03 18:28:57.871026341 +0200
++++ solvers/glucose421/Makefile	2023-07-04 16:12:37.708327670 +0200
 @@ -0,0 +1,42 @@
 +### Makefile ---
 +
@@ -900,7 +1136,7 @@ diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 +	@-find . -name '*.a' -delete
 diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 --- build/solvers/glucose421/Makefile.old	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile.old	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/Makefile.old	2023-07-04 16:12:37.708327670 +0200
 @@ -0,0 +1,37 @@
 +### Makefile ---
 +
@@ -941,7 +1177,7 @@ diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 +	@-find . -name '*.a' -delete
 diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
 --- build/solvers/glucose421/mtl/Alg.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alg.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Alg.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -961,7 +1197,7 @@ diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
 --- build/solvers/glucose421/mtl/Alloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alloc.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Alloc.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -983,7 +1219,7 @@ diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
 --- build/solvers/glucose421/mtl/Clone.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Clone.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Clone.h	2023-07-04 16:12:37.708327670 +0200
 @@ -1,8 +1,8 @@
 -#ifndef Glucose_Clone_h
 -#define Glucose_Clone_h
@@ -998,7 +1234,7 @@ diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
          public:
 diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
 --- build/solvers/glucose421/mtl/Heap.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Heap.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Heap.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1018,7 +1254,7 @@ diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
 --- build/solvers/glucose421/mtl/Map.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Map.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Map.h	2023-07-04 16:12:37.708327670 +0200
 @@ -17,15 +17,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1042,7 +1278,7 @@ diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
  // Default hash/equals functions
 diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
 --- build/solvers/glucose421/mtl/Queue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Queue.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Queue.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1062,7 +1298,7 @@ diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
  
 diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
 --- build/solvers/glucose421/mtl/Sort.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Sort.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Sort.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1086,7 +1322,7 @@ diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
  struct LessThan_default {
 diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
 --- build/solvers/glucose421/mtl/Vec.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Vec.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/Vec.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1112,7 +1348,7 @@ diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
  // Automatically resizable arrays
 diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecThreads.h
 --- build/solvers/glucose421/mtl/VecThreads.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/VecThreads.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/VecThreads.h	2023-07-04 16:12:37.708327670 +0200
 @@ -19,17 +19,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1138,7 +1374,7 @@ diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecT
  // Automatically resizable arrays
 diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
 --- build/solvers/glucose421/mtl/XAlloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/XAlloc.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/mtl/XAlloc.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -1159,7 +1395,7 @@ diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Options.cc
 --- build/solvers/glucose421/utils/Options.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.cc	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/utils/Options.cc	2023-07-04 16:12:37.708327670 +0200
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1201,7 +1437,7 @@ diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Op
      const char* prev_type = NULL;
 diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Options.h
 --- build/solvers/glucose421/utils/Options.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/utils/Options.h	2023-07-04 16:12:37.708327670 +0200
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1230,7 +1466,7 @@ diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Opt
  // Top-level option parse/help functions:
 diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/ParseUtils.h
 --- build/solvers/glucose421/utils/ParseUtils.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/ParseUtils.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/utils/ParseUtils.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,8 +18,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1285,7 +1521,7 @@ diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/
  
 diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/System.cc
 --- build/solvers/glucose421/utils/System.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.cc	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/utils/System.cc	2023-07-04 16:12:37.708327670 +0200
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1338,7 +1574,7 @@ diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/Sys
  #endif
 diff -Naur build/solvers/glucose421/utils/System.h solvers/glucose421/utils/System.h
 --- build/solvers/glucose421/utils/System.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.h	2023-07-03 18:28:32.630218945 +0200
++++ solvers/glucose421/utils/System.h	2023-07-04 16:12:37.708327670 +0200
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
