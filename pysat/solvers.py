@@ -3338,7 +3338,7 @@ class Glucose421(object):
         assert not incr or not with_proof, 'Incremental mode and proof tracing cannot be set together.'
 
         if not self.glucose:
-            self.glucose = pysolvers.glucose41_new()
+            self.glucose = pysolvers.glucose421_new()
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -3352,11 +3352,11 @@ class Glucose421(object):
             self.accu_time = 0.0  # time accumulated for all calls to oracle
 
             if incr:
-                pysolvers.glucose41_setincr(self.glucose)
+                pysolvers.glucose421_setincr(self.glucose)
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.glucose41_tracepr(self.glucose, self.prfile)
+                pysolvers.glucose421_tracepr(self.glucose, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -3367,7 +3367,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_set_start(self.glucose, int(warm))
+            pysolvers.glucose421_set_start(self.glucose, int(warm))
 
     def delete(self):
         """
@@ -3375,7 +3375,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_del(self.glucose)
+            pysolvers.glucose421_del(self.glucose)
             self.glucose = None
 
             if self.prfile:
@@ -3390,7 +3390,7 @@ class Glucose421(object):
             if self.use_timer:
                  start_time = process_time()
 
-            self.status = pysolvers.glucose41_solve(self.glucose, assumptions,
+            self.status = pysolvers.glucose421_solve(self.glucose, assumptions,
                     int(MainThread.check()))
 
             if self.use_timer:
@@ -3409,7 +3409,7 @@ class Glucose421(object):
             if self.use_timer:
                  start_time = process_time()
 
-            self.status = pysolvers.glucose41_solve_lim(self.glucose,
+            self.status = pysolvers.glucose421_solve_lim(self.glucose,
                     assumptions, int(MainThread.check()), int(expect_interrupt))
 
             if self.use_timer:
@@ -3424,7 +3424,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_cbudget(self.glucose, budget)
+            pysolvers.glucose421_cbudget(self.glucose, budget)
 
     def prop_budget(self, budget):
         """
@@ -3432,7 +3432,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_pbudget(self.glucose, budget)
+            pysolvers.glucose421_pbudget(self.glucose, budget)
 
     def dec_budget(self, budget):
         """
@@ -3447,7 +3447,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_interrupt(self.glucose)
+            pysolvers.glucose421_interrupt(self.glucose)
 
     def clear_interrupt(self):
         """
@@ -3455,7 +3455,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_clearint(self.glucose)
+            pysolvers.glucose421_clearint(self.glucose)
 
     def propagate(self, assumptions=[], phase_saving=0):
         """
@@ -3466,7 +3466,7 @@ class Glucose421(object):
             if self.use_timer:
                  start_time = process_time()
 
-            st, props = pysolvers.glucose41_propagate(self.glucose,
+            st, props = pysolvers.glucose421_propagate(self.glucose,
                     assumptions, phase_saving, int(MainThread.check()))
 
             if self.use_timer:
@@ -3481,7 +3481,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            pysolvers.glucose41_setphases(self.glucose, literals)
+            pysolvers.glucose421_setphases(self.glucose, literals)
 
     def get_status(self):
         """
@@ -3497,7 +3497,7 @@ class Glucose421(object):
         """
 
         if self.glucose and self.status == True:
-            model = pysolvers.glucose41_model(self.glucose)
+            model = pysolvers.glucose421_model(self.glucose)
             return model if model != None else []
 
     def get_core(self):
@@ -3507,7 +3507,7 @@ class Glucose421(object):
         """
 
         if self.glucose and self.status == False:
-            return pysolvers.glucose41_core(self.glucose)
+            return pysolvers.glucose421_core(self.glucose)
 
     def get_proof(self):
         """
@@ -3540,7 +3540,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            return pysolvers.glucose41_nof_vars(self.glucose)
+            return pysolvers.glucose421_nof_vars(self.glucose)
 
     def nof_clauses(self):
         """
@@ -3548,7 +3548,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            return pysolvers.glucose41_nof_cls(self.glucose)
+            return pysolvers.glucose421_nof_cls(self.glucose)
 
     def accum_stats(self):
         """
@@ -3557,7 +3557,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            return pysolvers.glucose41_acc_stats(self.glucose)
+            return pysolvers.glucose421_acc_stats(self.glucose)
 
     def enum_models(self, assumptions=[]):
         """
@@ -3582,7 +3582,7 @@ class Glucose421(object):
         """
 
         if self.glucose:
-            res = pysolvers.glucose41_add_cl(self.glucose, clause)
+            res = pysolvers.glucose421_add_cl(self.glucose, clause)
 
             if res == False:
                 self.status = False
