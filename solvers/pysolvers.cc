@@ -4679,7 +4679,7 @@ static PyObject *py_glucose421_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->certifiedUNSAT  = true;
-	//s->certifiedPyFile = (void *)p_obj;
+	s->certifiedPyFile = (void *)p_obj;
 
 	Py_RETURN_NONE;
 }
@@ -4798,13 +4798,13 @@ static PyObject *py_glucose421_del(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	Glucose421::Solver *s = (Glucose421::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	//if (s->certifiedUNSAT == true)
-	//	PyFile_DecUseCount((PyFileObject *)(s->certifiedPyFile));
+	if (s->certifiedUNSAT == true)
+		PyFile_DecUseCount((PyFileObject *)(s->certifiedPyFile));
 #else
 	Glucose421::Solver *s = (Glucose421::Solver *)PyCapsule_GetPointer(s_obj, NULL);
 
-	//if (s->certifiedUNSAT == true)
-	//	Py_DECREF((PyObject *)s->certifiedPyFile);
+	if (s->certifiedUNSAT == true)
+		Py_DECREF((PyObject *)s->certifiedPyFile);
 #endif
 
 	delete s;
