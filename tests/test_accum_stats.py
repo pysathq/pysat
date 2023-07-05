@@ -6,7 +6,7 @@ solvers = ['cadical103',
            'gluecard30',
            'gluecard41',
            'glucose30',
-           'glucose41',
+           'glucose421',
            'lingeling',
            'maplechrono',
            'maplecm',
@@ -20,6 +20,7 @@ def test_solvers():
     cnf = CNF(from_clauses=[[1, 2, 3], [-1, 2], [-2]])
 
     for name in solvers:
+        print("Name = {}".format(name))
         with Solver(name=name, bootstrap_with=cnf) as solver:
             solver.solve()
             stats = solver.accum_stats()
@@ -27,4 +28,3 @@ def test_solvers():
             assert 'decisions' in stats, 'No decisions for {0}'.format(name)
             assert 'propagations' in stats, 'No propagations for {0}'.format(name)
             assert 'restarts' in stats, 'No restarts for {0}'.format(name)
-

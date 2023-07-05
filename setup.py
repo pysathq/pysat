@@ -71,7 +71,6 @@ Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`_
 to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
               'glucose30', 'glucose41', 'glucose421', 'lingeling', 'maplechrono', 'maplecm',
               'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
-#to_install = ['glucose41', 'glucose421']
 
 # example and allies scripts to install as standalone executables
 #==============================================================================
