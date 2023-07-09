@@ -1,6 +1,6 @@
 diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/BoundedQueue.h
 --- build/solvers/glucose421/core/BoundedQueue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/BoundedQueue.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/core/BoundedQueue.h	2023-07-09 19:17:48.067191080 +0200
 @@ -48,14 +48,14 @@
   **************************************************************************************************/
  
@@ -22,7 +22,7 @@ diff -Naur build/solvers/glucose421/core/BoundedQueue.h solvers/glucose421/core/
  class bqueue {
 diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
 --- build/solvers/glucose421/core/lcm.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/lcm.cc	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/core/lcm.cc	2023-07-09 19:17:48.067191080 +0200
 @@ -1,6 +1,7 @@
 -#include "Solver.h"
 -#include "mtl/Sort.h"
@@ -228,7 +228,7 @@ diff -Naur build/solvers/glucose421/core/lcm.cc solvers/glucose421/core/lcm.cc
                          }
 diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solver.cc
 --- build/solvers/glucose421/core/Solver.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.cc	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/core/Solver.cc	2023-07-09 19:27:49.014184702 +0200
 @@ -49,13 +49,12 @@
  
  #include <math.h>
@@ -472,7 +472,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
                  *j++ = w;
                  continue;
-@@ -1034,7 +1087,7 @@
+@@ -1034,14 +1087,14 @@
                int choosenPos = -1;
                for (int k = 2; k < c.size(); k++) {
  
@@ -481,6 +481,14 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
                if(decisionLevel()>assumptions.size()) {
                  choosenPos = k;
                  break;
+               } else {
+                 choosenPos = k;
+ 
+-                if(value(c[k])==l_True || !isSelector(var(c[k]))) {
++                if(value(c[k])== g421l_True || !isSelector(var(c[k]))) {
+                   break;
+                 }
+               }
 @@ -1056,7 +1109,7 @@
  #endif
              for(int k = 2; k < c.size(); k++) {
@@ -979,7 +987,7 @@ diff -Naur build/solvers/glucose421/core/Solver.cc solvers/glucose421/core/Solve
  
 diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver.h
 --- build/solvers/glucose421/core/Solver.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/Solver.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/core/Solver.h	2023-07-09 19:17:48.067191080 +0200
 @@ -47,20 +47,20 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -1120,7 +1128,7 @@ diff -Naur build/solvers/glucose421/core/Solver.h solvers/glucose421/core/Solver
  
 diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/SolverStats.h
 --- build/solvers/glucose421/core/SolverStats.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverStats.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/core/SolverStats.h	2023-07-09 19:17:48.067191080 +0200
 @@ -47,12 +47,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   **************************************************************************************************/
@@ -1140,7 +1148,7 @@ diff -Naur build/solvers/glucose421/core/SolverStats.h solvers/glucose421/core/S
      protected:
 diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/SolverTypes.h
 --- build/solvers/glucose421/core/SolverTypes.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/core/SolverTypes.h	2023-07-09 19:16:32.332643322 +0200
++++ solvers/glucose421/core/SolverTypes.h	2023-07-09 19:17:48.067191080 +0200
 @@ -48,21 +48,26 @@
   **************************************************************************************************/
  
@@ -1191,7 +1199,7 @@ diff -Naur build/solvers/glucose421/core/SolverTypes.h solvers/glucose421/core/S
      uint8_t value;
 diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 --- build/solvers/glucose421/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/Makefile	2023-07-09 19:17:48.067191080 +0200
 @@ -0,0 +1,41 @@
 +### Makefile ---
 +
@@ -1236,7 +1244,7 @@ diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 +	@-find . -name '*.a' -delete
 diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 --- build/solvers/glucose421/Makefile.old	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/glucose421/Makefile.old	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/Makefile.old	2023-07-09 19:17:48.067191080 +0200
 @@ -0,0 +1,37 @@
 +### Makefile ---
 +
@@ -1277,7 +1285,7 @@ diff -Naur build/solvers/glucose421/Makefile.old solvers/glucose421/Makefile.old
 +	@-find . -name '*.a' -delete
 diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
 --- build/solvers/glucose421/mtl/Alg.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alg.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Alg.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1297,7 +1305,7 @@ diff -Naur build/solvers/glucose421/mtl/Alg.h solvers/glucose421/mtl/Alg.h
  // Useful functions on vector-like types:
 diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
 --- build/solvers/glucose421/mtl/Alloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Alloc.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Alloc.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -1319,7 +1327,7 @@ diff -Naur build/solvers/glucose421/mtl/Alloc.h solvers/glucose421/mtl/Alloc.h
  // Simple Region-based memory allocator:
 diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
 --- build/solvers/glucose421/mtl/Clone.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Clone.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Clone.h	2023-07-09 19:17:48.067191080 +0200
 @@ -1,8 +1,8 @@
 -#ifndef Glucose_Clone_h
 -#define Glucose_Clone_h
@@ -1334,7 +1342,7 @@ diff -Naur build/solvers/glucose421/mtl/Clone.h solvers/glucose421/mtl/Clone.h
          public:
 diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
 --- build/solvers/glucose421/mtl/Heap.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Heap.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Heap.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1354,7 +1362,7 @@ diff -Naur build/solvers/glucose421/mtl/Heap.h solvers/glucose421/mtl/Heap.h
  // A heap implementation with support for decrease/increase key.
 diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
 --- build/solvers/glucose421/mtl/Map.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Map.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Map.h	2023-07-09 19:17:48.067191080 +0200
 @@ -17,15 +17,15 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1378,7 +1386,7 @@ diff -Naur build/solvers/glucose421/mtl/Map.h solvers/glucose421/mtl/Map.h
  // Default hash/equals functions
 diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
 --- build/solvers/glucose421/mtl/Queue.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Queue.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Queue.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1398,7 +1406,7 @@ diff -Naur build/solvers/glucose421/mtl/Queue.h solvers/glucose421/mtl/Queue.h
  
 diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
 --- build/solvers/glucose421/mtl/Sort.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Sort.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Sort.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1422,7 +1430,7 @@ diff -Naur build/solvers/glucose421/mtl/Sort.h solvers/glucose421/mtl/Sort.h
  struct LessThan_default {
 diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
 --- build/solvers/glucose421/mtl/Vec.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/Vec.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/Vec.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1457,7 +1465,7 @@ diff -Naur build/solvers/glucose421/mtl/Vec.h solvers/glucose421/mtl/Vec.h
  
 diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecThreads.h
 --- build/solvers/glucose421/mtl/VecThreads.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/VecThreads.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/VecThreads.h	2023-07-09 19:17:48.067191080 +0200
 @@ -19,17 +19,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1483,7 +1491,7 @@ diff -Naur build/solvers/glucose421/mtl/VecThreads.h solvers/glucose421/mtl/VecT
  // Automatically resizable arrays
 diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
 --- build/solvers/glucose421/mtl/XAlloc.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/mtl/XAlloc.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/mtl/XAlloc.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,14 +18,14 @@
  **************************************************************************************************/
  
@@ -1504,7 +1512,7 @@ diff -Naur build/solvers/glucose421/mtl/XAlloc.h solvers/glucose421/mtl/XAlloc.h
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Options.cc
 --- build/solvers/glucose421/utils/Options.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.cc	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/utils/Options.cc	2023-07-09 19:17:48.067191080 +0200
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1546,7 +1554,7 @@ diff -Naur build/solvers/glucose421/utils/Options.cc solvers/glucose421/utils/Op
      const char* prev_type = NULL;
 diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Options.h
 --- build/solvers/glucose421/utils/Options.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/Options.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/utils/Options.h	2023-07-09 19:17:48.067191080 +0200
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1575,7 +1583,7 @@ diff -Naur build/solvers/glucose421/utils/Options.h solvers/glucose421/utils/Opt
  // Top-level option parse/help functions:
 diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/ParseUtils.h
 --- build/solvers/glucose421/utils/ParseUtils.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/ParseUtils.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/utils/ParseUtils.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,109 +18,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1708,7 +1716,7 @@ diff -Naur build/solvers/glucose421/utils/ParseUtils.h solvers/glucose421/utils/
  #endif
 diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/System.cc
 --- build/solvers/glucose421/utils/System.cc	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.cc	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/utils/System.cc	2023-07-09 19:17:48.067191080 +0200
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1761,7 +1769,7 @@ diff -Naur build/solvers/glucose421/utils/System.cc solvers/glucose421/utils/Sys
  #endif
 diff -Naur build/solvers/glucose421/utils/System.h solvers/glucose421/utils/System.h
 --- build/solvers/glucose421/utils/System.h	2023-05-09 15:19:52.000000000 +0200
-+++ solvers/glucose421/utils/System.h	2023-07-09 19:12:52.357243256 +0200
++++ solvers/glucose421/utils/System.h	2023-07-09 19:17:48.067191080 +0200
 @@ -18,18 +18,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
