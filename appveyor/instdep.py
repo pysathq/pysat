@@ -62,9 +62,9 @@ if __name__ == '__main__':
     wheelId = (version[0], version[1], architecture)
     suffix = suffixes[wheelId]
 
-    print('Suffix', suffix)
+    #print('Suffix', suffix)
 
-    for asset in rsp['assets']:
-        print(asset['name'])
+    #for asset in rsp['assets']:
+    #    print(asset['name'])
         # if suffix and suffix in asset['name']:
         #     pycall('-m pip install --upgrade {0}'.format(asset['browser_download_url']))
