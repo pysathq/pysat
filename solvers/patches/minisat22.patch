@@ -1,6 +1,49 @@
-diff -Naur build/solvers/minisat22/core/Solver.cc solvers/minisat22/core/Solver.cc
---- build/solvers/minisat22/core/Solver.cc	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/core/Solver.cc	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/Makefile solvers/m22/Makefile
+--- solvers/minisat22/Makefile	1970-01-01 10:00:00
++++ solvers/m22/Makefile	2023-01-12 18:19:24
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CXX      := c++
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
++OBJECTS  := $(SOURCES:.cc=.o)
++TRGT     := minisat22
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.cc
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/minisat22/core/Solver.cc solvers/m22/core/Solver.cc
+--- solvers/minisat22/core/Solver.cc	2010-07-11 02:07:36
++++ solvers/m22/core/Solver.cc	2023-01-13 17:32:26
 @@ -20,10 +20,10 @@
  
  #include <math.h>
@@ -111,7 +154,7 @@ diff -Naur build/solvers/minisat22/core/Solver.cc solvers/minisat22/core/Solver.
 +bool Solver::prop_check(const vec<Lit>& assumps, vec<Lit>& prop, int psaving)
 +{
 +    prop.clear();
-+
+ 
 +    if (!ok)
 +        return false;
 +
@@ -156,7 +199,7 @@ diff -Naur build/solvers/minisat22/core/Solver.cc solvers/minisat22/core/Solver.
 +    return st && confl == CRef_Undef;
 +}
 +
- 
++
  /*_________________________________________________________________________________________________
  |
  |  propagate : [void]  ->  [Clause*]
@@ -388,9 +431,9 @@ diff -Naur build/solvers/minisat22/core/Solver.cc solvers/minisat22/core/Solver.
                 ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
      to.moveTo(ca);
  }
-diff -Naur build/solvers/minisat22/core/Solver.h solvers/minisat22/core/Solver.h
---- build/solvers/minisat22/core/Solver.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/core/Solver.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
+--- solvers/minisat22/core/Solver.h	2010-07-11 02:07:36
++++ solvers/m22/core/Solver.h	2023-01-13 18:03:48
 @@ -18,17 +18,17 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -493,19 +536,19 @@ diff -Naur build/solvers/minisat22/core/Solver.h solvers/minisat22/core/Solver.h
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -362,6 +369,9 @@
+@@ -361,6 +368,9 @@
+ inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
- 
++
 +// Warm start mode:
 +inline void     Solver::setStartMode (bool warm) { warm_start = warm; cancelUntil(0); }
-+
+ 
  
  //=================================================================================================
- // Debug etc:
-diff -Naur build/solvers/minisat22/core/SolverTypes.h solvers/minisat22/core/SolverTypes.h
---- build/solvers/minisat22/core/SolverTypes.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/core/SolverTypes.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
+--- solvers/minisat22/core/SolverTypes.h	2010-07-11 02:07:36
++++ solvers/m22/core/SolverTypes.h	2023-01-12 18:19:24
 @@ -19,18 +19,18 @@
  **************************************************************************************************/
  
@@ -567,52 +610,9 @@ diff -Naur build/solvers/minisat22/core/SolverTypes.h solvers/minisat22/core/Sol
          // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
          to[cr].mark(c.mark());
          if (to[cr].learnt())         to[cr].activity() = c.activity();
-diff -Naur build/solvers/minisat22/Makefile solvers/minisat22/Makefile
---- build/solvers/minisat22/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ solvers/minisat22/Makefile	2023-06-19 13:15:27.319411269 +0200
-@@ -0,0 +1,39 @@
-+### Makefile ---
-+
-+## Author: aign
-+## Keywords:
-+
-+# main parameters
-+CXX      := c++
-+CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
-+CXXOPT   := -O3 -DNDEBUG
-+CXXDEBUG := -O0 -g3
-+CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
-+INCLUDES := -I..
-+LIBS     := -L.
-+SOURCES  := core/Solver.cc utils/Options.cc utils/System.cc
-+OBJECTS  := $(SOURCES:.cc=.o)
-+TRGT     := minisat22
-+
-+# gather compiler options
-+CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
-+
-+# targets
-+.PHONY: all clean lib
-+
-+all: lib
-+
-+lib: $(OBJECTS)
-+	@-ar cr lib$(TRGT).a $(OBJECTS)
-+
-+%.o: %.cc
-+	$(CXX) $(CXXARGS) -c $< -o $@
-+
-+clean:
-+	@-rm $(OBJECTS)
-+
-+allclean:
-+	@-find . -name '*.o' -delete
-+	@-find . -name '*.a' -delete
-+
-+#-------------------------------------------------------------------------------
-diff -Naur build/solvers/minisat22/mtl/Alg.h solvers/minisat22/mtl/Alg.h
---- build/solvers/minisat22/mtl/Alg.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Alg.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Alg.h solvers/m22/mtl/Alg.h
+--- solvers/minisat22/mtl/Alg.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Alg.h	2023-01-12 18:19:24
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -630,9 +630,9 @@ diff -Naur build/solvers/minisat22/mtl/Alg.h solvers/minisat22/mtl/Alg.h
  
  //=================================================================================================
  // Useful functions on vector-like types:
-diff -Naur build/solvers/minisat22/mtl/Alloc.h solvers/minisat22/mtl/Alloc.h
---- build/solvers/minisat22/mtl/Alloc.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Alloc.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Alloc.h solvers/m22/mtl/Alloc.h
+--- solvers/minisat22/mtl/Alloc.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Alloc.h	2023-01-12 18:19:24
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -652,9 +652,9 @@ diff -Naur build/solvers/minisat22/mtl/Alloc.h solvers/minisat22/mtl/Alloc.h
  
  //=================================================================================================
  // Simple Region-based memory allocator:
-diff -Naur build/solvers/minisat22/mtl/Heap.h solvers/minisat22/mtl/Heap.h
---- build/solvers/minisat22/mtl/Heap.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Heap.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Heap.h solvers/m22/mtl/Heap.h
+--- solvers/minisat22/mtl/Heap.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Heap.h	2023-01-12 18:19:24
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -672,9 +672,9 @@ diff -Naur build/solvers/minisat22/mtl/Heap.h solvers/minisat22/mtl/Heap.h
  
  //=================================================================================================
  // A heap implementation with support for decrease/increase key.
-diff -Naur build/solvers/minisat22/mtl/IntTypes.h solvers/minisat22/mtl/IntTypes.h
---- build/solvers/minisat22/mtl/IntTypes.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/IntTypes.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/IntTypes.h solvers/m22/mtl/IntTypes.h
+--- solvers/minisat22/mtl/IntTypes.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/IntTypes.h	2023-01-12 18:19:24
 @@ -17,8 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -700,9 +700,9 @@ diff -Naur build/solvers/minisat22/mtl/IntTypes.h solvers/minisat22/mtl/IntTypes
  #   include <inttypes.h>
  
  #endif
-diff -Naur build/solvers/minisat22/mtl/Map.h solvers/minisat22/mtl/Map.h
---- build/solvers/minisat22/mtl/Map.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Map.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Map.h solvers/m22/mtl/Map.h
+--- solvers/minisat22/mtl/Map.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Map.h	2023-01-12 18:19:24
 @@ -17,28 +17,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -745,9 +745,9 @@ diff -Naur build/solvers/minisat22/mtl/Map.h solvers/minisat22/mtl/Map.h
  
  
  //=================================================================================================
-diff -Naur build/solvers/minisat22/mtl/Queue.h solvers/minisat22/mtl/Queue.h
---- build/solvers/minisat22/mtl/Queue.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Queue.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Queue.h solvers/m22/mtl/Queue.h
+--- solvers/minisat22/mtl/Queue.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Queue.h	2023-01-12 18:19:24
 @@ -18,12 +18,12 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -765,9 +765,9 @@ diff -Naur build/solvers/minisat22/mtl/Queue.h solvers/minisat22/mtl/Queue.h
  
  //=================================================================================================
  
-diff -Naur build/solvers/minisat22/mtl/Sort.h solvers/minisat22/mtl/Sort.h
---- build/solvers/minisat22/mtl/Sort.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Sort.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Sort.h solvers/m22/mtl/Sort.h
+--- solvers/minisat22/mtl/Sort.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Sort.h	2023-01-12 18:19:24
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -789,9 +789,9 @@ diff -Naur build/solvers/minisat22/mtl/Sort.h solvers/minisat22/mtl/Sort.h
  
  template<class T>
  struct LessThan_default {
-diff -Naur build/solvers/minisat22/mtl/Vec.h solvers/minisat22/mtl/Vec.h
---- build/solvers/minisat22/mtl/Vec.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/Vec.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/Vec.h solvers/m22/mtl/Vec.h
+--- solvers/minisat22/mtl/Vec.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/Vec.h	2023-01-12 18:19:24
 @@ -18,16 +18,16 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -823,9 +823,9 @@ diff -Naur build/solvers/minisat22/mtl/Vec.h solvers/minisat22/mtl/Vec.h
          throw OutOfMemoryException();
   }
  
-diff -Naur build/solvers/minisat22/mtl/XAlloc.h solvers/minisat22/mtl/XAlloc.h
---- build/solvers/minisat22/mtl/XAlloc.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/mtl/XAlloc.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/mtl/XAlloc.h solvers/m22/mtl/XAlloc.h
+--- solvers/minisat22/mtl/XAlloc.h	2010-07-11 02:07:36
++++ solvers/m22/mtl/XAlloc.h	2023-01-12 18:19:24
 @@ -18,13 +18,13 @@
  **************************************************************************************************/
  
@@ -843,9 +843,9 @@ diff -Naur build/solvers/minisat22/mtl/XAlloc.h solvers/minisat22/mtl/XAlloc.h
  
  //=================================================================================================
  // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
-diff -Naur build/solvers/minisat22/utils/Options.cc solvers/minisat22/utils/Options.cc
---- build/solvers/minisat22/utils/Options.cc	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/utils/Options.cc	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/utils/Options.cc solvers/m22/utils/Options.cc
+--- solvers/minisat22/utils/Options.cc	2010-07-11 02:07:36
++++ solvers/m22/utils/Options.cc	2023-01-12 18:19:24
 @@ -17,13 +17,13 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -892,9 +892,9 @@ diff -Naur build/solvers/minisat22/utils/Options.cc solvers/minisat22/utils/Opti
  {
      const char* usage = Option::getUsageString();
      if (usage != NULL)
-diff -Naur build/solvers/minisat22/utils/Options.h solvers/minisat22/utils/Options.h
---- build/solvers/minisat22/utils/Options.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/utils/Options.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/utils/Options.h solvers/m22/utils/Options.h
+--- solvers/minisat22/utils/Options.h	2010-07-11 02:07:36
++++ solvers/m22/utils/Options.h	2023-01-12 18:19:24
 @@ -17,19 +17,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -949,10 +949,10 @@ diff -Naur build/solvers/minisat22/utils/Options.h solvers/minisat22/utils/Optio
          if (verbose){
              fprintf(stderr, "\n        %s\n", description);
              fprintf(stderr, "\n");
-diff -Naur build/solvers/minisat22/utils/ParseUtils.h solvers/minisat22/utils/ParseUtils.h
---- build/solvers/minisat22/utils/ParseUtils.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/utils/ParseUtils.h	2023-06-19 13:15:27.319411269 +0200
-@@ -18,80 +18,13 @@
+diff -Naur solvers/minisat22/utils/ParseUtils.h solvers/m22/utils/ParseUtils.h
+--- solvers/minisat22/utils/ParseUtils.h	2010-07-11 02:07:36
++++ solvers/m22/utils/ParseUtils.h	2023-01-12 18:19:24
+@@ -18,81 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
  
@@ -965,7 +965,8 @@ diff -Naur build/solvers/minisat22/utils/ParseUtils.h solvers/minisat22/utils/Pa
  #include <stdio.h>
  
 -#include <zlib.h>
--
++namespace Minisat22 {
+ 
 -namespace Minisat {
 -
 -//-------------------------------------------------------------------------------------------------
@@ -1032,18 +1033,18 @@ diff -Naur build/solvers/minisat22/utils/ParseUtils.h solvers/minisat22/utils/Pa
 -        ++in;
 -    return neg ? -val : val; }
 -
-+namespace Minisat22 {
- 
+-
  // String matching: in case of a match the input iterator will be advanced the corresponding
  // number of characters.
-@@ -104,18 +37,9 @@
+ template<class B>
+@@ -104,17 +37,8 @@
  
      in += i;
  
 -    return true; 
 +    return true;
  }
- 
+-
 -// String matching: consumes characters eagerly, but does not require random access iterator.
 -template<class B>
 -static bool eagerMatch(B& in, const char* str) {
@@ -1052,13 +1053,12 @@ diff -Naur build/solvers/minisat22/utils/ParseUtils.h solvers/minisat22/utils/Pa
 -            return false;
 -    return true; }
 -
--
+ 
  //=================================================================================================
  }
- 
-diff -Naur build/solvers/minisat22/utils/System.cc solvers/minisat22/utils/System.cc
---- build/solvers/minisat22/utils/System.cc	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/utils/System.cc	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/utils/System.cc solvers/m22/utils/System.cc
+--- solvers/minisat22/utils/System.cc	2010-07-11 02:07:36
++++ solvers/m22/utils/System.cc	2023-01-12 18:19:24
 @@ -18,14 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1118,9 +1118,9 @@ diff -Naur build/solvers/minisat22/utils/System.cc solvers/minisat22/utils/Syste
 +double Minisat22::memUsedPeak(void) { return memUsed(); }
 +
  #endif
-diff -Naur build/solvers/minisat22/utils/System.h solvers/minisat22/utils/System.h
---- build/solvers/minisat22/utils/System.h	2010-07-10 18:07:36.000000000 +0200
-+++ solvers/minisat22/utils/System.h	2023-06-19 13:15:27.319411269 +0200
+diff -Naur solvers/minisat22/utils/System.h solvers/m22/utils/System.h
+--- solvers/minisat22/utils/System.h	2010-07-11 02:07:36
++++ solvers/m22/utils/System.h	2023-01-12 18:19:24
 @@ -18,18 +18,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -1133,10 +1133,10 @@ diff -Naur build/solvers/minisat22/utils/System.h solvers/minisat22/utils/System
 -#if defined(__linux__)
 -#include <fpu_control.h>
 -#endif
--
--#include "mtl/IntTypes.h"
 +#include "minisat22/mtl/IntTypes.h"
  
+-#include "mtl/IntTypes.h"
+-
  //-------------------------------------------------------------------------------------------------
  
 -namespace Minisat {
