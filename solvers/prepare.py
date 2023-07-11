@@ -52,6 +52,10 @@ sources = {
         'http://www.labri.fr/perso/lsimon/downloads/softwares/glucose-syrup-4.1.tgz',
         'solvers/glucose41.tar.gz'
     ),
+    'glucose421': (
+        'https://github.com/audemard/glucose/archive/refs/tags/4.2.1.tar.gz',
+        'solvers/glucose421.tar.gz'
+    ),
     'lingeling': (
         'http://fmv.jku.at/lingeling/lingeling-bbc-9230380-160707-druplig-009.tar.gz',
         'solvers/lingeling.tar.gz'
@@ -97,6 +101,7 @@ to_extract = {
     'gluecard41': [],
     'glucose30': [],
     'glucose41': [],
+    'glucose421': [],
     'lingeling': ['druplig-009.zip', 'lingeling-bbc-9230380-160707.tar.gz'],
     'maplechrono': [],
     'maplecm': [],
@@ -358,6 +363,7 @@ to_move = {
     'gluecard41': [],
     'glucose30': [],
     'glucose41': [],
+    'glucose421': [],
     'lingeling': [
         ('druplig-009/druplig.c', 'druplig.c'),
         ('druplig-009/druplig.h', 'druplig.h'),
@@ -540,6 +546,20 @@ to_remove = {
         'utils/._System.h',
         'utils/Makefile'
     ],
+    'glucose421': [
+        'CHANGELOG',
+        'CMakeLists.txt',
+        '.gitignore',
+        'LICENSE',
+        'README.md',
+        'simp',
+        'parallel',
+        'mtl/template.mk',
+        'mtl/config.mk',
+        'core/Dimacs.h',
+        'core/Makefile',
+        'utils/Makefile'
+    ],
     'lingeling': [
         'druplig-009',
         'druplig-009.zip',
@@ -662,7 +682,7 @@ def do(to_install):
         extract_archive(sources[solver][-1], solver)
         adapt_files(solver)
         patch_solver(solver)
-
+        
         if platform.system() != 'Windows':
             compile_solver(solver)
 
