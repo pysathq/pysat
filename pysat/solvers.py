@@ -24,6 +24,7 @@
         Gluecard4
         Glucose3
         Glucose4
+        Glucose42
         Lingeling
         MapleChrono
         MapleCM
@@ -43,6 +44,7 @@
     -  CaDiCaL (`rel-1.0.3 <https://github.com/arminbiere/cadical>`__)
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
+    -  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
     -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
     -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
@@ -140,11 +142,12 @@
     In order to shorten the description of the module, the classes providing
     direct access to the individual solvers, i.e. classes :class:`Cadical103`,
     :class:`Cadical153`, :class:`Gluecard3`, :class:`Gluecard4`,
-    :class:`Glucose3`, :class:`Glucose4`, :class:`Lingeling`,
-    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
-    :class:`Mergesat3`, :class:`Minicard`, :class:`Minisat22`, and
-    :class:`MinisatGH`, are **omitted**. They replicate the interface of
-    the base class :class:`Solver` and, thus, can be used the same exact way.
+    :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
+    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
+    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
+    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
+    replicate the interface of the base class :class:`Solver` and, thus, can
+    be used the same exact way.
 
     ==============
     Module details
@@ -172,7 +175,7 @@ class NoSuchSolverError(Exception):
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
         solvers includes the names `'cadical103'`, `'cadical153'`,
-        `'gluecard3'`, `'gluecard4'`, `'glucose3'`, `'glucose4'`,
+        `'gluecard3'`, `'gluecard4'`, `'glucose3'`, `'glucose4'`, `glucose42`,
         `'lingeling'`, `'maplechrono'`, `'maplecm'`, `'maplesat'`,
         `'mergesat3'`, `'minicard'`, `'minisat22'`, and `'minisatgh'`.
     """
@@ -196,6 +199,7 @@ class SolverNames(object):
             gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
+            glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
             lingeling   = ('lgl', 'lingeling')
             maplechrono = ('mcb', 'chrono', 'maplechrono')
             maplecm     = ('mcm', 'maplecm')
@@ -217,7 +221,7 @@ class SolverNames(object):
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
-    glucose421  = ('g421', 'g42', 'glucose421', 'glucose42')
+    glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
     lingeling   = ('lgl', 'lingeling')
     maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
     maplecm     = ('mcm', 'maplecm')
@@ -288,9 +292,9 @@ class Solver(object):
         arguments ``bootstrap_with`` and ``use_timer``, solvers
         :class:`Cadical103`, :class:`Cadical153`, :class:`Lingeling`,
         :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-        :class:`Glucose4`, :class:`MapleChrono`, :class:`MapleCM`, and
-        :class:`Maplesat` can have additional default arguments. One such
-        argument supported by is `DRUP proof
+        :class:`Glucose4`, :class:`Glucose42`, :class:`MapleChrono`,
+        :class:`MapleCM`, and :class:`Maplesat` can have additional default
+        arguments. One such argument supported by is `DRUP proof
         <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
         enabled by setting the ``with_proof`` argument to ``True`` (``False``
         by default):
@@ -309,10 +313,10 @@ class Solver(object):
             ['-5 0', '6 0', '-2 0', '-4 0', '1 0', '3 0', '0']
 
         Additionally, Glucose-based solvers, namely :class:`Glucose3`,
-        :class:`Glucose4`, :class:`Gluecard3`, and :class:`Gluecard4` have one
-        more default argument ``incr`` (``False`` by default), which enables
-        incrementality features introduced in Glucose3 [3]_. To summarize, the
-        additional arguments of Glucose are:
+        :class:`Glucose4`, :class:`Glucose42`, :class:`Gluecard3`, and
+        :class:`Gluecard4` have one more default argument ``incr`` (``False``
+        by default), which enables incrementality features introduced in
+        Glucose3 [3]_. To summarize, the additional arguments of Glucose are:
 
         :param incr: enable the incrementality features of Glucose3 [3]_.
         :param with_proof: enable proof logging in the `DRUP format <http://www.cs.utexas.edu/~marijn/drup/>`__.
@@ -389,8 +393,8 @@ class Solver(object):
                 self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose4:
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
-            elif name_ in SolverNames.glucose421:
-                self.solver = Glucose421(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.glucose42:
+                self.solver = Glucose42(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.lingeling:
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.maplechrono:
@@ -3297,7 +3301,7 @@ class Glucose4(object):
 
 #
 #==============================================================================
-class Glucose421(object):
+class Glucose42(object):
     """
         Glucose 4.2.1 SAT solver.
     """

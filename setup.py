@@ -184,7 +184,8 @@ setup(name='python-sat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
             ['allies/{0}.py'.format(s) for s in allies_scripts],
-    cmdclass={'build': build, 'build_ext': build_ext},
+    cmdclass={'build': build},
+    # cmdclass={'build': build, 'build_ext': build_ext},
     install_requires=['six'],
     extras_require = {
         'aiger': ['py-aiger-cnf>=2.0.0'],

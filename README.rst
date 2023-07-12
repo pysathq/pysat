@@ -42,6 +42,7 @@ Minisat-based solvers only *core* versions are integrated):
 -  CaDiCaL (`rel-1.5.3 <https://github.com/arminbiere/cadical>`__)
 -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
+-  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
 -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
 -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
