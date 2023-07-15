@@ -10,6 +10,10 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 12.07.2023 (*0.1.8.dev9*)
+
+-   Updated proof logging in Glucose 4.2.1 (thanks to Marco Marino).
+
 ## 12.07.2023 (*0.1.8.dev8*)
 
 -   Added Glucose 4.2.1 (thanks to Marco Marino).
