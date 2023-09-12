@@ -520,7 +520,8 @@ class CNF(object):
                 elif not line.startswith('p cnf '):
                     self.comments.append(line)
 
-        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.clauses])))
+        flat_clauses = list(itertools.chain(*self.clauses))
+        self.nv = max(list(map(abs,itertools.chain.from_iterable([[self.nv], flat_clauses]))))
 
     def from_string(self, string, comment_lead=['c']):
         """
