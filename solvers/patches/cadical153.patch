@@ -226,7 +226,7 @@ diff -Naur solvers/cadical153/build.hpp solvers/cdc153/build.hpp
 \ No newline at end of file
 diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
 --- solvers/cadical153/cadical.hpp	2023-02-13 20:11:26
-+++ solvers/cdc153/cadical.hpp	2023-03-05 17:47:32
++++ solvers/cdc153/cadical.hpp	2023-10-12 15:59:03
 @@ -1,12 +1,14 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
@@ -245,7 +245,17 @@ diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
  /*========================================================================*/
  
  // This provides the actual API of the CaDiCaL solver, which is implemented
-@@ -515,6 +517,11 @@
+@@ -284,6 +286,9 @@
+   void connect_learner (Learner * learner);
+   void disconnect_learner ();
+ 
++  // propagate and check
++  bool prop_check (const vector<int>& assumps, vector<int>& prop, int psaving);
++
+   // ====== END IPASIR =====================================================
+ 
+   //------------------------------------------------------------------------
+@@ -515,6 +520,11 @@
    int64_t redundant () const;   // Number of active redundant clauses.
    int64_t irredundant () const; // Number of active irredundant clauses.
  
@@ -257,7 +267,7 @@ diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
    //------------------------------------------------------------------------
    // This function executes the given number of preprocessing rounds. It is
    // similar to 'solve' with 'limits ("preprocessing", rounds)' except that
-@@ -529,7 +536,10 @@
+@@ -529,7 +539,10 @@
    //   ensure (UNKNOWN | SATISFIED | UNSATISFIED)
    //
    int simplify (int rounds = 3);
@@ -268,7 +278,7 @@ diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
    //------------------------------------------------------------------------
    // Force termination of 'solve' asynchronously.
    //
-@@ -695,6 +705,7 @@
+@@ -695,6 +708,7 @@
    //   ensure (VALID)
    //
    const char * write_dimacs (const char * path, int min_max_var = 0);
@@ -276,7 +286,7 @@ diff -Naur solvers/cadical153/cadical.hpp solvers/cdc153/cadical.hpp
  
    // The extension stack for reconstruction a solution can be written too.
    //
-@@ -816,8 +827,9 @@
+@@ -816,8 +830,9 @@
    //
    // TODO: support for other compilers (beside 'gcc' and 'clang').
  
@@ -472,7 +482,7 @@ diff -Naur solvers/cadical153/cover.hpp solvers/cdc153/cover.hpp
  
 diff -Naur solvers/cadical153/decide.cpp solvers/cdc153/decide.cpp
 --- solvers/cadical153/decide.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/decide.cpp	2023-03-03 21:46:11
++++ solvers/cdc153/decide.cpp	2023-06-03 11:28:40
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1813,7 +1823,7 @@ diff -Naur solvers/cadical153/solution.cpp solvers/cdc153/solution.cpp
  // the formula to be unsatisfiable by checking every learned clause to be
 diff -Naur solvers/cadical153/solver.cpp solvers/cdc153/solver.cpp
 --- solvers/cadical153/solver.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/solver.cpp	2023-03-03 22:08:46
++++ solvers/cdc153/solver.cpp	2023-10-13 13:20:03
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -1921,16 +1931,15 @@ diff -Naur solvers/cadical153/solver.cpp solvers/cdc153/solver.cpp
  
  void Solver::options () {
    REQUIRE_VALID_STATE ();
-@@ -1121,6 +1184,25 @@
-     return file->put ("0\n");
+@@ -1122,6 +1185,25 @@
    }
  };
-+
+ 
 +class ClauseGetter: public ClauseIterator {
 +public:
 +  vector<vector<int>> clauses;
 +  ClauseGetter () : clauses () { }
-+  bool clause (const vector<int> & c) 
++  bool clause (const vector<int> & c)
 +  {
 +    clauses.push_back(c);
 +    return true;
@@ -1944,9 +1953,94 @@ diff -Naur solvers/cadical153/solver.cpp solvers/cdc153/solver.cpp
 +  traverse_clauses(getter);
 +  dest = getter.clauses;
 +}
- 
++
  const char * Solver::write_dimacs (const char * path, int min_max_var) {
    LOG_API_CALL_BEGIN ("write_dimacs", path, min_max_var);
+   REQUIRE_VALID_STATE ();
+@@ -1304,6 +1386,83 @@
+   va_start (ap, fmt);
+   internal->verror (fmt, ap);
+   va_end (ap);
++}
++
++//=================================================================================================
++// Propagate and check
++bool Solver::prop_check(const vector<int>& assump, vector<int>& prop, int psaving) {
++  prop.clear();
++
++  if (internal->unsat || internal->unsat_constraint) {
++    return false;
++  }
++  
++  // dealing with phase saving //TODO check how to do this
++  int old_psave = internal->opts.rephase; // note: these can be made (very) slightly more efficient by accessing the table directly
++  int old_lucky = internal->opts.lucky;
++  internal->opts.lucky = psaving;
++  internal->opts.rephase = psaving;
++
++  int old_resetall = internal->opts.restoreall;
++  internal->opts.restoreall = 2;
++  int tmp = internal->already_solved ();
++  if (!tmp) {
++    tmp = internal->restore_clauses ();
++  }
++  if (tmp) {
++    internal->opts.restoreall = old_resetall;
++    internal->opts.rephase = old_psave;
++    internal->opts.lucky = old_lucky;
++    internal->reset_solving();
++    internal->report_solving(tmp);
++    return false;
++  }
++  internal->opts.restoreall = old_resetall;
++
++  bool st = true;
++  int level = internal->level;
++  bool noconfl = true;
++  Clause *old_conflict = internal->conflict;
++
++  // propagate each assumption at a new decision level
++  for (size_t i = 0; st && noconfl && i < assump.size(); ++i) {
++    int p = assump[i];
++
++    // if assumption is already set to false
++    if (internal->val(p) < 0) {
++      st = false;
++    } else if (internal->val(p) == 0) { // otherwise if assumption has not already been set beforehand
++      internal->search_assume_decision(p);
++      noconfl = internal->propagate();
++    }
++  }
++
++  // copy results
++  if (internal->level > level) {
++    for (size_t i = internal->control[level + 1].trail; i < internal->trail.size(); ++i) {
++      prop.push_back(internal->trail[i]);
++    }
++    // if there is a conflict, push
++    // the conflicting literal as well 
++    if (!noconfl) {
++      literal_iterator conflict_ptr = internal->conflict->begin();
++      int conflict_val = *conflict_ptr;
++      prop.push_back(conflict_val);
++    }
++    // backtrack
++    internal->backtrack(level);
++  }
++
++  // restore phase saving
++  internal->opts.rephase = old_psave;
++  internal->opts.lucky = old_lucky;
++  // reset conflict
++  internal->conflict = old_conflict;
++  internal->reset_solving();
++  internal->report_solving(tmp);
++
++  // return
++  return st && noconfl;
+ }
+ 
+ }
 diff -Naur solvers/cadical153/stats.cpp solvers/cdc153/stats.cpp
 --- solvers/cadical153/stats.cpp	2023-02-13 20:11:26
 +++ solvers/cdc153/stats.cpp	2023-03-03 21:46:11

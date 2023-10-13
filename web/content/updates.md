@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 13.10.2023 (*0.1.8.dev10*)
+
+-   Added assumption-based propagation functionality to CaDiCaL 1.5.3 (thanks
+    to Zi Li Tan).
+
 ## 12.07.2023 (*0.1.8.dev9*)
 
 -   Updated proof logging in Glucose 4.2.1 (thanks to Marco Marino).

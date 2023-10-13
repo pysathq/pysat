@@ -143,6 +143,7 @@ extern "C" {
 	static PyObject *py_cadical153_restore   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve     (PyObject *, PyObject *);
 	static PyObject *py_cadical153_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_cadical153_propagate (PyObject *, PyObject *);
 	static PyObject *py_cadical153_setphases (PyObject *, PyObject *);
 	static PyObject *py_cadical153_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_cadical153_dbudget   (PyObject *, PyObject *);
@@ -435,6 +436,7 @@ static PyMethodDef module_methods[] = {
 	{ "cadical153_add_cl",    py_cadical153_add_cl,    METH_VARARGS,    addcl_docstring },
 	{ "cadical153_solve",     py_cadical153_solve,     METH_VARARGS,    solve_docstring },
 	{ "cadical153_solve_lim", py_cadical153_solve_lim, METH_VARARGS,      lim_docstring },
+	{ "cadical153_propagate", py_cadical153_propagate, METH_VARARGS,     prop_docstring },
 	{ "cadical153_setphases", py_cadical153_setphases, METH_VARARGS,   phases_docstring },
 	{ "cadical153_cbudget",   py_cadical153_cbudget,   METH_VARARGS,  cbudget_docstring },
 	{ "cadical153_dbudget",   py_cadical153_dbudget,   METH_VARARGS,  dbudget_docstring },
@@ -1665,6 +1667,59 @@ static PyObject *py_cadical153_solve_lim(PyObject *self, PyObject *args)
 		PyOS_setsig(SIGINT, sig_save);
 
 	PyObject *ret = pyint_from_cint(res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical153_propagate(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &save_phases,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
+	std::vector<int> a;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (s->vars() < max_var)
+		s->reserve(max_var);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	std::vector<int> p;
+	bool res = s->prop_check(a, p, save_phases);
+
+	PyObject *propagated = PyList_New(p.size());
+	for (int i = 0; i < p.size(); ++i) {
+		int l = p[i];
+		PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(propagated, i, lit);
+	}
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
 	return ret;
 }
 

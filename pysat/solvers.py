@@ -785,8 +785,8 @@ class Solver(object):
             before calling :meth:`solve`, :meth:`solve_limited`,
             :meth:`propagate`, or :meth:`enum_models`.
 
-            **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Cadical103`, class:`Cadical153`, and
+            **Note** that only MiniSat-like solvers and CaDiCaL 1.5.3 support
+            this functionality (e.g. :class:`Cadical103` and
             :class:`Lingeling` do not support it).
 
             :param assumptions: a list of assumption literals.
@@ -1800,7 +1800,18 @@ class Cadical153(object):
             Propagate a given set of assumption literals.
         """
 
-        raise NotImplementedError('Simple literal propagation is not yet implemented for CaDiCaL.')
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.cadical153_propagate(self.cadical,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
 
     def set_phases(self, literals=[]):
         """
