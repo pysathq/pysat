@@ -15,6 +15,8 @@ import os.path
 import contextlib
 import glob
 
+from solvers import prepare
+
 try:
     from setuptools import setup, Extension
     HAVE_SETUPTOOLS = True
@@ -22,14 +24,20 @@ except ImportError:
     from distutils.core import setup, Extension
     HAVE_SETUPTOOLS = False
 
-import distutils.command.build
-import distutils.command.build_ext
+from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 import distutils.command.install
+
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 import inspect, os, sys
 sys.path.insert(0, os.path.join(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])), 'solvers/'))
 import platform
-import prepare
+# import prepare
 
 from pysat import __version__
 
@@ -50,6 +58,7 @@ def chdir(new_dir):
 #==============================================================================
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
+package_name = "python-sat"
 LONG_DESCRIPTION = """
 A Python library providing a simple interface to a number of state-of-art
 Boolean satisfiability (SAT) solvers and a few types of cardinality and
@@ -66,11 +75,23 @@ Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`_
 """
 
 
+parser = configparser.ConfigParser()
+parser.read('installed_solvers.cfg')
+no_mit_incompatible_solver = parser.getboolean('pysat_version', 'no_mit_incompatible')
+
 # solvers to install
 #==============================================================================
-to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
+all_solvers = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
               'glucose30', 'glucose41', 'glucose421', 'lingeling', 'maplechrono', 'maplecm',
               'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
+mit_incompatible_solvers = ['lingeling']
+
+
+if no_mit_incompatible_solver:
+    to_install = [solver for solver in all_solvers if solver not in mit_incompatible_solvers]
+    package_name += "-no-mit-incompatible"
+else:
+    to_install = all_solvers
 
 # example and allies scripts to install as standalone executables
 #==============================================================================
@@ -82,7 +103,7 @@ allies_scripts = ['approxmc']
 # we need to redefine the build command to
 # be able to download and compile solvers
 #==============================================================================
-class build(distutils.command.build.build):
+class pysat_build(build):
     """
         Our custom builder class.
     """
@@ -96,11 +117,11 @@ class build(distutils.command.build.build):
             prepare.do(to_install)
 
         # now, do standard build
-        distutils.command.build.build.run(self)
+        build.run(self)
 
 # same with build_ext
 #==============================================================================
-class build_ext(distutils.command.build_ext.build_ext):
+class pysat_build_ext(build_ext):
     """
         Our custom builder class.
     """
@@ -114,7 +135,7 @@ class build_ext(distutils.command.build_ext.build_ext):
             prepare.do(to_install)
 
         # now, do standard build
-        distutils.command.build_ext.build_ext.run(self)
+        build_ext.run(self)
 
 
 # compilation flags for C extensions
@@ -134,7 +155,7 @@ elif platform.system() == 'Windows':
 pycard_ext = Extension('pycard',
     sources=['cardenc/pycard.cc'],
     extra_compile_args=compile_flags,
-    include_dirs=['cardenc'] ,
+    include_dirs=['cardenc'],
     language='c++',
     libraries=cpplib,
     library_dirs=[]
@@ -170,7 +191,7 @@ pysolvers_ext = Extension('pysolvers',
 
 # finally, calling standard setuptools.setup() (or distutils.core.setup())
 #==============================================================================
-setup(name='python-sat',
+setup(name=package_name,
     packages=['pysat', 'pysat.examples', 'pysat.allies'],
     package_dir={'pysat.examples': 'examples', 'pysat.allies': 'allies'},
     version=__version__,
@@ -184,12 +205,11 @@ setup(name='python-sat',
     ext_modules=[pycard_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
             ['allies/{0}.py'.format(s) for s in allies_scripts],
-    cmdclass={'build': build},
-    # cmdclass={'build': build, 'build_ext': build_ext},
-    install_requires=['six'],
-    extras_require = {
+      cmdclass={'build': pysat_build, 'build_ext': pysat_build_ext},
+      install_requires=['six'],
+      extras_require = {
         'aiger': ['py-aiger-cnf>=2.0.0'],
         'approxmc': ['pyapproxmc>=4.1.8'],
         'pblib': ['pypblib>=0.0.3']
     }
-)
+      )
