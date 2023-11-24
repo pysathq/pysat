@@ -190,6 +190,7 @@ setup(name='python-sat',
     extras_require = {
         'aiger': ['py-aiger-cnf>=2.0.0'],
         'approxmc': ['pyapproxmc>=4.1.8'],
-        'pblib': ['pypblib>=0.0.3']
+        'pblib': ['pypblib>=0.0.3'],
+        'unigen': ['pyunigen>=4.1.20']
     }
 )

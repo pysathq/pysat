@@ -22,12 +22,12 @@
     Module description
     ==================
 
-    This module provides interface `ApproxMCv4
+    This module provides interface to `ApproxMCv4
     <https://github.com/meelgroup/approxmc/>`_, a state-of-the-art
     *approximate* model counter utilising an improved version of CryptoMiniSat
-    give approximate model counts to problems of size and complexity that are
-    out of reach for earlier approximate model counters. The original work on
-    ApproxMCv4 has been published in [1]_ and [2]_.
+    to give approximate model counts to problems of size and complexity that
+    are out of reach for earlier approximate model counters. The original work
+    on ApproxMCv4 has been published in [1]_ and [2]_.
 
     .. [1] Mate Soos, Kuldeep S. Meel. *BIRD: Engineering an Efficient CNF-XOR
         SAT Solver and Its Applications to Approximate Model Counting*. AAAI
@@ -147,7 +147,7 @@ class Counter(object):
         used by ApproxMC. The value of ``seed`` is set to ``1`` by default.
 
         :param formula: CNF formula
-        :param seed: do core trimming at most this number of times
+        :param seed: integer seed value
         :param epsilon: tolerance factor
         :param delta: confidence parameter
         :param verbose: verbosity level

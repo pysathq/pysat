@@ -65,3 +65,4 @@ the list of tools will grow.
 
 .. toctree::
     api/allies/approxmc
+    api/allies/unigen

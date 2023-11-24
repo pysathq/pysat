@@ -10,6 +10,10 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 24.11.2023 (*0.1.8.dev11*)
+
+-   Added another external tool (UniGen3) to the module ``pysat.allies``.
+
 ## 13.10.2023 (*0.1.8.dev10*)
 
 -   Added assumption-based propagation functionality to CaDiCaL 1.5.3 (thanks
