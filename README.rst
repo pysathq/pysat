@@ -345,9 +345,9 @@ practical settings (and it **was** successfully applied by its authors for a
 number of times), it would be great if some of the following additional
 features were implemented:
 
--  more SAT solvers to support (e.g. `CryptoMiniSat
-   <https://github.com/msoos/cryptominisat/>`__, `RISS
-   <http://tools.computational-logic.org/content/riss.php>`__ among many
+-  more SAT solvers to support (e.g. `RISS
+   <http://tools.computational-logic.org/content/riss.php>`__, `Intel (R) SAT
+   Solver <https://github.com/alexander-nadel/intel_sat_solver>`__ among many
    others)
 
 -  lower level access to some of the solvers' internal parameters

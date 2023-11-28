@@ -8,11 +8,11 @@ for a number of times), it would be great if some of the following additional
 features were implemented:
 
 -   more SAT solvers to support (e.g.
-    [CryptoMiniSat](https://github.com/msoos/cryptominisat/),
-    [RISS](http://tools.computational-logic.org/content/riss.php) among
+    [RISS](http://tools.computational-logic.org/content/riss.php), [Intel (R)
+    SAT Solver](https://github.com/alexander-nadel/intel_sat_solver) among
     many others)
--   lower level access to some of the solvers\' internal parameters
-    (e.g. *variable activities*, etc.)
+-   lower level access to some of the solvers\' internal parameters (e.g.
+    *variable activities*, etc.)
 -   high-level support for arbitrary Boolean formulas (e.g. by
     Tseitin-encoding[^1] them internally)
 

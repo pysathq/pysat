@@ -20,6 +20,7 @@
         Solver
         Cadical103
         Cadical153
+        CryptoMinisat
         Gluecard3
         Gluecard4
         Glucose3
@@ -61,6 +62,12 @@
     -  Gluecard3
     -  Gluecard4
 
+    Finally, PySAT offers rudimentary support of CryptoMiniSat5 [3]_ through
+    the interface provided by the ``pycryptosat`` package. The functionality
+    is exposed via the class :class:`CryptoMinisat`. Note that the solver
+    currently implements only the basic functionality, i.e. adding clauses and
+    XOR-clauses as well as making (incremental) SAT calls.
+
     All solvers can be accessed through a unified MiniSat-like [1]_ incremental
     [2]_ interface described below.
 
@@ -69,6 +76,9 @@
 
     .. [2] Niklas Eén, Niklas Sörensson. *Temporal induction by incremental SAT
         solving*. Electr. Notes Theor. Comput. Sci. 89(4). 2003. pp. 543-560
+
+    .. [3] Mate Soos, Karsten Nohl, Claude Castelluccia. *Extending SAT
+        Solvers to Cryptographic Problems*. SAT 2009. pp. 244-257
 
     The module provides direct access to all supported solvers using the
     corresponding classes :class:`Cadical103`, :class:`Cadical153`,
@@ -167,6 +177,12 @@ try:  # for Python < 3.8
 except ImportError:  # for Python >= 3.8
     from time import process_time
 
+try:  # trying to get access to CryptoMinisat
+    import pycryptosat
+    cms_present = True
+except ImportError:
+    cms_present = False
+
 
 #
 #==============================================================================
@@ -195,6 +211,7 @@ class SolverNames(object):
 
             cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
             cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
+            cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
             gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
             gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
@@ -217,6 +234,7 @@ class SolverNames(object):
 
     cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
     cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
+    cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
     gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
@@ -316,15 +334,15 @@ class Solver(object):
         :class:`Glucose4`, :class:`Glucose42`, :class:`Gluecard3`, and
         :class:`Gluecard4` have one more default argument ``incr`` (``False``
         by default), which enables incrementality features introduced in
-        Glucose3 [3]_. To summarize, the additional arguments of Glucose are:
+        Glucose3 [4]_. To summarize, the additional arguments of Glucose are:
 
-        :param incr: enable the incrementality features of Glucose3 [3]_.
+        :param incr: enable the incrementality features of Glucose3 [4]_.
         :param with_proof: enable proof logging in the `DRUP format <http://www.cs.utexas.edu/~marijn/drup/>`__.
 
         :type incr: bool
         :type with_proof: bool
 
-        .. [3] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon. *Improving
+        .. [4] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon. *Improving
             Glucose for Incremental SAT Solving with Assumptions: Application
             to MUS Extraction*. SAT 2013. pp. 309-317
 
@@ -385,6 +403,8 @@ class Solver(object):
                 self.solver = Cadical103(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.cadical153:
                 self.solver = Cadical153(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.cryptosat:
+                self.solver = CryptoMinisat(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.gluecard3:
                 self.solver = Gluecard3(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.gluecard4:
@@ -1176,6 +1196,39 @@ class Solver(object):
             if not no_return:
                 return res
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. The input
+            parameters include the list of literals and the right-hand side
+            (the value of the sum).
+
+            **Note that XOR clauses are currently supported only by
+            CryptoMinisat.**
+
+            :param lits: list of literals in the clause (left-hand side)
+            :param value: value of the sum (right-hand-side)
+
+            :type lits: iterable(int)
+            :type value: bool
+
+            A usage example is the following:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Solver
+                >>> with Solver(name='cms', bootstrap_with=[[1, 3]]) as solver:
+                ...     solver.add_xor_clause(lits=[1, 2], value=True)
+                ...     for model in solver.enum_models():
+                ...         print(model)
+                ...
+                [-1, 2, 3]
+                [1, -2, 3]
+                [1, -2, -3]
+        """
+
+        if self.solver:
+            self.solver.add_xor_clause(lits, value)
+
     def append_formula(self, formula, no_return=True):
         """
             This method can be used to add a given list of clauses into the
@@ -1562,6 +1615,13 @@ class Cadical103(object):
 
         raise NotImplementedError('Atmost constraints are not supported by CaDiCaL.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -1941,6 +2001,13 @@ class Cadical153(object):
 
         raise NotImplementedError('Atmost constraints are not supported by CaDiCaL.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -2278,6 +2345,13 @@ class Gluecard3(object):
 
             if not no_return:
                 return res
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
 
     def append_formula(self, formula, no_return=True):
         """
@@ -2618,6 +2692,13 @@ class Gluecard4(object):
             if not no_return:
                 return res
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -2950,6 +3031,13 @@ class Glucose3(object):
 
         raise NotImplementedError('Atmost constraints are not supported by Glucose.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -3280,6 +3368,13 @@ class Glucose4(object):
         """
 
         raise NotImplementedError('Atmost constraints are not supported by Glucose.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
 
     def append_formula(self, formula, no_return=True):
         """
@@ -3612,6 +3707,13 @@ class Glucose42(object):
 
         raise NotImplementedError('Atmost constraints are not supported by Glucose.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -3908,6 +4010,13 @@ class Lingeling(object):
         """
 
         raise NotImplementedError('Atmost constraints are not supported by Lingeling.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
 
     def append_formula(self, formula, no_return=True):
         """
@@ -4227,6 +4336,13 @@ class MapleChrono(object):
         """
 
         raise NotImplementedError('Atmost constraints are not supported by MapleChrono.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
 
     def append_formula(self, formula, no_return=True):
         """
@@ -4557,6 +4673,13 @@ class MapleCM(object):
 
         raise NotImplementedError('Atmost constraints are not supported by MapleCM.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -4886,6 +5009,13 @@ class Maplesat(object):
 
         raise NotImplementedError('Atmost constraints are not supported by Maplesat.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -5195,6 +5325,13 @@ class Mergesat3(object):
         """
 
         raise NotImplementedError('Atmost constraints are not supported by Mergesat3.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
 
     def append_formula(self, formula, no_return=True):
         """
@@ -5524,6 +5661,13 @@ class Minicard(object):
             if not no_return:
                 return res
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -5846,6 +5990,13 @@ class Minisat22(object):
 
         raise NotImplementedError('Atmost constraints are not supported by MiniSat.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -6167,6 +6318,13 @@ class MinisatGH(object):
 
         raise NotImplementedError('Atmost constraints are not supported by MiniSat.')
 
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
     def append_formula(self, formula, no_return=True):
         """
             Appends list of clauses to solver's internal formula.
@@ -6186,6 +6344,313 @@ class MinisatGH(object):
 
             if not no_return:
                 return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
+
+#
+#==============================================================================
+class CryptoMinisat(object):
+    """
+        CryptoMinisat solver accessed through ``pycryptosat`` package.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 with_proof=False, warm_start=False):
+        """
+            Basic constructor.
+        """
+
+        assert cms_present, 'Package \'pycryptosat\' is unavailable. Check your installation.'
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CryptoMinisat.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by CryptoMinisat.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CryptoMinisat.')
+
+        self.cryptosat, self.status, self.model = None, None, None
+
+        self.new(bootstrap_with, use_timer)
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+        self.cryptosat = None
+
+    def new(self, bootstrap_with=None, use_timer=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.cryptosat:
+            self.cryptosat = pycryptosat.Solver()
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by CryptoMinisat')
+
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            # time and conflicts budget values
+            self.time_limit = None
+            self.conf_limit = None
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.cryptosat:
+            self.cryptosat = None
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.cryptosat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status, self.model = self.cryptosat.solve(assumptions)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.cryptosat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status, self.model = self.cryptosat.solve(assumptions,
+                                                           time_limit=self.time_limit,
+                                                           conf_limit=self.conf_limit)
+
+            # limit values must be reset again for each new limited call
+            self.time_limit = None
+            self.conf_limit = None
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.cryptosat:
+            self.conf_limit = budget if budget != -1 else None
+
+    def time_budget(self, budget):
+        """
+            Set limit on the number of seconds.
+        """
+
+        if self.cryptosat:
+            self.time_limit = budget if budget != -1 else None
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Limit on propagations is unsupported by CryptoMinisat.')
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by CryptoMinisat.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Solver interruption is unsupported by CryptoMinisat.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Solver interruption is unsupported by CryptoMinisat.')
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        raise NotImplementedError('Simple literal propagation is unsupported by CryptoMinisat.')
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        raise NotImplementedError('User-defined polarity setting is unsupported by CryptoMinisat.')
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.cryptosat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.cryptosat and self.status == True and self.model:
+            return [i if v == True else -i for i, v in enumerate(self.model[1:], 1)]
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.cryptosat and self.status == False:
+            return self.cryptosat.get_conflict()
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        raise NotImplementedError('Proof tracing is not supported by CryptoMinisat.')
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.cryptosat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.cryptosat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.cryptosat:
+            return self.cryptosat.nb_vars()
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        raise NotImplementedError('Determining the number of clauses is not supported by CryptoMinisat.')
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        raise NotImplementedError('Accumulated statistics is not supported by CryptoMinisat.')
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.cryptosat:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, dummy_no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.cryptosat:
+            self.cryptosat.add_clause(clause)
+
+    def add_atmost(self, lits, k, no_return=True):
+        """
+            Atmost constraints are not supported by cryptosat.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by CryptoMinisat.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. The input
+            parameters include the list of literals and the right-hand side
+            (the value of the sum).
+        """
+
+        if self.cryptosat:
+            self.cryptosat.add_xor_clause(lits, bool(value))
+
+    def append_formula(self, formula, dummy_no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.cryptosat:
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by CryptoMinisat')
+
+            for clause in formula:
+                self.add_clause(clause)
 
     def supports_atmost(self):
         """
