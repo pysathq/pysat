@@ -33,16 +33,16 @@ from [PyPI](https://pypi.org/project/python-sat/):[^1]
 
 [^1]: **NOTE:** For some shells, e.g. *zsh*, you may need to put the package
     names into single quotes, i.e. use `pip install
-    'python-sat[aiger,approxmc,pblib]'`.
+    'python-sat[aiger,approxmc,cryptosat,pblib]'`.
 
 ```bash
-pip install python-sat[aiger,approxmc,pblib]
+pip install python-sat[aiger,approxmc,cryptosat,pblib]
 ```
 
-We encourage you to install the *optional* dependencies *pblib*, *aiger*, and
-*approxmc*, as shown in the previous command. However, if it cannot be done
-(e.g. if their installation fails), you can install PySAT with the
-functionality of *aiger*, *approxmc*, and *pblib* disabled:
+We encourage you to install the *optional* dependencies *pblib*, *aiger*,
+*cryptosat*, and *approxmc*, as shown in the previous command. However, if it
+cannot be done (e.g. if their installation fails), you can install PySAT with
+the functionality of *aiger*, *approxmc*, *cryptosat*, and *pblib* disabled:
 
 ```bash
 pip install python-sat

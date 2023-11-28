@@ -185,11 +185,11 @@ setup(name='python-sat',
     scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
             ['allies/{0}.py'.format(s) for s in allies_scripts],
     cmdclass={'build': build},
-    # cmdclass={'build': build, 'build_ext': build_ext},
     install_requires=['six'],
     extras_require = {
         'aiger': ['py-aiger-cnf>=2.0.0'],
         'approxmc': ['pyapproxmc>=4.1.8'],
+        'cryptosat': ['pycryptosat>=5.11.18'],
         'pblib': ['pypblib>=0.0.3'],
         'unigen': ['pyunigen>=4.1.20']
     }

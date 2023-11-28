@@ -274,12 +274,12 @@ using PySAT is to install the latest stable release of the toolkit from `PyPI
 
 ::
 
-    $ pip install python-sat[aiger,approxmc,pblib]
+    $ pip install python-sat[aiger,approxmc,cryptosat,pblib]
 
-We encourage you to install the *optional* dependencies `pblib`, `aiger`, and
-`approxmc`, as in the previous command. However, if it cannot be done (e.g. if
-their installation fails), you can install PySAT with the functionality of
-`aiger`, `approxmc`, and `pblib` disabled:
+We encourage you to install the *optional* dependencies `pblib`, `aiger`,
+`approxmc`, and `cryptosat` as in the previous command. However, if it cannot
+be done (e.g. if their installation fails), you can install PySAT with the
+functionality of `aiger`, `approxmc`, `cryptosat`, and `pblib` disabled:
 
 ::
 
