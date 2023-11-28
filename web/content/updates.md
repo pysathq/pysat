@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 28.11.2023 (*0.1.8.dev12*)
+
+-   Added (rudimentary) support of CryptoMiniSat5 by means of the
+    ``pycryptosat`` package's interface.
+
 ## 24.11.2023 (*0.1.8.dev11*)
 
 -   Added another external tool (UniGen3) to the module ``pysat.allies``.
