@@ -12,11 +12,11 @@ of modern SAT solvers.
 
 PySAT can be helpful when solving problems in `NP
 <https://en.wikipedia.org/wiki/NP_(complexity)>`__ but also `beyond NP
-<http://beyondnp.org/>`__. For instance, PySAT is handy when one needs to
-quickly implement a MaxSAT solver, an MUS/MCS extractor or enumerator, an
-abstraction-based QBF solver, or any other kind of tool solving an application
-problem with the (potentially *multiple* and/or *incremental*) use of a SAT
-oracle.
+<https://web.archive.org/web/http://beyondnp.org/>`__. For instance, PySAT is
+handy when one needs to quickly implement a MaxSAT solver, an MUS/MCS
+extractor or enumerator, an abstraction-based QBF solver, or any other kind of
+tool solving an application problem with the (potentially *multiple* and/or
+*incremental*) use of a SAT oracle.
 
 .. image:: web/medals.svg
    :width: 270 px

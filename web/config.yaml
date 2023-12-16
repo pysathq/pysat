@@ -66,7 +66,7 @@ params:
         text: Widely used [MiniSat-like](http://minisat.se/) incremental
           assumption-based interface of PySAT comes in handy when solving
           problems in [NP](https://en.wikipedia.org/wiki/NP_(complexity)) but
-          also [beyond NP](http://beyondnp.org/).
+          also [beyond NP](https://web.archive.org/web/http://beyondnp.org/).
       - title: Documented
         text: The toolkit is [extensively documented](/docs/html/). PySAT API
           description is additionally accompanied by a large number of
