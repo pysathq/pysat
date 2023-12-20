@@ -20,20 +20,22 @@ import sys
 #
 #==============================================================================
 suffixes = {
-    (2, 7, '32bit'): None,
-    (3, 6, "32bit"): "cp36-cp36m-win32",
-    (3, 7, "32bit"): "cp37-cp37m-win32",
-    (3, 8, "32bit"): "cp38-cp38-win32",
-    (3, 9, "32bit"): "cp39-cp39-win32",
-    (3, 10, "32bit"): "cp310-cp310-win32",
-    (3, 11, "32bit"): "cp311-cp311-win_amd64",
-    (2, 7, '64bit'): None,
-    (3, 6, "64bit"): "cp36-cp36m-win_amd64",
-    (3, 7, "64bit"): "cp37-cp37m-win_amd64",
-    (3, 8, "64bit"): "cp38-cp38-win_amd64",
-    (3, 9, "64bit"): "cp39-cp39-win_amd64",
-    (3, 10, "64bit"): "cp310-cp310-win_amd64",
-    (3, 11, "64bit"): "cp311-cp311-win_amd64"
+    (2,  7, '32bit'): None,
+    (3,  6, '32bit'): 'cp36-cp36m-win32',
+    (3,  7, '32bit'): 'cp37-cp37m-win32',
+    (3,  8, '32bit'): 'cp38-cp38-win32',
+    (3,  9, '32bit'): 'cp39-cp39-win32',
+    (3, 10, '32bit'): 'cp310-cp310-win32',
+    (3, 11, '32bit'): 'cp311-cp311-win_amd32',
+    (3, 12, '32bit'): 'cp312-cp312-win_amd32',
+    (2,  7, '64bit'): None,
+    (3,  6, '64bit'): 'cp36-cp36m-win_amd64',
+    (3,  7, '64bit'): 'cp37-cp37m-win_amd64',
+    (3,  8, '64bit'): 'cp38-cp38-win_amd64',
+    (3,  9, '64bit'): 'cp39-cp39-win_amd64',
+    (3, 10, '64bit'): 'cp310-cp310-win_amd64',
+    (3, 11, '64bit'): 'cp311-cp311-win_amd64',
+    (3, 12, '64bit'): 'cp311-cp312-win_amd64'
 }
 
 
