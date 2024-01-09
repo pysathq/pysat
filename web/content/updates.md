@@ -10,6 +10,11 @@ keep it up to date and then is good idea.
 
 <!-- # Changelog and more -->
 
+## 09.01.2024 (*0.1.8.dev13*)
+
+-   Fixed the issue of a missing variable in CaDiCaL's unsatisfiable core
+    handling after a limited SAT call.
+
 ## 28.11.2023 (*0.1.8.dev12*)
 
 -   Added (rudimentary) support of CryptoMiniSat5 by means of the

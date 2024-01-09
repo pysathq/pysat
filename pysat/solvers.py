@@ -1439,6 +1439,7 @@ class Cadical103(object):
                 self.call_time = process_time() - start_time
                 self.accu_time += self.call_time
 
+            self.prev_assumps = assumptions
             return self.status
 
     def conf_budget(self, budget):
@@ -1782,6 +1783,7 @@ class Cadical153(object):
                 self.call_time = process_time() - start_time
                 self.accu_time += self.call_time
 
+            self.prev_assumps = assumptions
             return self.status
 
     def conf_budget(self, budget):
