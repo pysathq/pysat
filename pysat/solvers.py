@@ -365,6 +365,14 @@ class Solver(object):
         self.solver = None
         self.new(name, bootstrap_with, use_timer, **kwargs)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.solver.delete()
+        self.solver = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -1351,6 +1359,14 @@ class Cadical103(object):
 
         self.new(bootstrap_with, use_timer, with_proof)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.cadical = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -1676,6 +1692,14 @@ class Cadical153(object):
         self.prfile = None
 
         self.new(bootstrap_with, use_timer, with_proof)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.cadical = None
 
     def __enter__(self):
         """
@@ -2058,6 +2082,14 @@ class Gluecard3(object):
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.gluecard = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -2403,6 +2435,14 @@ class Gluecard4(object):
         self.prfile = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.gluecard = None
 
     def __enter__(self):
         """
@@ -2750,6 +2790,14 @@ class Glucose3(object):
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.glucose = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -3088,6 +3136,14 @@ class Glucose4(object):
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.glucose = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -3425,6 +3481,14 @@ class Glucose42(object):
         self.prfile = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.glucose = None
 
     def __enter__(self):
         """
@@ -3771,6 +3835,14 @@ class Lingeling(object):
 
         self.new(bootstrap_with, use_timer, with_proof)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.lingeling = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -4065,6 +4137,14 @@ class MapleChrono(object):
         self.prfile = None
 
         self.new(bootstrap_with, use_timer, with_proof)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
 
     def __enter__(self):
         """
@@ -4396,6 +4476,14 @@ class MapleCM(object):
         self.prfile = None
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
 
     def __enter__(self):
         """
@@ -4733,6 +4821,14 @@ class Maplesat(object):
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.maplesat = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -5064,6 +5160,14 @@ class Mergesat3(object):
 
         self.new(bootstrap_with, use_timer)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.mergesat = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -5387,6 +5491,14 @@ class Minicard(object):
         self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.minicard = None
 
     def __enter__(self):
         """
@@ -5724,6 +5836,14 @@ class Minisat22(object):
 
         self.new(bootstrap_with, use_timer, warm_start)
 
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.minisat = None
+
     def __enter__(self):
         """
             'with' constructor.
@@ -6051,6 +6171,14 @@ class MinisatGH(object):
         self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.minisat = None
 
     def __enter__(self):
         """
@@ -6383,6 +6511,14 @@ class CryptoMinisat(object):
         self.cryptosat, self.status, self.model = None, None, None
 
         self.new(bootstrap_with, use_timer)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+        self.cryptosat = None
 
     def __enter__(self):
         """

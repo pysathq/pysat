@@ -5,10 +5,16 @@ title: Updates
 PySAT is being developed with the *rolling release* model, which means we do
 not deliver major releases from time to time. Instead, many small (sometimes
 tiny) and frequent updates are provided. As a result,
-[upgrading](../installation) your installation of the toolkit every now to
-keep it up to date and then is good idea.
+[upgrading](../installation) your installation of the toolkit every now and
+then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
+
+## 31.01.2024 (*0.1.8.dev14*)
+
+-   Added a standard Python destructor for each solver so that the garbage
+    collector manages to destroy the objects, if this is not done by the user
+    explicitly.
 
 ## 09.01.2024 (*0.1.8.dev13*)
 
