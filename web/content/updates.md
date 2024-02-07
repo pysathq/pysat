@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 07.02.2024 (*0.1.8.dev15*)
+
+-   Corrected polarities of core literals if extracted from CryptoMiniSat.
+
 ## 31.01.2024 (*0.1.8.dev14*)
 
 -   Added a standard Python destructor for each solver so that the garbage

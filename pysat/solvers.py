@@ -6688,7 +6688,7 @@ class CryptoMinisat(object):
         """
 
         if self.cryptosat and self.status == False:
-            return self.cryptosat.get_conflict()
+            return [-1 * lit for lit in self.cryptosat.get_conflict()]
 
     def get_proof(self):
         """
