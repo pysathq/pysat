@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 18.02.2024 (*0.1.8.dev16*)
+
+-   Added an option in ``CNF`` constructor to copy clauses by reference
+    instead of deep-copying them (if the ``CNF`` is constructed from clauses).
+
 ## 07.02.2024 (*0.1.8.dev15*)
 
 -   Corrected polarities of core literals if extracted from CryptoMiniSat.

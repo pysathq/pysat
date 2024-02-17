@@ -409,6 +409,7 @@ class CNF(object):
         :param from_clauses: a list of clauses to bootstrap the formula with
         :param from_aiger: an AIGER circuit to bootstrap the formula with
         :param comment_lead: a list of characters leading comment lines
+        :param by_ref: flag to indicate how to copy clauses - by reference or deep-copy
 
         :type from_file: str
         :type from_fp: file_pointer
@@ -416,10 +417,11 @@ class CNF(object):
         :type from_clauses: list(list(int))
         :type from_aiger: :class:`aiger.AIG` (see `py-aiger package <https://github.com/mvcisback/py-aiger>`__)
         :type comment_lead: list(str)
+        :type by_ref: bool
     """
 
     def __init__(self, from_file=None, from_fp=None, from_string=None,
-            from_clauses=[], from_aiger=None, comment_lead=['c']):
+            from_clauses=[], from_aiger=None, comment_lead=['c'], by_ref=False):
         """
             Constructor.
         """
@@ -435,7 +437,7 @@ class CNF(object):
         elif from_string:
             self.from_string(from_string, comment_lead)
         elif from_clauses:
-            self.from_clauses(from_clauses)
+            self.from_clauses(from_clauses, by_ref)
         elif from_aiger:
             self.from_aiger(from_aiger)
 
@@ -554,12 +556,19 @@ class CNF(object):
 
         self.from_fp(StringIO(string), comment_lead)
 
-    def from_clauses(self, clauses):
+    def from_clauses(self, clauses, by_ref=False):
         """
-            This methods copies a list of clauses into a CNF object.
+            This methods copies a list of clauses into a CNF object. The
+            optional keyword argument ``by_ref``, which is by default set to
+            ``False``, signifies whether the clauses should be deep-copied or
+            copied by reference (by default, deep-copying is applied although
+            it is slower).
 
             :param clauses: a list of clauses
+            :param by_ref: a flag to indicate whether to deep-copy the clauses or copy them by reference
+
             :type clauses: list(list(int))
+            :type by_ref: bool
 
             Example:
 
@@ -573,7 +582,7 @@ class CNF(object):
                 5
         """
 
-        self.clauses = copy.deepcopy(clauses)
+        self.clauses = clauses if by_ref else copy.deepcopy(clauses)
 
         for cl in self.clauses:
             self.nv = max([abs(l) for l in cl] + [self.nv])
