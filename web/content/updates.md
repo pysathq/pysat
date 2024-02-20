@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 20.02.2024 (*0.1.8.dev17*)
+
+-   Fixed a minor bug once in a while manifesting itself in the solvers'
+    destructors.
+
 ## 18.02.2024 (*0.1.8.dev16*)
 
 -   Added an option in ``CNF`` constructor to copy clauses by reference

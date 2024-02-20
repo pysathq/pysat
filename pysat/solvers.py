@@ -370,8 +370,7 @@ class Solver(object):
             Standard destructor.
         """
 
-        self.solver.delete()
-        self.solver = None
+        self.delete()
 
     def __enter__(self):
         """
@@ -385,8 +384,7 @@ class Solver(object):
             'with' destructor.
         """
 
-        self.solver.delete()
-        self.solver = None
+        self.delete()
 
     def new(self, name='m22', bootstrap_with=None, use_timer=False, **kwargs):
         """
@@ -1365,7 +1363,6 @@ class Cadical103(object):
         """
 
         self.delete()
-        self.cadical = None
 
     def __enter__(self):
         """
@@ -1380,7 +1377,6 @@ class Cadical103(object):
         """
 
         self.delete()
-        self.cadical = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
         """
@@ -1699,7 +1695,6 @@ class Cadical153(object):
         """
 
         self.delete()
-        self.cadical = None
 
     def __enter__(self):
         """
@@ -1714,7 +1709,6 @@ class Cadical153(object):
         """
 
         self.delete()
-        self.cadical = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
         """
@@ -2088,7 +2082,6 @@ class Gluecard3(object):
         """
 
         self.delete()
-        self.gluecard = None
 
     def __enter__(self):
         """
@@ -2103,7 +2096,6 @@ class Gluecard3(object):
         """
 
         self.delete()
-        self.gluecard = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
             with_proof=False, warm_start=False):
@@ -2442,7 +2434,6 @@ class Gluecard4(object):
         """
 
         self.delete()
-        self.gluecard = None
 
     def __enter__(self):
         """
@@ -2457,7 +2448,6 @@ class Gluecard4(object):
         """
 
         self.delete()
-        self.gluecard = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
             with_proof=False, warm_start=False):
@@ -2796,7 +2786,6 @@ class Glucose3(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def __enter__(self):
         """
@@ -2811,7 +2800,6 @@ class Glucose3(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
             with_proof=False, warm_start=False):
@@ -3142,7 +3130,6 @@ class Glucose4(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def __enter__(self):
         """
@@ -3157,7 +3144,6 @@ class Glucose4(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
             with_proof=False, warm_start=False):
@@ -3488,7 +3474,6 @@ class Glucose42(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def __enter__(self):
         """
@@ -3503,7 +3488,6 @@ class Glucose42(object):
         """
 
         self.delete()
-        self.glucose = None
 
     def new(self, bootstrap_with=None, use_timer=False, incr=False,
             with_proof=False, warm_start=False):
@@ -3841,7 +3825,6 @@ class Lingeling(object):
         """
 
         self.delete()
-        self.lingeling = None
 
     def __enter__(self):
         """
@@ -3856,7 +3839,6 @@ class Lingeling(object):
         """
 
         self.delete()
-        self.lingeling = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
         """
@@ -4144,7 +4126,6 @@ class MapleChrono(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def __enter__(self):
         """
@@ -4159,7 +4140,6 @@ class MapleChrono(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
         """
@@ -4483,7 +4463,6 @@ class MapleCM(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def __enter__(self):
         """
@@ -4498,7 +4477,6 @@ class MapleCM(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
             warm_start=False):
@@ -4827,7 +4805,6 @@ class Maplesat(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def __enter__(self):
         """
@@ -4842,7 +4819,6 @@ class Maplesat(object):
         """
 
         self.delete()
-        self.maplesat = None
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
             warm_start=False):
@@ -5166,7 +5142,6 @@ class Mergesat3(object):
         """
 
         self.delete()
-        self.mergesat = None
 
     def __enter__(self):
         """
@@ -5181,7 +5156,6 @@ class Mergesat3(object):
         """
 
         self.delete()
-        self.mergesat = None
 
     def new(self, bootstrap_with=None, use_timer=False):
         """
@@ -5498,7 +5472,6 @@ class Minicard(object):
         """
 
         self.delete()
-        self.minicard = None
 
     def __enter__(self):
         """
@@ -5513,7 +5486,6 @@ class Minicard(object):
         """
 
         self.delete()
-        self.minicard = None
 
     def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
@@ -5842,7 +5814,6 @@ class Minisat22(object):
         """
 
         self.delete()
-        self.minisat = None
 
     def __enter__(self):
         """
@@ -5857,7 +5828,6 @@ class Minisat22(object):
         """
 
         self.delete()
-        self.minisat = None
 
     def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
@@ -6178,7 +6148,6 @@ class MinisatGH(object):
         """
 
         self.delete()
-        self.minisat = None
 
     def __enter__(self):
         """
@@ -6193,7 +6162,6 @@ class MinisatGH(object):
         """
 
         self.delete()
-        self.minisat = None
 
     def new(self, bootstrap_with=None, use_timer=False, warm_start=False):
         """
@@ -6518,7 +6486,6 @@ class CryptoMinisat(object):
         """
 
         self.delete()
-        self.cryptosat = None
 
     def __enter__(self):
         """
@@ -6533,7 +6500,6 @@ class CryptoMinisat(object):
         """
 
         self.delete()
-        self.cryptosat = None
 
     def new(self, bootstrap_with=None, use_timer=False):
         """
