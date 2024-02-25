@@ -10,13 +10,13 @@
 
 # current version
 #==============================================================================
-VERSION = (0, 1, 8, "dev", 17)
+VERSION = (1, 8, 'dev', 1)
 
 
 # PEP440 Format
 #==============================================================================
-__version__ = "%d.%d.%d.%s%d" % VERSION if len(VERSION) == 5 else \
-              "%d.%d.%d" % VERSION
+__version__ = '%d.%d.%s%d' % VERSION if len(VERSION) == 4 else \
+              '%d.%d.%d' % VERSION
 
 
 # all submodules

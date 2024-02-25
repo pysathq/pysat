@@ -17,6 +17,15 @@
         :nosignatures:
 
         IDPool
+        Formula
+        Atom
+        And
+        Or
+        Neg
+        Implies
+        Equals
+        XOr
+        ITE
         CNF
         CNFPlus
         WCNF
@@ -27,11 +36,13 @@
     ==================
 
     This module is designed to facilitate fast and easy PySAT-development by
-    providing a simple way to manipulate formulas in PySAT. Although only
-    clausal formulas are supported at this point, future releases of PySAT are
-    expected to implement data structures and methods to manipulate arbitrary
-    Boolean formulas. The module implements the :class:`CNF` class, which
-    represents a formula in `conjunctive normal form (CNF)
+    providing a simple way to manipulate formulas in PySAT. The toolkit
+    implements several facilities to manupulate Boolean formulas. Namely, one
+    can opt for creating arbitrary non-clausal formulas suitable for simple
+    problem encodings requiring no or little knowledge about the process of
+    logical encoding. However, the main and most often used kind of formula in
+    PySAT is represented by the :class:`CNF` class, which can be used to
+    define a formula in `conjunctive normal form (CNF)
     <https://en.wikipedia.org/wiki/Conjunctive_normal_form>`__.
 
     Recall that a CNF formula is conventionally seen as a set of clauses, each
@@ -166,15 +177,54 @@
         *floating point numbers*. Moreover, *negative weights* are also
         supported.
 
-    Additionally to classes :class:`CNF` and :class:`WCNF`, the module provides
-    the extended classes :class:`CNFPlus` and :class:`WCNFPlus`. The only
-    difference between ``?CNF`` and ``?CNFPlus`` is the support for *native*
-    cardinality constraints provided by the `MiniCard solver
+    Additionally to classes :class:`CNF` and :class:`WCNF`, the module
+    provides the extended classes :class:`CNFPlus` and :class:`WCNFPlus`. The
+    only difference between ``?CNF`` and ``?CNFPlus`` is the support for
+    *native* cardinality constraints provided by the `MiniCard solver
     <https://github.com/liffiton/minicard>`__ (see :mod:`pysat.card` for
     details). The corresponding variable in objects of ``CNFPlus``
     (``WCNFPlus``, resp.) responsible for storing the AtMostK constraints is
     ``atmosts`` (``atms``, resp.). **Note** that at this point, AtMostK
     constraints in ``WCNF`` can be *hard* only.
+
+    Apart from the aforementioned variants of (W)CNF formulas, the module now
+    offers a few additional classes for managing non-clausal Boolean formulas.
+    Namely, a user may create complex formulas using variables (atomic
+    formulas implemented as objects of class :class:`Atom`), and the following
+    logic connectives: :class:`And`, :class:`Or`, :class:`Neg`,
+    class:`Implies`, :class:`Equals`, :class:`XOr`, and :class:`ITE`. (All of
+    these classes inherit from the base class :class:`Formula`.) Arbitrary
+    combinations of these logic connectives are allowed. Importantly, the
+    module provides seamless integration of :class:`CNF` and various
+    subclasses of :class:`Formula` with the possibility to clausify these on
+    demand.
+
+    .. code-block:: python
+
+        >>> from pysat.formula import *
+        >>> from pysat.solvers import Solver
+
+        # creating two formulas: CNF and XOr
+        >>> cnf = CNF(from_clauses=[[-1, 2], [-2, 3]])
+        >>> xor = Atom(1) ^ Atom(2) ^ Atom(4)
+
+        # passing the conjunction of these to the solver
+        >>> with Solver(bootstrap_with=xor & cnf) as solver:
+        ...    # setting Atom(3) to false results in only one model
+        ...    for model in solver.enum_models(assumptions=Formula.literals([~Atom(3)])):
+        ...        print(Formula.formulas(model, atoms_only=True))  # translating the model back to atoms
+        >>>
+        [Neg(Atom(1)), Neg(Atom(2)), Neg(Atom(3)), Atom(4)]
+
+    .. note::
+
+        Combining CNF formulas with non-CNF ones will not necessarily result
+        in the best possible encoding of the complex formula. The on-the-fly
+        encoder may introduce variables that a human would avoid using, e.g.
+        if ``cnf1`` and ``cnf2`` are :class:`CNF` formulas then ``And(cnf1,
+        cnf2)`` will introduce auxiliary variables ``v1`` and ``v2`` encoding
+        them, respectively (although it is enough to join their sets of
+        clauses).
 
     Besides the implementations of CNF and WCNF formulas in PySAT, the
     :mod:`pysat.formula` module also provides a way to manage variable
@@ -215,8 +265,10 @@
 #==============================================================================
 from __future__ import print_function
 import collections
+from collections.abc import Iterable
 import copy
 import decimal
+from enum import Enum
 import itertools
 import os
 from pysat._fileio import FileObject
@@ -263,7 +315,8 @@ class IDPool(object):
         """
             State reproducible string representaion of object.
         """
-        return f"IDPool(start_from={self.top+1}, occupied={self._occupied})"
+
+        return f'IDPool(start_from={self.top+1}, occupied={self._occupied})'
 
     def restart(self, start_from=1, occupied=[]):
         """
@@ -374,6 +427,12 @@ class IDPool(object):
         """
 
         if stop >= start:
+            # the following check serves to remove unnecessary interval
+            # spawning; since the intervals are sorted, we are checking
+            # if the previous interval is a (non-strict) subset of the new one
+            if len(self._occupied) and self._occupied[-1][0] >= start and self._occupied[-1][1] <= stop:
+                self._occupied.pop()
+
             self._occupied.append([start, stop])
             self._occupied.sort(key=lambda x: x[0])
 
@@ -395,7 +454,2378 @@ class IDPool(object):
 
 #
 #==============================================================================
-class CNF(object):
+class FormulaError(Exception):
+    """
+        This exception is raised when an formula-related issue occurs.
+    """
+
+    pass
+
+
+#
+#==============================================================================
+class FormulaType(Enum):
+    """
+        This class represents a C-like ``enum`` type for choosing the formula
+        type to use. The values denoting all the formula types are as follows:
+
+        ::
+
+            ATOM = 0
+            AND = 1
+            OR = 2
+            NEG = 3
+            IMPL = 4
+            EQ = 5
+            XOR = 6
+            ITE = 7
+    """
+
+    ATOM = 0
+    AND = 1
+    OR = 2
+    NEG = 3
+    IMPL = 4
+    EQ = 5
+    XOR = 6
+    ITE = 7
+    CNF = 8  # not in the description intentionally - it should not be used directly
+
+
+#
+#==============================================================================
+class Formula(object):
+    """
+        Abstract formula class. At the same time, the class is a factory for
+        its children and can be used this way although it is recommended to
+        create objects of the children classes directly. In particular, its
+        children classes include :class:`Atom` (atomic formulas - variables
+        and constants), :class:`Neg` (negations), :class:`And` (conjunctions),
+        :class:`Or` (disjunctions), :class:`Implies` (implications),
+        :class:`Equals` (equalities), :class:`XOr` (exclusive disjunctions),
+        and :class:`ITE` (if-then-else operations).
+
+        Due to the need to clausify formulas, an object of any subclass of
+        :class:`Formula` is meant to be represented in memory by a single
+        copy. This is achieved by storing a dictionary of all the known
+        formulas attached to a given *context*. Thus, once a particular
+        context is activated, its dictionary will make sure each formula
+        variable refers to a single representation of the formula object it
+        aims to refer. When it comes to clausifying this formula, the formula
+        is encoded exactly once, despite it may be potentially used multiple
+        times as part of one of more complex formulas.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>>
+            >>> x1, x2 = Atom('x'), Atom('x')
+            >>> id(x1) == id(x2)
+            True  # x1 and x2 refer to the same atom
+            >>> id(x1 & Atom('y')) == id(Atom('y') & x2)
+            True  # it holds if constructing complex formulas with them as subformulas
+
+        The class supports multi-context operation. A user may have formulas
+        created and clausified in different context. They can also switch from
+        one context to another and/or cleanup the instances known in some or
+        all contexts.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> f1 = Or(And(...))  # arbitrary formula
+            >>> # by default, the context is set to 'default'
+            >>> # another context can be created like this:
+            >>> Formula.set_context(context='some-other-context')
+            >>> # the new context knows nothing about formula f1
+            >>> # ...
+            >>> # cleaning up context 'some-other-context'
+            >>> # this deletes all the formulas known in this context
+            >>> Formula.cleanup(context='some-other-context')
+            >>> # switching back to 'default'
+            >>> Formula.set_context(context='default')
+
+        A user may also want to disable duplicate blocking, which can be
+        achieved by setting the context to ``None``.
+
+        Boolean constants False and True are represented by the atomic
+        "formulas" ``Atom(False)`` and ``Atom(True)``, respectively. There are
+        two constants storing these values: ``PYSAT_FALSE`` and
+        ``PYSAT_TRUE``.
+
+        .. code-block:: python
+
+            >>> PYSAT_FALSE, PYSAT_TRUE
+            (Atom(False), Atom(True))
+    """
+
+    # we don't want duplicated formulas => let's keep one copy of each
+    _instances = collections.defaultdict(lambda: {})
+
+    # similarly, we create a variable pool in case we need the formulas encoded
+    _vpool = collections.defaultdict(lambda: IDPool())
+
+    # formulas can duplicate when they appear in different contexts
+    _context = 'default'
+
+    @staticmethod
+    def set_context(context='default'):
+        """
+            Set the current context of interest. If set to ``None``, no
+            context will be assumed and duplicate checking will be disabled as
+            a result.
+
+            :param context: new active context
+            :type context: hashable
+        """
+
+        Formula._context = context
+
+        # updating references to True and False constants in the new context
+        PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
+
+    @staticmethod
+    def attach_vpool(vpool, context='default'):
+        """
+            Attach an external :class:`IDPool` to be associated with a given
+            context. This is useful when a user has an already created
+            :class:`IDPool` object and wants to reuse it when clausifying
+            their :class:`Formula` objects.
+
+            :param vpool: an external variable manager
+            :param context: target context to be the user of the vpool
+
+            :type vpool: :class:`IDPool`
+            :type context: hashable
+        """
+
+        Formula._vpool[context] = vpool
+
+    @staticmethod
+    def export_vpool(active=True, context='default'):
+        """
+            Opposite to :meth:`attach_vpool`, this method returns a variable
+            managed attached to a given context, which may be useful for
+            external use.
+
+            :param active: export the currently active context
+            :param context: context using the vpool we are interested in (if ``active`` is ``False``)
+
+            :type active: bool
+            :type context: hashable
+
+            :rtype: :class:`IDPool`
+        """
+
+        if active:
+            return Formula._vpool[Formula._context]
+        else:
+            return Formula._vpool[context]
+
+    @staticmethod
+    def cleanup(context=None):
+        """
+            Clean up either a given context (if specified as different from
+            ``None``) or all contexts (otherwise); afterwards, start the
+            "default" context from scratch.
+
+            A context is cleaned by destroying all the associated
+            :class:`Formula` objects and all the corresponding variable
+            managers. This may be useful if a user wants to start encoding
+            their problem from scratch.
+
+            .. note::
+
+                Once cleaning of a context is done, the objects referring to
+                the context's formulas must not be used. At this point, they
+                are orphaned and can't get re-clausified.
+
+            :param context: target context
+            :type context: ``None`` or hashable
+        """
+
+        # preparing what needs to be cleaned
+        if context is not None:
+            # only a given context
+            to_clean = [context] if context in Formula._instances else []
+        else:
+            # everything
+            to_clean = list(Formula._instances.keys())
+
+        # actual cleaning
+        for ctx in to_clean:
+            # deleting the content of all the formulas' in the context
+            for key in list(Formula._instances[ctx].keys()):
+                Formula._instances[ctx][key].__del__()
+
+            # deleting the corresponding instances and variable manager
+            del Formula._instances[ctx]
+            if ctx in Formula._vpool:
+                del Formula._vpool[ctx]
+
+        if not Formula._instances:
+            # there is no context left; updating the context to 'default'
+            Formula.set_context(context='default')
+
+    @staticmethod
+    def formulas(lits, atoms_only=True):
+        """
+            Given a list of integer literal identifiers, this method returns a
+            list of formulas corresponding to these identifiers. Basically,
+            the method can be seen as mapping auxiliary variables naming
+            formulas to the corresponding formulas they name.
+
+            If the argument ``atoms_only`` is set to ``True`` only, the method
+            will return a subset of formulas, including only atomic formulas
+            (literals). Otherwise, any formula whose name occurs in the input
+            list will be included in the result.
+
+            :param lits: input list of literals
+            :param atoms_only: include all known formulas or atomic ones only
+
+            :type lits: iterable
+            :type atoms_only: bool
+
+            :rtype: list(:class:`Formula`)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> from pysat.solvers import Solver
+                >>>
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) ^ z
+                >>>
+                >>> with Solver(bootstrap_with=a) as solver:
+                ...     for model in solver.enum_models():
+                ...         # using method formulas to map the model back to atoms
+                ...         print(Formula.formulas(model, atoms_only=True))
+                ...
+                [Neg(Atom('x')), Neg(Atom('y')), Neg(Atom('z'))]
+                [Neg(Atom('x')), Atom('y'), Atom('z')]
+                [Atom('x'), Atom('y'), Neg(Atom('z'))]
+                [Atom('x'), Neg(Atom('y')), Atom('z')]
+        """
+
+        forms = []
+
+        for lit in lits:
+            if lit in Formula._vpool[Formula._context].id2obj:
+                forms.append( Formula._vpool[Formula._context].obj(+lit))
+            elif -lit in Formula._vpool[Formula._context].id2obj:
+                forms.append(~Formula._vpool[Formula._context].obj(-lit))
+
+        # if required, we need to filter out everything but atomic forms
+        if atoms_only:
+            forms = list(filter(lambda f: type(f) == Atom or \
+                    type(f) == Neg and type(f.subformula) == Atom, forms))
+
+        return forms
+
+    @staticmethod
+    def literals(forms):
+        """
+            Extract formula names for a given list of formulas and return them
+            as a list of integer identifiers. Essentially, the method is the
+            opposite to :meth:`formulas`.
+
+            :param forms: list of formulas to map
+            :type forms: iterable
+
+            :rtype: list(int)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Solver
+                >>> from pysat.formula import *
+                >>>
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) ^ z
+                >>>
+                >>> # applying Tseitin transformation to formula a
+                >>> a.clausify()
+                >>>
+                >>> # checking what facts the internal vpool knows
+                >>> print(Formula.export_vpool().id2obj)
+                {1: Atom('x'), 2: Atom('y'), 3: Equals[Atom('x'), Atom('y')], 4: Atom('z')}
+                >>>
+                >>> # now, mapping two atoms to their integer id representations
+                >>> Formula.literals(forms=[Atom('x'), ~Atom('z')])
+                [1, -4]
+        """
+
+        lits = []
+
+        for form in forms:
+            if form in (PYSAT_TRUE, PYSAT_FALSE):
+                continue
+
+            if not form.name:
+                form._clausify(name_required=True)
+
+            lits.append(Formula._vpool[Formula._context].id(form))
+
+        return lits
+
+    def __init__(self, *args, **kwargs):
+        """
+            Base Formula initialiser. Expects a sole keyword argument
+            ``type``, which must be assigned to an enumeration value of
+            :class:`FormulaType`.
+
+            :param type: type of the formula
+            :type type: :class:`FormulaType`
+        """
+
+        assert 'type' in kwargs, 'No \'type\' of the formula is provided'
+        self.type = kwargs['type']
+
+        self.name = None
+        self.clauses = []
+
+    @classmethod
+    def __new__(cls, *args, **kwargs):
+        """
+            Factory-like formula constructor, which avoids creating duplicated
+            formulas if we are currently using a context. Otherwise, simply
+            creates a formula object of a given type, without duplicate
+            checking.
+        """
+
+        def _create_object():
+            if cls is Formula:
+                assert 'type' in kwargs, 'No \'type\' of the formula is provided'
+                type = kwargs['type']
+
+                if type == FormulaType.ATOM:
+                    return super(Formula, Atom).__new__(Atom)
+                if type == FormulaType.AND:
+                    return super(Formula, And).__new__(And)
+                if type == FormulaType.OR:
+                    return super(Formula, Or).__new__(Or)
+                if type == FormulaType.NEG:
+                    return super(Formula, Neg).__new__(Neg)
+                if type == FormulaType.IMPL:
+                    return super(Formula, Implies).__new__(Implies)
+                if type == FormulaType.EQ:
+                    return super(Formula, Equals).__new__(Equals)
+                if type == FormulaType.XOR:
+                    return super(Formula, XOr).__new__(XOr)
+                if type == FormulaType.ITE:
+                    return super(Formula, ITE).__new__(ITE)
+                else:
+                    raise FormulaError('Unexpected formula type')
+            else:
+                return super(Formula, cls).__new__(cls)
+
+        if Formula._context is not None:
+            # there is an active context different from None
+            # hence, we need to make sure we don't duplicate formulas
+
+            # getting the key to associate the formula with
+            key = Formula._get_key(cls, args, kwargs)
+
+            if key not in Formula._instances[Formula._context]:
+                # this key is yet unknown; creating a new formula object
+                Formula._instances[Formula._context][key] = _create_object()
+
+            # returning the object associated with the requested formula
+            return Formula._instances[Formula._context][key]
+        else:
+            return _create_object()
+
+    def __deepcopy__(self, memo):
+        """
+            As no duplicates are allowed, no deep copying is allowed either.
+        """
+
+        raise FormulaError('Formula class does not allow deep copying')
+
+    def _get_key(cls, *args, **kwargs):
+        """
+            The method is used to extract and return a list of attributes to
+            serve as a key associated with the formula requested by a user.
+            The flattened result will contain string, i.e. ``repr()``,
+            representation of all the attributes. The method is meant to be
+            internal and not to be used by formula users.
+        """
+
+        def _flatten(collection, prefix='', sep='_'):
+            items = []
+
+            # first, assuming it is a flat collection
+            if type(collection) in (tuple, list, set):
+                collection = list(filter(lambda x: x or x == False, collection))
+                if len(collection) > 1:
+                    for i, item in enumerate(collection):
+                        if isinstance(item, Iterable):
+                            items.extend(_flatten(item, prefix=prefix))
+                        else:
+                            items.append((prefix, repr(item)))
+                else:
+                    items.extend(_flatten(collection[0], prefix=prefix))
+
+            # next, checking if it is a dictionary
+            elif isinstance(collection, dict):
+                for key in collection.keys():
+                    value = collection[key]
+                    new_key = prefix + sep + key if prefix else key
+                    if isinstance(value, Iterable):
+                        if value:
+                            items.extend(_flatten(value, new_key, sep=sep))
+                    else:
+                        items.append((new_key, repr(value)))
+
+            # finally, it is a simple non-empty object
+            elif collection or collection == False:
+                items.append((prefix, repr(collection)))
+
+            return items
+
+        # in case the class of the formula is passed in the arguments
+        # we filter it out so that it does not mess up the key computation
+        if args:
+            args = list(args)
+            if type(args[0]) == tuple and type(args[0][0]) == type:
+                args[0] = tuple(args[0][1:])
+
+        # flattening all the inputs
+        key = _flatten(args) + _flatten(kwargs)
+
+        # we can arguments with but also without keywords:
+        if len(key) == 2 and key[0][0] == '':
+            # there are two components in the key and the first one is unnamed
+            # this can happen for Atom or Neg and it so we name it accordingly
+            key[0] = ('object' if key[1][1] == repr(FormulaType.ATOM) else 'subformula', key[0][1])
+        elif len(key) == 3 and key[2][1] == repr(FormulaType.IMPL):
+            if key[0][0] == '' and key[1][0] == '':
+                key[0] = ('left', key[0][1])
+                key[1] = ('right', key[1][1])
+            elif key[1][0] == 'left':
+                key[0] = ('right', key[0][1])
+            elif key[1][0] == 'right':
+                key[0] = ('left', key[0][1])
+        elif len(key) == 4 and key[3][1] == repr(FormulaType.ITE):
+            # dealing with ITE triples - the most complicated case
+            if key[0][0] == '' and key[1][0] == '' and key[2][0] == '':
+                key[0] = ('cond', key[0][1])
+                key[1] = ('cons1', key[1][1])
+                key[2] = ('cons2',  key[2][1])
+            elif key[0][0] == key[1][0] == '':
+                if key[2][0] == 'cond':
+                    key[0] = ('cons1', key[0][1])
+                    key[1] = ('cons2', key[1][1])
+                elif key[2][0] == 'cons1':
+                    key[0] = ('cond',  key[0][1])
+                    key[1] = ('cons2', key[1][1])
+                elif key[2][0] == 'cons2':
+                    key[0] = ('cond',  key[0][1])
+                    key[1] = ('cons1', key[1][1])
+            elif key[0] == '':
+                if 'cond' not in (key[1][0], key[2][0]):
+                    key[0] = ('cond', key[0][0])
+                elif 'cons1' not in (key[1][0], key[2][0]):
+                    key[0] = ('cons1', key[0][0])
+                elif 'cons2' not in (key[1][0], key[2][0]):
+                    key[0] = ('cons2', key[0][0])
+
+        return tuple(sorted(key))
+
+    def __hash__(self):
+        """
+            This method provides us with a trivial way to make
+            :class:`Formula` objects hashable. Currently, the implementation
+            returns a hash of the string representation of the object.
+        """
+
+        return hash(repr(self))
+
+    def _merge_suboperands(self):
+        """
+            Auxiliary method used when constructing a new formula to flatten
+            repetitive operations, i.e. if ``self`` equals ``And(left,
+            And(center, right))``, it turns it into formula ``And(left,
+            center, right)`` instead. No arguments are expected. The method is
+            meant for internal use of :class:`Formula` only.
+        """
+
+        for i, subf in enumerate(self.subformulas):
+            # is there any term of our type among the operands?
+            if subf.type == self.type:
+                operands = subf.subformulas[:]
+
+                # yes => try to put everything under its cap
+                for j in itertools.filterfalse(lambda j: j == i, range(len(self.subformulas))):
+                    if self.subformulas[j].type == self.type:
+                        operands.extend(self.subformulas[j].subformulas)
+                    else:
+                        operands.append(self.subformulas[j])
+
+                # we are done with simplification by now
+                self.subformulas = operands
+                break
+
+    def __invert__(self):
+        """
+            Negation operator overloaded for class :class:`Formula`. Given an
+            object ``f`` of class :class:`Formula`, applying ``~f`` returns a
+            new object ``Neg(f)``.
+        """
+
+        if self.type != FormulaType.NEG:
+            if self == PYSAT_TRUE:
+                return PYSAT_FALSE
+            if self == PYSAT_FALSE:
+                return PYSAT_TRUE
+            return Neg(self)
+        return self.subformula
+
+    def __and__(self, other):
+        """
+            Logical conjunction operator overloaded for class
+            :class:`Formula`. Given two objects ``a`` and ``b`` of class
+            :class:`Formula`, doing ``a & b`` returns a new object ``And(a,
+            b)``. Applies merging sub-operands.
+        """
+
+        return And(self, other, merge=True)
+
+    def __iand__(self, other):
+        """
+            An in-place equivalent of :meth:`__and__`. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a &= b`` replaces
+            ``a`` with a new object ``And(a, b)``. Applies merging
+            sub-operands.
+        """
+
+        return And(self, other, merge=True)
+
+    def __or__(self, other):
+        """
+            Logical disjunction operator overloaded for class
+            :class:`Formula`. Given two objects ``a`` and ``b`` of class
+            :class:`Formula`, doing ``a | b`` returns a new object ``Or(a,
+            b)``. Applies merging sub-operands.
+        """
+
+        return Or(self, other, merge=True)
+
+    def __ior__(self, other):
+        """
+            An in-place equivalent of :meth:`__or__`. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a |= b`` replaces
+            ``a`` with a new object ``Or(a, b)``. Applies merging
+            sub-operands.
+        """
+
+        return Or(self, other, merge=True)
+
+    def __rshift__(self, other):
+        """
+            Bitwise right shift operator overloaded for class :class:`Formula`
+            with the semantics of logical implication. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a >> b`` returns a
+            new object ``Implies(a, b)``.
+        """
+
+        return Implies(self, other)
+
+    def __irshift__(self, other):
+        """
+            An in-place equivalent of :meth:`__rshift__`. Given two objects
+            ``a`` and ``b`` of class :class:`Formula`, doing ``a >>= b``
+            assigns ``a`` to a new object ``Implies(a, b)``.
+        """
+
+        return Implies(self, other)
+
+    def __lshift__(self, other):
+        """
+            Bitwise left shift operator overloaded for class :class:`Formula`
+            with the semantics of logical implication. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a << b`` returns a
+            new object ``Implies(b, a)``.
+        """
+
+        return Implies(other, self)
+
+    def __ilshift__(self, other):
+        """
+            An in-place equivalent of :meth:`__lshift__`. Given two objects
+            ``a`` and ``b`` of class :class:`Formula`, doing ``a <<= b``
+            assigns ``a`` to a new object ``Implies(b, a)``.
+        """
+
+        return Implies(other, self)
+
+    def __matmul__(self, other):
+        """
+            Vector multiplication operator overloaded for class
+            :class:`Formula` with the semantics of logical equivalence. Given
+            two objects ``a`` and ``b`` of class :class:`Formula`, doing ``a @
+            b`` returns a new object ``Equals(a, b)``. Applies merging
+            sub-operands.
+        """
+
+        return Equals(self, other, merge=True)
+
+    def __imatmul__(self, other):
+        """
+            An in-place variant of :meth:`__matmul__`. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a @= b`` assigns
+            ``a`` to a new object ``Equals(a, b)``. Applies merging
+            sub-operands.
+        """
+
+        return Equals(self, other, merge=True)
+
+    def __xor__(self, other):
+        """
+            Bitwise exclusive disjunction overloaded for class
+            :class:`Formula`. Given two objects ``a`` and ``b`` of class
+            :class:`Formula`, doing ``a ^ b`` returns a new object ``XOr(a,
+            b)``.
+        """
+
+        return XOr(self, other)
+
+    def __ixor__(self, other):
+        """
+            An in-place variant of :meth:`__xor__`. Given two objects ``a``
+            and ``b`` of class :class:`Formula`, doing ``a ^= b`` assigns
+            ``a`` to a new object ``XOr(a, b)``.
+        """
+
+        return XOr(self, other)
+
+    def __iter__(self):
+        """
+            Implements an iterator over all clauses of the formula. As the
+            clauses are stored not only in ``self`` but also in its
+            subformulas, the iterator runs recursively by means of calling
+            recursive method :meth:`_iter`.
+
+            Before iterating through the clauses, applies Tseitin
+            transformation (see :meth:`clausify`).
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) | z
+                >>> # iterating through the clauses and printing them as a list
+                >>> [cl for cl in a]
+                [[-1, 2, -3], [1, -2, -3], [3, -1, -2], [3, 1, 2], [3, 4]]
+                >>>
+                >>> # let's see what meaning the identifiers have
+                >>> Formula.export_vpool().id2obj
+                {1: Atom('x'), 2: Atom('y'), 3: Equals[Atom('x'), Atom('y')], 4: Atom('z')}
+        """
+
+        # first, make sure there is a clausal representation
+        self.clausify()
+
+        # then recursively iterate through the clauses
+        for cl in self._iter():
+            yield cl
+
+    def clausify(self):
+        """
+            This method applies Tseitin transformation to the formula.
+            Recursively gives all the formulas Boolean names accordingly and
+            uses them in the current logic connective following its semantics.
+            As a result, each subformula stores its clausal representation
+            independently of other subformulas (and independently of the root
+            formula).
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) | z
+                >>>
+                >>> a.clausify()  # clausifying formula a
+                >>>
+                >>> # let's what clauses represent the root logic connective
+                >>> a.clauses
+                [[3, 4]]  # 4 corresponds to z while 3 represents the equality x @ y
+        """
+
+        if not self.clauses and not self.name:
+            self._clausify(name_required=False)
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption atomic formula literals, this method
+            recursively assigns these atoms to the corresponding values
+            followed by formula simplification. As a result, a new formula
+            object is returned.
+
+            :param assumptions: atomic formula objects
+            :type assumptions: list
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>>
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) | z  # a formula over 3 variables: x, y, and z
+                >>>
+                >>> a.simplified(assumptions=[z])
+                Atom(True)
+                >>>
+                >>> a.simplified(assumptions=[~z])
+                Equals[Atom('x'), Atom('y')]
+                >>>
+                >>> b = a ^ Atom('p')  # a more complex formula
+                >>>
+                >>> b.simplified(assumptions=[x, ~Atom('p')])
+                Or[Atom('y'), Atom('z')]
+        """
+
+        raise FormulaError('No simplification method found for this formula type')
+
+    def satisfied(self, model):
+        """
+            Given a list of atomic formulas, this method checks whether the
+            current formula is satisfied by assigning these atoms. The method
+            returns ``True`` if the formula gets satisfied, ``False`` if it is
+            falsified, and ``None`` if the answer is unknown.
+
+            :param model: list of atomic formulas
+            :type model: list(:class:`Formula`)
+
+            :rtype: bool or ``None``
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>>
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) | z
+                >>>
+                >>> a.satisfied(model=[z])
+                True
+                >>> a.satisfied(model=[~z])
+                >>> # None, as it is not enough to set ~z to determine satisfiability of a
+        """
+
+        simp = self.simplified(assumptions=model)
+
+        if simp == PYSAT_TRUE:
+            return True
+        elif simp == PYSAT_FALSE:
+            return False
+
+
+#
+#==============================================================================
+class Atom(Formula):
+    """
+        Atomic formula, i.e. a variable or constant. Although we often refer
+        to negated literals as atomic formulas too, they are techically
+        implemented as ``Neg(Atom)``.
+
+        To create an atomic formula, a user needs to specify an ``object``
+        this formula should signify. When it comes to clausifying the formulas
+        this atom is involved in, the atom receives an auxiliary variable
+        assigned to it as a ``name``.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x = Atom('x')
+            >>> y = Atom(object='y')
+            >>> # checking x's name
+            >>> x.name
+            >>> # None
+            >>> # right, that's because the atom is not yet clausified
+            >>> x.clausify()
+            >>> x.name
+            1
+
+        If a given object is a positive integer (negative integers aren't
+        allowed), the integer itself serves as the atom's name, which is
+        assigned in the constructor, i.e. no call to :meth:`clausify` is
+        required.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import Atom
+            >>> x, y = Atom(1), Atom(2)
+            >>> x.name
+            1
+            >>> y.name
+            2
+
+        Special atoms are reserved for the Boolean constants ``True`` and
+        ``False``. Namely, ``Atom(False)`` and ``Atom(True)`` can be accessed
+        through the constants ``PYSAT_FALSE`` and ``PYSAT_TRUE``,
+        respectively.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>>
+            >>> print(PYSAT_TRUE, repr(PYSAT_TRUE))
+            T Atom(True)
+            >>>
+            >>> print(PYSAT_FALSE, repr(PYSAT_FALSE))
+            F Atom(False)
+
+        .. note::
+
+            Constant ``Atom(True)`` is distinguished from variable ``Atom(1)``
+            by checking the type of the object (bool vs int).
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Atom constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.ATOM)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. The method should receive either an argument or a
+            keyword argument ``object`` signifying the object the new atom is
+            meant to represent.
+
+            :param object: object of interest
+            :type object: any
+        """
+
+        super(Atom, self).__init__(type=FormulaType.ATOM)
+
+        if args:
+            self.object = args[0]
+        elif 'object' in kwargs:
+            self.object = kwargs['object']
+        else:
+            assert 0, 'No object is given for this atom'
+
+        if type(self.object) == int:
+            # user seems to want to use integer variable directly
+            assert self.object > 0, 'Variables should be represented as positive integers'
+
+            self.name = self.object  # using the integer id as the name
+            Formula._vpool[Formula._context].obj2id[self] = self.name
+            Formula._vpool[Formula._context].id2obj[self.name] = self
+            Formula._vpool[Formula._context].occupy(1, self.name)
+
+    def __del__(self):
+        """
+            Atom destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.object = None
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. Does nothing as there are no
+            clauses to iterate through.
+        """
+
+        for cl in self.clauses:
+            yield cl
+
+    def _clausify(self, name_required=True):
+        """
+            Atom clausification. Basically, the method just assigns an
+            auxiliary variable to serve as a ``name`` of the atom. It does not
+            produce any clauses (the name is left for consistency with the
+            rest of formula types).
+        """
+
+        # true and false constants shouldn't be encoded
+        if self.object not in (False, True):
+            self.name = Formula._vpool[Formula._context].id(self)
+
+    def simplified(self, assumptions=[]):
+        """
+            Checks if the current literal appears in the list of assumptions
+            provided in argument ``assumptions``. If it is, the method returns
+            ``PYSAT_TRUE``. If the opposite atom is present in
+            ``assumptions``, the method returns ``PYSAT_FALSE``. Otherwise, it
+            return ``self``.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: PYSAT_TRUE, PYSAT_FALSE, or self
+        """
+
+        if self in assumptions:
+            return PYSAT_TRUE
+        elif ~self in assumptions:
+            return PYSAT_FALSE
+        return self
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}({repr(self.object)})'
+
+    def __str__(self):
+        """
+            Informal representation of the Atom. Returns a string
+            representation of the underlying object. For constants
+            ``PYSAT_FALSE`` and ``PYSAT_TRUE``, the method returns ``'F'`` and
+            ``'T'``, respectively.
+        """
+
+        if not isinstance(self.object, bool):
+            return str(self.object)
+        else:
+            return 'F' if self.object == False else 'T'
+
+
+# true and false constants
+#==============================================================================
+PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
+
+
+#
+#==============================================================================
+class And(Formula):
+    """
+        Conjunction. Given a list of operands (subformulas) :math:`f_i`,
+        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
+        :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands should be
+        passed as arguments to the constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+            >>> conj = And(x, y, z)
+
+        If an additional Boolean keyword argument ``merge`` is provided set to
+        ``True``, the toolkit will try to flatten the current :class:`And`
+        formula merging its *conjuctive* sub-operands into the list of
+        operands. For example, if ``And(And(x, y), z, merge=True)`` is called,
+        a new Formula object will be created with two operands: ``And(x, y)``
+        and ``z``, followed by merging ``x`` and ``y`` into the list of
+        root-level ``And``. This will result in a formula ``And(x, y, z)``.
+        Merging sub-operands is enabled by default if bitwise operations are
+        used to create ``And`` formulas.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> a1 = And(And(Atom('x'), Atom('y')), Atom('z'))
+            >>> a2 = And(And(Atom('x'), Atom('y')), Atom('z'), merge=True)
+            >>> a3 = Atom('x') & Atom('y') & Atom('z')
+            >>>
+            >>> repr(a1)
+            "And[And[Atom('x'), Atom('y')], Atom('z')]"
+            >>> repr(a2)
+            "And[Atom('x'), Atom('y'), Atom('z')]"
+            >>> repr(a2)
+            "And[Atom('x'), Atom('y'), Atom('z')]"
+            >>>
+            >>> id(a1) == id(a2)
+            False
+            >>>
+            >>> id(a2) == id(a3)
+            True  # formulas a2 and a3 refer to the same object
+
+        .. note::
+
+            If there are two formulas representing the same fact with and
+            without merging enabled, they technically sit in two distinct
+            objects. Although PySAT tries to avoid it, clausification of these
+            two formulas may result in unique (different) auxiliary variables
+            assigned to such two formulas.
+        """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Conjunction constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.AND)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects a list of arguments signifying the operands
+            of the conjunction. Additionally, a user may set a keyword
+            argument ``merge=True``, which will enable merging sub-operands.
+        """
+
+        super(And, self).__init__(type=FormulaType.AND)
+
+        self.subformulas = list(args)
+
+        if 'merge' in kwargs and kwargs['merge'] == True:
+            self._merge_suboperands()
+            self.merged = True
+        else:
+            self.merged = False
+
+    def __del__(self):
+        """
+            And destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.subformulas = []
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. First, iterates through the
+            clauses of the subformulas followed by the formula's own clauses.
+        """
+
+        for sub in self.subformulas:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformulas and creates a new formula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = x & y & z
+                >>>
+                >>> print(a.simplified(assumptions=[y]))
+                x & z
+                >>> print(a.simplified(assumptions=[~y]))
+                F  # False
+        """
+
+        oset = set()
+        operands = []
+
+        for sub in self.subformulas:
+            # execute simplification recursively
+            sub = sub.simplified(assumptions=set(assumptions))
+
+            # simplify the current term
+            if sub is PYSAT_FALSE:
+                return PYSAT_FALSE
+
+            # a new yet unsimplified term
+            elif sub != PYSAT_TRUE and sub not in oset:
+                oset.add(sub)
+                operands.append(sub)
+
+        # there is nothing left and we did not come across False
+        # we should return True
+        if not operands:
+            return PYSAT_TRUE
+
+        # there is one operand left; we need to return it instead
+        if len(operands) == 1:
+            return operands[0]
+
+        return And(*operands, merge=True) if self.merged else And(*operands)
+
+    def _clausify(self, name_required=True):
+        """
+            Conjuction clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the subformulas and populates self's clauses with unit clauses,
+            each containing the auxiliary "name" of the corresponding
+            subformula, thus representing their conjunction.
+
+            If ``name_required`` is set to ``True``, the method encodes the
+            conjunction using the standard logic: :math:`x \equiv
+            \\bigwedge{y_i}`, if :math:`x` is the new auxiliary variable
+            encoding ``self`` and :math:`y_i` is the auxiliary variable
+            representing :math:`i`'s subformula.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformulas
+            for sub in self.subformulas:
+                sub._clausify(name_required=True)
+
+                # adding unit clauses
+                self.clauses.append([sub.name])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = Formula._vpool[Formula._context].id(self)
+
+            cl = [self.name]  # final clause (converse implication)
+            for i in range(len(self.clauses)):
+                cl.append(-self.clauses[i][0])      # updating final clause
+                self.clauses[i].append(-self.name)  # updating direct implication
+
+            # adding final clause
+            self.clauses.append(cl)
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}{repr(self.subformulas)}'
+
+    def __str__(self):
+        """
+            Informal representation of the ``And`` formula. Returns a string
+            representations of the underlying subformulas joined with ``' &
+            '``.
+        """
+
+        return ' & '.join([f'{str(sub)}' if sub.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(sub)})' for sub in self.subformulas])
+
+
+#
+#==============================================================================
+class Or(Formula):
+    """
+        Disjunction. Given a list of operands (subformulas) :math:`f_i`,
+        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
+        :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands should be passed
+        as arguments to the constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+            >>> conj = Or(x, y, z)
+
+        If an additional Boolean keyword argument ``merge`` is provided set to
+        ``True``, the toolkit will try to flatten the current :class:`Or`
+        formula merging its *conjuctive* sub-operands into the list of
+        operands. For example, if ``Or(Or(x, y), z, merge=True)`` is called, a
+        new Formula object will be created with two operands: ``Or(x, y)`` and
+        ``z``, followed by merging ``x`` and ``y`` into the list of root-level
+        ``Or``. This will result in a formula ``Or(x, y, z)``. Merging
+        sub-operands is enabled by default if bitwise operations are used to
+        create ``Or`` formulas.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> a1 = Or(Or(Atom('x'), Atom('y')), Atom('z'))
+            >>> a2 = Or(Or(Atom('x'), Atom('y')), Atom('z'), merge=True)
+            >>> a3 = Atom('x') | Atom('y') | Atom('z')
+            >>>
+            >>> repr(a1)
+            "Or[Or[Atom('x'), Atom('y')], Atom('z')]"
+            >>> repr(a2)
+            "Or[Atom('x'), Atom('y'), Atom('z')]"
+            >>> repr(a2)
+            "Or[Atom('x'), Atom('y'), Atom('z')]"
+            >>>
+            >>> id(a1) == id(a2)
+            False
+            >>>
+            >>> id(a2) == id(a3)
+            True  # formulas a2 and a3 refer to the same object
+
+        .. note::
+
+            If there are two formulas representing the same fact with and
+            without merging enabled, they technically sit in two distinct
+            objects. Although PySAT tries to avoid it, clausification of these
+            two formulas may result in unique (different) auxiliary variables
+            assigned to such two formulas.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Disjunction constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.OR)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects a list of arguments signifying the operands
+            of the disjunction. Additionally, a user may set a keyword
+            argument ``merge=True``, which will enable merging sub-operands.
+        """
+
+        super(Or, self).__init__(type=FormulaType.OR)
+
+        self.subformulas = list(args)
+
+        if 'merge' in kwargs and kwargs['merge'] == True:
+            self._merge_suboperands()
+            self.merged = True
+        else:
+            self.merged = False
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.subformulas = []
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. First, iterates through the
+            clauses of the subformulas followed by the formula's own clauses.
+        """
+
+        for sub in self.subformulas:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformulas and creates a new formula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = x | y | z
+                >>>
+                >>> print(a.simplified(assumptions=[y]))
+                T  # True
+                >>> print(a.simplified(assumptions=[~y]))
+                x | z
+        """
+
+        oset = set()
+        operands = []
+
+        for sub in self.subformulas:
+            # execute simplification recursively
+            sub = sub.simplified(assumptions=set(assumptions))
+
+            # simplify the current term
+            if sub is PYSAT_TRUE:
+                return PYSAT_TRUE
+
+            # a new yet unsimplified term
+            elif sub != PYSAT_FALSE and sub not in oset:
+                oset.add(sub)
+                operands.append(sub)
+
+        # there is nothing left and we did not come across True
+        # we should return False
+        if not operands:
+            return PYSAT_FALSE
+
+        # there is one operand left; we need to return it instead
+        if len(operands) == 1:
+            return operands[0]
+
+        return Or(*operands, merge=True) if self.merged else Or(*operands)
+
+    def _clausify(self, name_required=True):
+        """
+            Disjunction clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the subformulas and populates self's clauses with unit clauses,
+            each containing the auxiliary "name" of the corresponding
+            subformula, thus representing their conjunction.
+
+            If ``name_required`` is set to ``True``, the method encodes the
+            conjunction using the standard logic: :math:`x \equiv
+            \\bigvee{y_i}`, if :math:`x` is the new auxiliary variable
+            encoding ``self`` and :math:`y_i` is the auxiliary variable
+            representing :math:`i`'s subformula.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformulas
+            self.clauses.append([])  # empty clause, to be filled out
+            for sub in self.subformulas:
+                sub._clausify(name_required=True)
+
+                # adding operand names to the clause
+                self.clauses[0].append(sub.name)
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = Formula._vpool[Formula._context].id(self)
+
+            # direct implication
+            self.clauses[0].append(-self.name)
+
+            # clauses representing converse implication
+            for i in range(len(self.clauses[0]) - 1):
+                self.clauses.append([self.name, -self.clauses[0][i]])
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}{repr(self.subformulas)}'
+
+    def __str__(self):
+        """
+            Informal representation of the ``Or`` formula. Returns a string
+            representations of the underlying subformulas joined with ``' |
+            '``.
+        """
+
+        return ' | '.join([f'{str(sub)}' if sub.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(sub)})' for sub in self.subformulas])
+
+
+#
+#==============================================================================
+class Neg(Formula):
+    """
+        Negation. Given a single operand (subformula) :math:`f`, it creates a
+        formula :math:`\\neg{f}`. The operand must be passed as an argument to
+        the constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x = Atom('x')
+            >>> n1 = Neg(x)
+            >>> n2 = Neg(subformula=x)
+            >>> print(n1, n2)
+            ~x, ~x
+            >>> n3 = ~n1
+            >>> print(n3)
+            x
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Negation constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.NEG)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects either a single argument or a single keyword
+            argument ``subformula`` to specify the operand of the negation.
+        """
+
+        super(Neg, self).__init__(type=FormulaType.NEG)
+
+        if args:
+            self.subformula = args[0]
+        elif 'subformula' in kwargs:
+            self.subformula = kwargs['subformula']
+        else:
+            assert 0, 'No subformula is given for this atom'
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.subformula = None
+
+    def _iter(self):
+        """
+            Recursive iterator through the clauses.
+        """
+
+        for cl in self.subformula._iter():
+            yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformula and then creates and returns a new formula with this
+            simplified subformula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = x & y | z
+                >>> b = ~a
+                >>>
+                >>> print(b.simplified(assumptions=[y]))
+                ~(x | z)
+                >>> print(b.simplified(assumptions=[~y]))
+                ~z
+        """
+
+        subformula = self.subformula.simplified(assumptions=set(assumptions))
+
+        if subformula is PYSAT_FALSE:
+            return PYSAT_TRUE
+        elif subformula is PYSAT_TRUE:
+            return PYSAT_FALSE
+        else:
+            return Neg(subformula)
+
+    def _clausify(self, name_required=True):
+        """
+            Negation clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the subformula and populates self's clauses with a single unit clause
+            containing the negation of the subformula's "name".
+
+            If ``name_required`` is set to ``True``, the method removes this
+            single unit clause and instead gives name to the negation, which
+            is equal to the negation of subformula's name.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformula
+            self.subformula._clausify(name_required=True)
+            self.clauses.append([-self.subformula.name])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = self.clauses[0][0]
+            self.clauses = []
+
+            Formula._vpool[Formula._context].obj2id[self] = self.name
+            Formula._vpool[Formula._context].id2obj[self.name] = self
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}({repr(self.subformula)})'
+
+    def __str__(self):
+        """
+            Informal representation of the ``Neg`` formula. Returns a string
+            representation of the underlying subformula prefixed with
+            ``'~'``.
+        """
+
+        return f'~{str(self.subformula)}' if self.subformula.type == FormulaType.ATOM else f'~({str(self.subformula)})'
+
+
+#
+#==============================================================================
+class Implies(Formula):
+    """
+        Implication. Given two operands :math:`f_1` and :math:`f_2`, it
+        creates a formula :math:`f_1 \\rightarrow f_2`. The operands must be
+        passed to the constructors either as two arguments or two keyword
+        arguments ``left`` and ``right``.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y = Atom('x'), Atom('y')
+            >>> a = Implies(x, y)
+            >>> print(a)
+            x >> y
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Implication constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.IMPL)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects two arguments (either unnamed or keyword
+            arguments) with the input formulas: left and right.
+        """
+
+        super(Implies, self).__init__(type=FormulaType.IMPL)
+
+        # initially, there are no operands
+        self.left = self.right = None
+
+        pos = 0
+        if 'left' in kwargs:
+            self.left = kwargs['left']
+        else:
+            assert args, '\'left\' argument for Implies is not found'
+            self.left = args[0]
+            pos += 1
+
+        if 'right' in kwargs:
+            self.right = kwargs['right']
+        else:
+            assert len(args) > pos, '\'right\' argument for Implies is not found'
+            self.right = args[pos]
+
+        assert self.left and self.right, 'Implications accept two (left and right) operands'
+
+    def __del__(self):
+        """
+            Implication destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.left = self.right = None
+
+    def _iter(self):
+        """
+            Clause iterator. Recursively iterates through the clauses of
+            ``left`` and ``right`` subformulas followed by own clause
+            traversal.
+        """
+
+        for sub in [self.left, self.right]:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+
+            Given a list of assumption literals, recursively simplifies the
+            left and right subformulas and then creates and returns a new
+            formula with these simplified subformulas.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y')
+                >>> a = x >> y
+                >>>
+                >>> print(a.simplified(assumptions=[y]))
+                T
+                >>> print(a.simplified(assumptions=[~y]))
+                ~x
+        """
+
+        left  = self.left.simplified (assumptions=set(assumptions))
+        right = self.right.simplified(assumptions=set(assumptions))
+
+        if left is PYSAT_FALSE or right is PYSAT_TRUE or left == right:
+            return PYSAT_TRUE
+        elif left is PYSAT_TRUE:
+            return right
+        elif right is PYSAT_FALSE:
+            return ~left
+        elif self.left == ~right:
+            return right
+
+        return Implies(left, right)
+
+    def _clausify(self, name_required=True):
+        """
+            Implication clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the left and right subformulas giving them names, say, :math:`x`
+            and :math:`y` respectively and the populates self's clauses with a
+            single binary clause :math:`(\\neg{x}\lor y)`.
+
+            If ``name_required`` is set to ``True``, the method removes this
+            single clause and instead gives a name to the implication by
+            Tseitin-encoding it, i.e. :math:`n \equiv (\\neg{x}\lor y)`.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformula
+            self.left._clausify(name_required=True)
+            self.right._clausify(name_required=True)
+            self.clauses.append([-self.left.name, self.right.name])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = Formula._vpool[Formula._context].id(self)
+
+            # direct implication
+            self.clauses[0].append(-self.name)
+
+            # clauses representing converse implication
+            for i in range(1, len(self.clauses[0]) + 1):
+                self.clauses.append([self.name, -self.clauses[0][i]])
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}({repr(self.left)}, {repr(self.right)})'
+
+    def __str__(self):
+        """
+            Informal representation of the ``Implies`` formula. Returns a
+            string representation of the left and right subformulas with with
+            a ``'>>'`` in the middle.
+        """
+
+        return '{0} >> {1}'.format(f'{str(self.left)}' if self.left.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.left)})',
+                                   f'{str(self.right)}' if self.right.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.right)})')
+
+
+#
+#==============================================================================
+class Equals(Formula):
+    """
+        Equivalence. Given a list of operands (subformulas) :math:`f_i`,
+        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
+        :math:`f_1 \leftrightarrow f_2 \leftrightarrow\ldots\leftrightarrow
+        f_n`. The list of operands should be passed as arguments to the
+        constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+            >>> equiv = Equals(x, y, z)
+
+        If an additional Boolean keyword argument ``merge`` is provided set to
+        ``True``, the toolkit will try to flatten the current :class:`Equals`
+        formula merging its *equivalence* sub-operands into the list of
+        operands. For example, if ``Equals(Equals(x, y), z, merge=True)`` is
+        called, a new Formula object will be created with two operands:
+        ``Equals(x, y)`` and ``z``, followed by merging ``x`` and ``y`` into
+        the list of root-level ``Equals``. This will result in a formula
+        ``Equals(x, y, z)``. Merging sub-operands is enabled by default if
+        bitwise operations are used to create ``Equals`` formulas.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> a1 = Equals(Equals(Atom('x'), Atom('y')), Atom('z'))
+            >>> a2 = Equals(Equals(Atom('x'), Atom('y')), Atom('z'), merge=True)
+            >>> a3 = Atom('x') == Atom('y') == Atom('z')
+            >>>
+            >>> print(a1)
+            (x @ y) @ z
+            >>> print(a2)
+            x @ y @ z
+            >>> print(a3)
+            x @ y @ z
+            >>>
+            >>> id(a1) == id(a2)
+            False
+            >>>
+            >>> id(a2) == id(a3)
+            True  # formulas a2 and a3 refer to the same object
+
+        .. note::
+
+            If there are two formulas representing the same fact with and
+            without merging enabled, they technically sit in two distinct
+            objects. Although PySAT tries to avoid it, clausification of these
+            two formulas may result in unique (different) auxiliary variables
+            assigned to such two formulas.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Equivalence constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.EQ)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects a list of arguments signifying the operands
+            of the equivalence. Additionally, a user may set a keyword
+            argument ``merge=True``, which will enable merging sub-operands.
+        """
+
+        super(Equals, self).__init__(type=FormulaType.EQ)
+
+        self.subformulas = list(args)
+
+        if 'merge' in kwargs and kwargs['merge'] == True:
+            self._merge_suboperands()
+            self.merged = True
+        else:
+            self.merged = False
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.subformulas = []
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. First, iterates through the
+            clauses of the subformulas followed by the formula's own clauses.
+        """
+
+        for sub in self.subformulas:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformulas and creates a new formula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = x @ y @ z
+                >>>
+                >>> print(a.simplified(assumptions=[y]))
+                x & z    # x and z must also be True
+                >>> print(a.simplified(assumptions=[~y]))
+                ~x & ~z  # x and z must also be False
+        """
+
+        oset = set()
+        operands = []
+        t_present, f_present = False, False
+
+        for sub in self.subformulas:
+            # execute simplification recursively
+            sub = sub.simplified(assumptions=set(assumptions))
+
+            # record if the subterms degenerated to a True constant
+            if sub is PYSAT_TRUE:
+                if f_present:
+                    return PYSAT_FALSE
+                t_present = True
+            # same for False
+            elif sub is PYSAT_FALSE:
+                if t_present:
+                    return PYSAT_FALSE
+                f_present = True
+
+            # a new yet unsimplified term
+            elif sub not in oset:
+                oset.add(sub)
+                operands.append(sub)
+
+        if not operands:
+            return PYSAT_FALSE if f_present and t_present else PYSAT_TRUE
+
+        if len(operands) == 1:
+            return operands[0] if not f_present else Neg(operands[0])
+
+        if f_present or t_present:
+            if f_present:
+                operands = [Neg(sub) for sub in operands]
+            return And(*operands, merge=True) if self.merged else And(*operands)
+
+        return Equals(*operands, merge=True) if self.merged else Equals(*operands)
+
+    def _clausify(self, name_required=True):
+        """
+            Equivalence clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the subformulas and populates self's clauses with binary clauses
+            connecting two consecutive subformulas :math:`f_i` and
+            :math:`f_{i+1}` by introducing two clauses :math:`(\\neg{f_i}\lor
+            f_{i+1})` and :math:`(f_i\lor\\neg{f_i+1})`.
+
+            If ``name_required`` is set to ``True``, the method introduces an
+            new auxiliary name for the equivalence term and clausifies it by
+            relating it with the names of subformulas.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformulas
+            for sub in self.subformulas:
+                sub._clausify(name_required=True)
+
+            for i in range(len(self.subformulas) - 1):
+                # current subformula is equivalent to the next one
+                self.clauses.append([-self.subformulas[i].name, +self.subformulas[i + 1].name])
+                self.clauses.append([+self.subformulas[i].name, -self.subformulas[i + 1].name])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = Formula._vpool[Formula._context].id(self)
+
+            # direct implication (just adding the selector)
+            for cl in self.clauses:
+                cl.append(-self.name)
+
+            # clauses representing converse implication
+            self.clauses.append([self.name] + [-s.name for s in self.subformulas])
+            self.clauses.append([self.name] + [+s.name for s in self.subformulas])
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}{repr(self.subformulas)}'
+
+    def __str__(self):
+        """
+            Informal representation of the ``Equals`` formula. Returns a
+            string representation of the subformulas with with joined by
+            ``' @ '``.
+        """
+
+        return ' @ '.join([f'{str(sub)}' if sub.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(sub)})' for sub in self.subformulas])
+
+
+#
+#==============================================================================
+class XOr(Formula):
+    """
+        Exclusive disjunction. Given a list of operands (subformulas)
+        :math:`f_i`, :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it
+        creates a formula :math:`f_1 \oplus f_2 \oplus\ldots\oplus f_n`. The
+        list of operands should be passed as arguments to the constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+            >>> xor = XOr(x, y, z)
+
+        If an additional Boolean keyword argument ``merge`` is provided set to
+        ``True``, the toolkit will try to flatten the current :class:`XOr`
+        formula merging its *equivalence* sub-operands into the list of
+        operands. For example, if ``XOr(XOr(x, y), z, merge=True)`` is called,
+        a new Formula object will be created with two operands: ``XOr(x, y)``
+        and ``z``, followed by merging ``x`` and ``y`` into the list of
+        root-level ``XOr``. This will result in a formula ``XOr(x, y, z)``.
+        Merging sub-operands is disabled by default if bitwise operations are
+        used to create ``XOr`` formulas.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> a1 = XOr(XOr(Atom('x'), Atom('y')), Atom('z'))
+            >>> a2 = XOr(XOr(Atom('x'), Atom('y')), Atom('z'), merge=True)
+            >>> a3 = Atom('x') ^ Atom('y') ^ Atom('z')
+            >>>
+            >>> print(a1)
+            (x ^ y) ^ z
+            >>> print(a2)
+            x ^ y ^ z
+            >>> print(a3)
+            (x ^ y) ^ z
+            >>>
+            >>> id(a1) == id(a2)
+            False
+            >>>
+            >>> id(a1) == id(a3)
+            True  # formulas a1 and a3 refer to the same object
+
+        .. note::
+
+            If there are two formulas representing the same fact with and
+            without merging enabled, they technically sit in two distinct
+            objects. Although PySAT tries to avoid it, clausification of these
+            two formulas may result in unique (different) auxiliary variables
+            assigned to such two formulas.
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            Equivalence constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.XOR)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects a list of arguments signifying the operands
+            of the equivalence. Additionally, a user may set a keyword
+            argument ``merge=True``, which will enable merging sub-operands.
+        """
+
+        super(XOr, self).__init__(type=FormulaType.XOR)
+
+        self.subformulas = list(args)
+
+        if 'merge' in kwargs and kwargs['merge'] == True:
+            self._merge_suboperands()
+            self.merged = True
+        else:
+            self.merged = False
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.subformulas = []
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. First, iterates through the
+            clauses of the subformulas followed by the formula's own clauses.
+        """
+
+        for sub in self.subformulas:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformulas and creates a new formula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = x ^ y ^ z
+                >>>
+                >>> print(a.simplified(assumptions=[y]))
+                ~x ^ z
+                >>> print(a.simplified(assumptions=[~y]))
+                x ^ z
+        """
+
+        oset = set()
+        operands = []
+        nof_trues = 0
+
+        for sub in self.subformulas:
+            # execute simplification recursively
+            sub = sub.simplified(assumptions=set(assumptions))
+
+            # record if the subterms degenerated to a True constant
+            if sub is PYSAT_TRUE:
+                nof_trues += 1
+
+            # a new yet unsimplified term
+            elif sub is not PYSAT_FALSE and sub not in oset:
+                oset.add(sub)
+                operands.append(sub)
+
+        if not operands:
+            return PYSAT_TRUE if nof_trues % 2 else PYSAT_FALSE
+
+        if len(operands) == 1:
+            return operands[0] if nof_trues % 2 == 0 else Neg(operands[0])
+
+        if nof_trues % 2 == 1:
+            return Neg(XOr(*operands, merge=True)) if self.merged else Neg(XOr(*operands))
+
+        return XOr(*operands, merge=True) if self.merged else XOr(*operands)
+
+    def _clausify(self, name_required=True):
+        """
+            XOr clausification. If the number of subformulas is more than 2,
+            encodes the XOr sequentially by gradually introducing an auxiliary
+            variable for each pair of operands.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformulas
+            inputs = []
+            for sub in self.subformulas:
+                sub._clausify(name_required=True)
+                inputs.append(sub.name)
+
+            if len(self.subformulas) > 2:
+                # build a hierarchy of binary XOR constraints
+                # until there are exactly two inputs left
+                while len(inputs) > 2:
+                    n1 = inputs.pop()
+                    n2 = inputs.pop()
+
+                    f1 = Formula._vpool[Formula._context].obj(n1)
+                    f2 = Formula._vpool[Formula._context].obj(n2)
+
+                    # creating auxiliary XOr formulas and encoding them
+                    ao = XOr(f1, f2)
+                    ao._clausify(name_required=True)
+
+                    # collecting all the corresponding clauses
+                    self.clauses += ao.clauses
+
+                    inputs.append(ao.name)
+
+                assert len(inputs) == 2, 'Wrong number of operands for XOr when encoding'
+
+                # final XOr, without a name (for now)
+                f1 = Formula._vpool[Formula._context].obj(inputs[0])
+                f2 = Formula._vpool[Formula._context].obj(inputs[1])
+
+                final = XOr(f1, f2)
+                final.clauses.append([-inputs[0], -inputs[1]])
+                final.clauses.append([+inputs[0], +inputs[1]])
+
+                self.clauses += final.clauses
+            else:
+                self.clauses.append([-inputs[0], -inputs[1]])
+                self.clauses.append([+inputs[0], +inputs[1]])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            n1, n2 = self.clauses[-1]
+            if len(self.subformulas) > 2:
+                # reconstructing the final subterm
+                f1 = Formula._vpool[Formula._context].obj(n1)
+                f2 = Formula._vpool[Formula._context].obj(n2)
+                final = XOr(f1, f2)
+
+                final.name = Formula._vpool[Formula._context].id(final)
+                self.name = final.name
+            else:
+                self.name = Formula._vpool[Formula._context].id(self)
+                final = None
+
+            # direct implication (just adding the selector)
+            self.clauses[-2].append(-self.name)
+            self.clauses[-1].append(-self.name)
+
+            # clauses representing converse implication
+            self.clauses.append([self.name, -n1, +n2])
+            self.clauses.append([self.name, +n1, -n2])
+
+            if final:
+                # sharing converse implication with final subterm (if any)
+                final.clauses.append(self.clauses[-2])
+                final.clauses.append(self.clauses[-1])
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}{repr(self.subformulas)}'
+
+    def __str__(self):
+        """
+            Informal representation of the ``XOr`` formula. Returns a
+            string representation of the subformulas with with joined by
+            ``' ^ '``.
+        """
+
+        return ' ^ '.join([f'{str(sub)}' if sub.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(sub)})' for sub in self.subformulas])
+
+
+#
+#==============================================================================
+class ITE(Formula):
+    """
+        If-then-else operator. Given three operands (subformulas) :math:`x`,
+        :math:`y`, and :math:`z`, it creates a formula :math:`(x \\rightarrow
+        y) \land (\\neg{x} \\rightarrow z)`. The operands should be passed as
+        arguments to the constructor.
+
+        Example:
+
+        .. code-block:: python
+
+            >>> from pysat.formula import *
+            >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+            >>> ite = ITE(x, y, z)
+            >>>
+            >>> print(ite)
+            >>> (x >> y) & (~x >> z)
+    """
+
+    def __new__(cls, *args, **kwargs):
+        """
+            ITE constructor.
+        """
+
+        return Formula.__new__(cls, args, kwargs, type=FormulaType.ITE)
+
+    def __init__(self, *args, **kwargs):
+        """
+            Initialiser. Expects three arguments (either unnamed or keyword
+            arguments) with the input formulas: ``cond`` (condition),
+            ``cons1`` (consequence1) and ``cons2`` (consequence2).
+        """
+
+        super(ITE, self).__init__(type=FormulaType.ITE)
+
+        # initially, there are no operands
+        self.cond = self.cons1 = self.cons2 = None
+
+        pos = 0
+        if 'cond' in kwargs:
+            self.cond = kwargs['cond']
+        else:
+            assert args, '\'cond\' argument for ITE is not found'
+            self.cond = args[0]
+            pos += 1
+
+        if 'cons1' in kwargs:
+            self.cons1 = kwargs['cons1']
+        else:
+            assert len(args) > pos, '\'cons1\' argument for ITE is not found'
+            self.cons1 = args[pos]
+            pos += 1
+
+        if 'cons2' in kwargs:
+            self.cons2 = kwargs['cons2']
+        else:
+            assert len(args) > pos, '\'cons2\' argument for ITE is not found'
+            self.cons2 = args[pos]
+
+        assert self.cond and self.cons1 and self.cons2, 'ITE formulas accept three (cond, cons1, and cons2) operands'
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.name = None
+        self.clauses = []
+        self.cond = self.cons1 = self.cons2 = None
+
+    def _iter(self):
+        """
+            Internal iterator over the clauses. First, iterates through the
+            clauses of the subformulas followed by the formula's own clauses.
+        """
+
+        for sub in [self.cond, self.cons1, self.cons2]:
+            for cl in sub._iter():
+                yield cl
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            Given a list of assumption literals, recursively simplifies the
+            subformulas and creates a new formula.
+
+            :param assumptions: atomic assumptions
+            :type assumptions: list(:class:`Formula`)
+
+            :rtype: :class:`Formula`
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> ite = ITE(x, y, z)
+                >>>
+                >>> print(ite.simplified(assumptions=[y]))
+                x | z
+                >>> print(ite.simplified(assumptions=[~y]))
+                ~x & z
+        """
+
+        assumptions = set(assumptions)
+        cond  = self.cond .simplified(assumptions)
+        cons1 = self.cons1.simplified(assumptions)
+        cons2 = self.cons2.simplified(assumptions)
+
+        # a heavy list of conditions, each of which can simplify the expression
+        if cond is PYSAT_TRUE:
+            return cons1
+        elif cond is PYSAT_FALSE:
+            return cons2
+        elif cons1 is PYSAT_TRUE or cons1 == cond:
+            return Or(cond, cons2).simplified(assumptions)
+        elif cons2 is PYSAT_TRUE or cons2 == Neg(cond) or cond == Neg(cons2):
+            return Implies(cond, cons1).simplified(assumptions)
+        elif cond == Neg(cons1) or Neg(cond) == cons1 or cond == cons2:
+            return And(cons1, cons2).simplified(assumptions)
+        elif cons1 is PYSAT_FALSE:
+            return And(Neg(cond), cons2).simplified(assumptions)
+        elif cons2 is PYSAT_FALSE:
+            return And(cond, cons1).simplified(assumptions)
+        elif cons1 == Neg(cons2) or Neg(cons1) == cons2:
+            return Equals(cond, cons1).simplified(assumptions)
+
+        return ITE(cond, cons1, cons2)
+
+    def _clausify(self, name_required=True):
+        """
+            ITE clausification.
+
+            If ``name_required`` is ``False``, the method recursively encodes
+            the ``cond``, ``cons1``, and ``cons2`` subformulas giving them
+            names, say, :math:`x`, :math:`y`, and :math:`z`, respectivela, and
+            the populates self's clauses with two binary clauses
+            :math:`(\\neg{x}\lor y)` and :math:`(x \lor y)`.
+
+            If ``name_required`` is set to ``True``, the method removes these
+            clauses and instead gives a name to the ITE by Tseitin-encoding
+            it, i.e. encoding :math:`n \equiv \left[(\\neg{x}\lor
+            y)\land(x\lor y)\\right]`.
+
+            :param name_required: whether or not a Tseitin variable is needed
+            :param name_required: bool
+        """
+
+        if not self.clauses:
+            # first, recursively encoding subformula
+            self.cond._clausify(name_required=True)
+            self.cons1._clausify(name_required=True)
+            self.cons2._clausify(name_required=True)
+            self.clauses.append([-self.cond.name, self.cons1.name])
+            self.clauses.append([+self.cond.name, self.cons2.name])
+
+        # introducing a new name for this formula if required
+        if name_required and not self.name:
+            self.name = Formula._vpool[Formula._context].id(self)
+
+            # direct implication
+            self.clauses[0].append(-self.name)
+            self.clauses[1].append(-self.name)
+
+            # converse implication
+            self.clauses.append([self.name, -self.cond.name,  -self.cons1.name])
+            self.clauses.append([self.name, +self.cond.name,  -self.cons2.name])
+            self.clauses.append([self.name, -self.cons1.name, -self.cons2.name])
+
+    def __repr__(self):
+        """
+            State reproducible string representaion of object.
+        """
+
+        return f'{self.__class__.__name__}({repr(self.cond)}, {repr(self.cons1)}, {repr(self.cons2)})'
+
+    def __str__(self):
+        """
+            Informal representation of the ``ITE`` formula. Returns a string
+            representation of the subformulas as two implications connected
+            with the conjuction symbol ``' & '``
+        """
+
+        cons1 = '{0} >> {1}'.format(f'{str(self.cond)}' if self.cond.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.cond)})',
+                                   f'{str(self.cons1)}' if self.cons1.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.cons1)})')
+
+        cons2 = '{0} >> {1}'.format(f'~{str(self.cond)}' if self.cond.type in (FormulaType.ATOM, FormulaType.NEG) else f'~({str(self.cond)})',
+                                   f'{str(self.cons2)}' if self.cons2.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.cons2)})')
+
+        return '({0}) & ({1})'.format(cons1, cons2)
+
+
+#
+#==============================================================================
+class CNF(Formula, object):
     """
         Class for manipulating CNF formulas. It can be used for creating
         formulas, reading them from a file, or writing them to a file. The
@@ -430,6 +2860,10 @@ class CNF(object):
         self.clauses = []
         self.comments = []
 
+        # this variable is required for integration with Formula
+        self.name = None
+        self.type = FormulaType.CNF
+
         if from_file:
             self.from_file(from_file, comment_lead, compressed_with='use_ext')
         elif from_fp:
@@ -441,12 +2875,28 @@ class CNF(object):
         elif from_aiger:
             self.from_aiger(from_aiger)
 
+        # in case we use this CNF as a subformula in the future,
+        # let's put the number of used variables in Formula's IDPool
+        Formula._vpool[Formula._context].occupy(1, self.nv)
+
+    def __new__(cls, *args, **kwargs):
+        """
+            While :class:`CNF` inherits from :class:`Formula` (and so do its
+            children), we don't want it to invoke the complex mechanisms of
+            formula construction for CNF formulas. Instead, they should behave
+            as in the previous versions of PySAT. Therefore, we call a simple
+            object constructor here.
+        """
+
+        return object.__new__(cls)
+
     def __repr__(self):
         """
             State reproducible string representaion of object.
         """
+
         s = self.to_dimacs().replace('\n', '\\n')
-        return f"CNF(from_string=\"{s}\")"
+        return f'CNF(from_string=\'{s}\')'
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -782,12 +3232,13 @@ class CNF(object):
                 -1 2 0
                 -2 3 0
                 -3 0
-
         """
-        header_lines = [f"p cnf {self.nv} {len(self.clauses)}"]
-        comment_lines = [f"{comment}" for comment in self.comments]
-        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
-        lines = "\n".join(comment_lines + header_lines + clause_lines) + "\n"
+
+        header_lines = [f'p cnf {self.nv} {len(self.clauses)}']
+        comment_lines = [f'{comment}' for comment in self.comments]
+        clause_lines = [' '.join(map(str,clause)) + ' 0' for clause in self.clauses]
+
+        lines = '\n'.join(comment_lines + header_lines + clause_lines)
         return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
@@ -1032,6 +3483,82 @@ class CNF(object):
         negated.clauses.append(negated.enclits)
         return negated
 
+    def _clausify(self, name_required=False):
+        """
+            As a means of seamless integration of :class:`CNF` and
+            :class:`Formula` objects, this method Tseitin-encodes a CNF
+            formula, which results in a new Boolean variable "naming" it.
+
+            If ``name_required`` is ``False``, nothing is done as the formula
+            is already clausal.
+        """
+
+        # no clausification is required as we have a CNF already
+        # but a name may be required; hence, the following Tseitin-encoding
+
+        if name_required and not self.name:
+            # we do not update top variable id, allowing a user to reuse variables
+            clauses, auxvars, enclits = [], [], []
+
+            # encoding the clauses
+            for cl in self.clauses:
+                auxv = cl[0]
+                if len(cl) > 1:
+                    auxv = Formula._vpool[Formula._context].id()
+
+                    # direct implication
+                    for l in cl:
+                        clauses.append([-l, auxv])
+
+                    # opposite implication
+                    clauses.append(cl + [-auxv])
+
+                    # keeping all Tseitin variables
+                    auxvars.append(auxv)
+
+                # literals representing the clauses
+                enclits.append(auxv)
+
+            # encoding the conjunction
+            if len(enclits) > 1:
+                self.name = Formula._vpool[Formula._context].id(self)
+
+                for lit in enclits:
+                    clauses.append([-self.name, lit])
+                clauses.append([self.name] + [-lit for lit in enclits])
+            else:  # single clause - nothing left to encode
+                self.name = enclits[0]  # existing variable
+
+                # connecting it to the CNF object as its name
+                Formula._vpool[Formula._context].obj2id[self] = self.name
+                Formula._vpool[Formula._context].id2obj[self.name] = self
+
+                # just in case, marking all ids below self.name as occupied
+                Formula._vpool[Formula._context].occupy(1, self.name)
+
+            self.clauses = clauses
+            self.auxvars = auxvars
+            self.enclits = enclits
+            self.nv = self.name
+
+    def _iter(self):
+        """
+            This is a copy of :meth:`__iter__`, to be consistent with
+            :class:`Formula`.
+        """
+
+        for cl in self.clauses:
+            yield cl
+
+    def simplified(self, assumptions=[]):
+        """
+            As any other Formula type, CNF formulas have this method, although
+            intentionally left unimplemented. Raises a ``FormulaError``
+            exception.
+        """
+
+        raise FormulaError('Cannot simplify a CNF formula')
+
 
 #
 #==============================================================================
@@ -1078,8 +3605,9 @@ class WCNF(object):
         """
             State reproducible string representaion of object.
         """
+
         s = self.to_dimacs().replace('\n', '\\n')
-        return f"WCNF(from_string=\"{s}\")"
+        return f'WCNF(from_string=\'{s}\')'
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -1403,13 +3931,14 @@ class WCNF(object):
                 10 1 2 0
                 1 -1 0
                 2 -2 0
-
         """
-        header_lines = [f"p wcnf {self.nv} {len(self.hard)+len(self.soft)} {self.topw}"]
-        comment_lines = [f"{comment}" for comment in self.comments]
-        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
-        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
-        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines) + "\n"
+
+        header_lines = [f'p wcnf {self.nv} {len(self.hard) + len(self.soft)} {self.topw}']
+        comment_lines = [f'{comment}' for comment in self.comments]
+        hard_lines = [f'{self.topw} ' + ' '.join(map(str, clause)) + ' 0' for clause in self.hard]
+        soft_lines = [f'{weight} ' + ' '.join(map(str, clause)) + ' 0' for clause, weight in zip(self.soft, self.wght)]
+
+        lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines)
         return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
@@ -1697,8 +4226,9 @@ class CNFPlus(CNF, object):
         """
             State reproducible string representaion of object.
         """
+
         s = self.to_dimacs().replace('\n', '\\n')
-        return f"CNFPlus(from_string=\"{s}\")"
+        return f'CNFPlus(from_string=\'{s}\')'
 
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
@@ -1823,13 +4353,14 @@ class CNFPlus(CNF, object):
                 3 5 7 0
                 1 -2 3 5 -7 <= 3
                 -4 -5 -6 7 <= 2
-
         """
-        header_lines = [f"p cnf+ {self.nv} {len(self.clauses) + len(self.atmosts)}"]
-        comment_lines = [f"{comment}" for comment in self.comments]
-        clause_lines = [" ".join(map(str,clause)) + " 0" for clause in self.clauses]
-        atmost_lines = [" ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atmosts]
-        lines = "\n".join(comment_lines + header_lines + clause_lines + atmost_lines) + "\n"
+
+        header_lines = [f'p cnf+ {self.nv} {len(self.clauses) + len(self.atmosts)}']
+        comment_lines = [f'{comment}' for comment in self.comments]
+        clause_lines = [' '.join(map(str,clause)) + ' 0' for clause in self.clauses]
+        atmost_lines = [' '.join(map(str,clause)) + ' <= ' + str(most) for clause, most in self.atmosts]
+
+        lines = '\n'.join(comment_lines + header_lines + clause_lines + atmost_lines)
         return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
@@ -2101,6 +4632,15 @@ class CNFPlus(CNF, object):
 
         return cnfplus
 
+    def _clausify(self, name_required=False):
+        """
+            This method currently only raises an error as there is no support
+            of ``atmosts`` in :class:`Formula`. This may potentially be fixed
+            in the future.
+        """
+
+        raise FormulaError('Integration of CNFPlus and Formula is not yet supported')
+
 
 #
 #==============================================================================
@@ -2171,8 +4711,9 @@ class WCNFPlus(WCNF, object):
         """
             State reproducible string representaion of object.
         """
+
         s = self.to_dimacs().replace('\n', '\\n')
-        return f"WCNFPlus(from_string=\"{s}\")"
+        return f'WCNFPlus(from_string=\'{s}\')'
 
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
@@ -2342,14 +4883,15 @@ class WCNFPlus(WCNF, object):
                 5 3 5 7 0
                 10 1 -2 3 5 -7 <= 3
                 10 -4 -5 -6 7 <= 2
-
         """
-        header_lines = [f"p wcnf+ {self.nv} {len(self.hard)+len(self.soft)+len(self.atms)} {self.topw}"]
-        comment_lines = [f"{comment}" for comment in self.comments]
-        hard_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " 0" for clause in self.hard]
-        soft_lines = [f"{weight} " + " ".join(map(str,clause)) + " 0" for clause, weight in zip(self.soft, self.wght)]
-        atmost_lines = [f"{self.topw} " + " ".join(map(str,clause)) + " <= " + str(most) for clause, most in self.atms]
-        lines = "\n".join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines) + "\n"
+
+        header_lines = [f'p wcnf+ {self.nv} {len(self.hard) + len(self.soft) + len(self.atms)} {self.topw}']
+        comment_lines = [f'{comment}' for comment in self.comments]
+        hard_lines = [f'{self.topw} ' + ' '.join(map(str,clause)) + ' 0' for clause in self.hard]
+        soft_lines = [f'{weight} ' + ' '.join(map(str,clause)) + ' 0' for clause, weight in zip(self.soft, self.wght)]
+        atmost_lines = [f'{self.topw} ' + ' '.join(map(str,clause)) + ' <= ' + str(most) for clause, most in self.atms]
+
+        lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines)
         return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):

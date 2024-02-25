@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 25.02.2024 (*1.8.dev1*)
+
+-   Changed versioning scheme.
+-   Added functionality to manipulate arbitrary Boolean formulas.
+
 ## 20.02.2024 (*0.1.8.dev17*)
 
 -   Fixed a minor bug once in a while manifesting itself in the solvers'
