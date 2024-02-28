@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 29.02.2024 (*1.8.dev3*)
+
+-   Minor corrections.
+
 ## 29.02.2024 (*1.8.dev2*)
 
 -   Fixed a bug/typo in implication clausification.

@@ -1421,7 +1421,7 @@ class And(Formula):
         Conjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
         :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands *of size at
-        least 2* should be passed as arguments to the constructor.
+        least 1* should be passed as arguments to the constructor.
 
         Example:
 
@@ -1496,8 +1496,8 @@ class And(Formula):
         else:
             self.merged = False
 
-        if len(self.subformulas) < 2:
-            raise FormulaError('Conjuction requires at least 2 arguments')
+        if len(self.subformulas) < 1:
+            raise FormulaError('Conjunction requires at least 1 argument')
 
     def __del__(self):
         """
@@ -1635,7 +1635,7 @@ class Or(Formula):
         Disjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
         :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands *of size at
-        least 2* should be passed as arguments to the constructor.
+        least 1* should be passed as arguments to the constructor.
 
         Example:
 
@@ -1710,8 +1710,8 @@ class Or(Formula):
         else:
             self.merged = False
 
-        if len(self.subformulas) < 2:
-            raise FormulaError('Disjunction requires at least 2 arguments')
+        if len(self.subformulas) < 1:
+            raise FormulaError('Disjunction requires at least 1 argument')
 
     def __del__(self):
         """
