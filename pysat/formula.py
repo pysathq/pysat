@@ -1420,8 +1420,8 @@ class And(Formula):
     """
         Conjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
-        :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands should be
-        passed as arguments to the constructor.
+        :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands *of size at
+        least 2* should be passed as arguments to the constructor.
 
         Example:
 
@@ -1634,8 +1634,8 @@ class Or(Formula):
     """
         Disjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
-        :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands should be passed
-        as arguments to the constructor.
+        :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands *of size at
+        least 2* should be passed as arguments to the constructor.
 
         Example:
 
@@ -2164,8 +2164,8 @@ class Equals(Formula):
         Equivalence. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
         :math:`f_1 \leftrightarrow f_2 \leftrightarrow\ldots\leftrightarrow
-        f_n`. The list of operands should be passed as arguments to the
-        constructor.
+        f_n`. The list of operands *of size at least 2* should be passed as
+        arguments to the constructor.
 
         Example:
 
@@ -2390,7 +2390,8 @@ class XOr(Formula):
         Exclusive disjunction. Given a list of operands (subformulas)
         :math:`f_i`, :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it
         creates a formula :math:`f_1 \oplus f_2 \oplus\ldots\oplus f_n`. The
-        list of operands should be passed as arguments to the constructor.
+        list of operands *of size at least 2* should be passed as arguments to
+        the constructor.
 
         Example:
 
