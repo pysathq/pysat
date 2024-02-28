@@ -1496,6 +1496,9 @@ class And(Formula):
         else:
             self.merged = False
 
+        if len(self.subformulas) < 2:
+            raise FormulaError('Conjuction requires at least 2 arguments')
+
     def __del__(self):
         """
             And destructor.
@@ -1706,6 +1709,9 @@ class Or(Formula):
             self.merged = True
         else:
             self.merged = False
+
+        if len(self.subformulas) < 2:
+            raise FormulaError('Disjunction requires at least 2 arguments')
 
     def __del__(self):
         """
@@ -2130,7 +2136,7 @@ class Implies(Formula):
             self.clauses[0].append(-self.name)
 
             # clauses representing converse implication
-            for i in range(1, len(self.clauses[0]) + 1):
+            for i in range(len(self.clauses[0]) - 1):
                 self.clauses.append([self.name, -self.clauses[0][i]])
 
     def __repr__(self):
@@ -2233,6 +2239,9 @@ class Equals(Formula):
             self.merged = True
         else:
             self.merged = False
+
+        if len(self.subformulas) < 2:
+            raise FormulaError('Equivalence requires at least 2 arguments')
 
     def __del__(self):
         """
@@ -2455,6 +2464,9 @@ class XOr(Formula):
             self.merged = True
         else:
             self.merged = False
+
+        if len(self.subformulas) < 2:
+            raise FormulaError('Equivalence requires at least 2 arguments')
 
     def __del__(self):
         """

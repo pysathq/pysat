@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 29.02.2024 (*1.8.dev2*)
+
+-   Fixed a bug/typo in implication clausification.
+-   Added checks for the number of arguments in And, Or, Equals, and XOR
+    constraints.
+
 ## 25.02.2024 (*1.8.dev1*)
 
 -   Changed versioning scheme.
