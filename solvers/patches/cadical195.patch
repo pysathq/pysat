@@ -979,8 +979,8 @@ diff -Naur solvers/cadical195/file.hpp solvers/cdc195/file.hpp
  #endif
 diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
 --- solvers/cadical195/file0.cpp	2024-02-29 02:59:11
-+++ solvers/cdc195/file0.cpp	2024-03-17 17:50:27
-@@ -24,10 +24,27 @@
++++ solvers/cdc195/file0.cpp	2024-03-17 17:58:44
+@@ -24,10 +24,23 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -998,10 +998,6 @@ diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
 +#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
 +#endif
 +
-+#ifndef S_ISFIFO
-+#define S_ISFIFO(mode)  (((mode) & S_IFMT) == S_IFIFO)
-+#endif
-+
 +#define popen _popen
 +#define pclose _pclose
 +#endif
@@ -1009,6 +1005,18 @@ diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
  // Private constructor.
  
  File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
+@@ -100,7 +113,11 @@
+   int fd = fileno (file);
+   if (fstat (fd, &stat))
+     return true;
++#ifdef _MSC_VER
++  return false;
++#else
+   return S_ISFIFO (stat.st_mode);
++#endif
+ }
+ 
+ // These are signatures for supported compressed file types.  In 2018 the
 @@ -455,4 +472,4 @@
    free (_name);
  }
