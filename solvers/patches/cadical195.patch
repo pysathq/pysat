@@ -1,6 +1,6 @@
 diff -Naur solvers/cadical195/Makefile solvers/cdc195/Makefile
 --- solvers/cadical195/Makefile	1970-01-01 10:00:00
-+++ solvers/cdc195/Makefile	2024-02-26 17:16:24
++++ solvers/cdc195/Makefile	2024-03-17 17:49:46
 @@ -0,0 +1,42 @@
 +### Makefile ---
 +
@@ -45,8 +45,8 @@ diff -Naur solvers/cadical195/Makefile solvers/cdc195/Makefile
 +
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/cadical195/analyze.cpp solvers/cdc195/analyze.cpp
---- solvers/cadical195/analyze.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/analyze.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/analyze.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/analyze.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -62,8 +62,8 @@ diff -Naur solvers/cadical195/analyze.cpp solvers/cdc195/analyze.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/arena.cpp solvers/cdc195/arena.cpp
---- solvers/cadical195/arena.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/arena.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/arena.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/arena.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -79,8 +79,8 @@ diff -Naur solvers/cadical195/arena.cpp solvers/cdc195/arena.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/arena.hpp solvers/cdc195/arena.hpp
---- solvers/cadical195/arena.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/arena.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/arena.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/arena.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _arena_hpp_INCLUDED
 -#define _arena_hpp_INCLUDED
@@ -101,8 +101,8 @@ diff -Naur solvers/cadical195/arena.hpp solvers/cdc195/arena.hpp
  
  #endif
 diff -Naur solvers/cadical195/assume.cpp solvers/cdc195/assume.cpp
---- solvers/cadical195/assume.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/assume.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/assume.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/assume.cpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include "options.hpp"
@@ -119,8 +119,8 @@ diff -Naur solvers/cadical195/assume.cpp solvers/cdc195/assume.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/averages.cpp solvers/cdc195/averages.cpp
---- solvers/cadical195/averages.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/averages.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/averages.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/averages.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -136,8 +136,8 @@ diff -Naur solvers/cadical195/averages.cpp solvers/cdc195/averages.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/averages.hpp solvers/cdc195/averages.hpp
---- solvers/cadical195/averages.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/averages.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/averages.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/averages.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _averages_hpp_INCLUDED
 -#define _averages_hpp_INCLUDED
@@ -160,8 +160,8 @@ diff -Naur solvers/cadical195/averages.hpp solvers/cdc195/averages.hpp
  
  #endif
 diff -Naur solvers/cadical195/backtrack.cpp solvers/cdc195/backtrack.cpp
---- solvers/cadical195/backtrack.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/backtrack.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/backtrack.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/backtrack.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -177,8 +177,8 @@ diff -Naur solvers/cadical195/backtrack.cpp solvers/cdc195/backtrack.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/backward.cpp solvers/cdc195/backward.cpp
---- solvers/cadical195/backward.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/backward.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/backward.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/backward.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -194,8 +194,8 @@ diff -Naur solvers/cadical195/backward.cpp solvers/cdc195/backward.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/bins.cpp solvers/cdc195/bins.cpp
---- solvers/cadical195/bins.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/bins.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/bins.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/bins.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -211,8 +211,8 @@ diff -Naur solvers/cadical195/bins.cpp solvers/cdc195/bins.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/bins.hpp solvers/cdc195/bins.hpp
---- solvers/cadical195/bins.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/bins.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/bins.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/bins.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _bins_hpp_INCLUDED
 -#define _bins_hpp_INCLUDED
@@ -235,8 +235,8 @@ diff -Naur solvers/cadical195/bins.hpp solvers/cdc195/bins.hpp
  
  #endif
 diff -Naur solvers/cadical195/block.cpp solvers/cdc195/block.cpp
---- solvers/cadical195/block.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/block.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/block.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/block.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -252,8 +252,8 @@ diff -Naur solvers/cadical195/block.cpp solvers/cdc195/block.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/block.hpp solvers/cdc195/block.hpp
---- solvers/cadical195/block.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/block.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/block.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/block.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _block_hpp_INCLUDED
 -#define _block_hpp_INCLUDED
@@ -276,8 +276,8 @@ diff -Naur solvers/cadical195/block.hpp solvers/cdc195/block.hpp
  
  #endif
 diff -Naur solvers/cadical195/cadical.hpp solvers/cdc195/cadical.hpp
---- solvers/cadical195/cadical.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/cadical.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/cadical.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/cadical.hpp	2024-03-17 17:49:46
 @@ -1,12 +1,14 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
@@ -373,8 +373,8 @@ diff -Naur solvers/cadical195/cadical.hpp solvers/cdc195/cadical.hpp
  
  #endif
 diff -Naur solvers/cadical195/checker.cpp solvers/cdc195/checker.cpp
---- solvers/cadical195/checker.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/checker.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/checker.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/checker.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -390,8 +390,8 @@ diff -Naur solvers/cadical195/checker.cpp solvers/cdc195/checker.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/checker.hpp solvers/cdc195/checker.hpp
---- solvers/cadical195/checker.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/checker.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/checker.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/checker.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _checker_hpp_INCLUDED
 -#define _checker_hpp_INCLUDED
@@ -416,8 +416,8 @@ diff -Naur solvers/cadical195/checker.hpp solvers/cdc195/checker.hpp
  
  #endif
 diff -Naur solvers/cadical195/clause.cpp solvers/cdc195/clause.cpp
---- solvers/cadical195/clause.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/clause.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/clause.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/clause.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -433,8 +433,8 @@ diff -Naur solvers/cadical195/clause.cpp solvers/cdc195/clause.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/clause.hpp solvers/cdc195/clause.hpp
---- solvers/cadical195/clause.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/clause.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/clause.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/clause.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _clause_hpp_INCLUDED
 -#define _clause_hpp_INCLUDED
@@ -455,8 +455,8 @@ diff -Naur solvers/cadical195/clause.hpp solvers/cdc195/clause.hpp
  
  #endif
 diff -Naur solvers/cadical195/collect.cpp solvers/cdc195/collect.cpp
---- solvers/cadical195/collect.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/collect.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/collect.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/collect.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -472,8 +472,8 @@ diff -Naur solvers/cadical195/collect.cpp solvers/cdc195/collect.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/compact.cpp solvers/cdc195/compact.cpp
---- solvers/cadical195/compact.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/compact.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/compact.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/compact.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -489,8 +489,8 @@ diff -Naur solvers/cadical195/compact.cpp solvers/cdc195/compact.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/condition.cpp solvers/cdc195/condition.cpp
---- solvers/cadical195/condition.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/condition.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/condition.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/condition.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -506,8 +506,8 @@ diff -Naur solvers/cadical195/condition.cpp solvers/cdc195/condition.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/config.cpp solvers/cdc195/config.cpp
---- solvers/cadical195/config.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/config.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/config.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/config.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -523,8 +523,8 @@ diff -Naur solvers/cadical195/config.cpp solvers/cdc195/config.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/config.hpp solvers/cdc195/config.hpp
---- solvers/cadical195/config.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/config.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/config.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/config.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _config_hpp_INCLUDED
 -#define _config_hpp_INCLUDED
@@ -545,8 +545,8 @@ diff -Naur solvers/cadical195/config.hpp solvers/cdc195/config.hpp
  
  #endif
 diff -Naur solvers/cadical195/constrain.cpp solvers/cdc195/constrain.cpp
---- solvers/cadical195/constrain.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/constrain.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/constrain.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/constrain.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -562,8 +562,8 @@ diff -Naur solvers/cadical195/constrain.cpp solvers/cdc195/constrain.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/contract.cpp solvers/cdc195/contract.cpp
---- solvers/cadical195/contract.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/contract.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/contract.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/contract.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -582,8 +582,8 @@ diff -Naur solvers/cadical195/contract.cpp solvers/cdc195/contract.cpp
  
  #endif
 diff -Naur solvers/cadical195/contract.hpp solvers/cdc195/contract.hpp
---- solvers/cadical195/contract.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/contract.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/contract.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/contract.hpp	2024-03-17 17:49:46
 @@ -1,6 +1,10 @@
 -#ifndef _contract_hpp_INCLUDED
 -#define _contract_hpp_INCLUDED
@@ -616,8 +616,8 @@ diff -Naur solvers/cadical195/contract.hpp solvers/cdc195/contract.hpp
  /*------------------------------------------------------------------------*/
  
 diff -Naur solvers/cadical195/cover.cpp solvers/cdc195/cover.cpp
---- solvers/cadical195/cover.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/cover.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/cover.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/cover.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -633,8 +633,8 @@ diff -Naur solvers/cadical195/cover.cpp solvers/cdc195/cover.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/cover.hpp solvers/cdc195/cover.hpp
---- solvers/cadical195/cover.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/cover.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/cover.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/cover.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _cover_hpp_INCLUDED
 -#define _cover_hpp_INCLUDED
@@ -644,8 +644,8 @@ diff -Naur solvers/cadical195/cover.hpp solvers/cdc195/cover.hpp
  /*------------------------------------------------------------------------*/
  
 diff -Naur solvers/cadical195/decide.cpp solvers/cdc195/decide.cpp
---- solvers/cadical195/decide.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/decide.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/decide.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/decide.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -661,8 +661,8 @@ diff -Naur solvers/cadical195/decide.cpp solvers/cdc195/decide.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/decompose.cpp solvers/cdc195/decompose.cpp
---- solvers/cadical195/decompose.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/decompose.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/decompose.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/decompose.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -678,8 +678,8 @@ diff -Naur solvers/cadical195/decompose.cpp solvers/cdc195/decompose.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/decompose.hpp solvers/cdc195/decompose.hpp
---- solvers/cadical195/decompose.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/decompose.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/decompose.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/decompose.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _decompose_hpp_INCLUDED
 -#define _decompose_hpp_INCLUDED
@@ -700,8 +700,8 @@ diff -Naur solvers/cadical195/decompose.hpp solvers/cdc195/decompose.hpp
  
  #endif
 diff -Naur solvers/cadical195/deduplicate.cpp solvers/cdc195/deduplicate.cpp
---- solvers/cadical195/deduplicate.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/deduplicate.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/deduplicate.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/deduplicate.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -717,8 +717,8 @@ diff -Naur solvers/cadical195/deduplicate.cpp solvers/cdc195/deduplicate.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/drattracer.cpp solvers/cdc195/drattracer.cpp
---- solvers/cadical195/drattracer.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/drattracer.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/drattracer.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/drattracer.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -734,8 +734,8 @@ diff -Naur solvers/cadical195/drattracer.cpp solvers/cdc195/drattracer.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/drattracer.hpp solvers/cdc195/drattracer.hpp
---- solvers/cadical195/drattracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/drattracer.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/drattracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/drattracer.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _drattracer_h_INCLUDED
 -#define _drattracer_h_INCLUDED
@@ -758,8 +758,8 @@ diff -Naur solvers/cadical195/drattracer.hpp solvers/cdc195/drattracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/elim.cpp solvers/cdc195/elim.cpp
---- solvers/cadical195/elim.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/elim.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/elim.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/elim.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -775,8 +775,8 @@ diff -Naur solvers/cadical195/elim.cpp solvers/cdc195/elim.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/elim.hpp solvers/cdc195/elim.hpp
---- solvers/cadical195/elim.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/elim.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/elim.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/elim.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _elim_hpp_INCLUDED
 -#define _elim_hpp_INCLUDED
@@ -799,8 +799,8 @@ diff -Naur solvers/cadical195/elim.hpp solvers/cdc195/elim.hpp
  
  #endif
 diff -Naur solvers/cadical195/ema.cpp solvers/cdc195/ema.cpp
---- solvers/cadical195/ema.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/ema.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/ema.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/ema.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -816,8 +816,8 @@ diff -Naur solvers/cadical195/ema.cpp solvers/cdc195/ema.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/ema.hpp solvers/cdc195/ema.hpp
---- solvers/cadical195/ema.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/ema.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/ema.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/ema.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _ema_hpp_INCLUDED
 -#define _ema_hpp_INCLUDED
@@ -841,8 +841,8 @@ diff -Naur solvers/cadical195/ema.hpp solvers/cdc195/ema.hpp
  /*------------------------------------------------------------------------*/
  
 diff -Naur solvers/cadical195/extend.cpp solvers/cdc195/extend.cpp
---- solvers/cadical195/extend.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/extend.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/extend.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/extend.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -858,8 +858,8 @@ diff -Naur solvers/cadical195/extend.cpp solvers/cdc195/extend.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/external.cpp solvers/cdc195/external.cpp
---- solvers/cadical195/external.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/external.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/external.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/external.cpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include <cstdint>
@@ -885,8 +885,8 @@ diff -Naur solvers/cadical195/external.cpp solvers/cdc195/external.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/external.hpp solvers/cdc195/external.hpp
---- solvers/cadical195/external.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/external.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/external.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/external.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _external_hpp_INCLUDED
 -#define _external_hpp_INCLUDED
@@ -922,8 +922,8 @@ diff -Naur solvers/cadical195/external.hpp solvers/cdc195/external.hpp
  
  #endif
 diff -Naur solvers/cadical195/external_propagate.cpp solvers/cdc195/external_propagate.cpp
---- solvers/cadical195/external_propagate.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/external_propagate.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/external_propagate.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/external_propagate.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -939,8 +939,8 @@ diff -Naur solvers/cadical195/external_propagate.cpp solvers/cdc195/external_pro
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/file.hpp solvers/cdc195/file.hpp
---- solvers/cadical195/file.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/file.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/file.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/file.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _file_hpp_INCLUDED
 -#define _file_hpp_INCLUDED
@@ -978,9 +978,9 @@ diff -Naur solvers/cadical195/file.hpp solvers/cdc195/file.hpp
  
  #endif
 diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
---- solvers/cadical195/file0.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/file0.cpp	2024-02-26 16:37:21
-@@ -24,10 +24,23 @@
+--- solvers/cadical195/file0.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/file0.cpp	2024-03-17 17:50:27
+@@ -24,10 +24,27 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -998,6 +998,10 @@ diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
 +#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
 +#endif
 +
++#ifndef S_ISFIFO
++#define S_ISFIFO(mode)  (((mode) & S_IFMT) == S_IFIFO)
++#endif
++
 +#define popen _popen
 +#define pclose _pclose
 +#endif
@@ -1005,15 +1009,15 @@ diff -Naur solvers/cadical195/file0.cpp solvers/cdc195/file0.cpp
  // Private constructor.
  
  File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
-@@ -455,4 +468,4 @@
+@@ -455,4 +472,4 @@
    free (_name);
  }
  
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/flags.cpp solvers/cdc195/flags.cpp
---- solvers/cadical195/flags.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/flags.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/flags.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/flags.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1029,8 +1033,8 @@ diff -Naur solvers/cadical195/flags.cpp solvers/cdc195/flags.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/flags.hpp solvers/cdc195/flags.hpp
---- solvers/cadical195/flags.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/flags.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/flags.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/flags.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _flags_hpp_INCLUDED
 -#define _flags_hpp_INCLUDED
@@ -1051,8 +1055,8 @@ diff -Naur solvers/cadical195/flags.hpp solvers/cdc195/flags.hpp
  
  #endif
 diff -Naur solvers/cadical195/flip.cpp solvers/cdc195/flip.cpp
---- solvers/cadical195/flip.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/flip.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/flip.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/flip.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1068,8 +1072,8 @@ diff -Naur solvers/cadical195/flip.cpp solvers/cdc195/flip.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/format.cpp solvers/cdc195/format.cpp
---- solvers/cadical195/format.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/format.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/format.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/format.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1085,8 +1089,8 @@ diff -Naur solvers/cadical195/format.cpp solvers/cdc195/format.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/format.hpp solvers/cdc195/format.hpp
---- solvers/cadical195/format.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/format.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/format.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/format.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _format_hpp_INCLUDED
 -#define _format_hpp_INCLUDED
@@ -1110,8 +1114,8 @@ diff -Naur solvers/cadical195/format.hpp solvers/cdc195/format.hpp
  
  #endif
 diff -Naur solvers/cadical195/frattracer.cpp solvers/cdc195/frattracer.cpp
---- solvers/cadical195/frattracer.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/frattracer.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/frattracer.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/frattracer.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1127,8 +1131,8 @@ diff -Naur solvers/cadical195/frattracer.cpp solvers/cdc195/frattracer.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/frattracer.hpp solvers/cdc195/frattracer.hpp
---- solvers/cadical195/frattracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/frattracer.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/frattracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/frattracer.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _frattracer_h_INCLUDED
 -#define _frattracer_h_INCLUDED
@@ -1149,8 +1153,8 @@ diff -Naur solvers/cadical195/frattracer.hpp solvers/cdc195/frattracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/gates.cpp solvers/cdc195/gates.cpp
---- solvers/cadical195/gates.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/gates.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/gates.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/gates.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1166,8 +1170,8 @@ diff -Naur solvers/cadical195/gates.cpp solvers/cdc195/gates.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/heap.hpp solvers/cdc195/heap.hpp
---- solvers/cadical195/heap.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/heap.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/heap.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/heap.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _heap_hpp_INCLUDED
 -#define _heap_hpp_INCLUDED
@@ -1192,8 +1196,8 @@ diff -Naur solvers/cadical195/heap.hpp solvers/cdc195/heap.hpp
  
  #endif
 diff -Naur solvers/cadical195/idruptracer.cpp solvers/cdc195/idruptracer.cpp
---- solvers/cadical195/idruptracer.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/idruptracer.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/idruptracer.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/idruptracer.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1209,8 +1213,8 @@ diff -Naur solvers/cadical195/idruptracer.cpp solvers/cdc195/idruptracer.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/idruptracer.hpp solvers/cdc195/idruptracer.hpp
---- solvers/cadical195/idruptracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/idruptracer.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/idruptracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/idruptracer.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _idruptracer_h_INCLUDED
 -#define _idruptracer_h_INCLUDED
@@ -1233,8 +1237,8 @@ diff -Naur solvers/cadical195/idruptracer.hpp solvers/cdc195/idruptracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/instantiate.cpp solvers/cdc195/instantiate.cpp
---- solvers/cadical195/instantiate.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/instantiate.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/instantiate.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/instantiate.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1250,8 +1254,8 @@ diff -Naur solvers/cadical195/instantiate.cpp solvers/cdc195/instantiate.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/instantiate.hpp solvers/cdc195/instantiate.hpp
---- solvers/cadical195/instantiate.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/instantiate.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/instantiate.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/instantiate.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _instantiate_hpp_INCLUDED
 -#define _instantiate_hpp_INCLUDED
@@ -1272,8 +1276,8 @@ diff -Naur solvers/cadical195/instantiate.hpp solvers/cdc195/instantiate.hpp
  
  #endif
 diff -Naur solvers/cadical195/internal.cpp solvers/cdc195/internal.cpp
---- solvers/cadical195/internal.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/internal.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/internal.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/internal.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1289,8 +1293,8 @@ diff -Naur solvers/cadical195/internal.cpp solvers/cdc195/internal.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/internal.hpp solvers/cdc195/internal.hpp
---- solvers/cadical195/internal.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/internal.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/internal.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/internal.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _internal_hpp_INCLUDED
 -#define _internal_hpp_INCLUDED
@@ -1317,8 +1321,8 @@ diff -Naur solvers/cadical195/internal.hpp solvers/cdc195/internal.hpp
  
  #endif
 diff -Naur solvers/cadical195/inttypes.hpp solvers/cdc195/inttypes.hpp
---- solvers/cadical195/inttypes.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/inttypes.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/inttypes.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/inttypes.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _inttypes_h_INCLUDED
 -#define _inttypes_h_INCLUDED
@@ -1328,8 +1332,8 @@ diff -Naur solvers/cadical195/inttypes.hpp solvers/cdc195/inttypes.hpp
  // This is an essence a wrapper around '<cinttypes>' respectively
  // 'inttypes.h' in order to please the 'MinGW' cross-compiler (we are using
 diff -Naur solvers/cadical195/level.hpp solvers/cdc195/level.hpp
---- solvers/cadical195/level.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/level.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/level.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/level.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _level_hpp_INCLUDED
 -#define _level_hpp_INCLUDED
@@ -1352,8 +1356,8 @@ diff -Naur solvers/cadical195/level.hpp solvers/cdc195/level.hpp
  
  #endif
 diff -Naur solvers/cadical195/limit.cpp solvers/cdc195/limit.cpp
---- solvers/cadical195/limit.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/limit.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/limit.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/limit.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1369,8 +1373,8 @@ diff -Naur solvers/cadical195/limit.cpp solvers/cdc195/limit.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/limit.hpp solvers/cdc195/limit.hpp
---- solvers/cadical195/limit.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/limit.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/limit.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/limit.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _limit_hpp_INCLUDED
 -#define _limit_hpp_INCLUDED
@@ -1391,8 +1395,8 @@ diff -Naur solvers/cadical195/limit.hpp solvers/cdc195/limit.hpp
  
  #endif
 diff -Naur solvers/cadical195/logging.cpp solvers/cdc195/logging.cpp
---- solvers/cadical195/logging.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/logging.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/logging.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/logging.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -1411,8 +1415,8 @@ diff -Naur solvers/cadical195/logging.cpp solvers/cdc195/logging.cpp
  
  #endif
 diff -Naur solvers/cadical195/logging.hpp solvers/cdc195/logging.hpp
---- solvers/cadical195/logging.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/logging.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/logging.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/logging.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _logging_hpp_INCLUDED
 -#define _logging_hpp_INCLUDED
@@ -1440,8 +1444,8 @@ diff -Naur solvers/cadical195/logging.hpp solvers/cdc195/logging.hpp
  /*------------------------------------------------------------------------*/
  
 diff -Naur solvers/cadical195/lookahead.cpp solvers/cdc195/lookahead.cpp
---- solvers/cadical195/lookahead.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lookahead.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/lookahead.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/lookahead.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1466,8 +1470,8 @@ diff -Naur solvers/cadical195/lookahead.cpp solvers/cdc195/lookahead.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/lratbuilder.cpp solvers/cdc195/lratbuilder.cpp
---- solvers/cadical195/lratbuilder.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lratbuilder.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/lratbuilder.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/lratbuilder.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1483,8 +1487,8 @@ diff -Naur solvers/cadical195/lratbuilder.cpp solvers/cdc195/lratbuilder.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/lratbuilder.hpp solvers/cdc195/lratbuilder.hpp
---- solvers/cadical195/lratbuilder.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lratbuilder.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/lratbuilder.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/lratbuilder.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _lratbuilder_hpp_INCLUDED
 -#define _lratbuilder_hpp_INCLUDED
@@ -1507,8 +1511,8 @@ diff -Naur solvers/cadical195/lratbuilder.hpp solvers/cdc195/lratbuilder.hpp
  
  #endif
 diff -Naur solvers/cadical195/lratchecker.cpp solvers/cdc195/lratchecker.cpp
---- solvers/cadical195/lratchecker.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lratchecker.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/lratchecker.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/lratchecker.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1524,8 +1528,8 @@ diff -Naur solvers/cadical195/lratchecker.cpp solvers/cdc195/lratchecker.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/lratchecker.hpp solvers/cdc195/lratchecker.hpp
---- solvers/cadical195/lratchecker.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lratchecker.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/lratchecker.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/lratchecker.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _lratchecker_hpp_INCLUDED
 -#define _lratchecker_hpp_INCLUDED
@@ -1549,8 +1553,8 @@ diff -Naur solvers/cadical195/lratchecker.hpp solvers/cdc195/lratchecker.hpp
  
  #endif
 diff -Naur solvers/cadical195/lrattracer.cpp solvers/cdc195/lrattracer.cpp
---- solvers/cadical195/lrattracer.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lrattracer.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/lrattracer.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/lrattracer.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include <limits.h>
@@ -1567,8 +1571,8 @@ diff -Naur solvers/cadical195/lrattracer.cpp solvers/cdc195/lrattracer.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/lrattracer.hpp solvers/cdc195/lrattracer.hpp
---- solvers/cadical195/lrattracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lrattracer.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/lrattracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/lrattracer.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _lrattracer_h_INCLUDED
 -#define _lrattracer_h_INCLUDED
@@ -1589,8 +1593,8 @@ diff -Naur solvers/cadical195/lrattracer.hpp solvers/cdc195/lrattracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/lucky.cpp solvers/cdc195/lucky.cpp
---- solvers/cadical195/lucky.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/lucky.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/lucky.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/lucky.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1606,8 +1610,8 @@ diff -Naur solvers/cadical195/lucky.cpp solvers/cdc195/lucky.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/make-build-header.sh solvers/cdc195/make-build-header.sh
---- solvers/cadical195/make-build-header.sh	2024-01-05 03:23:04
-+++ solvers/cdc195/make-build-header.sh	2024-02-26 17:11:44
+--- solvers/cadical195/make-build-header.sh	2024-02-29 02:59:11
++++ solvers/cdc195/make-build-header.sh	2024-03-17 17:49:46
 @@ -19,17 +19,9 @@
  }
  
@@ -1665,8 +1669,8 @@ diff -Naur solvers/cadical195/make-build-header.sh solvers/cdc195/make-build-hea
  then
    warning "could not determine 'FLAGS' ('CXXFLAGS')"
 diff -Naur solvers/cadical195/message.cpp solvers/cdc195/message.cpp
---- solvers/cadical195/message.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/message.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/message.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/message.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1682,8 +1686,8 @@ diff -Naur solvers/cadical195/message.cpp solvers/cdc195/message.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/message.hpp solvers/cdc195/message.hpp
---- solvers/cadical195/message.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/message.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/message.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/message.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _message_h_INCLUDED
 -#define _message_h_INCLUDED
@@ -1699,8 +1703,8 @@ diff -Naur solvers/cadical195/message.hpp solvers/cdc195/message.hpp
 -#endif // ifndef _message_h_INCLUDED
 +#endif // ifndef _message195_h_INCLUDED
 diff -Naur solvers/cadical195/minimize.cpp solvers/cdc195/minimize.cpp
---- solvers/cadical195/minimize.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/minimize.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/minimize.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/minimize.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1716,8 +1720,8 @@ diff -Naur solvers/cadical195/minimize.cpp solvers/cdc195/minimize.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/occs.cpp solvers/cdc195/occs.cpp
---- solvers/cadical195/occs.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/occs.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/occs.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/occs.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1733,8 +1737,8 @@ diff -Naur solvers/cadical195/occs.cpp solvers/cdc195/occs.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/occs.hpp solvers/cdc195/occs.hpp
---- solvers/cadical195/occs.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/occs.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/occs.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/occs.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _occs_h_INCLUDED
 -#define _occs_h_INCLUDED
@@ -1757,8 +1761,8 @@ diff -Naur solvers/cadical195/occs.hpp solvers/cdc195/occs.hpp
  
  #endif
 diff -Naur solvers/cadical195/options.cpp solvers/cdc195/options.cpp
---- solvers/cadical195/options.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/options.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/options.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/options.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1774,8 +1778,8 @@ diff -Naur solvers/cadical195/options.cpp solvers/cdc195/options.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/options.hpp solvers/cdc195/options.hpp
---- solvers/cadical195/options.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/options.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/options.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/options.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _options_hpp_INCLUDED
 -#define _options_hpp_INCLUDED
@@ -1802,8 +1806,8 @@ diff -Naur solvers/cadical195/options.hpp solvers/cdc195/options.hpp
  
  #endif
 diff -Naur solvers/cadical195/parse.cpp solvers/cdc195/parse.cpp
---- solvers/cadical195/parse.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/parse.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/parse.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/parse.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -1820,8 +1824,8 @@ diff -Naur solvers/cadical195/parse.cpp solvers/cdc195/parse.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/parse.hpp solvers/cdc195/parse.hpp
---- solvers/cadical195/parse.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/parse.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/parse.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/parse.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _parse_hpp_INCLUDED
 -#define _parse_hpp_INCLUDED
@@ -1845,8 +1849,8 @@ diff -Naur solvers/cadical195/parse.hpp solvers/cdc195/parse.hpp
  
  #endif
 diff -Naur solvers/cadical195/phases.cpp solvers/cdc195/phases.cpp
---- solvers/cadical195/phases.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/phases.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/phases.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/phases.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1862,8 +1866,8 @@ diff -Naur solvers/cadical195/phases.cpp solvers/cdc195/phases.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/phases.hpp solvers/cdc195/phases.hpp
---- solvers/cadical195/phases.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/phases.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/phases.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/phases.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _phases_hpp_INCLUDED
 -#define _phases_hpp_INCLUDED
@@ -1884,8 +1888,8 @@ diff -Naur solvers/cadical195/phases.hpp solvers/cdc195/phases.hpp
  
  #endif
 diff -Naur solvers/cadical195/probe.cpp solvers/cdc195/probe.cpp
---- solvers/cadical195/probe.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/probe.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/probe.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/probe.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1910,8 +1914,8 @@ diff -Naur solvers/cadical195/probe.cpp solvers/cdc195/probe.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/profile.cpp solvers/cdc195/profile.cpp
---- solvers/cadical195/profile.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/profile.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/profile.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/profile.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -1930,8 +1934,8 @@ diff -Naur solvers/cadical195/profile.cpp solvers/cdc195/profile.cpp
  
  #endif // ifndef QUIET
 diff -Naur solvers/cadical195/profile.hpp solvers/cdc195/profile.hpp
---- solvers/cadical195/profile.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/profile.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/profile.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/profile.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _profiles_h_INCLUDED
 -#define _profiles_h_INCLUDED
@@ -1963,8 +1967,8 @@ diff -Naur solvers/cadical195/profile.hpp solvers/cdc195/profile.hpp
 -#endif // ifndef _profiles_h_INCLUDED
 +#endif // ifndef _profiles195_h_INCLUDED
 diff -Naur solvers/cadical195/proof.cpp solvers/cdc195/proof.cpp
---- solvers/cadical195/proof.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/proof.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/proof.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/proof.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1980,8 +1984,8 @@ diff -Naur solvers/cadical195/proof.cpp solvers/cdc195/proof.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/proof.hpp solvers/cdc195/proof.hpp
---- solvers/cadical195/proof.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/proof.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/proof.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/proof.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _proof_h_INCLUDED
 -#define _proof_h_INCLUDED
@@ -2002,8 +2006,8 @@ diff -Naur solvers/cadical195/proof.hpp solvers/cdc195/proof.hpp
  
  #endif
 diff -Naur solvers/cadical195/propagate.cpp solvers/cdc195/propagate.cpp
---- solvers/cadical195/propagate.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/propagate.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/propagate.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/propagate.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2029,8 +2033,8 @@ diff -Naur solvers/cadical195/propagate.cpp solvers/cdc195/propagate.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/queue.cpp solvers/cdc195/queue.cpp
---- solvers/cadical195/queue.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/queue.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/queue.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/queue.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2046,8 +2050,8 @@ diff -Naur solvers/cadical195/queue.cpp solvers/cdc195/queue.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/queue.hpp solvers/cdc195/queue.hpp
---- solvers/cadical195/queue.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/queue.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/queue.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/queue.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _queue_hpp_INCLUDED
 -#define _queue_hpp_INCLUDED
@@ -2070,8 +2074,8 @@ diff -Naur solvers/cadical195/queue.hpp solvers/cdc195/queue.hpp
  
  #endif
 diff -Naur solvers/cadical195/radix.hpp solvers/cdc195/radix.hpp
---- solvers/cadical195/radix.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/radix.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/radix.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/radix.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _radix_hpp_INCLUDED
 -#define _radix_hpp_INCLUDED
@@ -2096,8 +2100,8 @@ diff -Naur solvers/cadical195/radix.hpp solvers/cdc195/radix.hpp
  
  #endif
 diff -Naur solvers/cadical195/random.cpp solvers/cdc195/random.cpp
---- solvers/cadical195/random.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/random.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/random.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/random.cpp	2024-03-17 17:49:46
 @@ -46,7 +46,7 @@
  // does not have any effect.  TODO: add a similar machine identity hashing
  // function for other operating systems (Windows and macOS).
@@ -2218,8 +2222,8 @@ diff -Naur solvers/cadical195/random.cpp solvers/cdc195/random.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/random.hpp solvers/cdc195/random.hpp
---- solvers/cadical195/random.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/random.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/random.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/random.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _random_hpp_INCLUDED
 -#define _random_hpp_INCLUDED
@@ -2244,8 +2248,8 @@ diff -Naur solvers/cadical195/random.hpp solvers/cdc195/random.hpp
  
  #endif
 diff -Naur solvers/cadical195/range.hpp solvers/cdc195/range.hpp
---- solvers/cadical195/range.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/range.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/range.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/range.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _range_hpp_INCLUDED
 -#define _range_hpp_INCLUDED
@@ -2268,8 +2272,8 @@ diff -Naur solvers/cadical195/range.hpp solvers/cdc195/range.hpp
  
  #endif
 diff -Naur solvers/cadical195/reap.cpp solvers/cdc195/reap.cpp
---- solvers/cadical195/reap.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/reap.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/reap.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/reap.cpp	2024-03-17 17:49:46
 @@ -26,9 +26,16 @@
    max_bucket = 0;
  }
@@ -2288,8 +2292,8 @@ diff -Naur solvers/cadical195/reap.cpp solvers/cdc195/reap.cpp
  void Reap::push (unsigned e) {
    assert (last_deleted <= e);
 diff -Naur solvers/cadical195/reap.hpp solvers/cdc195/reap.hpp
---- solvers/cadical195/reap.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/reap.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/reap.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/reap.hpp	2024-03-17 17:49:46
 @@ -1,5 +1,5 @@
 -#ifndef _reap_h_INCLUDED
 -#define _reap_h_INCLUDED
@@ -2299,8 +2303,8 @@ diff -Naur solvers/cadical195/reap.hpp solvers/cdc195/reap.hpp
  #include <cstddef>
  #include <vector>
 diff -Naur solvers/cadical195/reduce.cpp solvers/cdc195/reduce.cpp
---- solvers/cadical195/reduce.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/reduce.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/reduce.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/reduce.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2316,8 +2320,8 @@ diff -Naur solvers/cadical195/reduce.cpp solvers/cdc195/reduce.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/reluctant.hpp solvers/cdc195/reluctant.hpp
---- solvers/cadical195/reluctant.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/reluctant.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/reluctant.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/reluctant.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _reluctant_hpp_INCLUDED
 -#define _reluctant_hpp_INCLUDED
@@ -2341,8 +2345,8 @@ diff -Naur solvers/cadical195/reluctant.hpp solvers/cdc195/reluctant.hpp
  
  #endif
 diff -Naur solvers/cadical195/rephase.cpp solvers/cdc195/rephase.cpp
---- solvers/cadical195/rephase.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/rephase.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/rephase.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/rephase.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2358,8 +2362,8 @@ diff -Naur solvers/cadical195/rephase.cpp solvers/cdc195/rephase.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/report.cpp solvers/cdc195/report.cpp
---- solvers/cadical195/report.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/report.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/report.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/report.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2375,8 +2379,8 @@ diff -Naur solvers/cadical195/report.cpp solvers/cdc195/report.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/resources.cpp solvers/cdc195/resources.cpp
---- solvers/cadical195/resources.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/resources.cpp	2024-02-26 17:05:45
+--- solvers/cadical195/resources.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/resources.cpp	2024-03-17 17:49:46
 @@ -9,26 +9,33 @@
  
  extern "C" {
@@ -2545,8 +2549,8 @@ diff -Naur solvers/cadical195/resources.cpp solvers/cdc195/resources.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/resources.hpp solvers/cdc195/resources.hpp
---- solvers/cadical195/resources.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/resources.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/resources.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/resources.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _resources_hpp_INCLUDED
 -#define _resources_hpp_INCLUDED
@@ -2570,8 +2574,8 @@ diff -Naur solvers/cadical195/resources.hpp solvers/cdc195/resources.hpp
 -#endif // ifndef _resources_hpp_INCLUDED
 +#endif // ifndef _resources195_hpp_INCLUDED
 diff -Naur solvers/cadical195/restart.cpp solvers/cdc195/restart.cpp
---- solvers/cadical195/restart.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/restart.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/restart.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/restart.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2587,8 +2591,8 @@ diff -Naur solvers/cadical195/restart.cpp solvers/cdc195/restart.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/restore.cpp solvers/cdc195/restore.cpp
---- solvers/cadical195/restore.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/restore.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/restore.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/restore.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2604,8 +2608,8 @@ diff -Naur solvers/cadical195/restore.cpp solvers/cdc195/restore.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/score.cpp solvers/cdc195/score.cpp
---- solvers/cadical195/score.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/score.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/score.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/score.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2621,8 +2625,8 @@ diff -Naur solvers/cadical195/score.cpp solvers/cdc195/score.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/score.hpp solvers/cdc195/score.hpp
---- solvers/cadical195/score.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/score.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/score.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/score.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _score_hpp_INCLUDED
 -#define _score_hpp_INCLUDED
@@ -2643,8 +2647,8 @@ diff -Naur solvers/cadical195/score.hpp solvers/cdc195/score.hpp
  
  #endif
 diff -Naur solvers/cadical195/shrink.cpp solvers/cdc195/shrink.cpp
---- solvers/cadical195/shrink.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/shrink.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/shrink.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/shrink.cpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include "reap.hpp"
@@ -2661,8 +2665,8 @@ diff -Naur solvers/cadical195/shrink.cpp solvers/cdc195/shrink.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/signal.cpp solvers/cdc195/signal.cpp
---- solvers/cadical195/signal.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/signal.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/signal.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/signal.cpp	2024-03-17 17:49:46
 @@ -17,7 +17,7 @@
  
  // Signal handlers for printing statistics even if solver is interrupted.
@@ -2753,8 +2757,8 @@ diff -Naur solvers/cadical195/signal.cpp solvers/cdc195/signal.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/signal.hpp solvers/cdc195/signal.hpp
---- solvers/cadical195/signal.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/signal.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/signal.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/signal.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _signal_hpp_INCLUDED
 -#define _signal_hpp_INCLUDED
@@ -2775,8 +2779,8 @@ diff -Naur solvers/cadical195/signal.hpp solvers/cdc195/signal.hpp
  
  #endif
 diff -Naur solvers/cadical195/solution.cpp solvers/cdc195/solution.cpp
---- solvers/cadical195/solution.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/solution.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/solution.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/solution.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2792,8 +2796,8 @@ diff -Naur solvers/cadical195/solution.cpp solvers/cdc195/solution.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
---- solvers/cadical195/solver.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/solver.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/solver.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/solver.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -3034,8 +3038,8 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/stats.cpp solvers/cdc195/stats.cpp
---- solvers/cadical195/stats.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/stats.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/stats.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/stats.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -3052,8 +3056,8 @@ diff -Naur solvers/cadical195/stats.cpp solvers/cdc195/stats.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/stats.hpp solvers/cdc195/stats.hpp
---- solvers/cadical195/stats.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/stats.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/stats.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/stats.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _stats_hpp_INCLUDED
 -#define _stats_hpp_INCLUDED
@@ -3076,8 +3080,8 @@ diff -Naur solvers/cadical195/stats.hpp solvers/cdc195/stats.hpp
  
  #endif
 diff -Naur solvers/cadical195/subsume.cpp solvers/cdc195/subsume.cpp
---- solvers/cadical195/subsume.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/subsume.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/subsume.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/subsume.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3093,8 +3097,8 @@ diff -Naur solvers/cadical195/subsume.cpp solvers/cdc195/subsume.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/terminal.cpp solvers/cdc195/terminal.cpp
---- solvers/cadical195/terminal.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/terminal.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/terminal.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/terminal.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3110,8 +3114,8 @@ diff -Naur solvers/cadical195/terminal.cpp solvers/cdc195/terminal.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/terminal.hpp solvers/cdc195/terminal.hpp
---- solvers/cadical195/terminal.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/terminal.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/terminal.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/terminal.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _terminal_hpp_INCLUDED
 -#define _terminal_hpp_INCLUDED
@@ -3132,8 +3136,8 @@ diff -Naur solvers/cadical195/terminal.hpp solvers/cdc195/terminal.hpp
  
  #endif
 diff -Naur solvers/cadical195/ternary.cpp solvers/cdc195/ternary.cpp
---- solvers/cadical195/ternary.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/ternary.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/ternary.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/ternary.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3149,8 +3153,8 @@ diff -Naur solvers/cadical195/ternary.cpp solvers/cdc195/ternary.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/tracer.hpp solvers/cdc195/tracer.hpp
---- solvers/cadical195/tracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/tracer.hpp	2024-02-26 17:03:52
+--- solvers/cadical195/tracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/tracer.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _tracer_hpp_INCLUDED
 -#define _tracer_hpp_INCLUDED
@@ -3174,8 +3178,8 @@ diff -Naur solvers/cadical195/tracer.hpp solvers/cdc195/tracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/transred.cpp solvers/cdc195/transred.cpp
---- solvers/cadical195/transred.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/transred.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/transred.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/transred.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3191,8 +3195,8 @@ diff -Naur solvers/cadical195/transred.cpp solvers/cdc195/transred.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/util.cpp solvers/cdc195/util.cpp
---- solvers/cadical195/util.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/util.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/util.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/util.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3208,8 +3212,8 @@ diff -Naur solvers/cadical195/util.cpp solvers/cdc195/util.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/util.hpp solvers/cdc195/util.hpp
---- solvers/cadical195/util.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/util.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/util.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/util.hpp	2024-03-17 17:49:46
 @@ -1,11 +1,11 @@
 -#ifndef _util_hpp_INCLUDED
 -#define _util_hpp_INCLUDED
@@ -3234,8 +3238,8 @@ diff -Naur solvers/cadical195/util.hpp solvers/cdc195/util.hpp
  
  #endif
 diff -Naur solvers/cadical195/var.cpp solvers/cdc195/var.cpp
---- solvers/cadical195/var.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/var.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/var.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/var.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3251,8 +3255,8 @@ diff -Naur solvers/cadical195/var.cpp solvers/cdc195/var.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/var.hpp solvers/cdc195/var.hpp
---- solvers/cadical195/var.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/var.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/var.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/var.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _var_hpp_INCLUDED
 -#define _var_hpp_INCLUDED
@@ -3273,8 +3277,8 @@ diff -Naur solvers/cadical195/var.hpp solvers/cdc195/var.hpp
  
  #endif
 diff -Naur solvers/cadical195/veripbtracer.cpp solvers/cdc195/veripbtracer.cpp
---- solvers/cadical195/veripbtracer.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/veripbtracer.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/veripbtracer.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/veripbtracer.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3290,8 +3294,8 @@ diff -Naur solvers/cadical195/veripbtracer.cpp solvers/cdc195/veripbtracer.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/veripbtracer.hpp solvers/cdc195/veripbtracer.hpp
---- solvers/cadical195/veripbtracer.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/veripbtracer.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/veripbtracer.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/veripbtracer.hpp	2024-03-17 17:49:46
 @@ -1,9 +1,9 @@
 -#ifndef _veripbtracer_h_INCLUDED
 -#define _veripbtracer_h_INCLUDED
@@ -3314,8 +3318,8 @@ diff -Naur solvers/cadical195/veripbtracer.hpp solvers/cdc195/veripbtracer.hpp
  
  #endif
 diff -Naur solvers/cadical195/version.cpp solvers/cdc195/version.cpp
---- solvers/cadical195/version.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/version.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/version.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/version.cpp	2024-03-17 17:49:46
 @@ -6,7 +6,8 @@
  
  #ifndef NBUILD
@@ -3342,8 +3346,8 @@ diff -Naur solvers/cadical195/version.cpp solvers/cdc195/version.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/version.hpp solvers/cdc195/version.hpp
---- solvers/cadical195/version.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/version.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/version.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/version.hpp	2024-03-17 17:49:46
 @@ -1,4 +1,4 @@
 -namespace CaDiCaL {
 +namespace CaDiCaL195 {
@@ -3357,8 +3361,8 @@ diff -Naur solvers/cadical195/version.hpp solvers/cdc195/version.hpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/vivify.cpp solvers/cdc195/vivify.cpp
---- solvers/cadical195/vivify.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/vivify.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/vivify.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/vivify.cpp	2024-03-17 17:49:46
 @@ -2,7 +2,7 @@
  
  #include "cover.hpp"
@@ -3375,8 +3379,8 @@ diff -Naur solvers/cadical195/vivify.cpp solvers/cdc195/vivify.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/vivify.hpp solvers/cdc195/vivify.hpp
---- solvers/cadical195/vivify.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/vivify.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/vivify.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/vivify.hpp	2024-03-17 17:49:46
 @@ -1,7 +1,7 @@
 -#ifndef _vivify_hpp_INCLUDED
 -#define _vivify_hpp_INCLUDED
@@ -3397,8 +3401,8 @@ diff -Naur solvers/cadical195/vivify.hpp solvers/cdc195/vivify.hpp
  
  #endif
 diff -Naur solvers/cadical195/walk.cpp solvers/cdc195/walk.cpp
---- solvers/cadical195/walk.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/walk.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/walk.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/walk.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3414,8 +3418,8 @@ diff -Naur solvers/cadical195/walk.cpp solvers/cdc195/walk.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/watch.cpp solvers/cdc195/watch.cpp
---- solvers/cadical195/watch.cpp	2024-01-05 03:23:04
-+++ solvers/cdc195/watch.cpp	2024-02-26 16:37:21
+--- solvers/cadical195/watch.cpp	2024-02-29 02:59:11
++++ solvers/cdc195/watch.cpp	2024-03-17 17:49:46
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3431,8 +3435,8 @@ diff -Naur solvers/cadical195/watch.cpp solvers/cdc195/watch.cpp
 -} // namespace CaDiCaL
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/watch.hpp solvers/cdc195/watch.hpp
---- solvers/cadical195/watch.hpp	2024-01-05 03:23:04
-+++ solvers/cdc195/watch.hpp	2024-02-26 16:37:21
+--- solvers/cadical195/watch.hpp	2024-02-29 02:59:11
++++ solvers/cdc195/watch.hpp	2024-03-17 17:49:46
 @@ -1,10 +1,10 @@
 -#ifndef _watch_hpp_INCLUDED
 -#define _watch_hpp_INCLUDED
