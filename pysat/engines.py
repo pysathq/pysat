@@ -92,6 +92,7 @@
 from collections import Counter, defaultdict
 import functools
 import itertools
+from typing import List
 
 
 #
@@ -547,19 +548,19 @@ class Propagator(object):
                 def on_backtrack(self, to: int) -> None:
                     pass      # process backtracking to a given level
 
-                def check_model(self, model: list[int]) -> bool:
+                def check_model(self, model: List[int]) -> bool:
                     pass      # check if a given assignment is indeed a model
 
                 def decide(self) -> int:
                     return 0  # make a decision and (if any) inform the solver
 
-                def propagate(self) -> list[int]:
+                def propagate(self) -> List[int]:
                     return [] # propagate and return inferred literals (if any)
 
-                def provide_reason(self, lit: int) -> list[int]:
+                def provide_reason(self, lit: int) -> List[int]:
                     pass      # explain why a given literal was propagated
 
-                def add_clause(self) -> list[int]:
+                def add_clause(self) -> List[int]:
                     return [] # add an(y) external clause to the solver
     """
 
@@ -617,7 +618,7 @@ class Propagator(object):
 
         pass
 
-    def check_model(self, model: list[int]) -> bool:
+    def check_model(self, model: List[int]) -> bool:
         """
             The method is used for checking if a given (complete) truth
             assignment satisfies the constraint managed by the propagator.
@@ -649,7 +650,7 @@ class Propagator(object):
 
         return 0
 
-    def propagate(self) -> list[int]:
+    def propagate(self) -> List[int]:
         """
             The method should invoke propagation under the current assignment.
             It can return either a list of literals propagated or an empty
@@ -661,7 +662,7 @@ class Propagator(object):
 
         return []
 
-    def provide_reason(self, lit: int) -> list[int]:
+    def provide_reason(self, lit: int) -> List[int]:
         """
             The method is called by the solver when asking the propagator for
             the reason / antecedent clause for a literal the propagator
@@ -680,7 +681,7 @@ class Propagator(object):
 
         pass
 
-    def add_clause(self) -> list[int]:
+    def add_clause(self) -> List[int]:
         """
             The method is called by the solver to add an external clause if
             there is any. The clause can be arbitrary but if it is
