@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 17.03.2024 (*1.8.dev4*)
+
+-   Fixed a bug in the PB encoder.
+-   Added support for CaDiCaL 1.9.5.
+-   Added module ``engines`` supporting external propagators.
+
 ## 29.02.2024 (*1.8.dev3*)
 
 -   Minor corrections.

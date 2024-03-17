@@ -33,4 +33,3 @@ def test_solvers():
             st, lits = solver.propagate(assumptions=[1])
             assert not st, 'wrong status of {0} after propagate()'.format(name)
             assert not lits, 'wrong list of propagated literals: {0}'.format(lits)
-

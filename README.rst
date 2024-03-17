@@ -40,6 +40,7 @@ Minisat-based solvers only *core* versions are integrated):
 
 -  CaDiCaL (`rel-1.0.3 <https://github.com/arminbiere/cadical>`__)
 -  CaDiCaL (`rel-1.5.3 <https://github.com/arminbiere/cadical>`__)
+-  CaDiCaL (`rel-1.9.5 <https://github.com/arminbiere/cadical>`__)
 -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
 -  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
@@ -127,11 +128,21 @@ Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
     Translation of Pseudo-Boolean Constraints into CNF Such That
     Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
-Finally, PySAT now provides (pre-)processing functionality [22]_ by exposing
-an interface to CaDiCaL's (version 1.5.3) preprocessor.
+Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
+clausification [21]_ and provides (pre-)processing functionality [22]_ by
+exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
+external user-defined engines following the IPASIR-UP interface [23]_.
 
- .. [22] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
-     Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
+.. [21] G. S. Tseitin. *On the complexity of derivations in the propositional
+   calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
+   115–125, 1968
+
+.. [22] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+   Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
+
+.. [23] Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
+   Stefan Szeider, Armin Biere. *IPASIR-UP: User Propagators for CDCL*. SAT.
+   2023. pp. 8:1-8:13
 
 Usage
 -----
@@ -353,16 +364,9 @@ features were implemented:
 -  lower level access to some of the solvers' internal parameters
    (e.g. *variable activities*, etc.)
 
--  high-level support for arbitrary Boolean formulas (e.g. by Tseitin-encoding
-   [21]_ them internally)
-
-All of these will require a significant effort to be made. Therefore, we would
-like to encourage the SAT community to contribute and make PySAT a tool for an
-easy and comfortable day-to-day use. :)
-
-.. [21] G. S. Tseitin. *On the complexity of derivations in the propositional
-   calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
-   115–125, 1968
+These will require a significant effort to be made. Therefore, we would like
+to encourage the SAT community to contribute and make PySAT a tool for an easy
+and comfortable day-to-day use. :)
 
 License
 -------

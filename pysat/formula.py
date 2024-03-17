@@ -4187,8 +4187,8 @@ class CNFPlus(CNF, object):
         supports *native* cardinality constraints of `MiniCard
         <https://github.com/liffiton/minicard>`__.
 
-        The parser of input DIMACS files of :class:`CNFPlus` assumes the syntax
-        of AtMostK and AtLeastK constraints defined in the `description
+        The parser of input DIMACS files of :class:`CNFPlus` assumes the
+        syntax of AtMostK and AtLeastK constraints defined in the `description
         <https://github.com/liffiton/minicard>`__ of MiniCard:
 
         ::
@@ -4197,6 +4197,20 @@ class CNFPlus(CNF, object):
             p cnf+ 7 3
             1 -2 3 5 -7 <= 3
             4 5 6 -7 >= 2
+            3 5 7 0
+
+        Additionally, :class:`CNFPlus` support pseudo-Boolean constraints,
+        i.e. weighted linear constraints by extending the above format.
+        Basically, a pseudo-Boolean constraint needs to specify all the
+        summands as ``weight*literal`` with the entire constraint being
+        prepended with character ``w`` as follows:
+
+        ::
+
+            c Example: One cardinality constraint and one PB constraint followed by a clause
+            p cnf+ 7 3
+            1 -2 3 5 -7 <= 3
+            w 1*4 2*5 1*6 3*-7 >= 2
             3 5 7 0
 
         Each AtLeastK constraint is translated into an AtMostK constraint in
@@ -4281,16 +4295,24 @@ class CNFPlus(CNF, object):
                     if line.endswith(' 0'):  # normal case
                         self.clauses.append(list(map(int, line.split()[:-1])))
                     else:  # atmost/atleast constraint
-                        items = [i for i in line.split()]
-                        lits = [int(l) for l in items[:-2]]
+                        items = line.split()
+
+                        if items[0] == 'w':  # literals are weighted here
+                            wght, lits = list(map(list, zip(*[map(int, pair.split('*')) for pair in items[1:-2]])))
+                            sumw = sum(wght)
+                        else:
+                            lits = [int(l) for l in items[:-2]]
+                            sumw = len(lits)
+
                         rhs = int(items[-1])
                         self.nv = max([abs(l) for l in lits] + [self.nv])
 
                         if items[-2][0] == '>':
                             lits = list(map(lambda l: -l, lits))
-                            rhs = len(lits) - rhs
+                            rhs = sumw - rhs
 
-                        self.atmosts.append([lits, rhs])
+                        self.atmosts.append([lits, rhs, wght] if items[0] == 'w' else [lits, rhs])
+
                 elif not line.startswith('p cnf'):  # cnf is allowed here
                     self.comments.append(line)
 
@@ -4338,7 +4360,11 @@ class CNFPlus(CNF, object):
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
 
         for am in self.atmosts:
-            print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+            if len(am) == 2:  # cardinality constraint
+                print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+            else:  # len(am) == 3 => PB constraint
+                assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
+                print('w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
 
     def to_dimacs(self):
         """
@@ -4370,8 +4396,15 @@ class CNFPlus(CNF, object):
 
         header_lines = [f'p cnf+ {self.nv} {len(self.clauses) + len(self.atmosts)}']
         comment_lines = [f'{comment}' for comment in self.comments]
-        clause_lines = [' '.join(map(str,clause)) + ' 0' for clause in self.clauses]
-        atmost_lines = [' '.join(map(str,clause)) + ' <= ' + str(most) for clause, most in self.atmosts]
+        clause_lines = [' '.join(map(str, clause)) + ' 0' for clause in self.clauses]
+
+        atmost_lines = []
+        for am in self.atmosts:
+            if len(am) == 2:  # cardinality constraint
+                atmost_lines.append(' '.join(str(l) for l in am[0]) + ' <= ' + str(am[1]))
+            else:  # len(am) == 3 => PB constraint
+                assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
+                atmost_lines.append('w ' + ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])) + ' <= ' + str(am[1]))
 
         lines = '\n'.join(comment_lines + header_lines + clause_lines + atmost_lines)
         return lines
@@ -4463,16 +4496,25 @@ class CNFPlus(CNF, object):
 
         for i, am in enumerate(self.atmosts, len(self.clauses) + 1):
             line, neg = [], 0
-            for l in am[0]:
-                if l > 0:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
-                    neg += 1
-                else:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+
+            if len(am) == 2:
+                for l in am[0]:
+                    if l > 0:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
+                        neg += 1
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+            else:
+                for w, l in zip(am[2], am[0]):
+                    if l > 0:
+                        line.append('-{0} x{1}'.format(w, l))
+                        neg += w
+                    else:
+                        line.append('+{0} x{1}'.format(w, -l))
 
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
-                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
+                    (len(am[0]) if len(am) == 2 else sum(am[2])) - am[1] - neg, ';' if format == 'opb' else ''),
                     file=file_pointer)
 
         if format == 'lp':
@@ -4679,6 +4721,20 @@ class WCNFPlus(WCNF, object):
             10 4 5 6 -7 >= 2
             5 3 5 7 0
 
+        Additionally, :class:`WCNFPlus` support pseudo-Boolean constraints,
+        i.e. weighted linear constraints by extending the above format.
+        Basically, a pseudo-Boolean constraint needs to specify all the
+        summands as ``weight*literal`` with the entire constraint being
+        prepended with character ``w`` as follows:
+
+        ::
+
+            c Example: One cardinality constraint and one PB constraint followed by a soft clause
+            p wcnf+ 7 3 10
+            10 1 -2 3 5 -7 <= 3
+            10 w 1*4 2*5 1*6 3*-7 >= 2
+            5 3 5 7 0
+
         **Note** that every cardinality constraint is assumed to be *hard*,
         i.e. soft cardinality constraints are currently *not supported*.
 
@@ -4787,16 +4843,24 @@ class WCNFPlus(WCNF, object):
                             # it will be processed later
                             negs.append(tuple([list(map(int, items.split()[:-1])), -w]))
                     else:  # atmost/atleast constraint
-                        items = [i for i in line.split()]
-                        lits = [int(l) for l in items[1:-2]]
+                        items = line.split()
+
+                        if items[1] == 'w':  # literals are weighted here
+                            wght, lits = list(map(list, zip(*[map(int, pair.split('*')) for pair in items[2:-2]])))
+                            sumw = sum(wght)
+                        else:
+                            lits = [int(l) for l in items[1:-2]]
+                            sumw = len(lits)
+
                         rhs = int(items[-1])
                         self.nv = max([abs(l) for l in lits] + [self.nv])
 
                         if items[-2][0] == '>':
                             lits = list(map(lambda l: -l, lits))
-                            rhs = len(lits) - rhs
+                            rhs = sumw - rhs
 
-                        self.atms.append([lits, rhs])
+                        self.atms.append([lits, rhs, wght] if items[1] == 'w' else [lits, rhs])
+
                 elif not line.startswith('p wcnf'):  # wcnf is allowed here
                     self.comments.append(line)
                 else:  # expecting the preamble
@@ -4867,7 +4931,11 @@ class WCNFPlus(WCNF, object):
 
         # atmost constraints are hard
         for am in self.atms:
-            print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+            if len(am) == 2:  # cardinality constraint
+                print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+            else:  # len(am) == 3 => PB constraint
+                assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
+                print(self.topw, 'w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
 
     def to_dimacs(self):
         """
@@ -4902,9 +4970,17 @@ class WCNFPlus(WCNF, object):
         comment_lines = [f'{comment}' for comment in self.comments]
         hard_lines = [f'{self.topw} ' + ' '.join(map(str,clause)) + ' 0' for clause in self.hard]
         soft_lines = [f'{weight} ' + ' '.join(map(str,clause)) + ' 0' for clause, weight in zip(self.soft, self.wght)]
-        atmost_lines = [f'{self.topw} ' + ' '.join(map(str,clause)) + ' <= ' + str(most) for clause, most in self.atms]
 
-        lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines)
+        atmost_lines = []
+        for am in self.atms:
+            if len(am) == 2:  # cardinality constraint
+                atmost_lines.append(f'{self.topw} ' + ' '.join(str(l) for l in am[0]) + ' <= ' + str(am[1]))
+            else:  # len(am) == 3 => PB constraint
+                assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
+                atmost_lines.append(f'{self.topw} ' + 'w ' + ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])) + ' <= ' + str(am[1]))
+
+        lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines) + '\n'
+
         return lines
 
     def to_alien(self, file_pointer, format='opb', comments=None):
@@ -5010,16 +5086,25 @@ class WCNFPlus(WCNF, object):
 
         for i, am in enumerate(self.atms, len(self.hard) + len(hard) + 1):
             line, neg = [], 0
-            for l in am[0]:
-                if l > 0:
-                    line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
-                    neg += 1
-                else:
-                    line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+
+            if len(am) == 2:
+                for l in am[0]:
+                    if l > 0:
+                        line.append('-{0} x{1}'.format('1' if format == 'opb' else '', l))
+                        neg += 1
+                    else:
+                        line.append('+{0} x{1}'.format('1' if format == 'opb' else '', -l))
+            else:
+                for w, l in zip(am[2], am[0]):
+                    if l > 0:
+                        line.append('-{0} x{1}'.format(w, l))
+                        neg += w
+                    else:
+                        line.append('+{0} x{1}'.format(w, -l))
 
             print('{0} {1} >= {2} {3}'.format('' if format == 'opb' else 'c{0}:'.format(i),
                     ' '.join(l for l in line),
-                    len(am[0]) - am[1] - neg, ';' if format == 'opb' else ''),
+                    (len(am[0]) if len(am) == 2 else sum(am[2])) - am[1] - neg, ';' if format == 'opb' else ''),
                     file=file_pointer)
 
         if format == 'lp':

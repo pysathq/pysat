@@ -20,6 +20,7 @@
         Solver
         Cadical103
         Cadical153
+        Cadical195
         CryptoMinisat
         Gluecard3
         Gluecard4
@@ -82,9 +83,10 @@
 
     The module provides direct access to all supported solvers using the
     corresponding classes :class:`Cadical103`, :class:`Cadical153`,
-    :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
-    :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
+    :class:`Cadical195`, :class:`CryptoMinisat`, :class:`Gluecard3`,
+    :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
+    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
+    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
     :class:`Minisat22`, and :class:`MinisatGH`. However, the solvers can also
     be accessed through the common base class :class:`Solver` using the solver
     ``name`` argument. For example, both of the following pieces of code
@@ -151,13 +153,13 @@
 
     In order to shorten the description of the module, the classes providing
     direct access to the individual solvers, i.e. classes :class:`Cadical103`,
-    :class:`Cadical153`, :class:`Gluecard3`, :class:`Gluecard4`,
-    :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
-    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
-    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
-    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
-    replicate the interface of the base class :class:`Solver` and, thus, can
-    be used the same exact way.
+    :class:`Cadical153`, :class:`Cadical195`, :class:`CryptoMinisat`,
+    :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
+    :class:`Glucose4`, :class:`Glucose42`, :class:`Lingeling`,
+    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
+    :class:`Mergesat3`, :class:`Minicard`, :class:`Minisat22`, and
+    :class:`MinisatGH`, are **omitted**. They replicate the interface of the
+    base class :class:`Solver` and, thus, can be used the same exact way.
 
     ==============
     Module details
@@ -167,6 +169,7 @@
 #
 #==============================================================================
 from pysat._utils import MainThread
+from pysat.engines import BooleanEngine
 from pysat.formula import CNFPlus
 import pysolvers
 import signal
@@ -191,9 +194,10 @@ class NoSuchSolverError(Exception):
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
         solvers includes the names `'cadical103'`, `'cadical153'`,
-        `'gluecard3'`, `'gluecard4'`, `'glucose3'`, `'glucose4'`, `glucose42`,
-        `'lingeling'`, `'maplechrono'`, `'maplecm'`, `'maplesat'`,
-        `'mergesat3'`, `'minicard'`, `'minisat22'`, and `'minisatgh'`.
+        `'cadical195'`, `'cryptosat'`, `'gluecard3'`, `'gluecard4'`,
+        `'glucose3'`, `'glucose4'`, `glucose42`, `'lingeling'`,
+        `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'mergesat3'`,
+        `'minicard'`, `'minisat22'`, and `'minisatgh'`.
     """
 
     pass
@@ -211,6 +215,7 @@ class SolverNames(object):
 
             cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
             cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
+            cadical195  = ('cd19', 'cd195', 'cdl19', 'cdl195', 'cadical195')
             cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
             gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
             gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
@@ -234,6 +239,7 @@ class SolverNames(object):
 
     cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
     cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
+    cadical195  = ('cd19', 'cd195', 'cdl19', 'cdl195', 'cadical195')
     cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
     gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
@@ -308,12 +314,12 @@ class Solver(object):
 
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
-        :class:`Cadical103`, :class:`Cadical153`, :class:`Lingeling`,
-        :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-        :class:`Glucose4`, :class:`Glucose42`, :class:`MapleChrono`,
-        :class:`MapleCM`, and :class:`Maplesat` can have additional default
-        arguments. One such argument supported by is `DRUP proof
-        <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
+        :class:`Cadical103`, :class:`Cadical153`, :class:`Cadical195`,
+        :class:`Lingeling`, :class:`Gluecard3`, :class:`Gluecard4`,
+        :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
+        :class:`MapleChrono`, :class:`MapleCM`, and :class:`Maplesat` can have
+        additional default arguments. One such argument supported by is `DRUP
+        proof <http://www.cs.utexas.edu/~marijn/drup/>`__ logging. This can be
         enabled by setting the ``with_proof`` argument to ``True`` (``False``
         by default):
 
@@ -409,6 +415,8 @@ class Solver(object):
                 self.solver = Cadical103(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.cadical153:
                 self.solver = Cadical153(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.cadical195:
+                self.solver = Cadical195(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.cryptosat:
                 self.solver = CryptoMinisat(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.gluecard3:
@@ -486,24 +494,153 @@ class Solver(object):
 
     def configure(self, parameters):
         """
-            Configure :class:`Cadical153` by setting some of the predefined
-            parameters to selected values. Note that this method can be
-            invoked only for :class:`Cadical153` -- no other solvers support
-            this for now.
+            Configure :class:`Cadical153` or :class:`Cadical195` by setting
+            some of the predefined parameters to selected values. Note that
+            this method can be invoked only for :class:`Cadical153` and
+            `Cadical195` -- no other solvers support this for now.
 
             Also note that this call must follow the creation of the new
             solver object; otherwise, an exception may be thrown.
 
-            The list of available options of :class:`Cadical153` and the
-            corresponding values they can be assigned to is provided `here
+            The list of available options of :class:`Cadical153` and
+            :class:`Cadical195` and the corresponding values they can be
+            assigned to is provided `here
             <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
 
             :param parameters: parameter names mapped to integer values
             :type parameters: dict
         """
 
-        if self.solver and type(self.solver) == Cadical153:
+        if self.solver and type(self.solver) in (Cadical153, Cadical195):
             self.solver.configure(parameters)
+
+    def activate_atmost(self):
+        """
+            Activate native linear (cardinality or pseudo-Boolean) constraint
+            reasoning. This is supported only by :class:`Cadical195` by means
+            of its external propagators functionality and the use of
+            :class:`BooleanEngine`.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.activate_atmost()
+            else:
+                raise NotImplementedError('Native cardinality constraint activation is supported only by CaDiCaL 1.9.5')
+
+    def connect_propagator(self, propagator):
+        """
+            Attach an external propagator through the IPASIR-UP interface. The
+            only expected argument is ``propagator``, which must be an object
+            of a class inheriting from the abstract class class:`.Propagator`.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.connect_propagator(propagator)
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def disconnect_propagator(self):
+        """
+            Disconnect the previously attached propagator. This will also
+            reset all the variables marked in the solver as observed by the
+            propagator.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.disconnect_propagator()
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def enable_propagator(self):
+        """
+            Ask the solver to enable the propagator on the fly. This will put
+            it in active mode.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.enable_propagator()
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def disable_propagator(self):
+        """
+            Ask the solver to disable the propagator on the fly. This will it
+            in passive mode, i.e. it will be invoked only to check assignments
+            found by the solver.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.disable_propagator()
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def propagator_active(self):
+        """
+            Check if the propagator is currently active or passive. In the
+            former case, the method will return ``True``; otherwise, it will
+            return ``False``.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                return self.solver.propagator_active()
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def observe(self, var):
+        """
+            Inform the solver that a given variable is observed by the
+            propagator attached to it.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.observe(var)
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def ignore(self, var):
+        """
+            Inform the solver that a given variable is ignored by the
+            propagator attached to it.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                self.solver.ignore(var)
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def reset_observed(self):
+        """
+            Ask the solver to reset all observed variables.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                return self.solver.reset_observed()
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+
+    def is_decision(self, lit):
+        """
+            Check whether a given literal that is currently observed by the
+            attached propagator is a assigned a value by branching or by
+            propagation, i.e. whether it is decision or not. In the former
+            case, the method returns ``True``; otherwise, it returns
+            ``False``.
+        """
+
+        if self.solver:
+            if type(self.solver) == Cadical195:
+                return self.solver.is_decision(lit)
+            else:
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
 
     def accum_stats(self):
         """
@@ -588,8 +725,8 @@ class Solver(object):
             ``False``.
 
             **Note** that only MiniSat-like solvers support this functionality
-            (e.g. :class:`Cadical103`, :class:`Cadical153`, and
-            :class:`Lingeling` do not support it).
+            (e.g. :class:`Cadical103`, :class:`Cadical153`,
+            :class:`Cadical195`, and :class:`Lingeling` do not support it).
 
             Incremental SAT calls can be made with the use of assumption
             literals. (**Note** that the ``assumptions`` argument is optional
@@ -720,8 +857,8 @@ class Solver(object):
             than ``0``. If the budget is set to ``0`` or ``-1``, the upper
             bound on the number of decisions is disabled.
 
-            Note that this functionality is supported by :class:`Cadical103`
-            and :class:`Cadical153` only!
+            Note that this functionality is supported by :class:`Cadical103`,
+            :class:`Cadical153`, and :class:`Cadical195` only!
 
             :param budget: the upper bound on the number of decisions.
             :type budget: int
@@ -811,9 +948,9 @@ class Solver(object):
             before calling :meth:`solve`, :meth:`solve_limited`,
             :meth:`propagate`, or :meth:`enum_models`.
 
-            **Note** that only MiniSat-like solvers and CaDiCaL 1.5.3 support
-            this functionality (e.g. :class:`Cadical103` and
-            :class:`Lingeling` do not support it).
+            **Note** that only MiniSat-like solvers support this functionality
+            (e.g. :class:`Cadical103`, class:`Cadical153`,
+            :class:`Cadical195`, and :class:`Lingeling` do not support it).
 
             :param assumptions: a list of assumption literals.
             :param phase_saving: enable phase saving (can be ``0``, ``1``, and
@@ -863,8 +1000,8 @@ class Solver(object):
             :class:`Minicard` can redefine the preferences in any of the
             following SAT calls due to the phase saving heuristic.
 
-            Also **note** that :class:`Cadical103` and :class:`Cadical153` do
-            not support this functionality.
+            Also **note** that :class:`Cadical103`, :class:`Cadical153`, and
+            :class:`Cadical195` do not support this functionality.
 
             :param literals: a list of literals.
             :type literals: iterable(int)
@@ -1164,7 +1301,7 @@ class Solver(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             This method is responsible for adding a new *native* AtMostK (see
             :mod:`pysat.card`) constraint.
@@ -1176,13 +1313,21 @@ class Solver(object):
             native AtMostK constraint should be given as a pair ``lits`` and
             ``k``, where ``lits`` is a list of literals in the sum.
 
-            :param lits: a list of literals.
+            Also, besides *unweighted* AtMostK constraints, some solvers (see
+            :class:`Cadical195`) support their weighted counterparts, i.e.
+            pseudo-Boolean constraints of the form :math:`\sum_{i=1}^{n}{w_i
+            \cdot x_i}\leq k`. The weights of the literals can be specified
+            using the argument ``weights``.
+
+            :param lits: a list of literals
             :param k: upper bound on the number of satisfied literals
+            :param weights: a list of weights
             :param no_return: check solver's internal formula and return the
-                result, if set to ``False``.
+                result, if set to ``False``
 
             :type lits: iterable(int)
             :type k: int
+            :type weights: list(int)
             :type no_return: bool
 
             :rtype: bool if ``no_return`` is set to ``False``.
@@ -1198,7 +1343,7 @@ class Solver(object):
         """
 
         if self.solver:
-            res = self.solver.add_atmost(lits, k, no_return)
+            res = self.solver.add_atmost(lits, k, weights, no_return)
             if not no_return:
                 return res
 
@@ -1621,7 +1766,7 @@ class Cadical103(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by CaDiCaL.
         """
@@ -2014,7 +2159,7 @@ class Cadical153(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by CaDiCaL.
         """
@@ -2055,6 +2200,524 @@ class Cadical153(object):
         """
 
         return False
+
+
+#
+#==============================================================================
+class Cadical195(object):
+    """
+        CaDiCaL 1.9.5 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False, warm_start=False, native_card=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
+
+        self.cadical = None
+        self.pengine = None
+        self.status = None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof, native_card)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False, native_card=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.cadical:
+            self.cadical = pysolvers.cadical195_new()
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.cadical195_tracepr(self.cadical, self.prfile)
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    if not native_card:
+                        raise NotImplementedError('To support atmost constraints, use \'native_card\' parameter')
+                    else:
+                        # creating the engine
+                        self.activate_atmost()
+
+                for clause in bootstrap_with:
+                    if isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [])
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def activate_atmost(self):
+        """
+            This method enable native cardinality mode. Note that it is
+            impossible to disable this mode once it's activated. (This would
+            require the engine to support cleaning constraints and reencoding
+            them to CNF on the fly).
+
+            Note that activating native AtMost constraints support makes it
+            impossible to add another user-defined propagator.
+        """
+
+        if self.cadical:
+            if not self.pengine:
+                # creating the engine
+                pengine = BooleanEngine(adaptive=True)
+
+                # attaching it to the solver
+                self.connect_propagator(pengine)
+
+                self.pengine = pengine
+                self.pengine.setup_observe(self)
+            else:
+                raise Exception('Another propagator is already attached')
+
+    def configure(self, parameters):
+        """
+            Configure Cadical195 by setting some of the predefined parameters.
+            This call must follow the creation of the new solver object;
+            otherwise, an exception will be thrown.
+
+            The list of available options and the corresponding
+            values they can be assigned to is provided `here
+            <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
+
+            :param parameters: parameter names mapped to integer values
+            :type parameters: dict
+        """
+
+        if self.cadical:
+            for name, value in parameters.items():
+                pysolvers.cadical195_set(self.cadical, name, value)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.cadical:
+            if self.pengine:
+                self.disconnect_propagator()
+                self.pengine = None
+
+            pysolvers.cadical195_del(self.cadical, self.prfile)
+            self.cadical = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.cadical195_solve(self.cadical, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.prev_assumps = assumptions
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            decisions.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.cadical195_solve_lim(self.cadical,
+                    assumptions, int(MainThread.check()))
+
+            self.status = None if self.status == 0 else bool((self.status + 1) / 2)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.prev_assumps = assumptions
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_cbudget(self.cadical, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_dbudget(self.cadical, budget)
+
+    def process(self, rounds=1, block=False, cover=False, condition=False,
+                decompose=True, elim=True, probe=True, probehbr=True,
+                subsume=True, vivify=True):
+        """
+            Apply the preprocessor for the internal formula. See the
+            documentation for the ``process`` module for details.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_process(self.cadical, rounds,
+                                                int(block), int(cover),
+                                                int(condition),
+                                                int(decompose), int(elim),
+                                                int(probe), int(probehbr),
+                                                int(subsume), int(vivify),
+                                                int(MainThread.check()))
+
+    def restore(self, model):
+        """
+            Given a model for the processed formula, reconstruct a model for
+            the original formula. See the documentation for the ``process``
+            module for details.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_restore(self.cadical, model)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by CaDiCaL.')
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Limit on propagations is currently unsupported by CaDiCaL.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.cadical195_propagate(self.cadical,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.cadical:
+            # making sure 'lucky' phases don't interfere with our preferences
+            self.configure({'lucky': 0})
+
+            # setting preferred phases
+            pysolvers.cadical195_setphases(self.cadical, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.cadical:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.cadical and self.status == True:
+            model = pysolvers.cadical195_model(self.cadical)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.cadical and self.status == False:
+            return pysolvers.cadical195_core(self.cadical, self.prev_assumps)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.cadical and self.prfile:
+            self.prfile.seek(0)
+
+            # stripping may cause issues here!
+            return Solver._proof_bin2text(bytearray(self.prfile.read()).strip())
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.cadical:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.cadical:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_nof_vars(self.cadical)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_nof_cls(self.cadical)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_acc_stats(self.cadical)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.cadical:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = pysolvers.cadical195_add_cl(self.cadical, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            This method is responsible for adding a new *native* AtMostK (see
+            :mod:`pysat.card`) constraint.
+
+            **Note that :class:`Cadical195` supports this by means of an
+            external propagator :class:`BooleanEngine`.**
+
+            Before calling this method, make sure native cardinality support
+            is activated.
+        """
+
+        if self.cadical:
+            if self.supports_atmost():
+                self.pengine.add_constraint(('linear', [lits, k, weights]))
+
+                if not no_return:
+                    return True  # we don't check satisfiability here;
+                                # returning true to be compatible with the API
+            else:
+                raise NotImplementedError('Native atmost constraints are currently disabled')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                if not self.supports_atmost():
+                    raise NotImplementedError('Native atmost constraints are currently disabled')
+
+            for clause in formula:
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1],
+                                          weights=clause[2] if len(clause) == 3 else [],
+                                          no_return=no_return)
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return self.pengine and type(self.pengine) == BooleanEngine
+
+    def connect_propagator(self, propagator):
+        """
+            Attach an external propagator through the IPASIR-UP interface.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_pconn(self.cadical, propagator)
+            self.pengine = propagator
+
+    def disconnect_propagator(self):
+        """
+            Disconnect the propagator. This also reset the observed variables.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_pdisconn(self.cadical)
+            self.pengine = None
+
+    def enable_propagator(self):
+        """
+            Enable the propagator on the fly. (Put it in active mode.)
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_penable(self.cadical)
+
+    def disable_propagator(self):
+        """
+            Disable the propagator on the fly. (Put it in passive mode.)
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_pdisable(self.cadical)
+
+    def propagator_active(self):
+        """
+            Check if the propagator is currently active or passive.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_pactive(self.cadical)
+
+    def observe(self, var):
+        """
+            Inform the solver that a given variable is observed by the
+            propagator.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_vobserve(self.cadical, var)
+
+    def ignore(self, var):
+        """
+            Inform the solver that a given variable is ignored by the
+            propagator.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_vignore(self.cadical, var)
+
+    def reset_observed(self):
+        """
+            Reset all observed variables.
+        """
+
+        if self.cadical:
+            pysolvers.cadical195_vreset(self.cadical)
+
+    def is_decision(self, lit):
+        """
+            Check whether a current observed literal is a assigned by
+            branching or by propagation (decision or not).
+        """
+
+        if self.cadical:
+            return pysolvers.cadical195_isdeclit(self.cadical, lit)
 
 
 #
@@ -2111,9 +2774,11 @@ class Gluecard3(object):
             if bootstrap_with:
                 for clause in bootstrap_with:
                     if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
-                        self.add_clause(clause)
+                        res = self.add_clause(clause)
                     else:
-                        self.add_atmost(clause[0], clause[1])
+                        res = self.add_atmost(clause[0], clause[1],
+                                            weights=clause[2] if len(clause) == 3 else [],
+                                            no_return=False)
 
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
@@ -2358,12 +3023,14 @@ class Gluecard3(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Gluecard.
         """
 
         if self.gluecard:
+            assert not weights, 'Gluecard3 does not support weighted AtMostK constraints'
+
             res = pysolvers.gluecard3_add_am(self.gluecard, lits, k)
 
             if res == False:
@@ -2392,7 +3059,9 @@ class Gluecard3(object):
                 if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
-                    res = self.add_atmost(clause[0], clause[1], no_return)
+                    res = self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [],
+                                        no_return=no_return)
 
                 if not no_return and res == False:
                     return res
@@ -2463,9 +3132,11 @@ class Gluecard4(object):
             if bootstrap_with:
                 for clause in bootstrap_with:
                     if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
-                        self.add_clause(clause)
+                        res = self.add_clause(clause)
                     else:
-                        self.add_atmost(clause[0], clause[1])
+                        res = self.add_atmost(clause[0], clause[1],
+                                            weights=clause[2] if len(clause) == 3 else [],
+                                            no_return=False)
 
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
@@ -2710,12 +3381,14 @@ class Gluecard4(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Gluecard.
         """
 
         if self.gluecard:
+            assert not weights, 'Gluecard4 does not support weighted AtMostK constraints'
+
             res = pysolvers.gluecard41_add_am(self.gluecard, lits, k)
 
             if res == False:
@@ -2744,7 +3417,9 @@ class Gluecard4(object):
                 if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
-                    res = self.add_atmost(clause[0], clause[1], no_return)
+                    res = self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [],
+                                        no_return=no_return)
 
                 if not no_return and res == False:
                     return res
@@ -3062,7 +3737,7 @@ class Glucose3(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Glucose.
         """
@@ -3406,7 +4081,7 @@ class Glucose4(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Glucose.
         """
@@ -3750,7 +4425,7 @@ class Glucose42(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Glucose.
         """
@@ -4060,7 +4735,7 @@ class Lingeling(object):
         if self.lingeling:
             pysolvers.lingeling_add_cl(self.lingeling, clause)
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Lingeling.
         """
@@ -4392,7 +5067,7 @@ class MapleChrono(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by MapleChrono.
         """
@@ -4734,7 +5409,7 @@ class MapleCM(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by MapleCM.
         """
@@ -5076,7 +5751,7 @@ class Maplesat(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Maplesat.
         """
@@ -5399,7 +6074,7 @@ class Mergesat3(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by Mergesat3.
         """
@@ -5498,9 +6173,11 @@ class Minicard(object):
             if bootstrap_with:
                 for clause in bootstrap_with:
                     if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
-                        self.add_clause(clause)
+                        res = self.add_clause(clause)
                     else:
-                        self.add_atmost(clause[0], clause[1])
+                        res = self.add_atmost(clause[0], clause[1],
+                                            weights=clause[2] if len(clause) == 3 else [],
+                                            no_return=False)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -5733,12 +6410,14 @@ class Minicard(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Add a new atmost constraint to solver's internal formula.
         """
 
         if self.minicard:
+            assert not weights, 'Minicard does not support weighted AtMostK constraints'
+
             res = pysolvers.minicard_add_am(self.minicard, lits, k)
 
             if res == False:
@@ -5767,7 +6446,9 @@ class Minicard(object):
                 if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
-                    res = self.add_atmost(clause[0], clause[1], no_return)
+                    res = self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [],
+                                        no_return=no_return)
 
                 if not no_return and res == False:
                     return res
@@ -6075,7 +6756,7 @@ class Minisat22(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by MiniSat.
         """
@@ -6409,7 +7090,7 @@ class MinisatGH(object):
             if not no_return:
                 return res
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by MiniSat.
         """
@@ -6727,7 +7408,7 @@ class CryptoMinisat(object):
         if self.cryptosat:
             self.cryptosat.add_clause(clause)
 
-    def add_atmost(self, lits, k, no_return=True):
+    def add_atmost(self, lits, k, weights=[], no_return=True):
         """
             Atmost constraints are not supported by cryptosat.
         """

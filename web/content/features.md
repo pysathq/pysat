@@ -103,8 +103,18 @@ Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
     Translation of Pseudo-Boolean Constraints into CNF Such That Generalized
     Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
-Finally, PySAT now provides (pre-)processing functionality[^15] by exposing an
-interface to CaDiCaL's (version 1.5.3) preprocessor.
+Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
+clausification [15]_ and provides (pre-)processing functionality [16]_ by
+exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
+external user-defined engines following the IPASIR-UP interface [17]_.
 
-[^15]: Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
-     Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
+[^15]: G. S. Tseitin. *On the complexity of derivations in the propositional
+    calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
+    115–125, 1968
+
+[^16]: Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+    Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
+
+[^17]: Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
+    Stefan Szeider, Armin Biere. *IPASIR-UP: User Propagators for CDCL*. SAT.
+    2023. pp. 8:1-8:13

@@ -37,6 +37,7 @@ Core PySAT modules
 
     api/card
     api/formula
+    api/engines
     api/pb
     api/process
     api/solvers

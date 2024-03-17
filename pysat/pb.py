@@ -87,7 +87,7 @@
 #
 #==============================================================================
 import math
-from pysat.formula import CNF
+from pysat.formula import CNFPlus
 
 # checking whether or not pypblib is available and working as expected
 pblib_present = True
@@ -123,13 +123,14 @@ class EncType(object):
             sortnetwrk = 3
             adder      = 4
             binmerge   = 5
+            native     = 6
 
         The desired encoding can be selected either directly by its integer
         identifier, e.g. ``2``, or by its alphabetical name, e.g.
         ``EncType.seqcounter``.
 
         All the encodings are produced and returned as a list of clauses in
-        the :class:`pysat.formula.CNF` format.
+        the :class:`pysat.formula.CNFPlus` format.
 
         Note that the encoding type can be set to ``best``, in which case the
         encoder selects one of the other encodings from the list (in most
@@ -142,6 +143,7 @@ class EncType(object):
     sortnetwrk = 3
     adder      = 4
     binmerge   = 5
+    native     = 6
 
     # mapping from internal encoding identifiers to the ones of PyPBLib
     _to_pbenc = {
@@ -171,7 +173,7 @@ class PBEnc(object):
         either a list of weighted literals or a list of unweighted literals
         followed by a list of weights, (2) an integer bound and an encoding
         type, each of these methods returns an object of class
-        :class:`pysat.formula.CNF` representing the resulting CNF formula.
+        :class:`pysat.formula.CNFPlus` representing the resulting CNF formula.
 
         Since the class is abstract, there is no need to create an object of
         it. Instead, the methods should be called directly as class methods,
@@ -268,31 +270,38 @@ class PBEnc(object):
             :type encoding: integer
             :type comparator: str
 
-            :rtype: :class:`pysat.formula.CNF`
+            :rtype: :class:`pysat.formula.CNFPlus`
         """
 
-        assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
-
-        if encoding < 0 or encoding > 5:
+        if encoding < 0 or encoding > 6:
             raise(NoSuchEncodingError(encoding))
 
-        assert lits, 'No literals are provided.'
+        # checking if the bound is meaningless for any encoding
+        if bound < 0:
+            raise ValueError('Wrong bound: {0}'.format(bound))
 
         assert not top_id or not vpool, \
                 'Use either a top id or a pool of variables but not both.'
 
+        # we are going to return this formula
+        ret = CNFPlus()
+
+        # if the list of literals is empty, return empty formula
+        if not lits:
+            return ret
+
         # preparing weighted literals
         if weights:
             assert len(lits) == len(weights), 'Same number of literals and weights is expected.'
-            wlits = [pblib.WeightedLit(l, w) for l, w in zip(lits, weights)]
+            wlits = [(l, w) for l, w in zip(lits, weights)]
         else:
             if all(map(lambda lw: (type(lw) in (list, tuple)) and len(lw) == 2, lits)):
                 # literals are already weighted
-                wlits = [pblib.WeightedLit(*wl) for wl in lits]
-                lits = zip(*lits)[0]  # unweighted literals for getting top_id
+                lits, weight = zip(*lits)  # unweighted literals for getting top_id
             elif all(map(lambda l: type(l) is int, lits)):
                 # no weights are provided => all weights are units
-                wlits = [pblib.WeightedLit(l, 1) for l in lits]
+                wlits = [(l, 1) for l in lits]
+                weights = [1 for l in lits]
             else:
                 assert 0, 'Incorrect literals given.'
 
@@ -300,11 +309,28 @@ class PBEnc(object):
         if vpool:
             top_id = vpool.top
 
-        if not top_id:
-            top_id = max(map(lambda x: abs(x), lits))
+        # choosing the maximum id among the current top and the list of literals
+        top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
+
+        # native representation
+        if encoding == 6:
+            ret.nv = top_id
+
+            if comparator == '<':
+                ret.atmosts = [(lits, bound, weights)]
+            elif comparator == '>':
+                ret.atmosts = [(list(map(lambda l: -l, lits)), sum(weights) - bound, weights)]
+            elif comparator:  # comparator == '='
+                ret.atmosts = [(lits, bound, weights),
+                        (list(map(lambda l: -l, lits)), sum(weights) - bound, weights)]
+
+            return ret
+
+        assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
 
         # pseudo-Boolean constraint and variable manager
-        constr = pblib.PBConstraint(wlits, EncType._to_pbcmp[comparator], bound)
+        constr = pblib.PBConstraint([pblib.WeightedLit(*wl) for wl in wlits],
+                EncType._to_pbcmp[comparator], bound)
         varmgr = pblib.AuxVarManager(top_id + 1)
 
         # encoder configuration
@@ -317,8 +343,8 @@ class PBEnc(object):
         pb2cnf.encode(constr, result, varmgr)
 
         # extracting clauses
-        ret = CNF(from_clauses=result.get_clauses())
-        ret.nv = max(ret.nv, top_id)  # needed if no auxiliary variable is used
+        ret.clauses = result.get_clauses()
+        ret.nv = max(ret.nv, top_id, varmgr.get_biggest_returned_auxvar())  # needed if no auxiliary variable is used
 
         # updating vpool if necessary
         if vpool:
@@ -361,7 +387,7 @@ class PBEnc(object):
             :type vpool: :class:`.IDPool`
             :type encoding: integer
 
-            :rtype: :class:`pysat.formula.CNF`
+            :rtype: :class:`pysat.formula.CNFPlus`
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
