@@ -1302,7 +1302,7 @@ diff -Naur solvers/cadical195/internal.cpp solvers/cdc195/internal.cpp
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/internal.hpp solvers/cdc195/internal.hpp
 --- solvers/cadical195/internal.hpp	2024-02-29 02:59:11
-+++ solvers/cdc195/internal.hpp	2024-03-17 17:49:46
++++ solvers/cdc195/internal.hpp	2024-03-17 18:12:46
 @@ -1,5 +1,5 @@
 -#ifndef _internal_hpp_INCLUDED
 -#define _internal_hpp_INCLUDED
@@ -2281,8 +2281,17 @@ diff -Naur solvers/cadical195/range.hpp solvers/cdc195/range.hpp
  #endif
 diff -Naur solvers/cadical195/reap.cpp solvers/cdc195/reap.cpp
 --- solvers/cadical195/reap.cpp	2024-02-29 02:59:11
-+++ solvers/cdc195/reap.cpp	2024-03-17 17:49:46
-@@ -26,9 +26,16 @@
++++ solvers/cdc195/reap.cpp	2024-03-17 18:12:31
+@@ -3,6 +3,8 @@
+ #include <climits>
+ #include <cstring>
+ 
++namespace CaDiCaL195 {
++
+ void Reap::init () {
+   for (auto &bucket : buckets)
+     bucket = {0};
+@@ -26,9 +28,16 @@
    max_bucket = 0;
  }
  
@@ -2299,10 +2308,16 @@ diff -Naur solvers/cadical195/reap.cpp solvers/cdc195/reap.cpp
  
  void Reap::push (unsigned e) {
    assert (last_deleted <= e);
+@@ -125,3 +134,5 @@
+   min_bucket = 32;
+   max_bucket = 0;
+ }
++
++} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/reap.hpp solvers/cdc195/reap.hpp
 --- solvers/cadical195/reap.hpp	2024-02-29 02:59:11
-+++ solvers/cdc195/reap.hpp	2024-03-17 17:49:46
-@@ -1,5 +1,5 @@
++++ solvers/cdc195/reap.hpp	2024-03-17 18:12:24
+@@ -1,9 +1,11 @@
 -#ifndef _reap_h_INCLUDED
 -#define _reap_h_INCLUDED
 +#ifndef _reap195_h_INCLUDED
@@ -2310,6 +2325,20 @@ diff -Naur solvers/cadical195/reap.hpp solvers/cdc195/reap.hpp
  
  #include <cstddef>
  #include <vector>
+ 
++namespace CaDiCaL195 {
++
+ class Reap {
+ public:
+   Reap ();
+@@ -24,5 +26,7 @@
+   unsigned max_bucket;
+   std::vector<unsigned> buckets[33];
+ };
++
++}
+ 
+ #endif
 diff -Naur solvers/cadical195/reduce.cpp solvers/cdc195/reduce.cpp
 --- solvers/cadical195/reduce.cpp	2024-02-29 02:59:11
 +++ solvers/cdc195/reduce.cpp	2024-03-17 17:49:46

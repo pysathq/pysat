@@ -1401,8 +1401,17 @@ diff -Naur solvers/cadical153/range.hpp solvers/cdc153/range.hpp
  
 diff -Naur solvers/cadical153/reap.cpp solvers/cdc153/reap.cpp
 --- solvers/cadical153/reap.cpp	2023-02-13 20:11:26
-+++ solvers/cdc153/reap.cpp	2023-03-05 18:21:28
-@@ -26,10 +26,16 @@
++++ solvers/cdc153/reap.cpp	2024-03-17 18:14:30
+@@ -3,6 +3,8 @@
+ #include<cassert>
+ #include <climits>
+ 
++namespace CaDiCaL153 {
++
+ void Reap::init() {
+   for(auto & bucket : buckets)
+     bucket = {0};
+@@ -26,10 +28,16 @@
    max_bucket = 0;
  }
  
@@ -1420,10 +1429,16 @@ diff -Naur solvers/cadical153/reap.cpp solvers/cdc153/reap.cpp
  
  void Reap::push(unsigned e)
  {
+@@ -128,3 +136,5 @@
+   min_bucket = 32;
+   max_bucket = 0;
+ }
++
++} // namespace CaDiCaL153
 diff -Naur solvers/cadical153/reap.hpp solvers/cdc153/reap.hpp
 --- solvers/cadical153/reap.hpp	2023-02-13 20:11:26
-+++ solvers/cdc153/reap.hpp	2023-03-03 22:23:20
-@@ -1,5 +1,5 @@
++++ solvers/cdc153/reap.hpp	2024-03-17 18:14:07
+@@ -1,9 +1,11 @@
 -#ifndef _reap_h_INCLUDED
 -#define _reap_h_INCLUDED
 +#ifndef _reap153_h_INCLUDED
@@ -1431,6 +1446,20 @@ diff -Naur solvers/cadical153/reap.hpp solvers/cdc153/reap.hpp
  
  #include <vector>
  #include <cstddef>
+ 
++namespace CaDiCaL153 {
++
+ class Reap {
+ public:
+   Reap();
+@@ -27,5 +29,7 @@
+   unsigned max_bucket;
+   std::vector<unsigned> buckets[33];
+ };
++
++}
+ 
+ #endif
 diff -Naur solvers/cadical153/reduce.cpp solvers/cdc153/reduce.cpp
 --- solvers/cadical153/reduce.cpp	2023-02-13 20:11:26
 +++ solvers/cdc153/reduce.cpp	2023-03-03 21:46:11
