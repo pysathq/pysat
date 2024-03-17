@@ -17,6 +17,7 @@ Minisat-based solvers only *core* versions are integrated):
 
 -   CaDiCaL ([rel-1.0.3](https://github.com/arminbiere/cadical))
 -   CaDiCaL ([rel-1.5.3](https://github.com/arminbiere/cadical))
+-   CaDiCaL ([rel-1.9.5](https://github.com/arminbiere/cadical))
 -   Glucose ([3.0](http://www.labri.fr/perso/lsimon/glucose/))
 -   Glucose ([4.1](http://www.labri.fr/perso/lsimon/glucose/))
 -   Glucose ([4.2.1](http://www.labri.fr/perso/lsimon/glucose/))
@@ -104,9 +105,9 @@ Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
     Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
 Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
-clausification [15]_ and provides (pre-)processing functionality [16]_ by
+clausification [^15] and provides (pre-)processing functionality [^16] by
 exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
-external user-defined engines following the IPASIR-UP interface [17]_.
+external user-defined engines following the IPASIR-UP interface [^17].
 
 [^15]: G. S. Tseitin. *On the complexity of derivations in the propositional
     calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
