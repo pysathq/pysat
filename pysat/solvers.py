@@ -520,6 +520,10 @@ class Solver(object):
             reasoning. This is supported only by :class:`Cadical195` by means
             of its external propagators functionality and the use of
             :class:`BooleanEngine`.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -532,7 +536,11 @@ class Solver(object):
         """
             Attach an external propagator through the IPASIR-UP interface. The
             only expected argument is ``propagator``, which must be an object
-            of a class inheriting from the abstract class class:`.Propagator`.
+            of a class inheriting from the abstract class :class:`.Propagator`.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -546,6 +554,10 @@ class Solver(object):
             Disconnect the previously attached propagator. This will also
             reset all the variables marked in the solver as observed by the
             propagator.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -558,6 +570,10 @@ class Solver(object):
         """
             Ask the solver to enable the propagator on the fly. This will put
             it in active mode.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -571,6 +587,10 @@ class Solver(object):
             Ask the solver to disable the propagator on the fly. This will it
             in passive mode, i.e. it will be invoked only to check assignments
             found by the solver.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -584,6 +604,10 @@ class Solver(object):
             Check if the propagator is currently active or passive. In the
             former case, the method will return ``True``; otherwise, it will
             return ``False``.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -596,6 +620,10 @@ class Solver(object):
         """
             Inform the solver that a given variable is observed by the
             propagator attached to it.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -608,6 +636,10 @@ class Solver(object):
         """
             Inform the solver that a given variable is ignored by the
             propagator attached to it.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -619,6 +651,10 @@ class Solver(object):
     def reset_observed(self):
         """
             Ask the solver to reset all observed variables.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:
@@ -634,6 +670,10 @@ class Solver(object):
             propagation, i.e. whether it is decision or not. In the former
             case, the method returns ``True``; otherwise, it returns
             ``False``.
+
+            .. note::
+
+                IPASIR-UP related. :class:`Cadical195` only.
         """
 
         if self.solver:

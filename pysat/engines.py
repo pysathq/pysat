@@ -337,8 +337,8 @@ class LinearConstraint:
 #==============================================================================
 class ParityConstraint:
     """
-        A possible implementation of parity constraints, i.e. constraints of
-        the form :math:`l_1 \oplus l_2 \oplus \ldots \oplus l_n = b` where
+        A possible implementation of parity constraints. These are constraints
+        of the form :math:`l_1 \oplus l_2 \oplus \ldots \oplus l_n = b` where
         each :math:`l_i` is a Boolean literal while :math:`b` is a Boolean
         constant. The class is designed to exemplify the work with
         :class:`BooleanEngine`.
