@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 20.03.2024 (*1.8.dev5*)
+
+-   Fixed a few issues in formula simplification.
+
 ## 17.03.2024 (*1.8.dev4*)
 
 -   Fixed a bug in the PB encoder.

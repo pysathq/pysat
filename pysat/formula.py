@@ -1553,7 +1553,7 @@ class And(Formula):
             sub = sub.simplified(assumptions=set(assumptions))
 
             # simplify the current term
-            if sub is PYSAT_FALSE:
+            if sub is PYSAT_FALSE or ~sub in oset:
                 return PYSAT_FALSE
 
             # a new yet unsimplified term
@@ -1767,7 +1767,7 @@ class Or(Formula):
             sub = sub.simplified(assumptions=set(assumptions))
 
             # simplify the current term
-            if sub is PYSAT_TRUE:
+            if sub is PYSAT_TRUE or ~sub in oset:
                 return PYSAT_TRUE
 
             # a new yet unsimplified term
@@ -2307,6 +2307,9 @@ class Equals(Formula):
                 if t_present:
                     return PYSAT_FALSE
                 f_present = True
+            # there is an opposite subformula too; equality is unsatisfiable
+            elif ~sub in oset:
+                return PYSAT_FALSE
 
             # a new yet unsimplified term
             elif sub not in oset:
@@ -2317,6 +2320,12 @@ class Equals(Formula):
             return PYSAT_FALSE if f_present and t_present else PYSAT_TRUE
 
         if len(operands) == 1:
+            if not (t_present or f_present):
+                # we got a single subformula but nothing is simplified above;
+                # hence, the single subformula results from duplicate removal
+                # i.e. we have a tautological equality
+                return PYSAT_TRUE
+
             return operands[0] if not f_present else Neg(operands[0])
 
         if f_present or t_present:
@@ -2516,7 +2525,6 @@ class XOr(Formula):
         """
 
         oset = set()
-        operands = []
         nof_trues = 0
 
         for sub in self.subformulas:
@@ -2527,10 +2535,22 @@ class XOr(Formula):
             if sub is PYSAT_TRUE:
                 nof_trues += 1
 
+            # we've got x ^ ~x, which results in a True constant
+            elif ~sub in oset:
+                nof_trues += 1
+                oset.remove(~sub)
+
+            # this is a duplicate of an already seen sub-term
+            # as a result, they cancel each other out
+            elif sub in oset:
+                oset.remove(sub)
+
             # a new yet unsimplified term
-            elif sub is not PYSAT_FALSE and sub not in oset:
+            elif sub is not PYSAT_FALSE:
                 oset.add(sub)
-                operands.append(sub)
+
+        # getting the actual list of operands
+        operands = sorted(oset)
 
         if not operands:
             return PYSAT_TRUE if nof_trues % 2 else PYSAT_FALSE
