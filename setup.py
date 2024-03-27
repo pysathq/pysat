@@ -77,7 +77,7 @@ to_install = ['cadical103', 'cadical153', 'cadical195', 'gluecard30',
 #==============================================================================
 example_scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx',
                    'optux', 'rc2']
-allies_scripts = ['approxmc']
+allies_scripts = ['approxmc', 'unigen']
 
 
 # we need to redefine the build command to

@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 27.03.2024 (*1.8.dev6*)
+
+-   A few minor issues in the toolkit setup.
+
 ## 20.03.2024 (*1.8.dev5*)
 
 -   Fixed a few issues in formula simplification.
