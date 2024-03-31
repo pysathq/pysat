@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 31.03.2024 (*1.8.dev7*)
+
+-   Fixed a bug in formula key flattening.
+-   Added support for *empty* conjunctions and disjunctions representing
+    ``PYSAT_TRUE`` and ``PYSAT_FALSE`` respectively.
+
 ## 27.03.2024 (*1.8.dev6*)
 
 -   A few minor issues in the toolkit setup.

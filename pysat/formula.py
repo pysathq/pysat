@@ -858,19 +858,32 @@ class Formula(object):
             internal and not to be used by formula users.
         """
 
+        def _hashable(entity):
+            try:
+                hash(entity)
+                return True
+            except TypeError:
+                return False
+
         def _flatten(collection, prefix='', sep='_'):
             items = []
 
-            # first, assuming it is a flat collection
+            # first, assuming it is a flat unhashable collection
             if type(collection) in (tuple, list, set):
-                collection = list(filter(lambda x: x or x == False, collection))
+                collection = tuple(filter(lambda x: x or x == False, collection))
+
                 if len(collection) > 1:
-                    for i, item in enumerate(collection):
-                        if isinstance(item, Iterable):
-                            items.extend(_flatten(item, prefix=prefix))
-                        else:
-                            items.append((prefix, repr(item)))
-                else:
+                    if _hashable(collection):
+                        items.append((prefix, repr(collection)))
+                    else:
+                        for i, item in enumerate(collection):
+                            if _hashable(item):
+                                items.append((prefix, repr(item)))
+                            elif isinstance(item, Iterable):
+                                items.extend(_flatten(item, prefix=prefix))
+                            else:
+                                raise FormulaError('No key can be computed for this formula object')
+                elif collection:
                     items.extend(_flatten(collection[0], prefix=prefix))
 
             # next, checking if it is a dictionary
@@ -878,11 +891,13 @@ class Formula(object):
                 for key in collection.keys():
                     value = collection[key]
                     new_key = prefix + sep + key if prefix else key
-                    if isinstance(value, Iterable):
+                    if value and _hashable(value):
+                        items.append((new_key, repr(value)))
+                    elif isinstance(value, Iterable):
                         if value:
                             items.extend(_flatten(value, new_key, sep=sep))
                     else:
-                        items.append((new_key, repr(value)))
+                        raise FormulaError('No key can be computed for this formula object')
 
             # finally, it is a simple non-empty object
             elif collection or collection == False:
@@ -1496,9 +1511,6 @@ class And(Formula):
         else:
             self.merged = False
 
-        if len(self.subformulas) < 1:
-            raise FormulaError('Conjunction requires at least 1 argument')
-
     def __del__(self):
         """
             And destructor.
@@ -1709,9 +1721,6 @@ class Or(Formula):
             self.merged = True
         else:
             self.merged = False
-
-        if len(self.subformulas) < 1:
-            raise FormulaError('Disjunction requires at least 1 argument')
 
     def __del__(self):
         """
