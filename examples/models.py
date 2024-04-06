@@ -87,9 +87,11 @@ def enumerate_models(formula, to_enum, solver, warm=False):
                 use_timer=True, warm_start=warm) as s:
         # adding native cardinality constraints if needed
         if formula.atmosts:
-            assert solver in SolverNames.minicard or \
-                    solver in SolverNames.gluecard3 or \
-                    solver in SolverNames.gluecard4, \
+            # we are using CaDiCaL195 and it can use external linear engine
+            if solver in SolverNames.cadical195:
+                s.activate_atmost()
+
+            assert s.supports_atmost(), \
                     '{0} does not support native cardinality constraints'.format(solver)
 
             for atm in formula.atmosts:

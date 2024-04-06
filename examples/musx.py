@@ -145,6 +145,10 @@ class MUSX(object):
                 use_timer=True)
 
         if isinstance(formula, WCNFPlus) and formula.atms:
+            # we are using CaDiCaL195 and it can use external linear engine
+            if solver in SolverNames.cadical195:
+                self.oracle.activate_atmost()
+
             assert self.oracle.supports_atmost(), \
                     '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
 
@@ -308,7 +312,7 @@ def usage():
     print('Options:')
     print('        -h, --help')
     print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, lgl, mcb, mcm, mpl, m22, mc, mgh (default: m22)')
+    print('                         Available values: cd15, cd19, g3, lgl, mcb, mcm, mpl, m22, mc, mgh (default: m22)')
     print('        -v, --verbose    Be verbose')
 
 

@@ -393,15 +393,21 @@ class Hitman(object):
                     use_cld=self.usecld)
         else:  # 'sat'
             assert self.solver in SolverNames.minisatgh + \
-                    SolverNames.lingeling + SolverNames.cadical153, \
-                    'Hard polarity setting is unsupported by {0}'.format(self.solver)
-
-            assert formula.atms == [], 'Native AtMostK constraints aren\'t' \
-            'supported by MinisatGH, Lingeling, or CaDiCaL 153'
+                    SolverNames.lingeling + SolverNames.cadical153 + \
+                    SolverNames.cadical195, 'Hard polarity setting is unsupported by {0}'.format(self.solver)
 
             # setting up a SAT solver, so that it supports the same interface
-            self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                                 use_timer=True)
+            if formula.atms == []:
+                self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
+                                    use_timer=True)
+            elif self.solver in SolverNames.cadical195:
+                self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
+                                    use_timer=True, native_card=True)
+
+                for atm in formula.atms:
+                    self.oracle.add_atmost(*atm)
+            else:
+                assert 0, 'Native AtMostK constraints aren\'t supported by MinisatGH, Lingeling, or CaDiCaL 153'
 
             # MinisatGH supports warm start mode
             if self.solver in SolverNames.minisatgh:

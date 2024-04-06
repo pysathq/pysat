@@ -118,22 +118,25 @@ class LSU:
 
         :param formula: input MaxSAT formula
         :param solver: name of SAT solver
+        :param incr: enable incremental mode of Glucose
         :param expect_interrupt: whether or not an :meth:`interrupt` call is expected
         :param verbose: verbosity level
 
         :type formula: :class:`.WCNF`
         :type solver: str
+        :type incr: bool
         :type expect_interrupt: bool
         :type verbose: int
     """
 
-    def __init__(self, formula, solver='g4', expect_interrupt=False, verbose=0):
+    def __init__(self, formula, solver='g4', incr=False, expect_interrupt=False, verbose=0):
         """
             Constructor.
         """
 
         self.verbose = verbose
         self.solver = solver
+        self.incr = incr
         self.expect_interrupt = expect_interrupt
         self.formula = formula
         self.topv = formula.nv  # largest variable index
@@ -154,7 +157,7 @@ class LSU:
         """
 
         self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                incr=True, use_timer=True)
+                incr=self.incr, use_timer=True)
 
         for i, cl in enumerate(formula.soft):
             # TODO: if clause is unit, use its literal as selector
@@ -353,17 +356,22 @@ class LSUPlus(LSU, object):
         :type verbose: int
     """
 
-    def __init__(self, formula, solver, expect_interrupt=False, verbose=0):
+    def __init__(self, formula, solver='g4', incr=False, expect_interrupt=False, verbose=0):
         """
             Constructor.
         """
 
         assert solver in SolverNames.gluecard3 or \
                 solver in SolverNames.gluecard4 or \
-                solver in SolverNames.minicard, '{0} does not support native cardinality constraints'.format(solver)
+                solver in SolverNames.minicard or \
+                solver in SolverNames.cadical195, '{0} does not support native cardinality constraints'.format(solver)
 
-        super(LSUPlus, self).__init__(formula, solver=solver,
+        super(LSUPlus, self).__init__(formula, solver=solver, incr=incr,
                 expect_interrupt=expect_interrupt, verbose=verbose)
+
+        # we are using CaDiCaL195 and it can use external linear engine
+        if solver in SolverNames.cadical195:
+            self.oracle.activate_atmost()
 
         # adding atmost constraints
         for am in formula.atms:
@@ -391,13 +399,14 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hms:t:v', ['help', 'model', 'solver=', 'timeout=', 'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hims:t:v', ['help', 'incr', 'model', 'solver=', 'timeout=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         print_usage()
         sys.exit(1)
 
     solver = 'g4'
+    incr = False
     verbose = 1
     print_model = False
     timeout = None
@@ -406,6 +415,8 @@ def parse_options():
         if opt in ('-h', '--help'):
             print_usage()
             sys.exit(0)
+        elif opt in ('-i', '--incr'):
+            incr = True
         elif opt in ('-m', '--model'):
             print_model = True
         elif opt in ('-s', '--solver'):
@@ -418,7 +429,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return print_model, solver, timeout, verbose, args
+    return incr, print_model, solver, timeout, verbose, args
 
 
 #
@@ -431,9 +442,10 @@ def print_usage():
     print('Usage: ' + os.path.basename(sys.argv[0]) + ' [options] dimacs-file')
     print('Options:')
     print('        -h, --help               Show this message')
+    print('        -i, --incr               Enable incremental model (for Glucose only)')
     print('        -m, --model              Print model')
     print('        -s, --solver=<string>    SAT solver to use')
-    print('                                 Available values: g3, g4, mc, m22, mgh (default = g4)')
+    print('                                 Available values: cd15, cd19, g3, g4, mc, m22, mgh (default = g4)')
     print('        -t, --timeout=<float>    Set time limit for MaxSAT solver')
     print('                                 Available values: [0 .. FLOAT_MAX], none (default: none)')
     print('        -v, --verbose            Be verbose')
@@ -442,7 +454,7 @@ def print_usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    print_model, solver, timeout, verbose, files = parse_options()
+    incr, print_model, solver, timeout, verbose, files = parse_options()
 
     if files:
         # reading standard CNF or WCNF
@@ -452,13 +464,13 @@ if __name__ == '__main__':
             else:  # expecting '*.cnf'
                 formula = CNF(from_file=files[0]).weighted()
 
-            lsu = LSU(formula, solver=solver,
+            lsu = LSU(formula, solver=solver, incr=incr,
                     expect_interrupt=(timeout != None), verbose=verbose)
 
         # reading WCNF+
         elif re.search('\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
-            lsu = LSUPlus(formula, solver=solver,
+            lsu = LSUPlus(formula, solver=solver, incr=incr,
                     expect_interrupt=(timeout != None), verbose=verbose)
 
         # setting a timer if necessary

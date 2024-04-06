@@ -136,6 +136,10 @@ class LBX(object):
         # adding native cardinality constraints (if any) as hard clauses
         # this can be done only if the Minicard solver is in use
         if isinstance(formula, WCNFPlus) and formula.atms:
+            # we are using CaDiCaL195 and it can use external linear engine
+            if solver_name in SolverNames.cadical195:
+                self.oracle.activate_atmost()
+
             assert self.oracle.supports_atmost(), \
                     '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
 
@@ -560,7 +564,7 @@ def usage():
     print('                               Available values: [1 .. all] (default: 1)')
     print('        -h, --help')
     print('        -s, --solver           SAT solver to use')
-    print('                               Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
+    print('                               Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
     print('        -v, --verbose          Be verbose')
 
 

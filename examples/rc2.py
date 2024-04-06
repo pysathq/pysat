@@ -285,6 +285,10 @@ class RC2(object):
         # this can be done only if the Minicard solver is in use
         # this cannot be done if RC2 is run from the command line
         if isinstance(formula, WCNFPlus) and formula.atms:
+            # we are using CaDiCaL195 and it can use external linear engine
+            if self.solver in SolverNames.cadical195:
+                self.oracle.activate_atmost()
+
             assert self.oracle.supports_atmost(), \
                     '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
@@ -389,7 +393,7 @@ class RC2(object):
                 assert self.oracle.supports_atmost(), \
                         '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
-                self.oracle.add_atmost(cl, clause[1])
+                self.oracle.add_atmost(cl, clause[1], weights=clause[2] if len(clause) == 3 else [])
         else:
             # soft clauses should be augmented with a selector
             selv = cl[0]  # for a unit clause, no selector is needed
@@ -420,7 +424,7 @@ class RC2(object):
         """
 
         if self.oracle:
-            if not self.oracle.supports_atmost():  # for minicard, there is nothing to free
+            if not self.oracle.supports_atmost():  # for minicard-like, there is nothing to free
                 for t in six.itervalues(self.tobj):
                     t.delete()
 
@@ -1715,7 +1719,7 @@ def usage():
     print('                                 Available values: basic, div, cluster, none, full (default = none)')
     print('        -m, --minimize           Use a heuristic unsatisfiable core minimizer')
     print('        -s, --solver=<string>    SAT solver to use')
-    print('                                 Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
+    print('                                 Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
     print('                                 Available values: [0 .. INT_MAX] (default = 0)')
     print('        -v, --verbose            Be verbose')

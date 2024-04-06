@@ -209,6 +209,10 @@ class FM(object):
         self.oracle = Solver(name=self.solver, bootstrap_with=self.hard, use_timer=True)
 
         if self.atm1:  # this check is needed at the beggining (before iteration 1)
+            # we are using CaDiCaL195 and it can use external linear engine
+            if self.solver in SolverNames.cadical195:
+                self.oracle.activate_atmost()
+
             assert self.oracle.supports_atmost(), \
                     '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
 
@@ -471,7 +475,8 @@ def parse_options():
     cardenc = encmap[cardenc]
 
     # using minicard's native implementation of AtMost1 constraints
-    if solver in SolverNames.minicard or solver in SolverNames.gluecard3 or solver in SolverNames.gluecard4:
+    if solver in SolverNames.minicard + SolverNames.gluecard3 + \
+            SolverNames.gluecard4 + SolverNames.cadical195:
         cardenc = encmap['native']
     else:
         assert cardenc != encmap['native'], 'Only Minicard can handle cardinality constraints natively'
@@ -491,7 +496,7 @@ def usage():
     print('                         Available values: bw, cardn, kmtot, ladder, mtot, pw, seqc, sortn, tot (default = seqc)')
     print('        -h, --help')
     print('        -s, --solver     SAT solver to use')
-    print('                         Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
+    print('                         Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
     print('        -v, --verbose    Be verbose')
 
 

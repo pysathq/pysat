@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 05.04.2024 (*1.8.dev8*)
+
+-   Added support for CaDiCaL 1.9.5 with linear engine in example scripts.
+
 ## 31.03.2024 (*1.8.dev7*)
 
 -   Fixed a bug in formula key flattening.

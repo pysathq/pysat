@@ -111,7 +111,7 @@ import os
 from pysat.examples.hitman import Atom, Hitman
 from pysat.examples.rc2 import RC2
 from pysat.formula import CNFPlus, WCNFPlus
-from pysat.solvers import Solver
+from pysat.solvers import Solver, SolverNames
 import re
 import sys
 
@@ -289,6 +289,10 @@ class OptUx(object):
                 [[mcs] for mcs in self.units])
 
         if unweighted.atms:
+            if solver in SolverNames.cadical195:
+                # we are using CaDiCaL195 and it can use external linear engine
+                self.oracle.activate_atmost()
+
             assert self.oracle.supports_atmost(), \
                     '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
@@ -558,7 +562,7 @@ def parse_options():
     exhaust = False
     minz = False
     to_enum = 1
-    solver = 'm22'
+    solver = 'g3'
     puresat = False
     unsorted = False
     trim = 0
@@ -619,10 +623,10 @@ def usage():
     print('        -h, --help                Show this message')
     print('        -m, --minimize            Use a heuristic unsatisfiable core minimizer')
     print('        -p, --puresat=<string>    Use a pure SAT-based hitting set enumerator')
-    print('                                  Available values: cd15, lgl, mgh (default = mgh)')
+    print('                                  Available values: cd15, cd19, lgl, mgh (default = mgh)')
     print('                                  Requires: unsorted mode, i.e. \'-u\'')
     print('        -s, --solver              SAT solver to use')
-    print('                                  Available values: g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
+    print('                                  Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>          How many times to trim unsatisfiable cores')
     print('                                  Available values: [0 .. INT_MAX] (default = 0)')
     print('        -u, --unsorted            Enumerate MUSes in an unsorted way')
