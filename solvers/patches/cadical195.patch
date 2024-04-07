@@ -2834,7 +2834,7 @@ diff -Naur solvers/cadical195/solution.cpp solvers/cdc195/solution.cpp
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 --- solvers/cadical195/solver.cpp	2024-02-29 02:59:11
-+++ solvers/cdc195/solver.cpp	2024-03-17 17:49:46
++++ solvers/cdc195/solver.cpp	2024-04-07 16:10:03
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -2981,7 +2981,7 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
  const char *Solver::write_dimacs (const char *path, int min_max_var) {
    LOG_API_CALL_BEGIN ("write_dimacs", path, min_max_var);
    REQUIRE_VALID_STATE ();
-@@ -1628,4 +1716,91 @@
+@@ -1628,4 +1716,99 @@
    va_end (ap);
  }
  
@@ -2995,27 +2995,32 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +    return false;
 +  }
 +
-+  // dealing with phase saving //TODO check how to do this
-+  int old_psave = internal->opts.rephase; // note: these can be made (very) slightly more efficient by accessing the table directly
-+  int old_lucky = internal->opts.lucky;
-+  internal->opts.lucky = psaving;
-+  internal->opts.rephase = psaving;
++  // saving default options
++  int old_ilb    = internal->opts.ilb;
++  int old_psave  = internal->opts.rephase; // note: these can be made (very) slightly more efficient by accessing the table directly
++  int old_lucky  = internal->opts.lucky;
++  int old_resall = internal->opts.restoreall;
 +
-+  int old_resetall = internal->opts.restoreall;
++  // resetting the above options
++  internal->opts.ilb        = 0;
++  internal->opts.lucky      = psaving;
++  internal->opts.rephase    = psaving;
 +  internal->opts.restoreall = 2;
++
 +  int tmp = internal->already_solved ();
-+  if (!tmp) {
++  if (!tmp)
 +    tmp = internal->restore_clauses ();
-+  }
 +  if (tmp) {
-+    internal->opts.restoreall = old_resetall;
-+    internal->opts.rephase = old_psave;
-+    internal->opts.lucky = old_lucky;
++    // restoring default option values
++    internal->opts.ilb        = old_ilb;
++    internal->opts.lucky      = old_lucky;
++    internal->opts.rephase    = old_psave;
++    internal->opts.restoreall = old_resall;
 +    internal->reset_solving();
 +    internal->report_solving(tmp);
 +    return false;
 +  }
-+  internal->opts.restoreall = old_resetall;
++  internal->opts.restoreall = old_resall;
 +
 +  bool st = true;
 +  int level = internal->level;
@@ -3061,9 +3066,12 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +    internal->backtrack(level);
 +  }
 +
++  // restoring default ilb value
++  internal->opts.ilb = old_ilb;
++
 +  // restore phase saving
 +  internal->opts.rephase = old_psave;
-+  internal->opts.lucky = old_lucky;
++  internal->opts.lucky   = old_lucky;
 +  // reset conflict
 +  internal->conflict = old_conflict;
 +  internal->reset_solving();

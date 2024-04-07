@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 07.04.2024 (*1.8.dev9*)
+
+-   Fixed implementation of ``propagate()`` for CaDiCaL 1.9.5.
+
 ## 05.04.2024 (*1.8.dev8*)
 
 -   Added support for CaDiCaL 1.9.5 with linear engine in example scripts.

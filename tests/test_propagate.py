@@ -2,6 +2,7 @@ from pysat.card import *
 from pysat.solvers import Solver
 
 solvers = ['cadical153',
+           'cadical195',
            'gluecard30',
            'gluecard41',
            'glucose30',

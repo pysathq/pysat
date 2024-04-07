@@ -9,10 +9,12 @@ dist
 solvers/._glucose-syrup-4.1
 solvers/cadical103
 solvers/cadical153
+solvers/cadical195
 solvers/gluecard30
 solvers/gluecard41
 solvers/glucose30
 solvers/glucose41
+solvers/glucose421
 solvers/lingeling
 solvers/maplechrono
 solvers/maplecm
