@@ -2533,7 +2533,7 @@ class XOr(Formula):
                 x ^ z
         """
 
-        oset = set()
+        oset = {}
         nof_trues = 0
 
         for sub in self.subformulas:
@@ -2547,19 +2547,19 @@ class XOr(Formula):
             # we've got x ^ ~x, which results in a True constant
             elif ~sub in oset:
                 nof_trues += 1
-                oset.remove(~sub)
+                oset.pop(~sub)
 
             # this is a duplicate of an already seen sub-term
             # as a result, they cancel each other out
             elif sub in oset:
-                oset.remove(sub)
+                oset.pop(sub)
 
             # a new yet unsimplified term
             elif sub is not PYSAT_FALSE:
-                oset.add(sub)
+                oset[sub] = None
 
         # getting the actual list of operands
-        operands = sorted(oset)
+        operands = list(oset)
 
         if not operands:
             return PYSAT_TRUE if nof_trues % 2 else PYSAT_FALSE
