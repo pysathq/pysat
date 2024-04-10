@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 11.04.2024 (*1.8.dev10*)
+
+-   Fixed a bug in ``simplified()`` method for XOr terms.
+
 ## 07.04.2024 (*1.8.dev9*)
 
 -   Fixed implementation of ``propagate()`` for CaDiCaL 1.9.5.
