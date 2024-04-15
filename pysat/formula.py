@@ -1912,6 +1912,7 @@ class Neg(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.subformula = None
 
     def _iter(self, outermost=False):
@@ -1922,8 +1923,10 @@ class Neg(Formula):
         for cl in self.subformula._iter():
             yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -1984,7 +1987,6 @@ class Neg(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             self.name = self.clauses[0][0]
-            self.clauses = []
 
             Formula._vpool[Formula._context].obj2id[self] = self.name
             Formula._vpool[Formula._context].id2obj[self.name] = self
