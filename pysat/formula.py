@@ -2513,6 +2513,7 @@ class XOr(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -2525,8 +2526,10 @@ class XOr(Formula):
             for cl in sub._iter():
                 yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2612,8 +2615,8 @@ class XOr(Formula):
                 # build a hierarchy of binary XOR constraints
                 # until there are exactly two inputs left
                 while len(inputs) > 2:
-                    n1 = inputs.pop()
                     n2 = inputs.pop()
+                    n1 = inputs.pop()
 
                     f1 = Formula._vpool[Formula._context].obj(n1)
                     f2 = Formula._vpool[Formula._context].obj(n2)
@@ -2623,7 +2626,7 @@ class XOr(Formula):
                     ao._clausify(name_required=True)
 
                     # collecting all the corresponding clauses
-                    self.clauses += ao.clauses
+                    self.clauses += ao._clauses_tseitin
 
                     inputs.append(ao.name)
 
@@ -2644,7 +2647,8 @@ class XOr(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            n1, n2 = self.clauses[-1]
+            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            n1, n2 = self._clauses_tseitin[-1]
             if len(self.subformulas) > 2:
                 # reconstructing the final subterm
                 f1 = Formula._vpool[Formula._context].obj(n1)
@@ -2658,17 +2662,17 @@ class XOr(Formula):
                 final = None
 
             # direct implication (just adding the selector)
-            self.clauses[-2].append(-self.name)
-            self.clauses[-1].append(-self.name)
+            self._clauses_tseitin[-2].append(-self.name)
+            self._clauses_tseitin[-1].append(-self.name)
 
             # clauses representing converse implication
-            self.clauses.append([self.name, -n1, +n2])
-            self.clauses.append([self.name, +n1, -n2])
+            self._clauses_tseitin.append([self.name, -n1, +n2])
+            self._clauses_tseitin.append([self.name, +n1, -n2])
 
             if final:
                 # sharing converse implication with final subterm (if any)
-                final.clauses.append(self.clauses[-2])
-                final.clauses.append(self.clauses[-1])
+                final._clauses_tseitin.append(self._clauses_tseitin[-2])
+                final._clauses_tseitin.append(self._clauses_tseitin[-1])
 
     def __repr__(self):
         """
