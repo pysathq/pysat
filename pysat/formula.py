@@ -2761,6 +2761,7 @@ class ITE(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.cond = self.cons1 = self.cons2 = None
 
     def _iter(self, outermost=False):
@@ -2773,8 +2774,10 @@ class ITE(Formula):
             for cl in sub._iter():
                 yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2854,16 +2857,17 @@ class ITE(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
+            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
-            self.clauses[0].append(-self.name)
-            self.clauses[1].append(-self.name)
+            self._clauses_tseitin[0].append(-self.name)
+            self._clauses_tseitin[1].append(-self.name)
 
             # converse implication
-            self.clauses.append([self.name, -self.cond.name,  -self.cons1.name])
-            self.clauses.append([self.name, +self.cond.name,  -self.cons2.name])
-            self.clauses.append([self.name, -self.cons1.name, -self.cons2.name])
+            self._clauses_tseitin.append([self.name, -self.cond.name,  -self.cons1.name])
+            self._clauses_tseitin.append([self.name, +self.cond.name,  -self.cons2.name])
+            self._clauses_tseitin.append([self.name, -self.cons1.name, -self.cons2.name])
 
     def __repr__(self):
         """
