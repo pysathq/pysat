@@ -1350,6 +1350,7 @@ class Atom(Formula):
             assert self.object > 0, 'Variables should be represented as positive integers'
 
             self.name = self.object  # using the integer id as the name
+            self.clauses = [[self.name]]
             Formula._vpool[Formula._context].obj2id[self] = self.name
             Formula._vpool[Formula._context].id2obj[self.name] = self
             Formula._vpool[Formula._context].occupy(1, self.name)
@@ -1361,6 +1362,7 @@ class Atom(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []  # always empty
         self.object = None
 
     def _iter(self, outermost=False):
@@ -1369,8 +1371,10 @@ class Atom(Formula):
             clauses to iterate through.
         """
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def _clausify(self, name_required=True):
         """
@@ -1383,6 +1387,7 @@ class Atom(Formula):
         # true and false constants shouldn't be encoded
         if self.object not in (False, True):
             self.name = Formula._vpool[Formula._context].id(self)
+            self.clauses = [[self.name]]
 
     def simplified(self, assumptions=[]):
         """
