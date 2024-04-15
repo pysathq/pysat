@@ -3195,6 +3195,7 @@ class CNF(Formula, object):
         cnf = CNF()
         cnf.nv = self.nv
         cnf.clauses = copy.deepcopy(self.clauses)
+        cnf._clauses_tseitin = copy.deepcopy(self._clauses_tseitin)
         cnf.comments = copy.deepcopy(self.comments)
 
         return cnf
@@ -3605,7 +3606,7 @@ class CNF(Formula, object):
                 # just in case, marking all ids below self.name as occupied
                 Formula._vpool[Formula._context].occupy(1, self.name)
 
-            self.clauses = clauses
+            self._clauses_tseitin = clauses
             self.auxvars = auxvars
             self.enclits = enclits
             self.nv = self.name
@@ -3616,8 +3617,10 @@ class CNF(Formula, object):
             :class:`Formula`.
         """
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
