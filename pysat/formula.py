@@ -790,6 +790,7 @@ class Formula(object):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
 
     @classmethod
     def __new__(cls, *args, **kwargs):
@@ -1151,7 +1152,7 @@ class Formula(object):
         self.clausify()
 
         # then recursively iterate through the clauses
-        for cl in self._iter():
+        for cl in self._iter(outermost=True):
             yield cl
 
     def clausify(self):
@@ -1362,7 +1363,7 @@ class Atom(Formula):
         self.clauses = []
         self.object = None
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. Does nothing as there are no
             clauses to iterate through.
@@ -1520,7 +1521,7 @@ class And(Formula):
         self.clauses = []
         self.subformulas = []
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
@@ -1731,7 +1732,7 @@ class Or(Formula):
         self.clauses = []
         self.subformulas = []
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
@@ -1905,7 +1906,7 @@ class Neg(Formula):
         self.clauses = []
         self.subformula = None
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Recursive iterator through the clauses.
         """
@@ -2060,7 +2061,7 @@ class Implies(Formula):
         self.clauses = []
         self.left = self.right = None
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Clause iterator. Recursively iterates through the clauses of
             ``left`` and ``right`` subformulas followed by own clause
@@ -2261,7 +2262,7 @@ class Equals(Formula):
         self.clauses = []
         self.subformulas = []
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
@@ -2496,7 +2497,7 @@ class XOr(Formula):
         self.clauses = []
         self.subformulas = []
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
@@ -2740,7 +2741,7 @@ class ITE(Formula):
         self.clauses = []
         self.cond = self.cons1 = self.cons2 = None
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
@@ -3583,7 +3584,7 @@ class CNF(Formula, object):
             self.enclits = enclits
             self.nv = self.name
 
-    def _iter(self):
+    def _iter(self, outermost=False):
         """
             This is a copy of :meth:`__iter__`, to be consistent with
             :class:`Formula`.
