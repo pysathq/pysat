@@ -2274,6 +2274,7 @@ class Equals(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -2286,8 +2287,10 @@ class Equals(Formula):
             for cl in sub._iter():
                 yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2389,15 +2392,16 @@ class Equals(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
+            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication (just adding the selector)
-            for cl in self.clauses:
+            for cl in self._clauses_tseitin:
                 cl.append(-self.name)
 
             # clauses representing converse implication
-            self.clauses.append([self.name] + [-s.name for s in self.subformulas])
-            self.clauses.append([self.name] + [+s.name for s in self.subformulas])
+            self._clauses_tseitin.append([self.name] + [-s.name for s in self.subformulas])
+            self._clauses_tseitin.append([self.name] + [+s.name for s in self.subformulas])
 
     def __repr__(self):
         """
