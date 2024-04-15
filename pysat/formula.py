@@ -1734,6 +1734,7 @@ class Or(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -1746,8 +1747,10 @@ class Or(Formula):
             for cl in sub._iter():
                 yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -1830,14 +1833,15 @@ class Or(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
+            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
-            self.clauses[0].append(-self.name)
+            self._clauses_tseitin[0].append(-self.name)
 
             # clauses representing converse implication
-            for i in range(len(self.clauses[0]) - 1):
-                self.clauses.append([self.name, -self.clauses[0][i]])
+            for i in range(len(self._clauses_tseitin[0]) - 1):
+                self._clauses_tseitin.append([self.name, -self._clauses_tseitin[0][i]])
 
     def __repr__(self):
         """
