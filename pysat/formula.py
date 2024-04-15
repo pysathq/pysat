@@ -586,6 +586,7 @@ class Formula(object):
         Formula._context = context
 
         # updating references to True and False constants in the new context
+        global PYSAT_FALSE, PYSAT_TRUE
         PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
 
     @staticmethod
