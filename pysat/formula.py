@@ -1519,6 +1519,7 @@ class And(Formula):
 
         self.name = None
         self.clauses = []
+        self._clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -1531,8 +1532,10 @@ class And(Formula):
             for cl in sub._iter():
                 yield cl
 
-        for cl in self.clauses:
-            yield cl
+        if outermost:
+            yield from self.clauses
+        else:
+            yield from self._clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -1614,15 +1617,16 @@ class And(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
+            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
             self.name = Formula._vpool[Formula._context].id(self)
 
             cl = [self.name]  # final clause (converse implication)
-            for i in range(len(self.clauses)):
-                cl.append(-self.clauses[i][0])      # updating final clause
-                self.clauses[i].append(-self.name)  # updating direct implication
+            for i in range(len(self._clauses_tseitin)):
+                cl.append(-self._clauses_tseitin[i][0])      # updating final clause
+                self._clauses_tseitin[i].append(-self.name)  # updating direct implication
 
             # adding final clause
-            self.clauses.append(cl)
+            self._clauses_tseitin.append(cl)
 
     def __repr__(self):
         """
