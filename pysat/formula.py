@@ -790,7 +790,7 @@ class Formula(object):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
 
     @classmethod
     def __new__(cls, *args, **kwargs):
@@ -1361,7 +1361,7 @@ class Atom(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []  # always empty
+        self.clauses_tseitin = []  # always empty
         self.object = None
 
     def _iter(self, outermost=False):
@@ -1373,7 +1373,7 @@ class Atom(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def _clausify(self, name_required=True):
         """
@@ -1523,7 +1523,7 @@ class And(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -1539,7 +1539,7 @@ class And(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -1623,19 +1623,19 @@ class And(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             cl = [self.name]  # final clause (converse implication)
-            for i in range(len(self._clauses_tseitin)):
-                cl.append(-self._clauses_tseitin[i][0])      # updating final clause
-                self._clauses_tseitin[i].append(-self.name)  # updating direct implication
+            for i in range(len(self.clauses_tseitin)):
+                cl.append(-self.clauses_tseitin[i][0])      # updating final clause
+                self.clauses_tseitin[i].append(-self.name)  # updating direct implication
 
             # adding final clause
-            self._clauses_tseitin.append(cl)
+            self.clauses_tseitin.append(cl)
 
     def __repr__(self):
         """
@@ -1743,7 +1743,7 @@ class Or(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -1759,7 +1759,7 @@ class Or(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -1844,18 +1844,18 @@ class Or(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
-            self._clauses_tseitin[0].append(-self.name)
+            self.clauses_tseitin[0].append(-self.name)
 
             # clauses representing converse implication
-            for i in range(len(self._clauses_tseitin[0]) - 1):
-                self._clauses_tseitin.append([self.name, -self._clauses_tseitin[0][i]])
+            for i in range(len(self.clauses_tseitin[0]) - 1):
+                self.clauses_tseitin.append([self.name, -self.clauses_tseitin[0][i]])
 
     def __repr__(self):
         """
@@ -1926,7 +1926,7 @@ class Neg(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.subformula = None
 
     def _iter(self, outermost=False):
@@ -1940,7 +1940,7 @@ class Neg(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2083,7 +2083,7 @@ class Implies(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.left = self.right = None
 
     def _iter(self, outermost=False):
@@ -2100,7 +2100,7 @@ class Implies(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2169,18 +2169,18 @@ class Implies(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
-            self._clauses_tseitin[0].append(-self.name)
+            self.clauses_tseitin[0].append(-self.name)
 
             # clauses representing converse implication
-            for i in range(len(self._clauses_tseitin[0]) - 1):
-                self._clauses_tseitin.append([self.name, -self._clauses_tseitin[0][i]])
+            for i in range(len(self.clauses_tseitin[0]) - 1):
+                self.clauses_tseitin.append([self.name, -self.clauses_tseitin[0][i]])
 
     def __repr__(self):
         """
@@ -2293,7 +2293,7 @@ class Equals(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -2309,7 +2309,7 @@ class Equals(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2413,19 +2413,19 @@ class Equals(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication (just adding the selector)
-            for cl in self._clauses_tseitin:
+            for cl in self.clauses_tseitin:
                 cl.append(-self.name)
 
             # clauses representing converse implication
-            self._clauses_tseitin.append([self.name] + [-s.name for s in self.subformulas])
-            self._clauses_tseitin.append([self.name] + [+s.name for s in self.subformulas])
+            self.clauses_tseitin.append([self.name] + [-s.name for s in self.subformulas])
+            self.clauses_tseitin.append([self.name] + [+s.name for s in self.subformulas])
 
     def __repr__(self):
         """
@@ -2537,7 +2537,7 @@ class XOr(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.subformulas = []
 
     def _iter(self, outermost=False):
@@ -2553,7 +2553,7 @@ class XOr(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2651,7 +2651,7 @@ class XOr(Formula):
                     ao._clausify(name_required=True)
 
                     # collecting all the corresponding clauses
-                    self.clauses += ao._clauses_tseitin
+                    self.clauses += ao.clauses_tseitin
 
                     inputs.append(ao.name)
 
@@ -2673,11 +2673,11 @@ class XOr(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
-            n1, n2 = self._clauses_tseitin[-1]
+            n1, n2 = self.clauses_tseitin[-1]
             if len(self.subformulas) > 2:
                 # reconstructing the final subterm
                 f1 = Formula._vpool[Formula._context].obj(n1)
@@ -2691,17 +2691,17 @@ class XOr(Formula):
                 final = None
 
             # direct implication (just adding the selector)
-            self._clauses_tseitin[-2].append(-self.name)
-            self._clauses_tseitin[-1].append(-self.name)
+            self.clauses_tseitin[-2].append(-self.name)
+            self.clauses_tseitin[-1].append(-self.name)
 
             # clauses representing converse implication
-            self._clauses_tseitin.append([self.name, -n1, +n2])
-            self._clauses_tseitin.append([self.name, +n1, -n2])
+            self.clauses_tseitin.append([self.name, -n1, +n2])
+            self.clauses_tseitin.append([self.name, +n1, -n2])
 
             if final:
                 # sharing converse implication with final subterm (if any)
-                final._clauses_tseitin.append(self._clauses_tseitin[-2])
-                final._clauses_tseitin.append(self._clauses_tseitin[-1])
+                final.clauses_tseitin.append(self.clauses_tseitin[-2])
+                final.clauses_tseitin.append(self.clauses_tseitin[-1])
 
     def __repr__(self):
         """
@@ -2790,7 +2790,7 @@ class ITE(Formula):
 
         self.name = None
         self.clauses = []
-        self._clauses_tseitin = []
+        self.clauses_tseitin = []
         self.cond = self.cons1 = self.cons2 = None
 
     def _iter(self, outermost=False):
@@ -2806,7 +2806,7 @@ class ITE(Formula):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
@@ -2888,20 +2888,20 @@ class ITE(Formula):
         # introducing a new name for this formula if required
         if name_required and not self.name:
             if save_clauses:
-                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+                self.clauses_tseitin = [clause.copy() for clause in self.clauses]
             else:
-                self._clauses_tseitin = self.clauses
+                self.clauses_tseitin = self.clauses
                 self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
-            self._clauses_tseitin[0].append(-self.name)
-            self._clauses_tseitin[1].append(-self.name)
+            self.clauses_tseitin[0].append(-self.name)
+            self.clauses_tseitin[1].append(-self.name)
 
             # converse implication
-            self._clauses_tseitin.append([self.name, -self.cond.name,  -self.cons1.name])
-            self._clauses_tseitin.append([self.name, +self.cond.name,  -self.cons2.name])
-            self._clauses_tseitin.append([self.name, -self.cons1.name, -self.cons2.name])
+            self.clauses_tseitin.append([self.name, -self.cond.name,  -self.cons1.name])
+            self.clauses_tseitin.append([self.name, +self.cond.name,  -self.cons2.name])
+            self.clauses_tseitin.append([self.name, -self.cons1.name, -self.cons2.name])
 
     def __repr__(self):
         """
@@ -3229,7 +3229,7 @@ class CNF(Formula, object):
         cnf = CNF()
         cnf.nv = self.nv
         cnf.clauses = copy.deepcopy(self.clauses)
-        cnf._clauses_tseitin = copy.deepcopy(self._clauses_tseitin)
+        cnf.clauses_tseitin = copy.deepcopy(self.clauses_tseitin)
         cnf.comments = copy.deepcopy(self.comments)
 
         return cnf
@@ -3640,7 +3640,7 @@ class CNF(Formula, object):
                 # just in case, marking all ids below self.name as occupied
                 Formula._vpool[Formula._context].occupy(1, self.name)
 
-            self._clauses_tseitin = clauses
+            self.clauses_tseitin = clauses
             self.auxvars = auxvars
             self.enclits = enclits
             self.nv = self.name
@@ -3654,7 +3654,7 @@ class CNF(Formula, object):
         if outermost:
             yield from self.clauses
         else:
-            yield from self._clauses_tseitin
+            yield from self.clauses_tseitin
 
     def simplified(self, assumptions=[]):
         """
