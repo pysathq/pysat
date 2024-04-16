@@ -1179,8 +1179,7 @@ class Formula(object):
                 [[3, 4]]  # 4 corresponds to z while 3 represents the equality x @ y
         """
 
-        if not self.clauses and not self.name:
-            self._clausify(name_required=False)
+        self._clausify(name_required=False)
 
     def simplified(self, assumptions=[]):
         """
@@ -1385,7 +1384,7 @@ class Atom(Formula):
         """
 
         # true and false constants shouldn't be encoded
-        if self.object not in (False, True):
+        if not self.name and self.object not in (False, True):
             self.name = Formula._vpool[Formula._context].id(self)
             self.clauses = [[self.name]]
 
@@ -1612,6 +1611,7 @@ class And(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformulas
             for sub in self.subformulas:
@@ -1622,7 +1622,11 @@ class And(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             cl = [self.name]  # final clause (converse implication)
@@ -1827,6 +1831,7 @@ class Or(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformulas
             self.clauses.append([])  # empty clause, to be filled out
@@ -1838,7 +1843,11 @@ class Or(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
@@ -2150,6 +2159,7 @@ class Implies(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformula
             self.left._clausify(name_required=True)
@@ -2158,7 +2168,11 @@ class Implies(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
@@ -2385,6 +2399,7 @@ class Equals(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformulas
             for sub in self.subformulas:
@@ -2397,7 +2412,11 @@ class Equals(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication (just adding the selector)
@@ -2609,6 +2628,7 @@ class XOr(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformulas
             inputs = []
@@ -2652,7 +2672,11 @@ class XOr(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             n1, n2 = self._clauses_tseitin[-1]
             if len(self.subformulas) > 2:
                 # reconstructing the final subterm
@@ -2852,6 +2876,7 @@ class ITE(Formula):
             :param name_required: bool
         """
 
+        save_clauses = bool(self.clauses)
         if not self.clauses:
             # first, recursively encoding subformula
             self.cond._clausify(name_required=True)
@@ -2862,7 +2887,11 @@ class ITE(Formula):
 
         # introducing a new name for this formula if required
         if name_required and not self.name:
-            self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            if save_clauses:
+                self._clauses_tseitin = [clause.copy() for clause in self.clauses]
+            else:
+                self._clauses_tseitin = self.clauses
+                self.clauses = []
             self.name = Formula._vpool[Formula._context].id(self)
 
             # direct implication
