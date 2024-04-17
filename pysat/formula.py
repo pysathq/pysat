@@ -3465,6 +3465,7 @@ class CNF(Formula, object):
         """
 
         self.nv = max([abs(l) for l in clause] + [self.nv])
+        Formula._vpool[Formula._context].occupy(1, self.nv)
         self.clauses.append(list(clause))
 
     def extend(self, clauses):
