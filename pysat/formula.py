@@ -651,7 +651,7 @@ class Formula(object):
             to_clean = [context] if context in Formula._instances else []
         else:
             # everything
-            to_clean = list(Formula._instances.keys())
+            to_clean = list(set(Formula._vpool).union(set(Formula._instances)))
 
         # actual cleaning
         for ctx in to_clean:
