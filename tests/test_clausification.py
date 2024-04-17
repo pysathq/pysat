@@ -7,7 +7,8 @@ def compare(a, b):
 
 def test_clausification():
     # reset vpool
-    Formula.cleanup()
+    Formula.cleanup()  # this still inherits the pool from test_accum_stats.py through pytest!
+    Formula._vpool['default'].restart()
 
     # Atom outermost
     compare(list(Atom('1')), [[1]])
