@@ -192,7 +192,7 @@
     Namely, a user may create complex formulas using variables (atomic
     formulas implemented as objects of class :class:`Atom`), and the following
     logic connectives: :class:`And`, :class:`Or`, :class:`Neg`,
-    class:`Implies`, :class:`Equals`, :class:`XOr`, and :class:`ITE`. (All of
+    :class:`Implies`, :class:`Equals`, :class:`XOr`, and :class:`ITE`. (All of
     these classes inherit from the base class :class:`Formula`.) Arbitrary
     combinations of these logic connectives are allowed. Importantly, the
     module provides seamless integration of :class:`CNF` and various
