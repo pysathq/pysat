@@ -585,10 +585,6 @@ class Formula(object):
 
         Formula._context = context
 
-        # updating references to True and False constants in the new context
-        global PYSAT_FALSE, PYSAT_TRUE
-        PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
-
     @staticmethod
     def attach_vpool(vpool, context='default'):
         """
@@ -659,6 +655,10 @@ class Formula(object):
 
         # actual cleaning
         for ctx in to_clean:
+            # we never clean the '_global' context
+            if ctx == '_global':
+                continue
+
             # deleting the content of all the formulas' in the context
             for key in list(Formula._instances[ctx].keys()):
                 Formula._instances[ctx][key].__del__()
@@ -835,6 +835,11 @@ class Formula(object):
             # getting the key to associate the formula with
             key = Formula._get_key(args, kwargs)
 
+            # first, checking if the key is known to represent a global constant
+            if key in Formula._instances['_global']:
+                return Formula._instances['_global'][key]
+
+            # then, checking if the key is known in the current context
             if key not in Formula._instances[Formula._context]:
                 # this key is yet unknown; creating a new formula object
                 Formula._instances[Formula._context][key] = _create_object()
@@ -1431,9 +1436,12 @@ class Atom(Formula):
             return 'F' if self.object == False else 'T'
 
 
-# true and false constants
+# true and false constants (stored in the '_global' context)
+# in fact, this is where the '_global' context is first created
 #==============================================================================
+Formula.set_context('_global')
 PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
+Formula.set_context('default')
 
 
 #

@@ -123,6 +123,10 @@ class LinearConstraint:
         Note that if no weights are provided, each occurrence of a literal is
         assumed to have weight 1.
 
+        .. note::
+
+            All weights are supposed to be non-negative values.
+
         :param lits: list of literals (left-hand side)
         :param weights: weights of the literals
         :param bound: right-hand side of the constraint
