@@ -586,6 +586,7 @@ class Formula(object):
         Formula._context = context
 
         # updating references to True and False constants in the new context
+        global PYSAT_FALSE, PYSAT_TRUE
         PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
 
     @staticmethod
@@ -832,7 +833,7 @@ class Formula(object):
             # hence, we need to make sure we don't duplicate formulas
 
             # getting the key to associate the formula with
-            key = Formula._get_key(cls, args, kwargs)
+            key = Formula._get_key(args, kwargs)
 
             if key not in Formula._instances[Formula._context]:
                 # this key is yet unknown; creating a new formula object
@@ -850,7 +851,8 @@ class Formula(object):
 
         raise FormulaError('Formula class does not allow deep copying')
 
-    def _get_key(cls, *args, **kwargs):
+    @staticmethod
+    def _get_key(*args, **kwargs):
         """
             The method is used to extract and return a list of attributes to
             serve as a key associated with the formula requested by a user.
