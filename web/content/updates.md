@@ -10,6 +10,15 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 17.04.2024 (*1.8.dev11*)
+
+-   Fixed an issue in formula clausification. Now, depending on whether the
+    formula is outermost or not, the clauses will be either raw or
+    tseitin-encoded (thanks to [brossignol](https://github.com/brossignol)).
+-   Changed the way ``PYSAT_FALSE`` and ``PYSAT_TRUE`` constants are treated.
+    They are now global constants stored in a special context (thanks to
+    [brossignol](https://github.com/brossignol)).
+
 ## 11.04.2024 (*1.8.dev10*)
 
 -   Fixed a bug in ``simplified()`` method for XOr terms.
