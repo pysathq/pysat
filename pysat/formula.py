@@ -3024,6 +3024,7 @@ class CNF(Formula, object):
         """
             Search and store the highest variable.
         """
+
         self.nv = max(map(abs, itertools.chain(*self.clauses)))
 
         # in case we use this CNF as a subformula in the future,
@@ -3459,14 +3460,21 @@ class CNF(Formula, object):
             print('(check-sat)', file=file_pointer)
             print('(exit)', file=file_pointer)
 
-    def append(self, clause):
+    def append(self, clause, update_vpool=False):
         """
             Add one more clause to CNF formula. This method additionally
             updates the number of variables, i.e. variable ``self.nv``, used
             in the formula.
 
-            :param clause: a new clause to add.
+            The additional keyword argument ``update_vpool`` can be set to
+            ``True`` if the user wants to update for default static pool of
+            variable identifiers stored in class :class:`Formula`.
+
+            :param clause: a new clause to add
+            :param update_vpool: update or not the static vpool
+
             :type clause: list(int)
+            :type update_vpool: bool
 
             .. code-block:: python
 
@@ -3478,17 +3486,26 @@ class CNF(Formula, object):
         """
 
         self.nv = max([abs(l) for l in clause] + [self.nv])
-        Formula._vpool[Formula._context].occupy(1, self.nv)
         self.clauses.append(list(clause))
 
-    def extend(self, clauses):
+        if update_vpool:
+            Formula._vpool[Formula._context].occupy(1, self.nv)
+
+    def extend(self, clauses, update_vpool=False):
         """
             Add several clauses to CNF formula. The clauses should be given in
             the form of list. For every clause in the list, method
             :meth:`append` is invoked.
 
-            :param clauses: a list of new clauses to add.
+            The additional keyword argument ``update_vpool`` can be set to
+            ``True`` if the user wants to update for default static pool of
+            variable identifiers stored in class :class:`Formula`.
+
+            :param clauses: a list of new clauses to add
+            :param update_vpool: update or not the static vpool
+
             :type clauses: list(list(int))
+            :type update_vpool: bool
 
             Example:
 
@@ -3502,7 +3519,7 @@ class CNF(Formula, object):
         """
 
         for cl in clauses:
-            self.append(cl)
+            self.append(cl, update_vpool=update_vpool)
 
     def __iter__(self):
         """
