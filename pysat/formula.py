@@ -651,7 +651,7 @@ class Formula(object):
             to_clean = [context] if context in Formula._instances else []
         else:
             # everything
-            to_clean = list(Formula._instances.keys())
+            to_clean = list(set(Formula._vpool).union(set(Formula._instances)))
 
         # actual cleaning
         for ctx in to_clean:
@@ -3001,10 +3001,6 @@ class CNF(Formula, object):
         elif from_aiger:
             self.from_aiger(from_aiger)
 
-        # in case we use this CNF as a subformula in the future,
-        # let's put the number of used variables in Formula's IDPool
-        Formula._vpool[Formula._context].occupy(1, self.nv)
-
     def __new__(cls, *args, **kwargs):
         """
             While :class:`CNF` inherits from :class:`Formula` (and so do its
@@ -3023,6 +3019,16 @@ class CNF(Formula, object):
 
         s = self.to_dimacs().replace('\n', '\\n')
         return f'CNF(from_string=\'{s}\')'
+
+    def _compute_nv(self):
+        """
+            Search and store the highest variable.
+        """
+        self.nv = max(map(abs, itertools.chain(*self.clauses)))
+
+        # in case we use this CNF as a subformula in the future,
+        # let's put the number of used variables in Formula's IDPool
+        Formula._vpool[Formula._context].occupy(1, self.nv)
 
     def from_file(self, fname, comment_lead=['c'], compressed_with='use_ext'):
         """
@@ -3098,7 +3104,7 @@ class CNF(Formula, object):
                 elif not line.startswith('p cnf '):
                     self.comments.append(line)
 
-        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.clauses])))
+        self._compute_nv()
 
     def from_string(self, string, comment_lead=['c']):
         """
@@ -3160,8 +3166,7 @@ class CNF(Formula, object):
 
         self.clauses = clauses if by_ref else copy.deepcopy(clauses)
 
-        for cl in self.clauses:
-            self.nv = max([abs(l) for l in cl] + [self.nv])
+        self._compute_nv()
 
     def from_aiger(self, aig, vpool=None):
         """
@@ -3223,7 +3228,7 @@ class CNF(Formula, object):
 
         self.clauses = [list(cls) for cls in aig_cnf.clauses]
         self.comments = ['c ' + c.strip() for c in aig_cnf.comments]
-        self.nv = max(map(abs, itertools.chain(*self.clauses)))
+        self._compute_nv()
 
         # saving input and output variables
         self.inps = list(aig_cnf.input2lit.values())
@@ -3473,6 +3478,7 @@ class CNF(Formula, object):
         """
 
         self.nv = max([abs(l) for l in clause] + [self.nv])
+        Formula._vpool[Formula._context].occupy(1, self.nv)
         self.clauses.append(list(clause))
 
     def extend(self, clauses):
