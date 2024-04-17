@@ -3025,7 +3025,7 @@ class CNF(Formula, object):
             Search and store the highest variable.
         """
 
-        self.nv = max(map(abs, itertools.chain(*self.clauses)))
+        self.nv = max(map(abs, itertools.chain(*self.clauses)), default=self.nv)
 
         # in case we use this CNF as a subformula in the future,
         # let's put the number of used variables in Formula's IDPool
