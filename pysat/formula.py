@@ -3468,7 +3468,18 @@ class CNF(Formula, object):
 
             The additional keyword argument ``update_vpool`` can be set to
             ``True`` if the user wants to update for default static pool of
-            variable identifiers stored in class :class:`Formula`.
+            variable identifiers stored in class :class:`Formula`. In light of
+            the fact that a user may encode their problem manually and add
+            thousands to millions of clauses using this method, the value of
+            ``update_vpool`` is set to ``False`` by default.
+
+            .. note::
+
+                Setting ``update_vpool=True`` is required if a user wants to
+                combine this :class:`CNF` formula with other (clausal or
+                non-clausal) formulas followed by the clausification of the
+                result combination. Alternatively, a user may resort to using
+                the method :meth:`extend` instead.
 
             :param clause: a new clause to add
             :param update_vpool: update or not the static vpool
@@ -3491,21 +3502,14 @@ class CNF(Formula, object):
         if update_vpool:
             Formula._vpool[Formula._context].occupy(1, self.nv)
 
-    def extend(self, clauses, update_vpool=False):
+    def extend(self, clauses):
         """
             Add several clauses to CNF formula. The clauses should be given in
             the form of list. For every clause in the list, method
             :meth:`append` is invoked.
 
-            The additional keyword argument ``update_vpool`` can be set to
-            ``True`` if the user wants to update for default static pool of
-            variable identifiers stored in class :class:`Formula`.
-
             :param clauses: a list of new clauses to add
-            :param update_vpool: update or not the static vpool
-
             :type clauses: list(list(int))
-            :type update_vpool: bool
 
             Example:
 
@@ -3519,7 +3523,10 @@ class CNF(Formula, object):
         """
 
         for cl in clauses:
-            self.append(cl, update_vpool=update_vpool)
+            self.append(cl)
+
+        # updating the default vpool here, once all the clauses are appended
+        Formula._vpool[Formula._context].occupy(1, self.nv)
 
     def __iter__(self):
         """

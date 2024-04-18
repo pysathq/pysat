@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 18.04.2024 (*1.8.dev12*)
+
+-   Made minor tweaks in updating CNF formulas, related to updating the
+    default vpool (the methods affected are ``append`` and ``extend``).
+
 ## 17.04.2024 (*1.8.dev11*)
 
 -   Fixed an issue in formula clausification. Now, depending on whether the
