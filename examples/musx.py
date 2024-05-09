@@ -149,8 +149,8 @@ class MUSX(object):
             if solver in SolverNames.cadical195:
                 self.oracle.activate_atmost()
 
-            assert self.oracle.supports_atmost(), \
-                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
+            assert self.oracle.supports_atmost(), ('{0} does not support native cardinality constraints. Make sure you'
+                                                   ' use the right type of formula.').format(solver)
 
             for atm in formula.atms:
                 self.oracle.add_atmost(*atm)
