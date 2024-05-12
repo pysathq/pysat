@@ -99,7 +99,7 @@
 from __future__ import print_function
 import getopt
 import os
-from pysat.formula import CNFPlus, WCNFPlus
+from pysat.formula import CNFPlus, WCNFPlus, CNF
 from pysat.solvers import Solver, SolverNames
 import re
 import sys
@@ -116,7 +116,7 @@ class MUSX(object):
         soft clauses is still unsatisfiable together with the hard clauses.
 
         The constructor of :class:`MUSX` objects receives a target
-        :class:`.WCNF` formula, a SAT solver name, and a verbosity level. Note
+        :class:`.CNF` or `.WCNF` formula, a SAT solver name, and a verbosity level. Note
         that the default SAT solver is MiniSat22 (referred to as ``'m22'``, see
         :class:`.SolverNames` for details). The default verbosity level is
         ``1``.
@@ -140,6 +140,9 @@ class MUSX(object):
         # clause selectors and a mapping from selectors to clause ids
         self.sels, self.vmap = [], {}
 
+        if isinstance(formula, CNF):
+            formula = formula.weighted()
+
         # constructing the oracle
         self.oracle = Solver(name=solver, bootstrap_with=formula.hard,
                 use_timer=True)
@@ -149,8 +152,8 @@ class MUSX(object):
             if solver in SolverNames.cadical195:
                 self.oracle.activate_atmost()
 
-            assert self.oracle.supports_atmost(), \
-                    '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(solver_name)
+            assert self.oracle.supports_atmost(), ('{0} does not support native cardinality constraints. Make sure you'
+                                                   ' use the right type of formula.').format(solver)
 
             for atm in formula.atms:
                 self.oracle.add_atmost(*atm)
