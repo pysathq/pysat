@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 12.05.2024 (*1.8.dev13*)
+
+-   Fixed a few minor issues in MUSx (thanks to
+    [brossignol](https://github.com/brossignol)).
+
 ## 18.04.2024 (*1.8.dev12*)
 
 -   Made minor tweaks in updating CNF formulas, related to updating the
