@@ -140,6 +140,7 @@ class MUSX(object):
         # clause selectors and a mapping from selectors to clause ids
         self.sels, self.vmap = [], {}
 
+        # to deal with a CNF* formula, we create its weighted version
         if isinstance(formula, CNF):
             formula = formula.weighted()
 
