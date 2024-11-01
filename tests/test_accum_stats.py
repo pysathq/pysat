@@ -7,6 +7,7 @@ solvers = ['cadical103',
            'gluecard41',
            'glucose30',
            'glucose42',
+           'kissat4',
            'lingeling',
            'maplechrono',
            'maplecm',
@@ -20,7 +21,6 @@ def test_solvers():
     cnf = CNF(from_clauses=[[1, 2, 3], [-1, 2], [-2]])
 
     for name in solvers:
-        print("Name = {}".format(name))
         with Solver(name=name, bootstrap_with=cnf) as solver:
             solver.solve()
             stats = solver.accum_stats()

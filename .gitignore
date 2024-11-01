@@ -6,6 +6,7 @@
 build
 _build
 dist
+*.egg-info
 solvers/._glucose-syrup-4.1
 solvers/cadical103
 solvers/cadical153
@@ -23,6 +24,7 @@ solvers/mergesat3
 solvers/minicard
 solvers/minisat22
 solvers/minisatgh
+solvers/kissat4
 temp
 web/.hugo_build.lock
 wheelhouse

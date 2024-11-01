@@ -82,6 +82,16 @@
 #include "minisatgh/core/Solver.h"
 #endif
 
+#ifdef WITH_KISSAT4
+#include "kissat4/file.hh"
+#include "kissat4/options.hh"
+#include "kissat4/clause.hh"
+#include "kissat4/allocate.hh"
+#include "kissat4/statistics.hh"
+#include "kissat4/proof.hh"
+#include "kissat4/kissat.hh"
+#endif
+
 using namespace std;
 
 // docstrings
@@ -462,6 +472,23 @@ extern "C" {
 	static PyObject *py_minisatgh_del       (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_acc_stats (PyObject *, PyObject *);
 #endif
+#ifdef WITH_KISSAT4
+	static PyObject *py_kissat4_new         (PyObject *, PyObject *);
+	static PyObject *py_kissat4_set         (PyObject *, PyObject *);
+	static PyObject *py_kissat4_add_cl      (PyObject *, PyObject *);
+	static PyObject *py_kissat4_solve       (PyObject *, PyObject *);
+	static PyObject *py_kissat4_cbudget     (PyObject *, PyObject *);
+	static PyObject *py_kissat4_dbudget     (PyObject *, PyObject *);
+	static PyObject *py_kissat4_interrupt   (PyObject *, PyObject *);
+	static PyObject *py_kissat4_clearint    (PyObject *, PyObject *);
+	static PyObject *py_kissat4_tracepr     (PyObject *, PyObject *);
+	static PyObject *py_kissat4_core        (PyObject *, PyObject *);
+	static PyObject *py_kissat4_model       (PyObject *, PyObject *);
+	static PyObject *py_kissat4_nof_vars    (PyObject *, PyObject *);
+	static PyObject *py_kissat4_nof_cls     (PyObject *, PyObject *);
+	static PyObject *py_kissat4_del         (PyObject *, PyObject *);
+	static PyObject *py_kissat4_acc_stats   (PyObject *, PyObject *);
+#endif
 }
 
 // module specification
@@ -785,6 +812,23 @@ static PyMethodDef module_methods[] = {
 	{ "minisatgh_nof_cls",   py_minisatgh_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "minisatgh_del",       py_minisatgh_del,       METH_VARARGS,       del_docstring },
 	{ "minisatgh_acc_stats", py_minisatgh_acc_stats, METH_VARARGS,  acc_stat_docstring },
+#endif
+#ifdef WITH_KISSAT4
+	{ "kissat4_new",         py_kissat4_new,         METH_VARARGS,       new_docstring },
+	{ "kissat4_set",         py_kissat4_set,         METH_VARARGS,       set_docstring },
+	{ "kissat4_add_cl",      py_kissat4_add_cl,      METH_VARARGS,     addcl_docstring },
+	{ "kissat4_solve",       py_kissat4_solve,       METH_VARARGS,     solve_docstring },
+	{ "kissat4_cbudget",     py_kissat4_cbudget,     METH_VARARGS,   cbudget_docstring },
+	{ "kissat4_dbudget",     py_kissat4_dbudget,     METH_VARARGS,   dbudget_docstring },
+	{ "kissat4_interrupt",   py_kissat4_interrupt,   METH_VARARGS, interrupt_docstring },
+	{ "kissat4_clearint",    py_kissat4_clearint,    METH_VARARGS,  clearint_docstring },
+	{ "kissat4_tracepr",     py_kissat4_tracepr,     METH_VARARGS,   tracepr_docstring },
+	{ "kissat4_core",        py_kissat4_core,        METH_VARARGS,      core_docstring },
+	{ "kissat4_model",       py_kissat4_model,       METH_VARARGS,     model_docstring },
+	{ "kissat4_nof_vars",    py_kissat4_nof_vars,    METH_VARARGS,     nvars_docstring },
+	{ "kissat4_nof_cls",     py_kissat4_nof_cls,     METH_VARARGS,      ncls_docstring },
+	{ "kissat4_del",         py_kissat4_del,         METH_VARARGS,       del_docstring },
+	{ "kissat4_acc_stats",   py_kissat4_acc_stats,   METH_VARARGS,  acc_stat_docstring },
 #endif
 	{ NULL, NULL, 0, NULL }
 };
@@ -10454,5 +10498,438 @@ static PyObject *py_minisatgh_acc_stats(PyObject *self, PyObject *args)
 	);
 }
 #endif  // WITH_MINISATGH
+
+// API for Kissat 4
+#ifdef WITH_KISSAT4
+static PyObject *py_kissat4_new(PyObject *self, PyObject *args)
+{
+	kissat4::kissat *s = kissat4::kissat_init();
+	
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_set(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	const char *name;
+	int64_t value;
+	
+	if (!PyArg_ParseTuple(args, "Osl", &s_obj, &name, &value))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	kissat4::kissat_set_option(s, name, value);
+	
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+	
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		kissat4::kissat_set_conflict_limit(s, budget);
+	else 
+		kissat4::kissat_unset_conflict_limit(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_dbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+	
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		kissat4::kissat_set_decision_limit(s, budget);
+	else 
+		kissat4::kissat_unset_decision_limit(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		kissat4::kissat_add(s, l);
+	}
+
+	kissat4::kissat_add(s, 0);
+	Py_DECREF(i_obj);
+
+	PyObject *ret = PyBool_FromLong((long)true);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	// PyObject *a_obj;  // assumptions not supported
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	bool res = kissat4::kissat_solve(s) == 10 ? true : false;;
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	kissat4::proof * proof = kissat4::kissat_get_proof(s); 
+	if (proof)
+		kissat4::kissat_flush_buffer(proof);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	int maxvar = kissat4::kissat_get_statistics(s)->variables_original;
+	if (maxvar) {
+		PyObject *model = PyList_New(maxvar);
+		for (int i = 1; i <= maxvar; ++i) {
+			int l_val = kissat4::kissat_value(s, i);
+
+			PyObject *lit = pyint_from_cint(l_val);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	kissat4::kissat_terminate(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+	
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	kissat4::kissat_unset_termination(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	kissat4::clause* conflict = kissat4::kissat_get_conflict(s);
+	PyObject *core = PyList_New(conflict->size);
+	
+	int i = 0;
+	for (all_literals_in_clause(l, conflict)) {
+	    PyObject *lit = pyint_from_cint(l);
+		PyList_SetItem(core, i++, lit);
+	}
+
+	if (conflict->size) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	int nof_vars = kissat4::kissat_get_statistics(s)->variables_original;
+	
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+	
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	size_t nof_cls = kissat4::kissat_get_statistics(s)->clauses_original;
+ 
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+
+	FILE* file = PyFile_AsFile(p_obj);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	FILE* file = fdopen(fd, "w+");
+	if (file == 0) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(file);
+	Py_INCREF(p_obj);
+#endif
+
+	bool binary = true;
+    kissat4::file* proof_file = (kissat4::file*) kissat4::kissat_malloc(s, sizeof(kissat4::file));
+    kissat4::kissat_write_already_open_file(proof_file, file, "<tmpfile>");
+    kissat4::kissat_init_proof(s, proof_file, binary);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+	
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	kissat4::proof * proof = kissat4::kissat_get_proof(s); 
+	if (proof) {
+		kissat4::file* file = kissat4::kissat_get_proof_file(s);
+		kissat4::kissat_release_proof(s);
+		kissat4::kissat_free(s, file, sizeof(kissat4::file));
+	}
+	kissat4::kissat_release(s);
+	
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat4_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	kissat4::kissat *s = (kissat4::kissat *)PyCObject_AsVoidPtr(s_obj);
+#else
+	kissat4::kissat *s = (kissat4::kissat *)PyCapsule_GetPointer(s_obj, NULL);
+#endif
+
+	const kissat4::statistics *statistics = kissat4::kissat_get_statistics(s);
+
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)statistics->restarts,
+		"conflicts", (Py_ssize_t)statistics->conflicts,
+		"decisions", (Py_ssize_t)statistics->decisions,
+		"propagations", (Py_ssize_t)statistics->propagations
+	);
+}
+#endif // WITH_KISSAT4
 
 }  // extern "C"
