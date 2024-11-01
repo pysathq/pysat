@@ -22,8 +22,9 @@ import prepare
 # solvers to install
 #==============================================================================
 to_install = ['cadical103', 'cadical153', 'gluecard30', 'gluecard41',
-              'glucose30', 'glucose41', 'glucose421', 'lingeling', 'maplechrono', 'maplecm',
-              'maplesat', 'mergesat3', 'minicard', 'minisat22', 'minisatgh']
+              'glucose30', 'glucose41', 'glucose421', 'kissat4', 'lingeling', 
+              'maplechrono', 'maplecm', 'maplesat', 'mergesat3', 'minicard',
+              'minisat22', 'minisatgh' ]
 
 
 #

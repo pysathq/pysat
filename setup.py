@@ -71,7 +71,7 @@ Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`_
 to_install = ['cadical103', 'cadical153', 'cadical195', 'gluecard30',
               'gluecard41', 'glucose30', 'glucose41', 'glucose421',
               'lingeling', 'maplechrono', 'maplecm', 'maplesat', 'mergesat3',
-              'minicard', 'minisat22', 'minisatgh']
+              'minicard', 'minisat22', 'minisatgh', 'kissat4']
 
 # example and allies scripts to install as standalone executables
 #==============================================================================
@@ -120,7 +120,7 @@ class build_ext(distutils.command.build_ext.build_ext):
 
 # compilation flags for C extensions
 #==============================================================================
-compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated'],  ['stdc++']
+compile_flags, cpplib = ['-std=c++11', '-Wall', '-Wno-deprecated', '-Wno-changes-meaning'],  ['stdc++']
 if platform.system() == 'Darwin':
     compile_flags += ['--stdlib=libc++']
     cpplib = ['c++']

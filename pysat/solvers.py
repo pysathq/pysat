@@ -27,6 +27,7 @@
         Glucose3
         Glucose4
         Glucose42
+        Kissat4
         Lingeling
         MapleChrono
         MapleCM
@@ -47,6 +48,7 @@
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
+    -  Kissat (`rel-4.0.1 <https://github.com/arminbiere/kissat>`__)
     -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
     -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
     -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
@@ -84,7 +86,7 @@
     The module provides direct access to all supported solvers using the
     corresponding classes :class:`Cadical103`, :class:`Cadical153`,
     :class:`Cadical195`, :class:`CryptoMinisat`, :class:`Gluecard3`,
-    :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
+    :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`, :class:`Kissat4`,
     :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
     :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
     :class:`Minisat22`, and :class:`MinisatGH`. However, the solvers can also
@@ -155,7 +157,7 @@
     direct access to the individual solvers, i.e. classes :class:`Cadical103`,
     :class:`Cadical153`, :class:`Cadical195`, :class:`CryptoMinisat`,
     :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Glucose42`, :class:`Lingeling`,
+    :class:`Glucose4`, :class:`Glucose42`, :class:`Kissat4`, :class:`Lingeling`,
     :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
     :class:`Mergesat3`, :class:`Minicard`, :class:`Minisat22`, and
     :class:`MinisatGH`, are **omitted**. They replicate the interface of the
@@ -195,7 +197,7 @@ class NoSuchSolverError(Exception):
         does not match any name in :class:`SolverNames`. The list of *known*
         solvers includes the names `'cadical103'`, `'cadical153'`,
         `'cadical195'`, `'cryptosat'`, `'gluecard3'`, `'gluecard4'`,
-        `'glucose3'`, `'glucose4'`, `glucose42`, `'lingeling'`,
+        `'glucose3'`, `'glucose4'`, `glucose42`, `'kissat4'`, `'lingeling'`, 
         `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'mergesat3'`,
         `'minicard'`, `'minisat22'`, and `'minisatgh'`.
     """
@@ -222,6 +224,7 @@ class SolverNames(object):
             glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
             glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
+            kissat4     = ('ks', 'ks4', 'kissat', 'kissat4')
             lingeling   = ('lgl', 'lingeling')
             maplechrono = ('mcb', 'chrono', 'maplechrono')
             maplecm     = ('mcm', 'maplecm')
@@ -246,6 +249,7 @@ class SolverNames(object):
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
     glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
+    kissat4     = ('ks', 'ks4', 'kissat', 'kissat4')
     lingeling   = ('lgl', 'lingeling')
     maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
     maplecm     = ('mcm', 'maplecm')
@@ -315,7 +319,7 @@ class Solver(object):
         Note that while all explicit solver classes necessarily have default
         arguments ``bootstrap_with`` and ``use_timer``, solvers
         :class:`Cadical103`, :class:`Cadical153`, :class:`Cadical195`,
-        :class:`Lingeling`, :class:`Gluecard3`, :class:`Gluecard4`,
+        :class:`Kissat4`, :class:`Lingeling`, :class:`Gluecard3`, :class:`Gluecard4`,
         :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
         :class:`MapleChrono`, :class:`MapleCM`, and :class:`Maplesat` can have
         additional default arguments. One such argument supported by is `DRUP
@@ -429,6 +433,8 @@ class Solver(object):
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose42:
                 self.solver = Glucose42(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.kissat4:
+                self.solver = Kissat4(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.lingeling:
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.maplechrono:
@@ -990,7 +996,7 @@ class Solver(object):
 
             **Note** that only MiniSat-like solvers support this functionality
             (e.g. :class:`Cadical103`, class:`Cadical153`,
-            :class:`Cadical195`, and :class:`Lingeling` do not support it).
+            :class:`Cadical195`, :class:`Kissat4` and :class:`Lingeling` do not support it).
 
             :param assumptions: a list of assumption literals.
             :param phase_saving: enable phase saving (can be ``0``, ``1``, and
@@ -4506,6 +4512,333 @@ class Glucose42(object):
         """
 
         return False
+
+
+
+#
+#==============================================================================
+class Kissat4(object):
+    """
+        Kissat 4.0.1 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 with_proof=False, warm_start=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Kissat4.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by Kissat4.')
+
+        self.kissat, self.status, self.model = None, None, None
+        self.prfile = None
+
+        self.new(bootstrap_with, use_timer, with_proof)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.kissat:
+            self.kissat = pysolvers.kissat4_new()
+            
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.kissat4_tracepr(self.kissat, self.prfile)
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Kissat')
+
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            # time and conflicts budget values
+            self.time_limit = None
+            self.conf_limit = None
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.kissat:
+            pysolvers.kissat4_del(self.kissat)
+            self.kissat = None
+            
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if type(assumptions) != list or len(assumptions) != 0:
+            raise NotImplementedError('Assumptions are unsupported for Kissat4.')
+
+        if self.kissat:
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.kissat4_solve(self.kissat, int(MainThread.check()))
+        
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self._solve_invoked = True
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by Kissat4.')
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.kissat:
+            pysolvers.kissat4_cbudget(self.kissat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Limit on propagations is unsupported by Kissat4.')
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.kissat:
+            pysolvers.kissat4_dbudget(self.kissat, budget)
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+        
+        if self.kissat:
+            pysolvers.kissat4_interrupt(self.kissat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+        
+        if self.kissat:
+            pysolvers.kissat4_clearint(self.kissat)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        raise NotImplementedError('Propagate is not supported by Kissat4')
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        raise NotImplementedError('Phases are not supported by Kissat4')
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.kissat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.kissat and self.status == True:
+            model = pysolvers.kissat4_model(self.kissat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.kissat and self.status == False:
+            return pysolvers.kissat4_core(self.kissat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        if self.kissat and self.prfile:
+            self.prfile.seek(0)
+
+            return Solver._proof_bin2text(bytearray(self.prfile.read()).strip())
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+        
+        if self.kissat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.kissat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.kissat:
+            return pysolvers.kissat4_nof_vars(self.kissat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.kissat:
+            return pysolvers.kissat4_nof_cls(self.kissat)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.kissat:
+            return pysolvers.kissat4_acc_stats(self.kissat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.kissat:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.kissat:
+            res = pysolvers.kissat4_add_cl(self.kissat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            Atmost constraints are not supported by Kissat4.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by Kissat4.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by Kissat4')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.kissat:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Kissat4')
+
+            for clause in formula:
+                res = self.add_clause(clause, no_return)
+
+                if not no_return and res == False:
+                    return res
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
+    def set_option(self, name, value):
+        """
+            Set Kissat specific option value.
+        """
+        if self.kissat:
+            return pysolvers.kissat4_set(self.kissat4, name, value)
+
 
 
 
