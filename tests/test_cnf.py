@@ -28,13 +28,11 @@ cnf1.append(range(1, 6))  # at least 1
 cnf2 = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.seqcounter)
 cnf2.append(range(1, 6))  # at least 1
 
-@pytest.mark.xfail(reason="CNFs are currently not generally copyable")
 def test_cnf():
     cnf = CNF()
     cnf_copy = cnf.copy()
     # TODO: check actual values of the copy for sanity.
 
-@pytest.mark.xfail(reason="CNFPlus are currently not generally copyable")
 def test_cnfplus():
     cnfplus = CNFPlus()
     cnfplus_copy = cnfplus.copy()

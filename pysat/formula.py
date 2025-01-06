@@ -2984,6 +2984,7 @@ class CNF(Formula, object):
 
         self.nv = 0
         self.clauses = []
+        self.encoded = []
         self.comments = []
 
         # this variable is required for integration with Formula
