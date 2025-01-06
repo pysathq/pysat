@@ -27,7 +27,7 @@ cnf1.append(range(1, 6))  # at least 1
 cnf2 = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.seqcounter)
 cnf2.append(range(1, 6))  # at least 1
 
-def test_cnfplus():
+def test_cnfplus_solvers():
     # testing cnf1:
     for name in solvers:
         if name not in ('minicard', 'gluecard30', 'gluecard41'):
@@ -59,7 +59,7 @@ def test_cnfplus():
                     pass
             assert i == 5, 'there should be 5 models'
 
-def test_cnf():
+def test_cnf_solvers():
     # testing cnf2
     for name in solvers:
         with Solver(name=name, bootstrap_with=cnf2) as s:
