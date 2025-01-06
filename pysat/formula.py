@@ -882,10 +882,15 @@ class Formula(object):
 
                 if len(collection) > 1:
                     if _hashable(collection):
-                        items.append((prefix, repr(collection)))
+                        # it is a hashable iterable; it is better to sort it
+                        items.append((prefix, repr(sorted(collection, key=lambda x: hash(x)))))
                     else:
                         for i, item in enumerate(collection):
                             if _hashable(item):
+                                # it is a hashable iterable; it is better to sort it
+                                if isinstance(item, Iterable):
+                                    item = sorted(item, key=lambda x: hash(x))
+
                                 items.append((prefix, repr(item)))
                             elif isinstance(item, Iterable):
                                 items.extend(_flatten(item, prefix=prefix))
@@ -900,6 +905,10 @@ class Formula(object):
                     value = collection[key]
                     new_key = prefix + sep + key if prefix else key
                     if value and _hashable(value):
+                        # it is a hashable iterable; it is better to sort it
+                        if isinstance(value, Iterable):
+                            value = sorted(value, key=lambda x: hash(x))
+
                         items.append((new_key, repr(value)))
                     elif isinstance(value, Iterable):
                         if value:
