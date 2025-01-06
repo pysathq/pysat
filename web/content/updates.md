@@ -10,6 +10,14 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 07.01.2025 (*1.8.dev14*)
+
+-   Fixed an issue in (fresh) empty formula copying (thanks to
+    [gavinp](https://github.com/gavinp)).
+-   Fixed a bug of formula non-uniqueness (when the arguments are reordered).
+-   Fixed a few issues in the generic solver's initialiser.
+-   Fixed most if not all the escape sequences in the docstrings.
+
 ## 12.05.2024 (*1.8.dev13*)
 
 -   Fixed a few minor issues in MUSx (thanks to

@@ -129,7 +129,7 @@ class PHP(CNF, object):
     """
         Generator of :math:`k` pigeonhole principle (:math:`k`-PHP) formulas.
         Given integer parameters :math:`m` and :math:`k`, the :math:`k`
-        pigeonhole principle states that if :math:`k\cdot m+1` pigeons are
+        pigeonhole principle states that if :math:`k\\cdot m+1` pigeons are
         distributes by :math:`m` holes, then at least one hole contains more
         than :math:`k` pigeons.
 
@@ -139,9 +139,9 @@ class PHP(CNF, object):
 
         Assume that a Boolean variable :math:`x_{ij}` encodes that pigeon
         :math:`i` resides in hole :math:`j`. Then a PHP formula can be seen as
-        a conjunction: :math:`\\bigwedge_{i=1}^{k\cdot
-        m+1}{\\textsf{AtLeast1}(x_{i1},\ldots,x_{im})}\wedge
-        \\bigwedge_{j=1}^{m}{\\textsf{AtMost}k(x_{1j},\ldots,x_{k\cdot
+        a conjunction: :math:`\\bigwedge_{i=1}^{k\\cdot
+        m+1}{\\textsf{AtLeast1}(x_{i1},\\ldots,x_{im})}\\wedge
+        \\bigwedge_{j=1}^{m}{\\textsf{AtMost}k(x_{1j},\\ldots,x_{k\\cdot
         m+1,j})}`. Here each :math:`\\textsf{AtLeast1}` constraint forces every
         pigeon to be placed into at least one hole while each
         :math:`\\textsf{AtMost}k` constraint allows the corresponding hole to
@@ -204,16 +204,17 @@ class GT(CNF, object):
     """
         Generator of ordering (or *greater than*, GT) principle formulas. Given
         an integer parameter :math:`n`, the principle states that any partial
-        order on the set :math:`\{1,2,\ldots,n\}` must have a maximal element.
+        order on the set :math:`\\{1,2,\\ldots,n\\}` must have a maximal element.
 
-        Assume variable :math:`x_{ij}`, for :math:`i,j\in[n],i\\neq j`, denotes
-        the fact that :math:`i \succ j`. Clauses :math:`(\\neg{x_{ij}} \\vee
-        \\neg{x_{ji}})` and :math:`(\\neg{x_{ij}} \\vee \\neg{x_{jk}} \\vee
-        x_{ik})` ensure that the relation :math:`\succ` is anti-symmetric and
-        transitive. As a result, :math:`\succ` is a partial order on
-        :math:`[n]`. The additional requirement that each element :math:`i` has
-        a successor in :math:`[n]\setminus\{i\}` represented a clause
-        :math:`(\\vee_{j \\neq i}{x_{ji}})` makes the formula unsatisfiable.
+        Assume variable :math:`x_{ij}`, for :math:`i,j\\in[n],i\\neq j`,
+        denotes the fact that :math:`i \\succ j`. Clauses
+        :math:`(\\neg{x_{ij}} \\vee \\neg{x_{ji}})` and :math:`(\\neg{x_{ij}}
+        \\vee \\neg{x_{jk}} \\vee x_{ik})` ensure that the relation
+        :math:`\\succ` is anti-symmetric and transitive. As a result,
+        :math:`\\succ` is a partial order on :math:`[n]`. The additional
+        requirement that each element :math:`i` has a successor in
+        :math:`[n]\\setminus\\{i\\}` represented a clause :math:`(\\vee_{j
+        \\neq i}{x_{ji}})` makes the formula unsatisfiable.
 
         GT formulas were originally conjectured [2]_ to be hard for resolution.
         However, [5]_ proved the existence of a polynomial size resolution
@@ -276,18 +277,18 @@ class CB(CNF, object):
     """
         Mutilated chessboard principle (CB). Given an integer :math:`n`, the
         principle states that it is impossible to cover a chessboard of size
-        :math:`2n\cdot 2n` by domino tiles if two diagonally opposite corners
+        :math:`2n\\cdot 2n` by domino tiles if two diagonally opposite corners
         of the chessboard are removed.
 
         Note that the chessboard has :math:`4n^2-2` cells. Introduce a Boolean
-        variable :math:`x_{ij}` for :math:`i,j\in[4n^2-2]` s.t. cells :math:`i`
-        and :math:`j` are adjacent (no variables are introduced for pairs of
-        non-adjacent cells). CB formulas comprise clauses (1)
+        variable :math:`x_{ij}` for :math:`i,j\\in[4n^2-2]` s.t. cells
+        :math:`i` and :math:`j` are adjacent (no variables are introduced for
+        pairs of non-adjacent cells). CB formulas comprise clauses (1)
         :math:`(\\neg{x_{ji} \\vee \\neg{x_{ki}}})` for every :math:`i,j \\neq
         k` meaning that no more than one adjacent cell can be paired with the
-        current one; and (2) :math:`(\\vee_{j \in \\text{Adj}(i)} {x_{ij}})\,\,
-        \\forall i` enforcing that every cell :math:`i` should be paired with
-        at least one adjacent cell.
+        current one; and (2) :math:`(\\vee_{j \\in \\text{Adj}(i)}
+        {x_{ij}})\\,\\, \\forall i` enforcing that every cell :math:`i` should
+        be paired with at least one adjacent cell.
 
         Clearly, since the two diagonal corners are removed, the formula is
         unsatisfiable. Also note the following. Assuming that the number of
@@ -389,8 +390,8 @@ class PAR(CNF, object):
         variables :math:`x_{ij},i \\neq j`. If variable :math:`x_{ij}` is
         *true*, then there is an edge between nodes :math:`i` and :math:`j`.
         The formula consists of the following clauses: :math:`(\\vee_{j \\neq
-        i}{x_{ij}})` for every :math:`i\in[2n+1]`, and :math:`(\\neg{x_{ij}}
-        \\vee \\neg{x_{kj}})` for all distinct :math:`i,j,k \in [2n+1]`.
+        i}{x_{ij}})` for every :math:`i\\in[2n+1]`, and :math:`(\\neg{x_{ij}}
+        \\vee \\neg{x_{kj}})` for all distinct :math:`i,j,k \\in [2n+1]`.
 
         The parity principle is known to be hard for resolution [4]_.
 

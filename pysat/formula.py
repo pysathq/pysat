@@ -125,19 +125,19 @@
     additional class for dealing with *partial* and *weighted partial* CNF
     formulas, i.e. WCNF formulas. A WCNF formula is a conjunction of two sets
     of clauses: *hard* clauses and *soft* clauses, i.e.
-    :math:`\mathcal{F}=\mathcal{H}\wedge\mathcal{S}`. Soft clauses of a WCNF
+    :math:`\\mathcal{F}=\\mathcal{H}\\wedge\\mathcal{S}`. Soft clauses of a WCNF
     are labeled with integer *weights*, i.e. a soft clause of
-    :math:`\mathcal{S}` is a pair :math:`(c_i, w_i)`. In partial (unweighted)
+    :math:`\\mathcal{S}` is a pair :math:`(c_i, w_i)`. In partial (unweighted)
     formulas, all soft clauses have weight 1.
 
     WCNF can be of help when solving optimization problems using the SAT
     technology. A typical example of where a WCNF formula can be used is
     `maximum satisfiability (MaxSAT)
     <https://en.wikipedia.org/wiki/Maximum_satisfiability_problem>`__, which
-    given a WCNF formula :math:`\mathcal{F}=\mathcal{H}\wedge\mathcal{S}`
-    targets satisfying all its hard clauses :math:`\mathcal{H}` and maximizing
+    given a WCNF formula :math:`\\mathcal{F}=\\mathcal{H}\\wedge\\mathcal{S}`
+    targets satisfying all its hard clauses :math:`\\mathcal{H}` and maximizing
     the sum of weights of satisfied soft clauses, i.e. maximizing the value of
-    :math:`\sum_{c_i\in\mathcal{S}}{w_i\\cdot c_i}`.
+    :math:`\\sum_{c_i\\in\\mathcal{S}}{w_i\\cdot c_i}`.
 
     An object of class :class:`WCNF` has two variables to access the hard and
     soft clauses of the corresponding formula: ``hard`` and ``soft``. The
@@ -160,7 +160,7 @@
         [1, 3]
 
     A properly constructed WCNF formula must have a *top weight*, which should
-    be equal to :math:`1+\sum_{c_i\in\mathcal{S}}{w_i}`. Top weight of a
+    be equal to :math:`1+\\sum_{c_i\\in\\mathcal{S}}{w_i}`. Top weight of a
     formula can be accessed through variable ``topw``.
 
     .. code-block:: python
@@ -1459,9 +1459,9 @@ Formula.set_context('default')
 class And(Formula):
     """
         Conjunction. Given a list of operands (subformulas) :math:`f_i`,
-        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
-        :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands *of size at
-        least 1* should be passed as arguments to the constructor.
+        :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
+        formula :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands *of
+        size at least 1* should be passed as arguments to the constructor.
 
         Example:
 
@@ -1622,7 +1622,7 @@ class And(Formula):
             subformula, thus representing their conjunction.
 
             If ``name_required`` is set to ``True``, the method encodes the
-            conjunction using the standard logic: :math:`x \equiv
+            conjunction using the standard logic: :math:`x \\equiv
             \\bigwedge{y_i}`, if :math:`x` is the new auxiliary variable
             encoding ``self`` and :math:`y_i` is the auxiliary variable
             representing :math:`i`'s subformula.
@@ -1681,9 +1681,9 @@ class And(Formula):
 class Or(Formula):
     """
         Disjunction. Given a list of operands (subformulas) :math:`f_i`,
-        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
-        :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands *of size at
-        least 1* should be passed as arguments to the constructor.
+        :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
+        formula :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands *of size
+        at least 1* should be passed as arguments to the constructor.
 
         Example:
 
@@ -1844,7 +1844,7 @@ class Or(Formula):
             subformula, thus representing their conjunction.
 
             If ``name_required`` is set to ``True``, the method encodes the
-            conjunction using the standard logic: :math:`x \equiv
+            conjunction using the standard logic: :math:`x \\equiv
             \\bigvee{y_i}`, if :math:`x` is the new auxiliary variable
             encoding ``self`` and :math:`y_i` is the auxiliary variable
             representing :math:`i`'s subformula.
@@ -2173,11 +2173,11 @@ class Implies(Formula):
             If ``name_required`` is ``False``, the method recursively encodes
             the left and right subformulas giving them names, say, :math:`x`
             and :math:`y` respectively and the populates self's clauses with a
-            single binary clause :math:`(\\neg{x}\lor y)`.
+            single binary clause :math:`(\\neg{x}\\lor y)`.
 
             If ``name_required`` is set to ``True``, the method removes this
             single clause and instead gives a name to the implication by
-            Tseitin-encoding it, i.e. :math:`n \equiv (\\neg{x}\lor y)`.
+            Tseitin-encoding it, i.e. :math:`n \\equiv (\\neg{x}\\lor y)`.
 
             :param name_required: whether or not a Tseitin variable is needed
             :param name_required: bool
@@ -2231,10 +2231,10 @@ class Implies(Formula):
 class Equals(Formula):
     """
         Equivalence. Given a list of operands (subformulas) :math:`f_i`,
-        :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it creates a formula
-        :math:`f_1 \leftrightarrow f_2 \leftrightarrow\ldots\leftrightarrow
-        f_n`. The list of operands *of size at least 2* should be passed as
-        arguments to the constructor.
+        :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
+        formula :math:`f_1 \\leftrightarrow f_2
+        \\leftrightarrow\\ldots\\leftrightarrow f_n`. The list of operands *of
+        size at least 2* should be passed as arguments to the constructor.
 
         Example:
 
@@ -2414,8 +2414,8 @@ class Equals(Formula):
             If ``name_required`` is ``False``, the method recursively encodes
             the subformulas and populates self's clauses with binary clauses
             connecting two consecutive subformulas :math:`f_i` and
-            :math:`f_{i+1}` by introducing two clauses :math:`(\\neg{f_i}\lor
-            f_{i+1})` and :math:`(f_i\lor\\neg{f_i+1})`.
+            :math:`f_{i+1}` by introducing two clauses :math:`(\\neg{f_i}\\lor
+            f_{i+1})` and :math:`(f_i\\lor\\neg{f_i+1})`.
 
             If ``name_required`` is set to ``True``, the method introduces an
             new auxiliary name for the equivalence term and clausifies it by
@@ -2477,10 +2477,10 @@ class Equals(Formula):
 class XOr(Formula):
     """
         Exclusive disjunction. Given a list of operands (subformulas)
-        :math:`f_i`, :math:`i \in \{1,\ldots,n\}, n \in \mathbb{N}`, it
-        creates a formula :math:`f_1 \oplus f_2 \oplus\ldots\oplus f_n`. The
-        list of operands *of size at least 2* should be passed as arguments to
-        the constructor.
+        :math:`f_i`, :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it
+        creates a formula :math:`f_1 \\oplus f_2 \\oplus\\ldots\\oplus f_n`.
+        The list of operands *of size at least 2* should be passed as
+        arguments to the constructor.
 
         Example:
 
@@ -2756,7 +2756,7 @@ class ITE(Formula):
     """
         If-then-else operator. Given three operands (subformulas) :math:`x`,
         :math:`y`, and :math:`z`, it creates a formula :math:`(x \\rightarrow
-        y) \land (\\neg{x} \\rightarrow z)`. The operands should be passed as
+        y) \\land (\\neg{x} \\rightarrow z)`. The operands should be passed as
         arguments to the constructor.
 
         Example:
@@ -2895,12 +2895,12 @@ class ITE(Formula):
             the ``cond``, ``cons1``, and ``cons2`` subformulas giving them
             names, say, :math:`x`, :math:`y`, and :math:`z`, respectivela, and
             the populates self's clauses with two binary clauses
-            :math:`(\\neg{x}\lor y)` and :math:`(x \lor y)`.
+            :math:`(\\neg{x}\\lor y)` and :math:`(x \\lor y)`.
 
             If ``name_required`` is set to ``True``, the method removes these
             clauses and instead gives a name to the ITE by Tseitin-encoding
-            it, i.e. encoding :math:`n \equiv \left[(\\neg{x}\lor
-            y)\land(x\lor y)\\right]`.
+            it, i.e. encoding :math:`n \\equiv \\left[(\\neg{x}\\lor
+            y)\\land(x\\lor y)\\right]`.
 
             :param name_required: whether or not a Tseitin variable is needed
             :param name_required: bool
@@ -3584,13 +3584,14 @@ class CNF(Formula, object):
 
     def negate(self, topv=None):
         """
-            Given a CNF formula :math:`\mathcal{F}`, this method creates a CNF
-            formula :math:`\\neg{\mathcal{F}}`. The negation of the formula is
-            encoded to CNF with the use of *auxiliary* Tseitin variables [1]_.
-            A new CNF formula is returned keeping all the newly introduced
-            variables that can be accessed through the ``auxvars`` variable.
-            All the literals used to encode the negation of the original
-            clauses can be accessed through the ``enclits`` variable.
+            Given a CNF formula :math:`\\mathcal{F}`, this method creates a
+            CNF formula :math:`\\neg{\\mathcal{F}}`. The negation of the
+            formula is encoded to CNF with the use of *auxiliary* Tseitin
+            variables [1]_. A new CNF formula is returned keeping all the
+            newly introduced variables that can be accessed through the
+            ``auxvars`` variable. All the literals used to encode the negation
+            of the original clauses can be accessed through the ``enclits``
+            variable.
 
             **Note** that the negation of each clause is encoded with one
             auxiliary variable if it is not unit size. Otherwise, no auxiliary
@@ -4370,11 +4371,11 @@ class CNFPlus(CNF, object):
             3 5 7 0
 
         Each AtLeastK constraint is translated into an AtMostK constraint in
-        the standard way: :math:`\sum_{i=1}^{n}{x_i}\geq k \leftrightarrow
-        \sum_{i=1}^{n}{\\neg{x_i}}\leq (n-k)`. Internally, AtMostK constraints
-        are stored in variable ``atmosts``, each being a pair ``(lits, k)``,
-        where ``lits`` is a list of literals in the sum and ``k`` is the upper
-        bound.
+        the standard way: :math:`\\sum_{i=1}^{n}{x_i}\\geq k \\leftrightarrow
+        \\sum_{i=1}^{n}{\\neg{x_i}}\\leq (n-k)`. Internally, AtMostK
+        constraints are stored in variable ``atmosts``, each being a pair
+        ``(lits, k)``, where ``lits`` is a list of literals in the sum and
+        ``k`` is the upper bound.
 
         Example:
 
@@ -4895,10 +4896,11 @@ class WCNFPlus(WCNF, object):
         i.e. soft cardinality constraints are currently *not supported*.
 
         Each AtLeastK constraint is translated into an AtMostK constraint in
-        the standard way: :math:`\sum_{i=1}^{n}{x_i}\geq k \leftrightarrow
-        \sum_{i=1}^{n}{\\neg{x_i}}\leq (n-k)`. Internally, AtMostK constraints
-        are stored in variable ``atms``, each being a pair ``(lits, k)``, where
-        ``lits`` is a list of literals in the sum and ``k`` is the upper bound.
+        the standard way: :math:`\\sum_{i=1}^{n}{x_i}\\geq k \\leftrightarrow
+        \\sum_{i=1}^{n}{\\neg{x_i}}\\leq (n-k)`. Internally, AtMostK
+        constraints are stored in variable ``atms``, each being a pair
+        ``(lits, k)``, where ``lits`` is a list of literals in the sum and
+        ``k`` is the upper bound.
 
         Example:
 

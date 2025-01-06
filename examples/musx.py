@@ -227,7 +227,7 @@ class MUSX(object):
 
             Soft clauses are (de)activated using the standard MiniSat-like
             assumptions interface [2]_. Each soft clause :math:`c` is augmented
-            with a selector literal :math:`s`, e.g. :math:`(c) \gets (c \\vee
+            with a selector literal :math:`s`, e.g. :math:`(c) \\gets (c \\vee
             \\neg{s})`. As a result, clause :math:`c` can be activated by
             assuming literal :math:`s`. The over-approximation provided as an
             input is specified as a list of selector literals for clauses in

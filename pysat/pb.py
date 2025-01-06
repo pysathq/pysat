@@ -49,9 +49,9 @@
         Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
 
     A *pseudo-Boolean constraint* is a constraint of the form:
-    :math:`\left(\sum_{i=1}^n{a_i\cdot x_i}\\right)\circ k`, where
-    :math:`a_i\in\mathbb{N}`, :math:`x_i\in\{y_i,\\neg{y_i}\}`,
-    :math:`y_i\in\mathbb{B}`, and :math:`\circ\in\{\leq,=,\geq\}`.
+    :math:`\\left(\\sum_{i=1}^n{a_i\\cdot x_i}\\right)\\circ k`, where
+    :math:`a_i\\in\\mathbb{N}`, :math:`x_i\\in\{y_i,\\neg{y_i}\\}`,
+    :math:`y_i\\in\\mathbb{B}`, and :math:`\\circ\\in\\{\\leq,=,\\geq\\}`.
     Pseudo-Boolean constraints arise in a number of important practical
     applications. Thus, several *encodings* of pseudo-Boolean constraints into
     CNF formulas are known [2]_. The list of pseudo-Boolean encodings
@@ -362,8 +362,9 @@ class PBEnc(object):
         """
             This method can be used for creating a CNF encoding of a LEQ
             (weighted AtMostK) constraint, i.e. of
-            :math:`\sum_{i=1}^{n}{a_i\cdot x_i}\leq k`. The resulting set of
-            clauses is returned as an object of class :class:`.formula.CNF`.
+            :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}\\leq k`. The resulting set
+            of clauses is returned as an object of class
+            :class:`.formula.CNF`.
 
             The input list of literals can contain either integers or pairs
             ``(l, w)``, where ``l`` is an integer literal and ``w`` is an
@@ -409,8 +410,8 @@ class PBEnc(object):
         """
             This method can be used for creating a CNF encoding of a GEQ
             (weighted AtLeastK) constraint, i.e. of
-            :math:`\sum_{i=1}^{n}{a_i\cdot x_i}\geq k`. The method shares the
-            arguments and the return type with method :meth:`PBEnc.leq`.
+            :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}\\geq k`. The method shares
+            the arguments and the return type with method :meth:`PBEnc.leq`.
             Please, see it for details.
         """
 
@@ -432,7 +433,7 @@ class PBEnc(object):
             encoding=EncType.best):
         """
             This method can be used for creating a CNF encoding of a weighted
-            EqualsK constraint, i.e. of :math:`\sum_{i=1}^{n}{a_i\cdot x_i}=
+            EqualsK constraint, i.e. of :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}=
             k`. The method shares the arguments and the return type with
             method :meth:`PBEnc.leq`. Please, see it for details.
         """

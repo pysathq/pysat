@@ -47,17 +47,17 @@
     The interface gives access to :class:`Counter`, which expects a formula in
     :class:`.CNF` as input. Given a few additional (optional) arguments,
     including a random seed, *tolerance factor* :math:`\\varepsilon`, and
-    *confidence* :math:`\delta`, the class can be used to get an approximate
+    *confidence* :math:`\\delta`, the class can be used to get an approximate
     number of models of the formula, subject to the given tolerance factor and
     confidence parameter.
 
-    Namely, given a CNF formula :math:`\mathcal{F}` with :math:`\#\mathcal{F}`
-    as the exact number of models, and parameters :math:`\\varepsilon\in(0,1]`
-    and :math:`\delta\in[0,1)`, the counter computes and reports a value
-    :math:`C`, which is an approximate number of models of
-    :math:`\mathcal{F}`, such that
-    :math:`\\textrm{Pr}\left[\\frac{1}{1+\\varepsilon}\#\mathcal{F}\leq C\leq
-    (1+\\varepsilon)\#\mathcal{F}\\right]\geq 1-\delta`.
+    Namely, given a CNF formula :math:`\\mathcal{F}` with
+    :math:`\\#\\mathcal{F}` as the exact number of models, and parameters
+    :math:`\\varepsilon\\in(0,1]` and :math:`\\delta\\in[0,1)`, the counter
+    computes and reports a value :math:`C`, which is an approximate number of
+    models of :math:`\\mathcal{F}`, such that
+    :math:`\\textrm{Pr}\\left[\\frac{1}{1+\\varepsilon}\\#\\mathcal{F}\\leq
+    C\\leq (1+\\varepsilon)\\#\\mathcal{F}\\right]\\geq 1-\\delta`.
 
     The implementation can be used as an executable (the list of available
     command-line options can be shown using ``approxmc.py -h``) in the
@@ -131,13 +131,13 @@ class Counter(object):
         models of the formula, subject to *tolerance factor* ``epsilon`` and
         *confidence parameter* ``delta``.
 
-        Namely, given a CNF formula :math:`\mathcal{F}` and parameters
-        :math:`\\varepsilon\in(0,1]` and :math:`\delta\in[0,1)`, the counter
-        computes and reports a value :math:`C` such that
-        :math:`\\textrm{Pr}\left[\\frac{1}{1+\\varepsilon}\#\mathcal{F}\leq
-        C\leq (1+\\varepsilon)\#\mathcal{F}\\right]\geq 1-\delta`. Here,
-        :math:`\#\mathcal{F}` denotes the exact model count for formula
-        :math:`\mathcal{F}`.
+        Namely, given a CNF formula :math:`\\mathcal{F}` and parameters
+        :math:`\\varepsilon\\in(0,1]` and :math:`\\delta\\in[0,1)`, the
+        counter computes and reports a value :math:`C` such that
+        :math:`\\textrm{Pr}\\left[\\frac{1}{1+\\varepsilon}\\#\\mathcal{F}\\leq
+        C\\leq (1+\\varepsilon)\\#\\mathcal{F}\\right]\\geq 1-\\delta`. Here,
+        :math:`\\#\\mathcal{F}` denotes the exact model count for formula
+        :math:`\\mathcal{F}`.
 
         The ``formula`` argument can be left unspecified at this stage. In
         this case, a user is expected to add all the relevant clauses using
@@ -241,7 +241,7 @@ class Counter(object):
             of :class:`Counter` or through a series of calls to
             :meth:`add_clause`, this method runs the ApproxMC counter with the
             specified values of tolerance :math:`\\varepsilon` and confidence
-            :math:`\delta` parameters, as well as the random ``seed`` value,
+            :math:`\\delta` parameters, as well as the random ``seed`` value,
             and returns the number of models estimated.
 
             A user may specify an argument ``projection``, which is a list of

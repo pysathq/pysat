@@ -35,14 +35,14 @@
     by size) subset-minimal hitting enumeration.
 
     The minimal hitting set problem is trivially formulated as a MaxSAT formula
-    in WCNF, as follows. Assume :math:`E=\{e_1,\ldots,e_n\}` to be a universe
+    in WCNF, as follows. Assume :math:`E=\\{e_1,\\ldots,e_n\\}` to be a universe
     of elements. Also assume there are :math:`k` sets to hit:
-    :math:`s_i=\{e_{i,1},\ldots,e_{i,j_i}\}` s.t. :math:`e_{i,l}\in E`. Every
-    set :math:`s_i=\{e_{i,1},\ldots,e_{i,j_i}\}` is translated into a hard
-    clause :math:`(e_{i,1} \\vee \ldots \\vee e_{i,j_i})`. This results in the
+    :math:`s_i=\\{e_{i,1},\\ldots,e_{i,j_i}\\}` s.t. :math:`e_{i,l}\\in E`. Every
+    set :math:`s_i=\\{e_{i,1},\\ldots,e_{i,j_i}\\}` is translated into a hard
+    clause :math:`(e_{i,1} \\vee \\ldots \\vee e_{i,j_i})`. This results in the
     set of hard clauses having size :math:`k`. The set of soft clauses
     comprises unit clauses of the form :math:`(\\neg{e_{j}})` s.t.
-    :math:`e_{j}\in E`, each having weight 1.
+    :math:`e_{j}\\in E`, each having weight 1.
 
     Taking into account this problem formulation as MaxSAT, ordered hitting
     enumeration is done with the use of the state-of-the-art MaxSAT solver

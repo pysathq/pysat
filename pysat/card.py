@@ -68,10 +68,10 @@
         pp. 129-134
 
     A cardinality constraint is a constraint of the form:
-    :math:`\sum_{i=1}^n{x_i}\leq k`. Cardinality constraints are ubiquitous in
-    practical problem formulations. Note that the implementation of the
+    :math:`\\sum_{i=1}^n{x_i}\\leq k`. Cardinality constraints are ubiquitous
+    in practical problem formulations. Note that the implementation of the
     pairwise, bitwise, and ladder encodings can only deal with AtMost1
-    constraints, e.g. :math:`\sum_{i=1}^n{x_i}\leq 1`.
+    constraints, e.g. :math:`\\sum_{i=1}^n{x_i}\\leq 1`.
 
     Access to all cardinality encodings can be made through the main class of
     this module, which is :class:`.CardEnc`.
@@ -150,9 +150,9 @@ class EncType(object):
         Note that while most of the encodings are produced as a list of
         clauses, the "native" encoding of `MiniCard
         <https://github.com/liffiton/minicard>`__ is managed as one clause.
-        Given an AtMostK constraint :math:`\sum_{i=1}^n{x_i\leq k}`, the native
-        encoding represents it as a pair ``[lits, k]``, where ``lits`` is a
-        list of size ``n`` containing literals in the sum.
+        Given an AtMostK constraint :math:`\\sum_{i=1}^n{x_i\\leq k}`, the
+        native encoding represents it as a pair ``[lits, k]``, where ``lits``
+        is a list of size ``n`` containing literals in the sum.
     """
 
     pairwise    = 0
@@ -248,8 +248,8 @@ class CardEnc(object):
             encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an AtMostK
-            constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}\leq k`. The method
-            shares the arguments and the return type with method
+            constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}\\leq k`. The
+            method shares the arguments and the return type with method
             :meth:`CardEnc.atleast`. Please, see it for details.
         """
 
@@ -310,9 +310,10 @@ class CardEnc(object):
             encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an AtLeastK
-            constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}\geq k`. The method
-            takes 1 mandatory argument ``lits`` and 3 default arguments can be
-            specified: ``bound``, ``top_id``, ``vpool``, and ``encoding``.
+            constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}\\geq k`. The
+            method takes 1 mandatory argument ``lits`` and 3 default arguments
+            can be specified: ``bound``, ``top_id``, ``vpool``, and
+            ``encoding``.
 
             :param lits: a list of literals in the sum.
             :param bound: the value of bound :math:`k`.
@@ -410,7 +411,7 @@ class CardEnc(object):
             encoding=EncType.seqcounter):
         """
             This method can be used for creating a CNF encoding of an EqualsK
-            constraint, i.e. of :math:`\sum_{i=1}^{n}{x_i}= k`. The method
+            constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}= k`. The method
             makes consecutive calls of both :meth:`CardEnc.atleast` and
             :meth:`CardEnc.atmost`. It shares the arguments and the return type
             with method :meth:`CardEnc.atleast`. Please, see it for details.

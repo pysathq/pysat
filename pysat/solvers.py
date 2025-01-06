@@ -119,12 +119,12 @@
 
     PySAT supports both non-incremental and incremental SAT solving.
     Incrementality can be achieved with the use of the MiniSat-like
-    *assumption-based* interface [2]_. It can be helpful if multiple calls to a
-    SAT solver are needed for the same formula using different sets of
+    *assumption-based* interface [2]_. It can be helpful if multiple calls to
+    a SAT solver are needed for the same formula using different sets of
     "assumptions", e.g. when doing consecutive SAT calls for formula
-    :math:`\mathcal{F}\land (a_{i_1}\land\ldots\land a_{i_1+j_1})` and
-    :math:`\mathcal{F}\land (a_{i_2}\land\ldots\land a_{i_2+j_2})`, where every
-    :math:`a_{l_k}` is an assumption literal.
+    :math:`\\mathcal{F}\\land (a_{i_1}\\land\\ldots\\land a_{i_1+j_1})` and
+    :math:`\\mathcal{F}\\land (a_{i_2}\\land\\ldots\\land a_{i_2+j_2})`, where
+    every :math:`a_{l_k}` is an assumption literal.
 
     There are several advantages of using assumptions: (1) it enables one to
     *keep and reuse* the clauses learnt during previous SAT calls at a later
@@ -1349,14 +1349,14 @@ class Solver(object):
             **Note that most of the solvers do not support native AtMostK
             constraints**.
 
-            An AtMostK constraint is :math:`\sum_{i=1}^{n}{x_i}\leq k`. A
+            An AtMostK constraint is :math:`\\sum_{i=1}^{n}{x_i}\\leq k`. A
             native AtMostK constraint should be given as a pair ``lits`` and
             ``k``, where ``lits`` is a list of literals in the sum.
 
             Also, besides *unweighted* AtMostK constraints, some solvers (see
             :class:`Cadical195`) support their weighted counterparts, i.e.
-            pseudo-Boolean constraints of the form :math:`\sum_{i=1}^{n}{w_i
-            \cdot x_i}\leq k`. The weights of the literals can be specified
+            pseudo-Boolean constraints of the form :math:`\\sum_{i=1}^{n}{w_i
+            \\cdot x_i}\\leq k`. The weights of the literals can be specified
             using the argument ``weights``.
 
             :param lits: a list of literals

@@ -50,20 +50,21 @@
     The interface gives access to :class:`Sampler`, which expects a formula in
     :class:`.CNF` as input. Given a few additional (optional) arguments,
     including a random seed, *tolerance factor* :math:`\\varepsilon`,
-    *confidence* :math:`\delta` (to be used by ApproxMC), and *uniformity
-    parameter* :math:`\kappa`, the class can be used to get apply
+    *confidence* :math:`\\delta` (to be used by ApproxMC), and *uniformity
+    parameter* :math:`\\kappa`, the class can be used to get apply
     almost-uniform sampling and to obtain a requested number of samples as a
     result, subject to the given tolerance factor and confidence parameter.
 
-    Namely, given a CNF formula :math:`\mathcal{F}` with the set of satisfying
-    assignments (or models) denoted by :math:`sol(\mathcal{F})` and parameter
-    :math:`\\varepsilon\in(0,1]`, a uniform sampler outputs a model
-    :math:`y\in sol(\mathcal{F})` such that :math:`\\textrm{Pr}\left[y
-    \\textrm{ is output}\\right]=\\frac{1}{|sol(\mathcal{F})|}`.
-    Almost-uniform sampling relaxes the uniformity guarantee and ensures that
-    :math:`\\frac{1}{(1+\\varepsilon)|sol(\mathcal{F})|} \leq
-    \\textrm{Pr}\left[y \\textrm{ is output}\\right] \leq
-    \\frac{1+\\varepsilon}{|sol(\mathcal{F})|}`.
+    Namely, given a CNF formula :math:`\\mathcal{F}` with the set of
+    satisfying assignments (or models) denoted by :math:`sol(\\mathcal{F})`
+    and parameter :math:`\\varepsilon\\in(0,1]`, a uniform sampler outputs a
+    model :math:`y\\in sol(\\mathcal{F})` such that
+    :math:`\\textrm{Pr}\\left[y \\textrm{ is
+    output}\\right]=\\frac{1}{|sol(\\mathcal{F})|}`. Almost-uniform sampling
+    relaxes the uniformity guarantee and ensures that
+    :math:`\\frac{1}{(1+\\varepsilon)|sol(\\mathcal{F})|} \\leq
+    \\textrm{Pr}\\left[y \\textrm{ is output}\\right] \\leq
+    \\frac{1+\\varepsilon}{|sol(\\mathcal{F})|}`.
 
     The implementation can be used as an executable (the list of available
     command-line options can be shown using ``unigen.py -h``) in the
@@ -240,7 +241,7 @@ class Sampler(object):
             of :class:`Sampler` or through a series of calls to
             :meth:`add_clause`, this method runs the UniGen3 sampler with the
             specified values of tolerance :math:`\\varepsilon`, confidence
-            :math:`\delta` parameters, and uniformity parameter :math:`kappa`
+            :math:`\\delta` parameters, and uniformity parameter :math:`kappa`
             as well as the random ``seed`` value, and outputs a requested
             number of samples.
 
