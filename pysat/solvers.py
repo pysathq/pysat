@@ -404,7 +404,7 @@ class Solver(object):
         """
 
         # checking keyword arguments
-        kwallowed = set(['incr', 'with_proof', 'warm_start'])
+        kwallowed = set(['incr', 'with_proof', 'warm_start', 'native_card'])
         for a in kwargs:
             if a not in kwallowed:
                 raise TypeError('Unexpected keyword argument \'{0}\''.format(a))
@@ -735,7 +735,7 @@ class Solver(object):
             .. code-block:: python
 
                 >>> from pysat.solvers import Solver
-                >>> s = Solver(bootstrap_with=[[-1, 2], [-2, 3])
+                >>> s = Solver(bootstrap_with=[[-1, 2], [-2, 3]])
                 >>> s.solve()
                 True
                 >>> s.solve(assumptions=[1, -3])
