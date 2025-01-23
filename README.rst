@@ -348,6 +348,16 @@ publication, please, acknowledge that fact by citing PySAT:
       doi       = {10.1007/978-3-319-94144-8_26}
     }
 
+    @inproceedings{itk-sat24,
+      author    = {Alexey Ignatiev and Zi Li Tan and Christos Karamanos},
+      title     = {Towards Universally Accessible {SAT} Technology},
+      booktitle = {SAT},
+      pages     = {4:1--4:11},
+      year      = {2024},
+      url       = {https://doi.org/10.4230/LIPIcs.SAT.2024.16},
+      doi       = {10.4230/LIPICS.SAT.2024.16},
+    }
+
 To-Do
 -----
 
