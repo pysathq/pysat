@@ -8,7 +8,7 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
-"""
+r"""
     ===============
     List of classes
     ===============
@@ -126,7 +126,7 @@ class UnsupportedBound(Exception):
 #
 #==============================================================================
 class EncType(object):
-    """
+    r"""
         This class represents a C-like ``enum`` type for choosing the
         cardinality encoding to use. The values denoting the encodings are:
 
@@ -246,7 +246,7 @@ class CardEnc(object):
     @classmethod
     def atmost(cls, lits, bound=1, top_id=None, vpool=None,
             encoding=EncType.seqcounter):
-        """
+        r"""
             This method can be used for creating a CNF encoding of an AtMostK
             constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}\\leq k`. The
             method shares the arguments and the return type with method
@@ -308,7 +308,7 @@ class CardEnc(object):
     @classmethod
     def atleast(cls, lits, bound=1, top_id=None, vpool=None,
             encoding=EncType.seqcounter):
-        """
+        r"""
             This method can be used for creating a CNF encoding of an AtLeastK
             constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}\\geq k`. The
             method takes 1 mandatory argument ``lits`` and 3 default arguments
@@ -409,7 +409,7 @@ class CardEnc(object):
     @classmethod
     def equals(cls, lits, bound=1, top_id=None, vpool=None,
             encoding=EncType.seqcounter):
-        """
+        r"""
             This method can be used for creating a CNF encoding of an EqualsK
             constraint, i.e. of :math:`\\sum_{i=1}^{n}{x_i}= k`. The method
             makes consecutive calls of both :meth:`CardEnc.atleast` and

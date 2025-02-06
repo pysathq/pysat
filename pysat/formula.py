@@ -8,7 +8,7 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
-"""
+r"""
     ===============
     List of classes
     ===============
@@ -1457,7 +1457,7 @@ Formula.set_context('default')
 #
 #==============================================================================
 class And(Formula):
-    """
+    r"""
         Conjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
         formula :math:`\\bigwedge_{i=1}^{n}{f_i}`. The list of operands *of
@@ -1613,7 +1613,7 @@ class And(Formula):
         return And(*operands, merge=True) if self.merged else And(*operands)
 
     def _clausify(self, name_required=True):
-        """
+        r"""
             Conjuction clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
@@ -1679,7 +1679,7 @@ class And(Formula):
 #
 #==============================================================================
 class Or(Formula):
-    """
+    r"""
         Disjunction. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
         formula :math:`\\bigvee_{i=1}^{n}{f_i}`. The list of operands *of size
@@ -1835,7 +1835,7 @@ class Or(Formula):
         return Or(*operands, merge=True) if self.merged else Or(*operands)
 
     def _clausify(self, name_required=True):
-        """
+        r"""
             Disjunction clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
@@ -1901,7 +1901,7 @@ class Or(Formula):
 #
 #==============================================================================
 class Neg(Formula):
-    """
+    r"""
         Negation. Given a single operand (subformula) :math:`f`, it creates a
         formula :math:`\\neg{f}`. The operand must be passed as an argument to
         the constructor.
@@ -2049,7 +2049,7 @@ class Neg(Formula):
 #
 #==============================================================================
 class Implies(Formula):
-    """
+    r"""
         Implication. Given two operands :math:`f_1` and :math:`f_2`, it
         creates a formula :math:`f_1 \\rightarrow f_2`. The operands must be
         passed to the constructors either as two arguments or two keyword
@@ -2167,7 +2167,7 @@ class Implies(Formula):
         return Implies(left, right)
 
     def _clausify(self, name_required=True):
-        """
+        r"""
             Implication clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
@@ -2229,7 +2229,7 @@ class Implies(Formula):
 #
 #==============================================================================
 class Equals(Formula):
-    """
+    r"""
         Equivalence. Given a list of operands (subformulas) :math:`f_i`,
         :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it creates a
         formula :math:`f_1 \\leftrightarrow f_2
@@ -2408,7 +2408,7 @@ class Equals(Formula):
         return Equals(*operands, merge=True) if self.merged else Equals(*operands)
 
     def _clausify(self, name_required=True):
-        """
+        r"""
             Equivalence clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
@@ -2475,7 +2475,7 @@ class Equals(Formula):
 #
 #==============================================================================
 class XOr(Formula):
-    """
+    r"""
         Exclusive disjunction. Given a list of operands (subformulas)
         :math:`f_i`, :math:`i \\in \\{1,\\ldots,n\\}, n \\in \\mathbb{N}`, it
         creates a formula :math:`f_1 \\oplus f_2 \\oplus\\ldots\\oplus f_n`.
@@ -2753,7 +2753,7 @@ class XOr(Formula):
 #
 #==============================================================================
 class ITE(Formula):
-    """
+    r"""
         If-then-else operator. Given three operands (subformulas) :math:`x`,
         :math:`y`, and :math:`z`, it creates a formula :math:`(x \\rightarrow
         y) \\land (\\neg{x} \\rightarrow z)`. The operands should be passed as
@@ -2888,7 +2888,7 @@ class ITE(Formula):
         return ITE(cond, cons1, cons2)
 
     def _clausify(self, name_required=True):
-        """
+        r"""
             ITE clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
@@ -3118,7 +3118,7 @@ class CNF(Formula, object):
         self._compute_nv()
 
     def from_string(self, string, comment_lead=['c']):
-        """
+        r"""
             Read a CNF formula from a string. The string should be specified as
             an argument and should be in the DIMACS CNF format. The only
             default argument is ``comment_lead``, which can be used for parsing
@@ -3583,7 +3583,7 @@ class CNF(Formula, object):
         return wcnf
 
     def negate(self, topv=None):
-        """
+        r"""
             Given a CNF formula :math:`\\mathcal{F}`, this method creates a
             CNF formula :math:`\\neg{\\mathcal{F}}`. The negation of the
             formula is encoded to CNF with the use of *auxiliary* Tseitin
@@ -3922,7 +3922,7 @@ class WCNF(object):
                 self.wght.append(w)
 
     def from_string(self, string, comment_lead=['c']):
-        """
+        r"""
             Read a WCNF formula from a string. The string should be specified
             as an argument and should be in the DIMACS CNF format. The only
             default argument is ``comment_lead``, which can be used for parsing
@@ -4336,7 +4336,7 @@ class WCNF(object):
 #
 #==============================================================================
 class CNFPlus(CNF, object):
-    """
+    r"""
         CNF formulas augmented with *native* cardinality constraints.
 
         This class inherits most of the functionality of the :class:`CNF`
@@ -4857,7 +4857,7 @@ class CNFPlus(CNF, object):
 #
 #==============================================================================
 class WCNFPlus(WCNF, object):
-    """
+    r"""
         WCNF formulas augmented with *native* cardinality constraints.
 
         This class inherits most of the functionality of the :class:`WCNF`

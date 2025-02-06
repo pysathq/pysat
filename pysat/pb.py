@@ -8,7 +8,7 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
-"""
+r"""
     ===============
     List of classes
     ===============
@@ -359,7 +359,7 @@ class PBEnc(object):
     @classmethod
     def leq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
-        """
+        r"""
             This method can be used for creating a CNF encoding of a LEQ
             (weighted AtMostK) constraint, i.e. of
             :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}\\leq k`. The resulting set
@@ -407,7 +407,7 @@ class PBEnc(object):
     @classmethod
     def geq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
-        """
+        r"""
             This method can be used for creating a CNF encoding of a GEQ
             (weighted AtLeastK) constraint, i.e. of
             :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}\\geq k`. The method shares
@@ -431,7 +431,7 @@ class PBEnc(object):
     @classmethod
     def equals(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best):
-        """
+        r"""
             This method can be used for creating a CNF encoding of a weighted
             EqualsK constraint, i.e. of :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}=
             k`. The method shares the arguments and the return type with

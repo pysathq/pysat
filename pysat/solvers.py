@@ -8,7 +8,7 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
-"""
+r"""
     ===============
     List of classes
     ===============
@@ -1342,7 +1342,7 @@ class Solver(object):
                 return res
 
     def add_atmost(self, lits, k, weights=[], no_return=True):
-        """
+        r"""
             This method is responsible for adding a new *native* AtMostK (see
             :mod:`pysat.card`) constraint.
 

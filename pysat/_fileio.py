@@ -8,7 +8,7 @@
 ##      E-mail: aignatiev@ciencias.ulisboa.pt
 ##
 
-"""
+r"""
     ===============
     List of classes
     ===============
