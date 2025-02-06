@@ -4358,6 +4358,48 @@ class Glucose42(object):
         if self.glucose:
             pysolvers.glucose421_setphases(self.glucose, literals)
 
+    def set_rnd_seed(self, seed):
+        """Sets the seed for the solver's PRNG.
+
+        Args:
+            seed (float): Value for seeding the PRNG
+        """
+    
+        pysolvers.glucose421_set_rnd_seed(self.glucose, seed)
+
+    def set_rnd_freq(self, freq):
+        """Sets the frequency of random decisions.
+
+        Args:
+            freq (float): Frequency value, must be 0 <= freq <= 1
+        """
+        pysolvers.glucose421_set_rnd_freq(self.glucose, freq)
+            
+    def set_rnd_pol(self, rnd_pol):
+        """Enables/disables random polarities.
+
+        Args:
+            rnd_pol (bool): If True, the solver will use random polarities.
+        """
+        pysolvers.glucose421_set_rnd_pol(self.glucose, rnd_pol)
+
+    def set_rnd_init_act(self, rnd_pol):
+        """Enables/disables random values for initial variable activities.
+
+        Args:
+            rnd_pol (bool): If True, the solver will randomly initialise variable activities.
+        """
+        pysolvers.glucose421_set_rnd_init_act(self.glucose, rnd_pol)
+
+    def set_rnd_first_descent(self, enabled):
+        """Sets the solver's behaviour during the first descent.
+
+        Args:
+            enabled (bool): If True, the solver will make random decision until the first conflict.
+        """
+        pysolvers.glucose421_set_rnd_first_descent(self.glucose, enabled)
+
+
     def get_status(self):
         """
             Returns solver's status.
