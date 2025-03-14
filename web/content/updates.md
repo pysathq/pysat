@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 14.03.2025 (*1.8.dev15*)
+
+-   Fixed an issue related to clausifying formulas with true/false constants.
+
 ## 07.01.2025 (*1.8.dev14*)
 
 -   Fixed an issue in (fresh) empty formula copying (thanks to

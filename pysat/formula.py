@@ -1169,7 +1169,8 @@ class Formula(object):
 
         # then recursively iterate through the clauses
         for cl in self._iter(outermost=True):
-            yield cl
+            if PYSAT_TRUE.name not in cl:
+                yield list(filter(lambda x: x != PYSAT_FALSE.name, cl))
 
     def clausify(self):
         """
@@ -1451,6 +1452,8 @@ class Atom(Formula):
 #==============================================================================
 Formula.set_context('_global')
 PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
+PYSAT_FALSE.name, PYSAT_TRUE.name = -0.5, 0.5 # special (floating-point) values for the constants
+                                              # different from all variable names
 Formula.set_context('default')
 
 
