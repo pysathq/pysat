@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 15.03.2025 (*1.8.dev16*)
+
+-   Another (minor) issue fixed, related to constant clausification.
+
 ## 15.03.2025 (*1.8.dev15*)
 
 -   Fixed an issue related to clausifying formulas with true/false constants.

@@ -1454,6 +1454,9 @@ Formula.set_context('_global')
 PYSAT_FALSE, PYSAT_TRUE = Atom(False), Atom(True)
 PYSAT_FALSE.name, PYSAT_TRUE.name = -0.5, 0.5 # special (floating-point) values for the constants
                                               # different from all variable names
+PYSAT_FALSE.clauses, PYSAT_TRUE.clauses = [[-0.5]], [[0.5]] # unit clauses for the constants
+                                                            # FALSE should turn into an empty clause;
+                                                            # while the clause for TRUE should be removed
 Formula.set_context('default')
 
 
