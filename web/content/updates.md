@@ -10,9 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## 14.03.2025 (*1.8.dev15*)
+## 15.03.2025 (*1.8.dev15*)
 
 -   Fixed an issue related to clausifying formulas with true/false constants.
+-   Glucose 4.2.1 random mode is now supported.
 
 ## 07.01.2025 (*1.8.dev14*)
 

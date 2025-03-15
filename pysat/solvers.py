@@ -494,10 +494,13 @@ class Solver(object):
 
     def configure(self, parameters):
         """
-            Configure :class:`Cadical153` or :class:`Cadical195` by setting
-            some of the predefined parameters to selected values. Note that
-            this method can be invoked only for :class:`Cadical153` and
-            `Cadical195` -- no other solvers support this for now.
+            Configure :class:`Cadical153`, :class:`Cadical195`, and also
+            :class:`Glucose42` by setting some of the predefined parameters to
+            selected values. Note that this method is supposed to be invoked
+            only for :class:`Cadical153` and `Cadical195` -- no other solvers
+            support this for now. (Additionally, one can use it to set some of
+            the randomness related parameters in Glucose42. No other options
+            can be set for Glucose42.)
 
             Also note that this call must follow the creation of the new
             solver object; otherwise, an exception may be thrown.
@@ -507,11 +510,23 @@ class Solver(object):
             assigned to is provided `here
             <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
 
-            :param parameters: parameter names mapped to integer values
+            The list of available options of :class:`Glucose42` includes:
+
+                * ``rnd-seed``: random seed (integer)
+
+                * ``rnd-freq``: frequency of random decisions (float, 0 <= value <= 1)
+
+                * ``rnd-init-act``: random initial activities (bool)
+
+                * ``rnd-pol``: random variable polarities when branching (bool)
+
+                * ``rnd-first-descent``: random decisions before the first conflic (bool)
+
+            :param parameters: parameter names mapped to integer/boolean/floating-point values
             :type parameters: dict
         """
 
-        if self.solver and type(self.solver) in (Cadical153, Cadical195):
+        if self.solver and type(self.solver) in (Cadical153, Cadical195, Glucose42):
             self.solver.configure(parameters)
 
     def activate_atmost(self):
@@ -4358,47 +4373,93 @@ class Glucose42(object):
         if self.glucose:
             pysolvers.glucose421_setphases(self.glucose, literals)
 
-    def set_rnd_seed(self, seed):
-        """Sets the seed for the solver's PRNG.
-
-        Args:
-            seed (float): Value for seeding the PRNG
+    def configure(self, parameters):
         """
-    
-        pysolvers.glucose421_set_rnd_seed(self.glucose, seed)
+            Configure randomness-related parameters of the solver. Parameters
+            should be passed as a dictionary ``{"name": value}``. The list of
+            available parameters includes:
+
+                * ``rnd-seed``: random seed (integer)
+
+                * ``rnd-freq``: frequency of random decisions (float, 0 <= value <= 1)
+
+                * ``rnd-init-act``: random initial activities (bool)
+
+                * ``rnd-pol``: random variable polarities when branching (bool)
+
+                * ``rnd-first-descent``: random decisions before the first conflic (bool)
+
+            :param parameters: parameter names mapped to integer/boolean/floating-point values
+            :type parameters: dict
+        """
+
+        # we aren't checking if the solver object exists
+        # because it is done in all the option setters
+        if 'rnd-seed' in parameters:
+            self.set_rnd_seed(parameters['rnd-seed'])
+        elif 'rnd-freq' in parameters:
+            self.set_rnd_freq(parameters['rnd-freq'])
+        elif 'rnd-pol' in parameters:
+            self.set_rnd_pol(parameters['rnd-pol'])
+        elif 'rnd-init-act' in parameters:
+            self.set_rnd_init_act(parameters['rnd-init-act'])
+        elif 'rnd-first-descent' in parameters:
+            self.set_rnd_first_descent(parameters['rnd-first-descent'])
+
+    def set_rnd_seed(self, seed):
+        """
+            Sets the seed for the solver's PRNG.
+
+            :param seed: Random seed value to initialise the solver's PRNG.
+            :type seed: int
+        """
+
+        if self.glucose:
+            pysolvers.glucose421_set_rnd_seed(self.glucose, seed)
 
     def set_rnd_freq(self, freq):
-        """Sets the frequency of random decisions.
-
-        Args:
-            freq (float): Frequency value, must be 0 <= freq <= 1
         """
-        pysolvers.glucose421_set_rnd_freq(self.glucose, freq)
-            
-    def set_rnd_pol(self, rnd_pol):
-        """Enables/disables random polarities.
+            Sets the frequency of random decisions.
 
-        Args:
-            rnd_pol (bool): If True, the solver will use random polarities.
+            :param freq: Frequency value, must be within :math:`[0, 1]`
+            :type seed: float
         """
-        pysolvers.glucose421_set_rnd_pol(self.glucose, rnd_pol)
 
-    def set_rnd_init_act(self, rnd_pol):
-        """Enables/disables random values for initial variable activities.
+        if self.glucose:
+            pysolvers.glucose421_set_rnd_freq(self.glucose, freq)
 
-        Args:
-            rnd_pol (bool): If True, the solver will randomly initialise variable activities.
+    def set_rnd_pol(self, to_enable):
         """
-        pysolvers.glucose421_set_rnd_init_act(self.glucose, rnd_pol)
+            Enables/disables random polarities, to be used when branching.
 
-    def set_rnd_first_descent(self, enabled):
-        """Sets the solver's behaviour during the first descent.
-
-        Args:
-            enabled (bool): If True, the solver will make random decision until the first conflict.
+            :param to_enable: If True, the solver will use random polarities
+            :type to_enable: bool
         """
-        pysolvers.glucose421_set_rnd_first_descent(self.glucose, enabled)
 
+        if self.glucose:
+            pysolvers.glucose421_set_rnd_pol(self.glucose, to_enable)
+
+    def set_rnd_init_act(self, to_enable):
+        """
+            Enables/disables random values for initial variable activities.
+
+            :param to_enable: If True, the solver will randomly initialise variable activities
+            :type to_enable: bool
+        """
+
+        if self.glucose:
+            pysolvers.glucose421_set_rnd_init_act(self.glucose, to_enable)
+
+    def set_rnd_first_descent(self, to_enable):
+        """
+            Sets the solver's behaviour during the first descent.
+
+            :param to_enable: If True, the solver will make random decision until the first conflict
+            :type to_enable: bool
+        """
+
+        if self.glucose:
+            pysolvers.glucose421_set_rnd_first_descent(self.glucose, to_enable)
 
     def get_status(self):
         """
