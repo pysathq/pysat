@@ -136,6 +136,19 @@ static char    vreset_docstring[] = "Remove all the 'observed' variable flags"
                                     "(CaDiCaL 1.9.5 only).";
 static char  isdeclit_docstring[] = "Get reason of valid observed literal "
                                     "(CaDiCaL 1.9.5 only).";
+static char  set_rnd_seed_docstring[] =          "Set PNRG seed "
+                                                 "(Glucose 4.2.1 only).";
+static char  set_rnd_freq_docstring[] =          "Set frequency of random decisions "
+                                                 "(Glucose 4.2.1 only).";
+static char  set_rnd_pol_docstring[] =           "Randomize polarities on branching "
+                                                 "(Glucose 4.2.1 only).";
+static char  set_rnd_init_act_docstring[] =      "Randomize initial activities "
+                                                 "(Glucose 4.2.1 only).";
+static char  set_rnd_first_descent_docstring[] = "Randomize decisions until first conflict "
+                                                 "(Glucose 4.2.1 only).";
+
+
+
 
 static PyObject *SATError;
 static jmp_buf env;
@@ -294,25 +307,30 @@ extern "C" {
 	static PyObject *py_glucose41_acc_stats (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUCOSE421
-	static PyObject *py_glucose421_new       (PyObject *, PyObject *);
-	static PyObject *py_glucose421_set_start (PyObject *, PyObject *);
-	static PyObject *py_glucose421_add_cl    (PyObject *, PyObject *);
-	static PyObject *py_glucose421_solve     (PyObject *, PyObject *);
-	static PyObject *py_glucose421_solve_lim (PyObject *, PyObject *);
-	static PyObject *py_glucose421_propagate (PyObject *, PyObject *);
-	static PyObject *py_glucose421_setphases (PyObject *, PyObject *);
-	static PyObject *py_glucose421_cbudget   (PyObject *, PyObject *);
-	static PyObject *py_glucose421_pbudget   (PyObject *, PyObject *);
-	static PyObject *py_glucose421_interrupt (PyObject *, PyObject *);
-	static PyObject *py_glucose421_clearint  (PyObject *, PyObject *);
-	static PyObject *py_glucose421_setincr   (PyObject *, PyObject *);
-	static PyObject *py_glucose421_tracepr   (PyObject *, PyObject *);
-	static PyObject *py_glucose421_core      (PyObject *, PyObject *);
-	static PyObject *py_glucose421_model     (PyObject *, PyObject *);
-	static PyObject *py_glucose421_nof_vars  (PyObject *, PyObject *);
-	static PyObject *py_glucose421_nof_cls   (PyObject *, PyObject *);
-	static PyObject *py_glucose421_del       (PyObject *, PyObject *);
-	static PyObject *py_glucose421_acc_stats (PyObject *, PyObject *);
+	static PyObject *py_glucose421_new                   (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_start             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_add_cl                (PyObject *, PyObject *);
+	static PyObject *py_glucose421_solve                 (PyObject *, PyObject *);
+	static PyObject *py_glucose421_solve_lim             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_propagate             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_setphases             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_cbudget               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_pbudget               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_interrupt             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_clearint              (PyObject *, PyObject *);
+	static PyObject *py_glucose421_setincr               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_tracepr               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_core                  (PyObject *, PyObject *);
+	static PyObject *py_glucose421_model                 (PyObject *, PyObject *);
+	static PyObject *py_glucose421_nof_vars              (PyObject *, PyObject *);
+	static PyObject *py_glucose421_nof_cls               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_del                   (PyObject *, PyObject *);
+	static PyObject *py_glucose421_acc_stats             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_rnd_seed          (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_rnd_freq          (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_rnd_pol           (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_rnd_init_act      (PyObject *, PyObject *);
+	static PyObject *py_glucose421_set_rnd_first_descent (PyObject *, PyObject *);
 #endif
 #ifdef WITH_LINGELING
 	static PyObject *py_lingeling_new       (PyObject *, PyObject *);
@@ -618,25 +636,30 @@ static PyMethodDef module_methods[] = {
 	{ "glucose41_acc_stats", py_glucose41_acc_stats, METH_VARARGS,  acc_stat_docstring },
 #endif
 #ifdef WITH_GLUCOSE421
-	{ "glucose421_new",       py_glucose421_new,       METH_VARARGS,       new_docstring },
-	{ "glucose421_set_start", py_glucose421_set_start, METH_VARARGS,  setstart_docstring },
-	{ "glucose421_add_cl",    py_glucose421_add_cl,    METH_VARARGS,     addcl_docstring },
-	{ "glucose421_solve",     py_glucose421_solve,     METH_VARARGS,     solve_docstring },
-	{ "glucose421_solve_lim", py_glucose421_solve_lim, METH_VARARGS,       lim_docstring },
-	{ "glucose421_propagate", py_glucose421_propagate, METH_VARARGS,      prop_docstring },
-	{ "glucose421_setphases", py_glucose421_setphases, METH_VARARGS,    phases_docstring },
-	{ "glucose421_cbudget",   py_glucose421_cbudget,   METH_VARARGS,   cbudget_docstring },
-	{ "glucose421_pbudget",   py_glucose421_pbudget,   METH_VARARGS,   pbudget_docstring },
-	{ "glucose421_interrupt", py_glucose421_interrupt, METH_VARARGS, interrupt_docstring },
-	{ "glucose421_clearint",  py_glucose421_clearint,  METH_VARARGS,  clearint_docstring },
-	{ "glucose421_setincr",   py_glucose421_setincr,   METH_VARARGS,   setincr_docstring },
-	{ "glucose421_tracepr",   py_glucose421_tracepr,   METH_VARARGS,   tracepr_docstring },
-	{ "glucose421_core",      py_glucose421_core,      METH_VARARGS,      core_docstring },
-	{ "glucose421_model",     py_glucose421_model,     METH_VARARGS,     model_docstring },
-	{ "glucose421_nof_vars",  py_glucose421_nof_vars,  METH_VARARGS,     nvars_docstring },
-	{ "glucose421_nof_cls",   py_glucose421_nof_cls,   METH_VARARGS,      ncls_docstring },
-	{ "glucose421_del",       py_glucose421_del,       METH_VARARGS,       del_docstring },
-	{ "glucose421_acc_stats", py_glucose421_acc_stats, METH_VARARGS,  acc_stat_docstring },
+	{ "glucose421_new",                   py_glucose421_new,                   METH_VARARGS,                    new_docstring },
+	{ "glucose421_set_start",             py_glucose421_set_start,             METH_VARARGS,               setstart_docstring },
+	{ "glucose421_add_cl",                py_glucose421_add_cl,                METH_VARARGS,                  addcl_docstring },
+	{ "glucose421_solve",                 py_glucose421_solve,                 METH_VARARGS,                  solve_docstring },
+	{ "glucose421_solve_lim",             py_glucose421_solve_lim,             METH_VARARGS,                    lim_docstring },
+	{ "glucose421_propagate",             py_glucose421_propagate,             METH_VARARGS,                   prop_docstring },
+	{ "glucose421_setphases",             py_glucose421_setphases,             METH_VARARGS,                 phases_docstring },
+	{ "glucose421_cbudget",               py_glucose421_cbudget,               METH_VARARGS,                cbudget_docstring },
+	{ "glucose421_pbudget",               py_glucose421_pbudget,               METH_VARARGS,                pbudget_docstring },
+	{ "glucose421_interrupt",             py_glucose421_interrupt,             METH_VARARGS,              interrupt_docstring },
+	{ "glucose421_clearint",              py_glucose421_clearint,              METH_VARARGS,               clearint_docstring },
+	{ "glucose421_setincr",               py_glucose421_setincr,               METH_VARARGS,                setincr_docstring },
+	{ "glucose421_tracepr",               py_glucose421_tracepr,               METH_VARARGS,                tracepr_docstring },
+	{ "glucose421_core",                  py_glucose421_core,                  METH_VARARGS,                   core_docstring },
+	{ "glucose421_model",                 py_glucose421_model,                 METH_VARARGS,                  model_docstring },
+	{ "glucose421_nof_vars",              py_glucose421_nof_vars,              METH_VARARGS,                  nvars_docstring },
+	{ "glucose421_nof_cls",               py_glucose421_nof_cls,               METH_VARARGS,                   ncls_docstring },
+	{ "glucose421_del",                   py_glucose421_del,                   METH_VARARGS,                    del_docstring },
+	{ "glucose421_acc_stats",             py_glucose421_acc_stats,             METH_VARARGS,               acc_stat_docstring },
+	{ "glucose421_set_rnd_seed",          py_glucose421_set_rnd_seed,          METH_VARARGS,           set_rnd_seed_docstring },
+	{ "glucose421_set_rnd_freq",          py_glucose421_set_rnd_freq,          METH_VARARGS,           set_rnd_freq_docstring },
+	{ "glucose421_set_rnd_pol",           py_glucose421_set_rnd_pol,           METH_VARARGS,            set_rnd_pol_docstring },
+	{ "glucose421_set_rnd_init_act",      py_glucose421_set_rnd_init_act,      METH_VARARGS,       set_rnd_init_act_docstring },
+	{ "glucose421_set_rnd_first_descent", py_glucose421_set_rnd_first_descent, METH_VARARGS,  set_rnd_first_descent_docstring },
 #endif
 #ifdef WITH_LINGELING
 	{ "lingeling_new",       py_lingeling_new,       METH_VARARGS,      new_docstring },
@@ -5837,7 +5860,6 @@ static PyObject *py_glucose421_new(PyObject *self, PyObject *args)
 				"Cannot create a new solver.");
 		return NULL;
 	}
-
 	return void_to_pyobj((void *)s);
 }
 
@@ -6201,6 +6223,96 @@ static PyObject *py_glucose421_setincr(PyObject *self, PyObject *args)
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
 
 	s->setIncrementalMode();
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_set_rnd_seed(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	double dbl;
+
+	if (!PyArg_ParseTuple(args, "Od", &s_obj, &dbl))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	
+	s->random_seed = dbl;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_set_rnd_freq(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	double dbl;
+
+	if (!PyArg_ParseTuple(args, "Od", &s_obj, &dbl))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	
+	s->random_var_freq = dbl;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_set_rnd_pol(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int b;
+
+	if (!PyArg_ParseTuple(args, "Op", &s_obj, &b))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	
+	s->rnd_pol = (bool) b;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_set_rnd_init_act(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int b;
+
+	if (!PyArg_ParseTuple(args, "Op", &s_obj, &b))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	
+	s->rnd_init_act = (bool) b;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_set_rnd_first_descent(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int b;
+
+	if (!PyArg_ParseTuple(args, "Op", &s_obj, &b))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	
+	s->randomizeFirstDescent = (bool) b;
 
 	Py_RETURN_NONE;
 }
