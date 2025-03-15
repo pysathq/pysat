@@ -17,6 +17,7 @@ environment:
     - PYTHON: "C:\\Python310-x64"
     - PYTHON: "C:\\Python311-x64"
     - PYTHON: "C:\\Python312-x64"
+    - PYTHON: "C:\\Python313-x64"
 
 install:
   # We need wheel installed to build wheels
