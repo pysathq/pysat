@@ -409,10 +409,7 @@ class IDPool(object):
                 'hello_world!'
         """
 
-        if vid in self.id2obj:
-            return self.id2obj[vid]
-
-        return None
+        return self.id2obj.get(abs(vid), None)
 
     def occupy(self, start, stop):
         """
