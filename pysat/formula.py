@@ -4334,7 +4334,7 @@ class WCNF(object):
 
         cnf.nv = self.nv
         cnf.clauses = copy.deepcopy(self.hard) + copy.deepcopy(self.soft)
-        cnf.commends = self.comments[:]
+        cnf.comments = self.comments[:]
 
         return cnf
 
@@ -5378,7 +5378,7 @@ class WCNFPlus(WCNF, object):
         cnf.nv = self.nv
         cnf.clauses = copy.deepcopy(self.hard) + copy.deepcopy(self.soft)
         cnf.atmosts = copy.deepcopy(self.atms)
-        cnf.commends = self.comments[:]
+        cnf.comments = self.comments[:]
 
         return cnf
 

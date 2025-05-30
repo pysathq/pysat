@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 30.05.2025 (*1.8.dev17*)
+
+-   Fixed a typo in variable spelling (thanks to
+    [aditya95sriram](https://github.com/aditya95sriram)).
+
 ## 15.03.2025 (*1.8.dev16*)
 
 -   Another (minor) issue fixed, related to constant clausification.
