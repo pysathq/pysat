@@ -724,8 +724,7 @@ class Formula(object):
 
         # if required, we need to filter out everything but atomic forms
         if atoms_only:
-            forms = list(filter(lambda f: type(f) == Atom or \
-                    type(f) == Neg and type(f.subformula) == Atom, forms))
+            forms = [f for f in forms if type(f) == Atom or type(f) == Neg and type(f.subformula) == Atom]
 
         return forms
 
@@ -1170,7 +1169,7 @@ class Formula(object):
         # then recursively iterate through the clauses
         for cl in self._iter(outermost=True):
             if PYSAT_TRUE.name not in cl:
-                yield list(filter(lambda x: x != PYSAT_FALSE.name, cl))
+                yield [l for l in cl if l != PYSAT_FALSE.name]
 
     def clausify(self):
         """
@@ -1266,6 +1265,43 @@ class Formula(object):
             return True
         elif simp == PYSAT_FALSE:
             return False
+
+    def atoms(self, constants=False):
+        """
+            Returns a list of all the atomic formulas (variables and, if
+            required, constants) that this formula is built from. The method
+            recursively traverses the formula tree and collects all the atoms
+            it finds.
+
+            :param constants: include Boolean constants in the list
+            :type constants: bool
+
+            :rtype: list(:class:`Atom`)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.formula import *
+                >>>
+                >>> x, y, z = Atom('x'), Atom('y'), Atom('z')
+                >>> a = (x @ y) | z
+                >>>
+                >>> a.atoms()
+                [Atom('x'), Atom('y'), Atom('z')]
+        """
+
+        dest = set()
+        self._atoms(dest)
+
+        if constants is False:
+            if PYSAT_TRUE in dest:
+                dest.remove(PYSAT_TRUE)
+
+            if PYSAT_FALSE in dest:
+                dest.remove(PYSAT_FALSE)
+
+        return list(dest)
 
 
 #
@@ -1425,6 +1461,17 @@ class Atom(Formula):
         elif ~self in assumptions:
             return PYSAT_FALSE
         return self
+
+    def _atoms(self, dest):
+        """
+            The base case of recursive atom collection. Updates the collection
+            with ``self`` atom.
+
+            :param dest: the set of atoms to collect
+            :type dest: set(:class:`Atom`)
+        """
+
+        dest.add(self)
 
     def __repr__(self):
         """
@@ -1665,6 +1712,17 @@ class And(Formula):
             # adding final clause
             self.encoded.append(cl)
 
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        for sub in self.subformulas:
+            sub._atoms(dest)
+
     def __repr__(self):
         """
             State reproducible string representaion of object.
@@ -1887,6 +1945,17 @@ class Or(Formula):
             for i in range(len(self.encoded[0]) - 1):
                 self.encoded.append([self.name, -self.encoded[0][i]])
 
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        for sub in self.subformulas:
+            sub._atoms(dest)
+
     def __repr__(self):
         """
             State reproducible string representaion of object.
@@ -2034,6 +2103,16 @@ class Neg(Formula):
 
             Formula._vpool[Formula._context].obj2id[self] = self.name
             Formula._vpool[Formula._context].id2obj[self.name] = self
+
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        self.subformula._atoms(dest)
 
     def __repr__(self):
         """
@@ -2213,6 +2292,17 @@ class Implies(Formula):
             # clauses representing converse implication
             for i in range(len(self.encoded[0]) - 1):
                 self.encoded.append([self.name, -self.encoded[0][i]])
+
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        self.left._atoms(dest)
+        self.right._atoms(dest)
 
     def __repr__(self):
         """
@@ -2460,6 +2550,17 @@ class Equals(Formula):
             # clauses representing converse implication
             self.encoded.append([self.name] + [-s.name for s in self.subformulas])
             self.encoded.append([self.name] + [+s.name for s in self.subformulas])
+
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        for sub in self.subformulas:
+            sub._atoms(dest)
 
     def __repr__(self):
         """
@@ -2739,6 +2840,17 @@ class XOr(Formula):
                 final.encoded.append(self.encoded[-2])
                 final.encoded.append(self.encoded[-1])
 
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        for sub in self.subformulas:
+            sub._atoms(dest)
+
     def __repr__(self):
         """
             State reproducible string representaion of object.
@@ -2940,6 +3052,18 @@ class ITE(Formula):
             self.encoded.append([self.name, -self.cond.name,  -self.cons1.name])
             self.encoded.append([self.name, +self.cond.name,  -self.cons2.name])
             self.encoded.append([self.name, -self.cons1.name, -self.cons2.name])
+
+    def _atoms(self, dest):
+        """
+            Recursive atom collection.
+
+            :param dest: where the atoms are collected
+            :type dest: set(:class:`Atom`)
+        """
+
+        self.cond._atoms(dest)
+        self.cons1._atoms(dest)
+        self.cons2._atoms(dest)
 
     def __repr__(self):
         """
@@ -3279,7 +3403,7 @@ class CNF(Formula, object):
 
         return cnf
 
-    def to_file(self, fname, comments=None, compress_with='use_ext'):
+    def to_file(self, fname, comments=None, as_dnf=False, compress_with='use_ext'):
         """
             The method is for saving a CNF formula into a file in the DIMACS
             CNF format. A file name is expected as an argument. Additionally,
@@ -3289,10 +3413,12 @@ class CNF(Formula, object):
 
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
-            :param compress_with: file compression algorithm
+            :param as_dnf: a flag to use for specifying "dnf" in the preamble.
+            :param compress_with: file compression algorithm.
 
             :type fname: str
             :type comments: list(str)
+            :type as_dnf: bool
             :type compress_with: str
 
             Note that the ``compress_with`` parameter can be ``None`` (i.e.
@@ -3314,9 +3440,9 @@ class CNF(Formula, object):
         """
 
         with FileObject(fname, mode='w', compression=compress_with) as fobj:
-            self.to_fp(fobj.fp, comments)
+            self.to_fp(fobj.fp, comments, as_dnf)
 
-    def to_fp(self, file_pointer, comments=None):
+    def to_fp(self, file_pointer, comments=None, as_dnf=False):
         """
             The method can be used to save a CNF formula into a file pointer.
             The file pointer is expected as an argument. Additionally,
@@ -3325,9 +3451,11 @@ class CNF(Formula, object):
 
             :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
+            :param as_dnf: a flag to use for specifying "dnf" in the preamble.
 
             :type file_pointer: file pointer
             :type comments: list(str)
+            :type as_dnf: bool
 
             Example:
 
@@ -3350,7 +3478,7 @@ class CNF(Formula, object):
             for c in comments:
                 print(c, file=file_pointer)
 
-        print('p cnf', self.nv, len(self.clauses), file=file_pointer)
+        print('p cnf' if not as_dnf else 'p dnf', self.nv, len(self.clauses), file=file_pointer)
 
         for cl in self.clauses:
             print(' '.join(str(l) for l in cl), '0', file=file_pointer)
@@ -3714,6 +3842,17 @@ class CNF(Formula, object):
             self.auxvars = auxvars
             self.enclits = enclits
             self.nv = self.name
+
+    def _atoms(self, dest):
+        """
+            The base case of recursive atom collection. Extends the collection
+            with all the variables in the CNF formula.
+
+            :param dest: the set of atoms to collect
+            :type dest: set(:class:`Atom`)
+        """
+
+        dest |= set(range(1, self.nv + 1))
 
     def _iter(self, outermost=False):
         """

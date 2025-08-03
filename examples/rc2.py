@@ -829,7 +829,7 @@ class RC2(object):
             self.process_sels()
 
             # updating the list of literals in am1 after splitting the weights
-            am1 = list(filter(lambda l: l not in self.garbage, am1))
+            am1 = [l for l in am1 if l not in self.garbage]
 
             # new selector
             selv = self.pool.id()
@@ -1166,12 +1166,18 @@ class RC2(object):
             :func:`process_sels`, and :func:`process_sums`.
         """
 
-        self.sels = list(filter(lambda x: x not in self.garbage, self.sels))
-        self.sums = list(filter(lambda x: x not in self.garbage, self.sums))
+        # updating the list of selectors and sums
+        self.sels = [l for l in self.sels if l not in self.garbage]
+        self.sums = [l for l in self.sums if l not in self.garbage]
 
-        self.bnds = {l: b for l, b in six.iteritems(self.bnds) if l not in self.garbage}
-        self.wght = {l: w for l, w in six.iteritems(self.wght) if l not in self.garbage}
+        # cleaning the dictionaries
+        for l in list(self.garbage):
+            if l in self.bnds:
+                del self.bnds[l]
+            if l in self.wght:
+                del self.wght[l]
 
+        # removing garbage from the set of selectors
         self.sels_set.difference_update(set(self.garbage))
 
         self.garbage.clear()
@@ -1510,7 +1516,7 @@ class RC2Stratified(RC2, object):
             super(RC2Stratified, self).process_sels()
 
             # updating the list of literals in am1 after splitting the weights
-            am1 = list(filter(lambda l: l not in self.garbage, am1))
+            am1 = [l for l in am1 if l not in self.garbage]
 
             # new selector
             selv = self.pool.id()
@@ -1537,7 +1543,7 @@ class RC2Stratified(RC2, object):
                 to_deactivate.add(l)
 
         # deactivating unnecessary selectors
-        self.sels = list(filter(lambda x: x not in to_deactivate, self.sels))
+        self.sels = [l for l in self.sels if l not in to_deactivate]
 
         # removing unnecessary assumptions
         self.filter_assumps()
@@ -1577,7 +1583,7 @@ class RC2Stratified(RC2, object):
             self.rels.append(-l)
 
         # deactivating unnecessary selectors
-        self.sels = list(filter(lambda x: x not in to_deactivate, self.sels))
+        self.sels = [l for l in self.sels if l not in to_deactivate]
 
     def process_sums(self):
         """
@@ -1620,7 +1626,7 @@ class RC2Stratified(RC2, object):
             self.rels.append(-l)
 
         # deactivating unnecessary sums
-        self.sums = list(filter(lambda x: x not in to_deactivate, self.sums))
+        self.sums = [l for l in self.sums if l not in to_deactivate]
 
 
 #
@@ -1735,7 +1741,7 @@ if __name__ == '__main__':
 
     if files:
         # parsing the input formula
-        if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+        if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
         else:  # expecting '*.cnf[,p,+].*'
             formula = CNFPlus(from_file=files[0]).weighted()

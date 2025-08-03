@@ -387,10 +387,10 @@ class Hitman(object):
                         nohard=True, trim=self.trim)
         elif self.htype == 'lbx':
             self.oracle = LBX(formula, solver_name=self.solver,
-                    use_cld=self.usecld)
+                    use_cld=self.usecld, use_timer=True)
         elif self.htype == 'mcsls':
             self.oracle = MCSls(formula, solver_name=self.solver,
-                    use_cld=self.usecld)
+                    use_cld=self.usecld, use_timer=True)
         else:  # 'sat'
             assert self.solver in SolverNames.minisatgh + \
                     SolverNames.lingeling + SolverNames.cadical153 + \
@@ -446,7 +446,7 @@ class Hitman(object):
             # updating the preferences
             self.oracle.set_phases(literals=[self.phase * (-v) for v in self.idpool.id2obj])
 
-    def add_hard(self, clause, weights=None):
+    def add_hard(self, clause, weights=None, no_obj=False):
         """
             Add a hard constraint, which can be either a pure clause or an
             AtMostK constraint.
@@ -456,47 +456,57 @@ class Hitman(object):
             question into weights. Also note that the weight of an object must
             not change from one call of :meth:`hit` to another.
 
+            Finally, note that if ``no_obj`` is set to True, no new objects
+            will be added to the hitting set enumerator. This is useful if the
+            variables in the clause are either already present or are
+            auxiliary. This is turned off by default.
+
             :param clause: hard constraint (either a clause or a native AtMostK constraint)
             :param weights: a mapping from objects to weights
+            :param no_obj: if True, no new objects are added to the oracle
 
             :type clause: iterable(obj)
             :type weights: dict(obj)
+            :type no_obj: bool
         """
 
         if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set):
             # this is a pure clause
             clause = list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), clause))
 
-            # a soft clause should be added for each new object
-            new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause)
+            if no_obj is False:
+                # a soft clause should be added for each new object
+                new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause)
         else:
             # this is a native AtMostK constraint
             clause = [list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), clause[0])), clause[1]]
 
-            # a soft clause should be added for each new object
-            new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause[0])
+            if no_obj is False:
+                # a soft clause should be added for each new object
+                new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause[0])
 
-            # there may be duplicate literals if the constraint is weighted
-            new_obj = list(set(new_obj))
-
-        # some of the literals may also have the opposite polarity
-        new_obj = [l if l in self.idpool.obj2id else -l for l in new_obj]
+                # there may be duplicate literals if the constraint is weighted
+                new_obj = list(set(new_obj))
 
         # adding the hard clause
         self.oracle.add_clause(clause)
 
-        if self.htype != 'sat':
-            # new soft clauses
-            for vid in new_obj:
-                self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
-        else:
-            # dummy variable id mapping
-            for vid in new_obj:
-                self.oracle.vmap.e2i[vid] = vid
-                self.oracle.vmap.i2e[vid] = vid
+        if no_obj is False:
+            # some of the literals may also have the opposite polarity
+            new_obj = [l if l in self.idpool.obj2id else -l for l in new_obj]
 
-            # setting variable polarities
-            self.oracle.set_phases(literals=[self.phase * (-vid) for vid in new_obj])
+            if self.htype != 'sat':
+                # new soft clauses
+                for vid in new_obj:
+                    self.oracle.add_clause([-vid], 1 if not weights else weights[self.idpool.obj(vid)])
+            else:
+                # dummy variable id mapping
+                for vid in new_obj:
+                    self.oracle.vmap.e2i[vid] = vid
+                    self.oracle.vmap.i2e[vid] = vid
+
+                # setting variable polarities
+                self.oracle.set_phases(literals=[self.phase * (-vid) for vid in new_obj])
 
     def delete(self):
         """
@@ -551,7 +561,7 @@ class Hitman(object):
         to_hit = list(map(lambda obj: self.idpool.id(obj), to_hit))
 
         # a soft clause should be added for each new object
-        new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_hit))
+        new_obj = [vid for vid in to_hit if vid not in self.oracle.vmap.e2i]
 
         # new hard clause; phase multiplication is needed
         # for making phase switching possible (pure SAT only)
@@ -594,7 +604,7 @@ class Hitman(object):
         to_block = list(map(lambda obj: self.idpool.id(obj), to_block))
 
         # a soft clause should be added for each new object
-        new_obj = list(filter(lambda vid: vid not in self.oracle.vmap.e2i, to_block))
+        new_obj = [vid for vid in to_block if vid not in self.oracle.vmap.e2i]
 
         # new hard clause; phase multiplication is needed
         # for making phase switching possible (pure SAT only)

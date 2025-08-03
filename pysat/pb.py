@@ -50,7 +50,7 @@
 
     A *pseudo-Boolean constraint* is a constraint of the form:
     :math:`\\left(\\sum_{i=1}^n{a_i\\cdot x_i}\\right)\\circ k`, where
-    :math:`a_i\\in\\mathbb{N}`, :math:`x_i\\in\{y_i,\\neg{y_i}\\}`,
+    :math:`a_i\\in\\mathbb{N}`, :math:`x_i\\in\\{y_i,\\neg{y_i}\\}`,
     :math:`y_i\\in\\mathbb{B}`, and :math:`\\circ\\in\\{\\leq,=,\\geq\\}`.
     Pseudo-Boolean constraints arise in a number of important practical
     applications. Thus, several *encodings* of pseudo-Boolean constraints into

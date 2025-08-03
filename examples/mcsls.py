@@ -553,8 +553,8 @@ if __name__ == '__main__':
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
-        if re.search('cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
-            if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+        if re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+            if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
                 formula = WCNFPlus(from_file=files[0])
             else:  # expecting '*.cnf[,p,+].*'
                 formula = CNFPlus(from_file=files[0]).weighted()

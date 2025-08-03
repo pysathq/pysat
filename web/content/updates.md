@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 03.08.2025 (*1.8.dev18*)
+
+-   Added Bica, a formula simplifier.
+-   Added Primer, a prime enumerator.
+-   Minor updates in RC2.
+
 ## 30.05.2025 (*1.8.dev17*)
 
 -   Fixed a typo in variable spelling (thanks to

@@ -292,8 +292,7 @@ class FM(object):
 
         while True:
             if self.oracle.solve(assumptions=self.sels):
-                self.model = self.oracle.get_model()
-                self.model = list(filter(lambda l: abs(l) <= self.orig_nv, self.model))
+                self.model = [l for l in self.oracle.get_model() if abs(l) <= self.orig_nv]
                 return
             else:
                 self.treat_core()
@@ -507,7 +506,7 @@ if __name__ == '__main__':
 
     if files:
         # parsing the input formula
-        if re.search('\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
+        if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
         else:  # expecting '*.cnf[,p,+].*'
             formula = CNFPlus(from_file=files[0]).weighted()

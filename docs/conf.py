@@ -71,7 +71,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -117,7 +117,10 @@ html_theme_options = {
             "icon": "fas fa-bug",
             "type": "fontawesome",  # Default is fontawesome
         },
-    ]
+    ],
+    "secondary_sidebar_items": ["page-toc"],
+    # "navigation_depth": 2,
+    # "collapse_navigation": True
 }
 
 # Autodoc settings
@@ -139,6 +142,9 @@ html_static_path = ['_static']
 # html_sidebars = {}
 html_sidebars = {
     "**": ["search-field.html", "sidebar-nav-bs.html"]
+}
+html_context = {
+   "default_mode": "auto"
 }
 
 # -- Options for HTMLHelp output ---------------------------------------------

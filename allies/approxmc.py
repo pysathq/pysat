@@ -371,7 +371,7 @@ if __name__ == '__main__':
     delta, epsilon, projection, seed, verbose, files = parse_options()
 
     # parsing the input formula
-    if files and re.search('\.cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+    if files and re.search(r'\.cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
         formula = CNF(from_file=files[0])
 
         # creating the counter object

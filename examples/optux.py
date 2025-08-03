@@ -130,10 +130,12 @@ class OptUx(object):
 
         As a result, OptUx applies exhaustive *disjoint* minimal correction
         subset (MCS) enumeration [1]_, [2]_, [3]_, [4]_ with the incremental
-        use of RC2 [5]_ as an underlying MaxSAT solver. Once disjoint MCSes
-        are enumerated, they are used to bootstrap a hitting set solver. This
-        implementation uses :class:`.Hitman` as a hitting set solver, which is
-        again based on RC2.
+        use of RC2 [5]_ as an underlying MaxSAT solver. Disjoint MCS
+        enumeration is run only if the corresponding input parameter
+        ``nodisj`` is set to ``False``. Once disjoint MCSes are enumerated,
+        they are used to bootstrap a hitting set solver. This implementation
+        uses :class:`.Hitman` as a hitting set solver, which is again based on
+        RC2.
 
         Note that in the main implicit hitting enumeration loop of the
         algorithm, OptUx follows Forqes in that it does not reduce correction
@@ -195,6 +197,7 @@ class OptUx(object):
         :param dcalls: apply clause D oracle calls (for unsorted enumeration only)
         :param exhaust: do core exhaustion
         :param minz: do heuristic core reduction
+        :param nodisj: do not enumerate disjoint MCSes
         :param puresat: use pure SAT-based hitting set enumeration
         :param unsorted: apply unsorted MUS enumeration
         :param trim: do core trimming at most this number of times
@@ -207,6 +210,7 @@ class OptUx(object):
         :type dcalls: bool
         :type exhaust: bool
         :type minz: bool
+        :type nodisj: bool
         :type puresat: str
         :type unsorted: bool
         :type trim: int
@@ -214,8 +218,8 @@ class OptUx(object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, cover=None,
-            dcalls=False, exhaust=False, minz=False, puresat=False,
-                 unsorted=False, trim=False, verbose=0):
+            dcalls=False, exhaust=False, minz=False, nodisj=False,
+            puresat=False, unsorted=False, trim=False, verbose=0):
         """
             Constructor.
         """
@@ -247,9 +251,12 @@ class OptUx(object):
         unweighted = self.formula.copy()
         unweighted.wght = [1 for w in unweighted.wght]
 
-        # enumerating disjoint MCSes (including unit-size MCSes)
-        to_hit, self.units = self._disjoint(unweighted, solver, adapt, exhaust,
-                minz, trim)
+        if not nodisj:
+            # enumerating disjoint MCSes (including unit-size MCSes)
+            to_hit, self.units = self._disjoint(unweighted, solver, adapt, exhaust,
+                    minz, trim)
+        else:
+            to_hit, self.units, self.disj_time = [], [], 0.
 
         if self.verbose > 2:
             print('c mcses: {0} unit, {1} disj'.format(len(self.units),
@@ -286,7 +293,7 @@ class OptUx(object):
         # SAT oracle bootstrapped with the hard clauses; note that
         # clauses of the unit-size MCSes are enforced to be enabled
         self.oracle = Solver(name=solver, bootstrap_with=unweighted.hard +
-                [[mcs] for mcs in self.units])
+                [[mcs] for mcs in self.units], use_timer=True)
 
         if unweighted.atms:
             if solver in SolverNames.cadical195:
@@ -438,7 +445,7 @@ class OptUx(object):
                     break
 
                 # extracting the MCS corresponding to the model
-                falsified = list(filter(lambda l: model[abs(l) - 1] == -l, self.sels))
+                falsified = [l for l in self.sels if model[abs(l) - 1] == -l]
 
                 # unit size or not?
                 if len(falsified) > 1:
@@ -504,7 +511,7 @@ class OptUx(object):
                 # the candidate subset is satisfiable,
                 # thus extracting a correction subset
                 model = self.oracle.get_model()
-                cs = list(filter(lambda l: model[abs(l) - 1] == -l, self.sels))
+                cs = [l for l in self.sels if model[abs(l) - 1] == -l]
 
                 # hitting the new correction subset
                 self.hitman.hit(cs, weights=self.weights)
@@ -547,10 +554,11 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmp:s:t:uvx',
-                ['adapt', 'cover=', 'dcalls', 'enum=', 'exhaust', 'help',
-                    'minimize', 'solver=', 'puresat=', 'unsorted', 'trim=',
-                    'verbose'])
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmnp:s:t:uvx',
+                                   ['adapt', 'cover=', 'dcalls', 'enum=',
+                                    'exhaust', 'help', 'minimize', 'no-disj',
+                                    'solver=', 'puresat=', 'unsorted',
+                                    'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize() + '\n')
         usage()
@@ -561,6 +569,7 @@ def parse_options():
     dcalls = False
     exhaust = False
     minz = False
+    no_disj = False
     to_enum = 1
     solver = 'g3'
     puresat = False
@@ -586,6 +595,8 @@ def parse_options():
             sys.exit(0)
         elif opt in ('-m', '--minimize'):
             minz = True
+        elif opt in ('-n', '--no-disj'):
+            no_disj = True
         elif opt in ('-p', '--puresat'):
             puresat = str(arg)
         elif opt in ('-s', '--solver'):
@@ -601,8 +612,8 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return adapt, cover, dcalls, exhaust, minz, trim, to_enum, solver, \
-            puresat, unsorted, verbose, args
+    return adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, \
+            solver, puresat, unsorted, verbose, args
 
 
 #
@@ -622,6 +633,7 @@ def usage():
     print('                                  Available values: [1 .. INT_MAX], all (default: 1)')
     print('        -h, --help                Show this message')
     print('        -m, --minimize            Use a heuristic unsatisfiable core minimizer')
+    print('        -n, --no-disj             Do not enumerate disjoint MCSes')
     print('        -p, --puresat=<string>    Use a pure SAT-based hitting set enumerator')
     print('                                  Available values: cd15, cd19, lgl, mgh (default = mgh)')
     print('                                  Requires: unsorted mode, i.e. \'-u\'')
@@ -637,8 +649,8 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, cover, dcalls, exhaust, minz, trim, to_enum, solver, puresat, \
-            unsorted, verbose, files = parse_options()
+    adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, solver, \
+            puresat, unsorted, verbose, files = parse_options()
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
@@ -654,8 +666,9 @@ if __name__ == '__main__':
 
         # creating an object of OptUx
         with OptUx(formula, solver=solver, adapt=adapt, cover=cover,
-                dcalls=dcalls, exhaust=exhaust, minz=minz, puresat=puresat,
-                unsorted=unsorted, trim=trim, verbose=verbose) as optux:
+                   dcalls=dcalls, exhaust=exhaust, minz=minz, nodisj=no_disj,
+                   puresat=puresat, unsorted=unsorted, trim=trim,
+                   verbose=verbose) as optux:
 
             # iterating over the necessary number of optimal MUSes
             for i, mus in enumerate(optux.enumerate()):

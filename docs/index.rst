@@ -33,7 +33,7 @@ Core PySAT modules
 ------------------
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 1
 
     api/card
     api/formula
@@ -46,6 +46,9 @@ Supplementary :mod:`.examples` package
 --------------------------------------
 
 .. toctree::
+    :maxdepth: 1
+
+    api/examples/bica
     api/examples/fm
     api/examples/genhard
     api/examples/hitman
@@ -55,6 +58,7 @@ Supplementary :mod:`.examples` package
     api/examples/models
     api/examples/musx
     api/examples/optux
+    api/examples/primer
     api/examples/rc2
 
 Supplementary :mod:`.allies` package
@@ -65,5 +69,7 @@ SAT-based problem solving. Although only ApproxMCv4 is currently present here,
 the list of tools will grow.
 
 .. toctree::
+    :maxdepth: 1
+
     api/allies/approxmc
     api/allies/unigen

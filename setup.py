@@ -75,8 +75,8 @@ to_install = ['cadical103', 'cadical153', 'cadical195', 'gluecard30',
 
 # example and allies scripts to install as standalone executables
 #==============================================================================
-example_scripts = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx',
-                   'optux', 'rc2']
+example_scripts = ['bica', 'fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models',
+                   'musx', 'optux', 'primer', 'rc2']
 allies_scripts = ['approxmc', 'unigen']
 
 
@@ -179,6 +179,7 @@ setup(name='python-sat',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/x-rst; charset=UTF-8',
     license='MIT',
+    license_files=('LICENSE.txt',),
     author='Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado',
     author_email='alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com',
     url='https://github.com/pysathq/pysat',
