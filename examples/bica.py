@@ -51,7 +51,7 @@
     navigation to determine the Southern Celestial Pole.)
 
     .. [1] Alexey Ignatiev, Alessandro Previti, Joao Marques-Silva.
-        *SAT-Based Formula Simplification*. SAT 2015. pp. 287-298
+        *SAT-Based Formula Simplification*. SAT 2015. pp. 287-298
 
     .. [2] Willard V. Quine. *The Problem of Simplifying Truth Functions*.
         American Mathematical Monthly 59(8). 1952. pp. 521-531

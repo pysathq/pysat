@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 07.08.2025 (*1.8.dev19*)
+
+-   Numerous bug fixes in non-clausal formula handling.
+
 ## 03.08.2025 (*1.8.dev18*)
 
 -   Added Bica, a formula simplifier.

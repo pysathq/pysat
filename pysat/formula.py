@@ -879,45 +879,26 @@ class Formula(object):
             if type(collection) in (tuple, list, set):
                 collection = tuple(filter(lambda x: x or x == False, collection))
 
-                if len(collection) > 1:
-                    if _hashable(collection):
-                        # it is a hashable iterable; it is better to sort it
-                        items.append((prefix, repr(sorted(collection, key=lambda x: hash(x)))))
+                for item in collection:
+                    if isinstance(item, Iterable):
+                        items.extend(_flatten(item, prefix=prefix))
                     else:
-                        for i, item in enumerate(collection):
-                            if _hashable(item):
-                                # it is a hashable iterable; it is better to sort it
-                                if isinstance(item, Iterable):
-                                    item = sorted(item, key=lambda x: hash(x))
-
-                                items.append((prefix, repr(item)))
-                            elif isinstance(item, Iterable):
-                                items.extend(_flatten(item, prefix=prefix))
-                            else:
-                                raise FormulaError('No key can be computed for this formula object')
-                elif collection:
-                    items.extend(_flatten(collection[0], prefix=prefix))
+                        items.append((prefix, item))
 
             # next, checking if it is a dictionary
             elif isinstance(collection, dict):
                 for key in collection.keys():
                     value = collection[key]
                     new_key = prefix + sep + key if prefix else key
-                    if value and _hashable(value):
-                        # it is a hashable iterable; it is better to sort it
-                        if isinstance(value, Iterable):
-                            value = sorted(value, key=lambda x: hash(x))
-
-                        items.append((new_key, repr(value)))
-                    elif isinstance(value, Iterable):
-                        if value:
-                            items.extend(_flatten(value, new_key, sep=sep))
+                    if isinstance(value, Iterable) and value:
+                        items.extend(_flatten(value, prefix=new_key, sep=sep))
                     else:
-                        raise FormulaError('No key can be computed for this formula object')
+
+                        items.append((new_key, value))
 
             # finally, it is a simple non-empty object
             elif collection or collection == False:
-                items.append((prefix, repr(collection)))
+                items.append((prefix, collection))
 
             return items
 
@@ -929,46 +910,68 @@ class Formula(object):
                 args[0] = tuple(args[0][1:])
 
         # flattening all the inputs
-        key = _flatten(args) + _flatten(kwargs)
+        items = _flatten(args) + _flatten(kwargs)
+        ftype, subfs, extra = None, [], []
 
-        # we can arguments with but also without keywords:
-        if len(key) == 2 and key[0][0] == '':
-            # there are two components in the key and the first one is unnamed
-            # this can happen for Atom or Neg and it so we name it accordingly
-            key[0] = ('object' if key[1][1] == repr(FormulaType.ATOM) else 'subformula', key[0][1])
-        elif len(key) == 3 and key[2][1] == repr(FormulaType.IMPL):
-            if key[0][0] == '' and key[1][0] == '':
-                key[0] = ('left', key[0][1])
-                key[1] = ('right', key[1][1])
-            elif key[1][0] == 'left':
-                key[0] = ('right', key[0][1])
-            elif key[1][0] == 'right':
-                key[0] = ('left', key[0][1])
-        elif len(key) == 4 and key[3][1] == repr(FormulaType.ITE):
-            # dealing with ITE triples - the most complicated case
-            if key[0][0] == '' and key[1][0] == '' and key[2][0] == '':
-                key[0] = ('cond', key[0][1])
-                key[1] = ('cons1', key[1][1])
-                key[2] = ('cons2',  key[2][1])
-            elif key[0][0] == key[1][0] == '':
-                if key[2][0] == 'cond':
-                    key[0] = ('cons1', key[0][1])
-                    key[1] = ('cons2', key[1][1])
-                elif key[2][0] == 'cons1':
-                    key[0] = ('cond',  key[0][1])
-                    key[1] = ('cons2', key[1][1])
-                elif key[2][0] == 'cons2':
-                    key[0] = ('cond',  key[0][1])
-                    key[1] = ('cons1', key[1][1])
-            elif key[0] == '':
-                if 'cond' not in (key[1][0], key[2][0]):
-                    key[0] = ('cond', key[0][0])
-                elif 'cons1' not in (key[1][0], key[2][0]):
-                    key[0] = ('cons1', key[0][0])
-                elif 'cons2' not in (key[1][0], key[2][0]):
-                    key[0] = ('cons2', key[0][0])
+        # ignoring everything except subformulas and the type
+        for item in items:
+            if item[0] == 'type':
+                ftype = item
+            elif item[0] != 'merge':
+                subfs.append(item)
+            else:
+                extra = [('merge', repr(item[1]))]
 
-        return tuple(sorted(key))
+        # the ugly part:
+        # reconstructing the key pairs, depending on the type of Formula
+        if ftype[1] == FormulaType.ATOM:
+            assert len(subfs) == 1, 'A single object is required for an Atom formula'
+            subfs[0] = ('object', repr(subfs[0][1]))
+        elif ftype[1] == FormulaType.NEG:
+            assert len(subfs) == 1, 'A single subformula is required for a Neg formula'
+            subfs[0] = ('subformula', id(subfs[0][1]))
+        elif ftype[1] == FormulaType.IMPL:
+            assert len(subfs) == 2, 'Two subformulas are required for an Implies formula'
+            if subfs[0][0] == '' and subfs[1][0] == '':
+                subfs[0] = ('left', id(subfs[0][1]))
+                subfs[1] = ('right', id(subfs[1][1]))
+            elif subfs[1][0] == 'left':
+                subfs[0] = ('right', id(subfs[0][1]))
+            elif subfs[1][0] == 'right':
+                subfs[0] = ('left', id(subfs[0][1]))
+        elif ftype[1] == FormulaType.ITE:
+            assert len(subfs) == 3, 'Three subformulas are required for an ITE formula'
+            if subfs[0][0] == '' and subfs[1][0] == '' and subfs[2][0] == '':
+                subfs[0] = ('cond', id(subfs[0][1]))
+                subfs[1] = ('cons1', id(subfs[1][1]))
+                subfs[2] = ('cons2',  id(subfs[2][1]))
+            elif subfs[0][0] == subfs[1][0] == '':
+                if subfs[2][0] == 'cond':
+                    subfs[0] = ('cons1', id(subfs[0][1]))
+                    subfs[1] = ('cons2', id(subfs[1][1]))
+                elif subfs[2][0] == 'cons1':
+                    subfs[0] = ('cond',  id(subfs[0][1]))
+                    subfs[1] = ('cons2', id(subfs[1][1]))
+                elif subfs[2][0] == 'cons2':
+                    subfs[0] = ('cond',  id(subfs[0][1]))
+                    subfs[1] = ('cons1', id(subfs[1][1]))
+            elif subfs[0] == '':
+                if 'cond' not in (subfs[1][0], subfs[2][0]):
+                    subfs[0] = ('cond', id(subfs[0][0]))
+                elif 'cons1' not in (subfs[1][0], subfs[2][0]):
+                    subfs[0] = ('cons1', id(subfs[0][0]))
+                elif 'cons2' not in (subfs[1][0], subfs[2][0]):
+                    subfs[0] = ('cons2', id(subfs[0][0]))
+        else:
+            # these are commutative connectives; we need to sort the arguments
+            assert len(subfs) >= 1, 'At least one subformula is required for an And/Equals/Or/XOr formula'
+            subfs = sorted(map(lambda p: (p[0], repr(id(p[1]))), subfs))
+
+            if not extra:
+                extra = [('merge', repr(False))]
+
+        # the key is a string combining all the parts
+        return ' '.join([f'{repr(p[0])}:{repr(p[1])}' for p in [ftype] + subfs + extra])
 
     def __hash__(self):
         """
@@ -1126,7 +1129,7 @@ class Formula(object):
             b)``.
         """
 
-        return XOr(self, other)
+        return XOr(self, other, merge=True)
 
     def __ixor__(self, other):
         """
@@ -1135,7 +1138,7 @@ class Formula(object):
             ``a`` to a new object ``XOr(a, b)``.
         """
 
-        return XOr(self, other)
+        return XOr(self, other, merge=True)
 
     def __iter__(self):
         """
@@ -1547,7 +1550,7 @@ class And(Formula):
             "And[And[Atom('x'), Atom('y')], Atom('z')]"
             >>> repr(a2)
             "And[Atom('x'), Atom('y'), Atom('z')]"
-            >>> repr(a2)
+            >>> repr(a3)
             "And[Atom('x'), Atom('y'), Atom('z')]"
             >>>
             >>> id(a1) == id(a2)
@@ -2648,8 +2651,9 @@ class XOr(Formula):
     def __init__(self, *args, **kwargs):
         """
             Initialiser. Expects a list of arguments signifying the operands
-            of the equivalence. Additionally, a user may set a keyword
-            argument ``merge=True``, which will enable merging sub-operands.
+            of the exclusive disjunction. Additionally, a user may set a
+            keyword argument ``merge=True``, which will enable merging
+            sub-operands.
         """
 
         super(XOr, self).__init__(type=FormulaType.XOR)
@@ -2663,7 +2667,7 @@ class XOr(Formula):
             self.merged = False
 
         if len(self.subformulas) < 2:
-            raise FormulaError('Equivalence requires at least 2 arguments')
+            raise FormulaError('XOr requires at least 2 arguments')
 
     def __del__(self):
         """
