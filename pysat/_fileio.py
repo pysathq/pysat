@@ -22,11 +22,12 @@
     Module description
     ==================
 
-    This simple module provides a basic interface to input/output operations on
-    files. Its key design feature is the ability to work with both uncompressed
-    and compressed files through a unified interface, thus, making it easier
-    for a user to deal with various types of compressed files. The compression
-    types supported include gzip, bzip2, and lzma (xz).
+    This simple module provides a basic interface to input/output operations
+    on files. Its key design feature is the ability to work with both
+    uncompressed and compressed files through a unified interface, thus,
+    making it easier for a user to deal with various types of compressed
+    files. The compression types supported include gzip, bzip2, lzma (xz), and
+    zstandard (zstd).
 
     The module is supposed to be mainly used by :mod:`pysat.formula`.
 
@@ -66,6 +67,13 @@ except ImportError:
     except ImportError:  # for Python2 without lzma
         lzma_present = False
 
+zstd_present = True
+try:
+    from compression import zstd
+except ImportError:  # zstandard is introduced in Python 3.14
+    zstd_present = False
+
+
 
 #
 #==============================================================================
@@ -75,9 +83,10 @@ class FileObject(object):
         open files creating standard file pointers and closing them. The class
         is used when opening DIMACS files for reading and writing. Supports
         both uncompressed and compressed files. Compression algorithms
-        supported are ``gzip``, ``bzip2``, and ``lzma``. Algorithm ``lzma`` can
-        be used in Python 3 by default and also in Python 2 if the
-        ``backports.lzma`` package is installed.
+        supported are ``gzip``, ``bzip2``, ``lzma``, and ``zstd``. Algorithm
+        ``lzma`` can be used in Python 3 by default and also in Python 2 if
+        the ``backports.lzma`` package is installed. Algorithm ``zstandard``
+        can be used in Python 3.14 and later.
 
         Note that the class opens a file in text mode.
 
@@ -90,8 +99,9 @@ class FileObject(object):
         :type compression: str
 
         Compression type can be ``None``, ``'gzip'``, ``'bzip2'``, ``'lzma'``,
-        as well as ``'use_ext'``. If ``'use_ext'`` is specified, compression
-        algorithm is defined by the extension of the given file name.
+        ``'zstd'``, as well as ``'use_ext'``. If ``'use_ext'`` is specified,
+        compression algorithm is defined by the extension of the given file
+        name.
     """
 
     def __init__(self, name, mode='r', compression=None):
@@ -109,9 +119,9 @@ class FileObject(object):
 
     def open(self, name, mode='r', compression=None):
         """
-            Open a file pointer. Note that a file is *always* opened in text
-            mode. The method inherits its input parameters from the constructor
-            of :class:`FileObject`.
+            Open a file pointer. Note that a file is *always* opened in
+            text mode. The method inherits its input parameters from the
+            constructor of :class:`FileObject`.
         """
 
         if compression == 'use_ext':
@@ -138,11 +148,15 @@ class FileObject(object):
                     self.fp = codecs.getreader('ascii')(self.fp_extra)
                 else:  # mode == 'w'
                     self.fp = codecs.getwriter('ascii')(self.fp_extra)
-        else:  # self.ctype == 'lzma'
+        elif self.ctype == 'lzma':
             # LZMA is available in Python 2 only if backports.lzma is installed
             # Python 3 supports it by default
             assert lzma_present, 'LZMA compression is unavailable.'
             self.fp = lzma.open(name, mode=mode + 't')
+        else:  # self.ctype == 'zstd'
+            # Zstandard is available only in Python 3.14 and later
+            assert zstd_present, 'Zstandard compression is unavailable.'
+            self.fp = zstd.open(name, mode=mode + 't')
 
     def close(self):
         """
@@ -175,6 +189,8 @@ class FileObject(object):
             self.ctype = 'bzip2'
         elif ext in ('.xz', '.lzma'):
             self.ctype = 'lzma'
+        elif ext == 'zst':
+            self.ctype = 'zstd'
         else:
             self.ctype = None
 

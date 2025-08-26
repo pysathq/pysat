@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 26.08.2025 (*1.8.dev20*)
+
+-   Removed clause duplicates when accessing clauses of a clausified formula.
+-   Added support for Zstandard compression in formula I/O. (Requires Python
+    3.14, so not yet tested.)
+
 ## 07.08.2025 (*1.8.dev19*)
 
 -   Numerous bug fixes in non-clausal formula handling.

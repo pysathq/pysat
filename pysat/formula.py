@@ -1170,7 +1170,7 @@ class Formula(object):
         self.clausify()
 
         # then recursively iterate through the clauses
-        for cl in self._iter(outermost=True):
+        for cl in self._iter({}, outermost=True):
             if PYSAT_TRUE.name not in cl:
                 yield [l for l in cl if l != PYSAT_FALSE.name]
 
@@ -1421,16 +1421,19 @@ class Atom(Formula):
         self.encoded = []  # always empty
         self.object = None
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. Does nothing as there are no
             clauses to iterate through.
         """
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+        if not self in seen:
+            seen[self] = True
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def _clausify(self, name_required=True):
         """
@@ -1602,20 +1605,23 @@ class And(Formula):
         self.encoded = []
         self.subformulas = []
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
         """
 
-        for sub in self.subformulas:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in self.subformulas:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -1835,20 +1841,23 @@ class Or(Formula):
         self.encoded = []
         self.subformulas = []
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
         """
 
-        for sub in self.subformulas:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in self.subformulas:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -2031,18 +2040,21 @@ class Neg(Formula):
         self.encoded = []
         self.subformula = None
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Recursive iterator through the clauses.
         """
 
-        for cl in self.subformula._iter():
-            yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for cl in self.subformula._iter(seen):
+                yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -2198,21 +2210,24 @@ class Implies(Formula):
         self.encoded = []
         self.left = self.right = None
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Clause iterator. Recursively iterates through the clauses of
             ``left`` and ``right`` subformulas followed by own clause
             traversal.
         """
 
-        for sub in [self.left, self.right]:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in [self.left, self.right]:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -2421,20 +2436,23 @@ class Equals(Formula):
         self.encoded = []
         self.subformulas = []
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
         """
 
-        for sub in self.subformulas:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in self.subformulas:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -2679,20 +2697,23 @@ class XOr(Formula):
         self.encoded = []
         self.subformulas = []
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
         """
 
-        for sub in self.subformulas:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in self.subformulas:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -2945,20 +2966,23 @@ class ITE(Formula):
         self.encoded = []
         self.cond = self.cons1 = self.cons2 = None
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             Internal iterator over the clauses. First, iterates through the
             clauses of the subformulas followed by the formula's own clauses.
         """
 
-        for sub in [self.cond, self.cons1, self.cons2]:
-            for cl in sub._iter():
-                yield cl
+        if not self in seen:
+            seen[self] = True
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+            for sub in [self.cond, self.cons1, self.cons2]:
+                for cl in sub._iter(seen):
+                    yield cl
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -3180,7 +3204,7 @@ class CNF(Formula, object):
             Read a CNF formula from a file in the DIMACS format. A file name is
             expected as an argument. A default argument is ``comment_lead`` for
             parsing comment lines. A given file can be compressed by either
-            gzip, bzip2, or lzma.
+            gzip, bzip2, lzma, or zstd.
 
             :param fname: name of a file to parse.
             :param comment_lead: a list of characters leading comment lines
@@ -3191,11 +3215,12 @@ class CNF(Formula, object):
             :type compressed_with: str
 
             Note that the ``compressed_with`` parameter can be ``None`` (i.e.
-            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
-            ``'use_ext'``. The latter value indicates that compression type
-            should be automatically determined based on the file extension.
-            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
-            package to be additionally installed.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``,
+            ``'zstd'``, or ``'use_ext'``. The latter value indicates that
+            compression type should be automatically determined based on the
+            file extension. Using ``'lzma'`` in Python 2 requires the
+            ``backports.lzma`` package to be additionally installed. Using
+            ``'zstd'`` requires Python 3.14.
 
             Usage example:
 
@@ -3413,7 +3438,7 @@ class CNF(Formula, object):
             CNF format. A file name is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
             parameter. Also, a file can be compressed using either gzip, bzip2,
-            or lzma (xz).
+            lzma (xz), or zstd.
 
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
@@ -3425,12 +3450,13 @@ class CNF(Formula, object):
             :type as_dnf: bool
             :type compress_with: str
 
-            Note that the ``compress_with`` parameter can be ``None`` (i.e.
-            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
-            ``'use_ext'``. The latter value indicates that compression type
-            should be automatically determined based on the file extension.
-            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
-            package to be additionally installed.
+            Note that the ``compressed_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``,
+            ``'zstd'``, or ``'use_ext'``. The latter value indicates that
+            compression type should be automatically determined based on the
+            file extension. Using ``'lzma'`` in Python 2 requires the
+            ``backports.lzma`` package to be additionally installed. Using
+            ``'zstd'`` requires Python 3.14.
 
             Example:
 
@@ -3858,16 +3884,19 @@ class CNF(Formula, object):
 
         dest |= set(range(1, self.nv + 1))
 
-    def _iter(self, outermost=False):
+    def _iter(self, seen, outermost=False):
         """
             This is a copy of :meth:`__iter__`, to be consistent with
             :class:`Formula`.
         """
 
-        if outermost:
-            yield from self.clauses
-        else:
-            yield from self.encoded
+        if not self in seen:
+            seen[self] = True
+
+            if outermost:
+                yield from self.clauses
+            else:
+                yield from self.encoded
 
     def simplified(self, assumptions=[]):
         """
@@ -3933,7 +3962,7 @@ class WCNF(object):
             Read a WCNF formula from a file in the DIMACS format. A file name
             is expected as an argument. A default argument is ``comment_lead``
             for parsing comment lines. A given file can be compressed by either
-            gzip, bzip2, or lzma.
+            gzip, bzip2, lzma, or zstd.
 
             :param fname: name of a file to parse.
             :param comment_lead: a list of characters leading comment lines
@@ -3944,11 +3973,12 @@ class WCNF(object):
             :type compressed_with: str
 
             Note that the ``compressed_with`` parameter can be ``None`` (i.e.
-            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
-            ``'use_ext'``. The latter value indicates that compression type
-            should be automatically determined based on the file extension.
-            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
-            package to be additionally installed.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``,
+            ``'zstd'``, or ``'use_ext'``. The latter value indicates that
+            compression type should be automatically determined based on the
+            file extension. Using ``'lzma'`` in Python 2 requires the
+            ``backports.lzma`` package to be additionally installed. Using
+            ``'zstd'`` requires Python 3.14.
 
             Usage example:
 
@@ -4149,7 +4179,7 @@ class WCNF(object):
             CNF format. A file name is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
             parameter. Also, a file can be compressed using either gzip, bzip2,
-            or lzma (xz).
+            lzma (xz), or zstd.
 
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
@@ -4159,12 +4189,13 @@ class WCNF(object):
             :type comments: list(str)
             :type compress_with: str
 
-            Note that the ``compress_with`` parameter can be ``None`` (i.e.
-            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``, or
-            ``'use_ext'``. The latter value indicates that compression type
-            should be automatically determined based on the file extension.
-            Using ``'lzma'`` in Python 2 requires the ``backports.lzma``
-            package to be additionally installed.
+            Note that the ``compressed_with`` parameter can be ``None`` (i.e.
+            the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``,
+            ``'zstd'``, or ``'use_ext'``. The latter value indicates that
+            compression type should be automatically determined based on the
+            file extension. Using ``'lzma'`` in Python 2 requires the
+            ``backports.lzma`` package to be additionally installed. Using
+            ``'zstd'`` requires Python 3.14.
 
             Example:
 
