@@ -43,6 +43,11 @@
     .. [1] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
         Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
 
+    Importantly, the module provides a user with a possibility to freeze some
+    of the formula's variables so that they aren't eliminated, which may be
+    useful when unsatisfiability preserving processing is required - usable in
+    MCS and MUS enumeration as well as MaxSAT solving.
+
     Note that the numerous parameters used in CaDiCaL for tweaking the
     preprocessor's behavior are currently unavailable here. (Default values
     are used.)
@@ -216,7 +221,7 @@ class Processor(object):
 
     def process(self, rounds=1, block=False, cover=False, condition=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True):
+                subsume=True, vivify=True, freeze=[]):
         """
             Runs CaDiCaL's preprocessor for the internal formula for a given
             number of rounds and using the techniques specified in the
@@ -237,6 +242,11 @@ class Processor(object):
             elimination is active. Subsumption elimination in turn may trigger
             vivification and transitive reduction if the corresponding flags
             are set.
+
+            Finally, note that the ``freeze`` argument can be used to keep
+            some of the variables of the original formula unchanged during
+            preprocessing. If convenient, the list may contain literals too
+            (negative integers).
 
             :param rounds: number of preprocessing rounds
             :type rounds: int
@@ -268,6 +278,9 @@ class Processor(object):
             :param vivify: apply clause vivification
             :type vivify: bool
 
+            :param freeze: a list of variables / literals to be kept during preprocessing
+            :type freeze: list(int) or any iterable(int)
+
             :return: processed formula
             :rtype: :class:`.CNF`
 
@@ -294,7 +307,8 @@ class Processor(object):
             self.status, result = self.cadical.process(rounds, block, cover,
                                                        condition, decompose,
                                                        elim, probe, probehbr,
-                                                       subsume, vivify)
+                                                       subsume, vivify,
+                                                       freeze)
 
             # making the status Boolean
             self.status = False if self.status == 20 else True

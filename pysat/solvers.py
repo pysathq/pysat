@@ -2022,7 +2022,7 @@ class Cadical153(object):
 
     def process(self, rounds=1, block=False, cover=False, condition=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True):
+                subsume=True, vivify=True, freeze=[]):
         """
             Apply the preprocessor for the internal formula. See the
             documentation for the ``process`` module for details.
@@ -2035,6 +2035,7 @@ class Cadical153(object):
                                                 int(decompose), int(elim),
                                                 int(probe), int(probehbr),
                                                 int(subsume), int(vivify),
+                                                freeze,
                                                 int(MainThread.check()))
 
     def restore(self, model):
@@ -2452,7 +2453,7 @@ class Cadical195(object):
 
     def process(self, rounds=1, block=False, cover=False, condition=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True):
+                subsume=True, vivify=True, freeze=[]):
         """
             Apply the preprocessor for the internal formula. See the
             documentation for the ``process`` module for details.
@@ -2465,6 +2466,7 @@ class Cadical195(object):
                                                 int(decompose), int(elim),
                                                 int(probe), int(probehbr),
                                                 int(subsume), int(vivify),
+                                                freeze,
                                                 int(MainThread.check()))
 
     def restore(self, model):

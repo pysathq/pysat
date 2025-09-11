@@ -1611,11 +1611,13 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 	int probehbr;
 	int subsume;
 	int vivify;
+	PyObject *f_obj;  // variables to freeze
 	int main_thread;
 
-        if (!PyArg_ParseTuple(args, "Oiiiiiiiiiii", &s_obj, &rounds, &block,
+        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiOi", &s_obj, &rounds, &block,
                               &cover, &condition, &decompose, &elim, &probe,
-                              &probehbr, &subsume, &vivify, &main_thread))
+                              &probehbr, &subsume, &vivify, &f_obj,
+                              &main_thread))
           return NULL;
 
         // get pointer to solver
@@ -1634,6 +1636,37 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 	s->set("subsume",   subsume  );
 	s->set("vivify",    vivify   );
 	s->set_state(temp);
+
+	// iterator over the litarals to freeze
+	PyObject *i_obj = PyObject_GetIter(f_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		s->freeze(l);
+	}
+
+	Py_DECREF(i_obj);
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -2270,11 +2303,13 @@ static PyObject *py_cadical195_process(PyObject *self, PyObject *args)
 	int probehbr;
 	int subsume;
 	int vivify;
+	PyObject *f_obj;  // variables to freeze
 	int main_thread;
 
-        if (!PyArg_ParseTuple(args, "Oiiiiiiiiiii", &s_obj, &rounds, &block,
+        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiOi", &s_obj, &rounds, &block,
                               &cover, &condition, &decompose, &elim, &probe,
-                              &probehbr, &subsume, &vivify, &main_thread))
+                              &probehbr, &subsume, &vivify, &f_obj,
+                              &main_thread))
           return NULL;
 
         // get pointer to solver
@@ -2293,6 +2328,37 @@ static PyObject *py_cadical195_process(PyObject *self, PyObject *args)
 	s->set("subsume",   subsume  );
 	s->set("vivify",    vivify   );
 	s->set_state(temp);
+
+	// iterator over the litarals to freeze
+	PyObject *i_obj = PyObject_GetIter(f_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		s->freeze(l);
+	}
+
+	Py_DECREF(i_obj);
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -6239,7 +6305,7 @@ static PyObject *py_glucose421_set_rnd_seed(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
-	
+
 	s->random_seed = dbl;
 
 	Py_RETURN_NONE;
@@ -6257,7 +6323,7 @@ static PyObject *py_glucose421_set_rnd_freq(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
-	
+
 	s->random_var_freq = dbl;
 
 	Py_RETURN_NONE;
@@ -6275,7 +6341,7 @@ static PyObject *py_glucose421_set_rnd_pol(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
-	
+
 	s->rnd_pol = (bool) b;
 
 	Py_RETURN_NONE;
@@ -6293,7 +6359,7 @@ static PyObject *py_glucose421_set_rnd_init_act(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
-	
+
 	s->rnd_init_act = (bool) b;
 
 	Py_RETURN_NONE;
@@ -6311,7 +6377,7 @@ static PyObject *py_glucose421_set_rnd_first_descent(PyObject *self, PyObject *a
 
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
-	
+
 	s->randomizeFirstDescent = (bool) b;
 
 	Py_RETURN_NONE;
