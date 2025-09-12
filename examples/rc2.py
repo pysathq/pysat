@@ -133,6 +133,7 @@ from math import copysign
 import os
 from pysat.formula import CNFPlus, WCNFPlus, IDPool
 from pysat.card import ITotalizer
+from pysat.process import Processor
 from pysat.solvers import Solver, SolverNames
 import re
 import six
@@ -160,17 +161,17 @@ class RC2(object):
         - *unsatisfiable core reduction* (see method :func:`minimize_core`),
         - *intrinsic AtMost1 constraints* (see method :func:`adapt_am1`).
 
-        :class:`RC2` can use any SAT solver available in PySAT. The
-        default SAT solver to use is ``g3`` (see
-        :class:`.SolverNames`). Additionally, if Glucose is chosen,
-        the ``incr`` parameter controls whether to use the incremental
-        mode of Glucose [7]_ (turned off by default). Boolean
-        parameters ``adapt``, ``exhaust``, and ``minz`` control
-        whether or to apply detection and adaptation of intrinsic
-        AtMost1 constraints, core exhaustion, and core reduction.
-        Unsatisfiable cores can be trimmed if the ``trim`` parameter
-        is set to a non-zero integer. Finally, verbosity level can be
-        set using the ``verbose`` parameter.
+        :class:`RC2` can use any SAT solver available in PySAT. The default
+        SAT solver to use is ``g3`` (see :class:`.SolverNames`). Additionally,
+        if Glucose is chosen, the ``incr`` parameter controls whether to use
+        the incremental mode of Glucose [7]_ (turned off by default). Boolean
+        parameters ``adapt``, ``exhaust``, and ``minz`` control whether or to
+        apply detection and adaptation of intrinsic AtMost1 constraints, core
+        exhaustion, and core reduction. Unsatisfiable cores can be trimmed if
+        the ``trim`` parameter is set to a non-zero integer. Formula
+        preprocessing can be applied a given number of rounds specified as the
+        value of parameter ``process``. Finally, verbosity level can be set
+        using the ``verbose`` parameter.
 
         .. [7] Gilles Audemard, Jean-Marie Lagniez, Laurent Simon.
             *Improving Glucose for Incremental SAT Solving with
@@ -183,6 +184,7 @@ class RC2(object):
         :param exhaust: do core exhaustion
         :param incr: use incremental mode of Glucose
         :param minz: do heuristic core reduction
+        :param process: apply formula preprocessing this many times
         :param trim: do core trimming at most this number of times
         :param verbose: verbosity level
 
@@ -192,12 +194,13 @@ class RC2(object):
         :type exhaust: bool
         :type incr: bool
         :type minz: bool
+        :type process: int
         :type trim: int
         :type verbose: int
     """
 
     def __init__(self, formula, solver='g3', adapt=False, exhaust=False,
-            incr=False, minz=False, trim=0, verbose=0):
+            incr=False, minz=False, process=0, trim=0, verbose=0):
         """
             Constructor.
         """
@@ -205,12 +208,17 @@ class RC2(object):
         # saving verbosity level and other options
         self.verbose = verbose
         self.exhaust = exhaust
+        self.process = process
         self.solver = solver
         self.adapt = adapt
         self.minz = minz
         self.trim = trim
 
+        # oracles are initialised to be None
+        self.oracle, self.processor = None, None
+
         # clause selectors and mapping from selectors to clause ids
+        # .sall, .s2cl, and .sneg are required only for model enumeration
         self.sels, self.smap, self.sall, self.s2cl, self.sneg = [], {}, [], {}, set([])
 
         # other MaxSAT related stuff
@@ -278,8 +286,9 @@ class RC2(object):
         """
 
         # creating a solver object
-        self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                incr=incr, use_timer=True)
+        self.oracle = Solver(name=self.solver,
+                             bootstrap_with=formula.hard if self.process == 0 else [],
+                             incr=incr, use_timer=True)
 
         # adding native cardinality constraints (if any) as hard clauses
         # this can be done only if the Minicard solver is in use
@@ -319,14 +328,26 @@ class RC2(object):
         self.sels_set = set(self.sels)
         self.sall = self.sels[:]
 
+        # we may end up having zero-weighed soft clauses
+        self.garbage = set([l for l in self.sels if self.wght[l] == 0])
+        if self.garbage:
+            self.filter_assumps()
+
+        # hard clauses are added last if formula processing has to be done
+        if self.process > 0:
+            self.processor = Processor(bootstrap_with=formula.hard)
+            hard = self.processor.process(rounds=self.process, freeze=self.sels)
+            self.oracle.append_formula(hard)
+
         # at this point internal and external variables are the same
         for v in range(1, formula.nv + 1):
             self.vmap.e2i[v] = v
             self.vmap.i2e[v] = v
 
         if self.verbose > 1:
+            nofh = len(hard.clauses) if self.processor else len(formula.hard)
             print('c formula: {0} vars, {1} hard, {2} soft'.format(formula.nv,
-                len(formula.hard), len(formula.soft)))
+                nofh, len(formula.soft)))
 
     def add_clause(self, clause, weight=None):
         """
@@ -420,7 +441,8 @@ class RC2(object):
     def delete(self):
         """
             Explicit destructor of the internal SAT oracle and all the
-            totalizer objects creating during the solving process.
+            totalizer objects creating during the solving process. This also
+            destroys the processor (if any).
         """
 
         if self.oracle:
@@ -430,6 +452,10 @@ class RC2(object):
 
             self.oracle.delete()
             self.oracle = None
+
+        if self.processor:
+            self.processor.delete()
+            self.processor = None
 
     def compute(self):
         """
@@ -486,6 +512,11 @@ class RC2(object):
             self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
             self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
             self.model = sorted(self.model, key=lambda l: abs(l))
+
+            # if formula processing was used, we should 
+            # restore the model for the original formula
+            if self.processor:
+                self.model = self.processor.restore(self.model)
 
             return self.model
 
@@ -656,9 +687,6 @@ class RC2(object):
         # updating the cost
         self.cost += self.minw
 
-        # assumptions to remove
-        self.garbage = set()
-
         if len(self.core_sels) != 1 or len(self.core_sums) > 0:
             # process selectors in the core
             self.process_sels()
@@ -811,9 +839,6 @@ class RC2(object):
 
             :type am1: list(int)
         """
-
-        # assumptions to remove
-        self.garbage = set()
 
         while len(am1) > 1:
             # computing am1's weight
@@ -1253,16 +1278,16 @@ class RC2Stratified(RC2, object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, blo='div',
-            exhaust=False, incr=False, minz=False, nohard=False, trim=0,
-            verbose=0):
+            exhaust=False, incr=False, minz=False, nohard=False, process=0,
+            trim=0, verbose=0):
         """
             Constructor.
         """
 
         # calling the constructor for the basic version
         super(RC2Stratified, self).__init__(formula, solver=solver,
-                adapt=adapt, exhaust=exhaust, incr=incr, minz=minz, trim=trim,
-                verbose=verbose)
+                adapt=adapt, exhaust=exhaust, incr=incr, minz=minz,
+                process=process, trim=trim, verbose=verbose)
 
         self.levl = 0    # initial optimization level
         self.blop = []   # a list of blo levels
@@ -1374,6 +1399,11 @@ class RC2Stratified(RC2, object):
         self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
         self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
         self.model = sorted(self.model, key=lambda l: abs(l))
+
+        # if formula processing was used, we should 
+        # restore the model for the original formula
+        if self.processor:
+            self.model = self.processor.restore(self.model)
 
         return self.model
 
@@ -1637,10 +1667,10 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hil:ms:t:vx',
+        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hil:mp:s:t:vx',
                 ['adapt', 'block=', 'comp=', 'enum=', 'exhaust', 'help',
-                    'incr', 'blo=', 'minimize', 'solver=', 'trim=', 'verbose',
-                    'vnew'])
+                    'incr', 'blo=', 'minimize', 'process=', 'solver=',
+                    'trim=', 'verbose', 'vnew'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -1654,6 +1684,7 @@ def parse_options():
     incr = False
     blo = 'none'
     minz = False
+    process = 0
     solver = 'g3'
     trim = 0
     verbose = 1
@@ -1681,6 +1712,8 @@ def parse_options():
             blo = str(arg)
         elif opt in ('-m', '--minimize'):
             minz = True
+        elif opt in ('-p', '--process'):
+            process = int(arg)
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-t', '--trim'):
@@ -1700,7 +1733,7 @@ def parse_options():
     block = bmap[block]
 
     return adapt, blo, block, cmode, to_enum, exhaust, incr, minz, \
-            solver, trim, verbose, vnew, args
+            process, solver, trim, verbose, vnew, args
 
 
 #
@@ -1724,6 +1757,8 @@ def usage():
     print('        -l, --blo=<string>       Use BLO and stratification')
     print('                                 Available values: basic, div, cluster, none, full (default = none)')
     print('        -m, --minimize           Use a heuristic unsatisfiable core minimizer')
+    print('        -p, --process=<int>      Number of processing rounds')
+    print('                                 Available values: [0 .. INT_MAX] (default = 0)')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
@@ -1736,8 +1771,8 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    adapt, blo, block, cmode, to_enum, exhaust, incr, minz, solver, trim, \
-            verbose, vnew, files = parse_options()
+    adapt, blo, block, cmode, to_enum, exhaust, incr, minz, process, solver, \
+            trim, verbose, vnew, files = parse_options()
 
     if files:
         # parsing the input formula
@@ -1769,7 +1804,8 @@ if __name__ == '__main__':
 
         # starting the solver
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,
-                incr=incr, minz=minz, trim=trim, verbose=verbose) as rc2:
+                incr=incr, minz=minz, process=process, trim=trim,
+                 verbose=verbose) as rc2:
 
             if isinstance(rc2, RC2Stratified):
                 rc2.bstr = blomap[blo]  # select blo strategy

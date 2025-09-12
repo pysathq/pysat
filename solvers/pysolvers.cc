@@ -1717,7 +1717,7 @@ static PyObject *py_cadical153_restore(PyObject *self, PyObject *args)
 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)pyobj_to_void(s_obj);
 
 	// model for the processed formula
-	vector<int> pmod; int dummy_max;
+	vector<int> pmod; int dummy_max = 0;
 	if (pyiter_to_vector(m_obj, pmod, dummy_max) == false)
 		return NULL;
 
@@ -2409,7 +2409,7 @@ static PyObject *py_cadical195_restore(PyObject *self, PyObject *args)
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
 
 	// model for the processed formula
-	vector<int> pmod; int dummy_max;
+	vector<int> pmod; int dummy_max = 0;
 	if (pyiter_to_vector(m_obj, pmod, dummy_max) == false)
 		return NULL;
 
