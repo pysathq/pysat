@@ -111,6 +111,7 @@ import os
 from pysat.examples.hitman import Atom, Hitman
 from pysat.examples.rc2 import RC2
 from pysat.formula import CNFPlus, WCNFPlus
+from pysat.process import Processor
 from pysat.solvers import Solver, SolverNames
 import re
 import sys
@@ -168,6 +169,11 @@ class OptUx(object):
         support *hard* phase setting, i.e. user preferences will not be
         overwritten by the *phase saving* heuristic [8]_.
 
+        Additionally, the input formula can be preprocessed before running MUS
+        enumeration. This is controlled by the input parameter ``process``
+        whose integer value signifies the number of processing rounds to be
+        applied. The number of rounds is set to 0 by default.
+
         Finally, one more optional input parameter ``cover`` is to be used
         when exhaustive enumeration of MUSes is not necessary and the tool can
         stop as soon as a given formula is covered by the set of currently
@@ -218,7 +224,7 @@ class OptUx(object):
     """
 
     def __init__(self, formula, solver='g3', adapt=False, cover=None,
-            dcalls=False, exhaust=False, minz=False, nodisj=False,
+            dcalls=False, exhaust=False, minz=False, nodisj=False, process=0,
             puresat=False, unsorted=False, trim=False, verbose=0):
         """
             Constructor.
@@ -246,6 +252,15 @@ class OptUx(object):
         # processing soft clauses
         self._process_soft(formula)
         self.formula.nv = self.topv
+
+        # applying formula processing (if any)
+        if process:
+            # the processor is immediately destroyed,
+            # as we do not need to restore the models
+            with Processor(bootstrap_with=self.formula.hard) as processor:
+                proc = processor.process(rounds=process, freeze=self.sels)
+                self.formula.hard = proc.clauses
+                self.formula.nv = max(self.formula.nv, proc.nv)
 
         # creating an unweighted copy
         unweighted = self.formula.copy()
@@ -554,11 +569,11 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmnp:s:t:uvx',
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmnp:P:s:t:uvx',
                                    ['adapt', 'cover=', 'dcalls', 'enum=',
                                     'exhaust', 'help', 'minimize', 'no-disj',
-                                    'solver=', 'puresat=', 'unsorted',
-                                    'trim=', 'verbose'])
+                                    'solver=', 'puresat=', 'process=',
+                                    'unsorted', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize() + '\n')
         usage()
@@ -572,6 +587,7 @@ def parse_options():
     no_disj = False
     to_enum = 1
     solver = 'g3'
+    process = 0
     puresat = False
     unsorted = False
     trim = 0
@@ -599,6 +615,8 @@ def parse_options():
             no_disj = True
         elif opt in ('-p', '--puresat'):
             puresat = str(arg)
+        elif opt in ('-P', '--process'):
+            process = int(arg)
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-u', '--unsorted'):
@@ -613,7 +631,7 @@ def parse_options():
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
     return adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, \
-            solver, puresat, unsorted, verbose, args
+            solver, process, puresat, unsorted, verbose, args
 
 
 #
@@ -637,6 +655,8 @@ def usage():
     print('        -p, --puresat=<string>    Use a pure SAT-based hitting set enumerator')
     print('                                  Available values: cd15, cd19, lgl, mgh (default = mgh)')
     print('                                  Requires: unsorted mode, i.e. \'-u\'')
+    print('        -P, --process=<int>       Number of processing rounds')
+    print('                                  Available values: [0 .. INT_MAX] (default = 0)')
     print('        -s, --solver              SAT solver to use')
     print('                                  Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>          How many times to trim unsatisfiable cores')
@@ -650,7 +670,7 @@ def usage():
 #==============================================================================
 if __name__ == '__main__':
     adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, solver, \
-            puresat, unsorted, verbose, files = parse_options()
+            process, puresat, unsorted, verbose, files = parse_options()
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
@@ -667,8 +687,8 @@ if __name__ == '__main__':
         # creating an object of OptUx
         with OptUx(formula, solver=solver, adapt=adapt, cover=cover,
                    dcalls=dcalls, exhaust=exhaust, minz=minz, nodisj=no_disj,
-                   puresat=puresat, unsorted=unsorted, trim=trim,
-                   verbose=verbose) as optux:
+                   process=process, puresat=puresat, unsorted=unsorted,
+                   trim=trim, verbose=verbose) as optux:
 
             # iterating over the necessary number of optimal MUSes
             for i, mus in enumerate(optux.enumerate()):

@@ -118,6 +118,11 @@
     either to compute one MaxSAT solution of an input formula, or to
     enumerate a given number (or *all*) of its top MaxSAT solutions.
 
+    Importantly, the value of the cost computed during the solving process is
+    *not* the optimal value of the objective function. Instead, it is a
+    *complement* to the optimal value, i.e. the smallest price one has to pay
+    with the optimal solution.
+
     ==============
     Module details
     ==============
@@ -513,7 +518,7 @@ class RC2(object):
             self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
             self.model = sorted(self.model, key=lambda l: abs(l))
 
-            # if formula processing was used, we should 
+            # if formula processing was used, we should
             # restore the model for the original formula
             if self.processor:
                 self.model = self.processor.restore(self.model)
@@ -1400,7 +1405,7 @@ class RC2Stratified(RC2, object):
         self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
         self.model = sorted(self.model, key=lambda l: abs(l))
 
-        # if formula processing was used, we should 
+        # if formula processing was used, we should
         # restore the model for the original formula
         if self.processor:
             self.model = self.processor.restore(self.model)
