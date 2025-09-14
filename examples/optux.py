@@ -204,6 +204,7 @@ class OptUx(object):
         :param exhaust: do core exhaustion
         :param minz: do heuristic core reduction
         :param nodisj: do not enumerate disjoint MCSes
+        :param process: apply formula preprocessing this many times
         :param puresat: use pure SAT-based hitting set enumeration
         :param unsorted: apply unsorted MUS enumeration
         :param trim: do core trimming at most this number of times
@@ -217,6 +218,7 @@ class OptUx(object):
         :type exhaust: bool
         :type minz: bool
         :type nodisj: bool
+        :type process: int
         :type puresat: str
         :type unsorted: bool
         :type trim: int

@@ -10,6 +10,14 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 14.09.2025 (*1.8.dev21*)
+
+-   Added literal freezing in the ``process`` module. This will allow one to
+    apply preprocessing in the context of MaxSAT solving as well as MUS and
+    MCS enumeration.
+-   Added rudimentary support of formula preprocessing to RC2, LBX, MCSls, and
+    OptUx.
+
 ## 26.08.2025 (*1.8.dev20*)
 
 -   Removed clause duplicates when accessing clauses of a clausified formula.

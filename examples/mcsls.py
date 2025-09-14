@@ -90,6 +90,7 @@ import getopt
 from math import copysign
 import os
 from pysat.formula import CNFPlus, WCNFPlus
+from pysat.process import Processor
 from pysat.solvers import Solver, SolverNames
 import re
 import sys
@@ -112,25 +113,37 @@ class MCSls(object):
         ``use_cld`` is set to ``False``. Internal SAT solver's timer is also
         disabled by default, i.e. ``use_timer`` is ``False``.
 
+        Additionally, the input formula can be preprocessed before running MCS
+        enumeration. This is controlled by the input parameter ``process``
+        whose integer value signifies the number of processing rounds to be
+        applied. The number of rounds is set to 0 by default.
+
         :param formula: unsatisfiable partial CNF formula
         :param use_cld: whether or not to use "clause :math:`D`"
         :param solver_name: SAT oracle name
+        :param process: apply formula preprocessing this many times
         :param use_timer: whether or not to use SAT solver's timer
 
         :type formula: :class:`.WCNF`
         :type use_cld: bool
         :type solver_name: str
+        :type process: int
         :type use_timer: bool
     """
 
-    def __init__(self, formula, use_cld=False, solver_name='m22', use_timer=False):
+    def __init__(self, formula, use_cld=False, solver_name='m22', process=0,
+                 use_timer=False):
         """
             Constructor.
         """
 
+        # dealing with preprocessing, if required
+        hard = formula.hard if process > 0 else []
+
         # bootstrapping the solver with hard clauses
-        self.oracle = Solver(name=solver_name, bootstrap_with=formula.hard,
-                use_timer=use_timer)
+        self.oracle = Solver(name=solver_name,
+                             bootstrap_with=formula.hard if process == 0 else [],
+                             use_timer=use_timer)
         self.solver = solver_name
 
         # adding native cardinality constraints (if any) as hard clauses
@@ -167,12 +180,26 @@ class MCSls(object):
                 sel = self.topv
 
                 new_cl.append(-sel)  # creating a new selector
-                self.oracle.add_clause(new_cl)
+
+                if process == 0:
+                    self.oracle.add_clause(new_cl)
+                else:
+                    # adding to formula's hard clauses
+                    # if any preprocessing is required
+                    hard.append(new_cl)
             else:
                 sel = cl[0]
 
             self.sels.append(sel)
             self.smap[sel] = len(self.sels)
+
+        # finally, applying formula processing, if any
+        if process:
+            # the processor is immediately destroyed,
+            # as we do not need to restore the models
+            with Processor(bootstrap_with=hard) as processor:
+                proc = processor.process(rounds=process, freeze=self.sels)
+                self.oracle.append_formula(proc)
 
     def __del__(self):
         """
@@ -489,10 +516,11 @@ def parse_options():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   'de:hs:v',
+                                   'de:hp:s:v',
                                    ['dcalls',
                                     'enum=',
                                     'help',
+                                    'process=',
                                     'solver=',
                                     'verbose'])
     except getopt.GetoptError as err:
@@ -502,6 +530,7 @@ def parse_options():
 
     dcalls = False
     to_enum = 1
+    process = 0
     solver = 'm22'
     verbose = 0
 
@@ -515,6 +544,8 @@ def parse_options():
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
+        elif opt in ('-p', '--process'):
+            process = int(arg)
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-v', '--verbose'):
@@ -522,7 +553,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return dcalls, to_enum, solver, verbose, args
+    return dcalls, to_enum, solver, process, verbose, args
 
 
 #
@@ -538,6 +569,8 @@ def usage():
     print('        -e, --enum=<string>    How many solutions to compute')
     print('                               Available values: [1 .. all] (default: 1)')
     print('        -h, --help')
+    print('        -p, --process=<int>    Number of processing rounds')
+    print('                               Available values: [0 .. INT_MAX] (default = 0)')
     print('        -s, --solver           SAT solver to use')
     print('                               Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = m22)')
     print('        -v, --verbose          Be verbose')
@@ -546,7 +579,7 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    dcalls, to_enum, solver, verbose, files = parse_options()
+    dcalls, to_enum, solver, process, verbose, files = parse_options()
 
     if type(to_enum) == str:
         to_enum = 0
@@ -559,7 +592,8 @@ if __name__ == '__main__':
             else:  # expecting '*.cnf[,p,+].*'
                 formula = CNFPlus(from_file=files[0]).weighted()
 
-        with MCSls(formula, use_cld=dcalls, solver_name=solver, use_timer=True) as mcsls:
+        with MCSls(formula, use_cld=dcalls, solver_name=solver,
+                   process=process, use_timer=True) as mcsls:
             for i, mcs in enumerate(mcsls.enumerate()):
                 if verbose:
                     print('c MCS:', ' '.join([str(cl_id) for cl_id in mcs]), '0')

@@ -318,7 +318,14 @@ class RC2(object):
 
                 self.s2cl[selv] = cl[:]
                 cl.append(-selv)
-                self.oracle.add_clause(cl)
+
+                if self.process == 0:
+                    self.oracle.add_clause(cl)
+                else:
+                    # adding to formula's hard clauses
+                    # if any preprocessing is required
+                    formula.hard.append(cl + [-sel])
+                    formula.soft[i] = [sel]
 
             if selv not in self.wght:
                 # record selector and its weight
