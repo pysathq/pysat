@@ -17,6 +17,9 @@ then to keep it up-to-date is good idea.
     MCS enumeration.
 -   Added rudimentary support of formula preprocessing to RC2, LBX, MCSls, and
     OptUx.
+-   Replaced the compiler for Glucose 4.2.1 (thanks to Christoph Jabs).
+-   Fixed Glucose 4.2.1 compilation on systems with musl libc.
+-   Fixed further muslinux compilation issues related to external propagation.
 
 ## 26.08.2025 (*1.8.dev20*)
 

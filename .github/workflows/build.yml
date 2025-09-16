@@ -2,8 +2,8 @@ name: Build and upload to PyPI
 
 on:
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
   release:
     types:
       - published
@@ -104,3 +104,6 @@ jobs:
           merge-multiple: true
 
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          repository-url: https://upload.pypi.org/legacy/

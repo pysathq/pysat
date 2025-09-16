@@ -2982,7 +2982,7 @@ public:
 
 		if (pylist == NULL) {
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert from vector to python list.");
-			return NULL;
+			return false;
 		}
 		if (PyErr_Occurred() == NULL) {
 		}
@@ -2992,14 +2992,14 @@ public:
 		}
 		if (status == NULL) {
 			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'check_model' in attached propagator.");
-			return NULL;
+			return false;
 		}
 		int res = PyObject_IsTrue(status);
 		if (res == -1) {
 			Py_DECREF(pylist);
 			Py_DECREF(status);
 			PyErr_SetString(PyExc_RuntimeError, "Error converting check_model return to C boolean");
-			return NULL;
+			return false;
 		}
 		Py_DECREF(pylist);
 		Py_DECREF(status);
@@ -3019,14 +3019,14 @@ public:
 		}
 		if (status == NULL) {
 			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'decide' in attached propagator.");
-			return NULL;
+			return 0;
 		}
 		int result = pyint_to_cint(status);
 
 		if (PyErr_Occurred() != NULL) {
 			Py_DECREF(status);
 			PyErr_SetString(PyExc_RuntimeError, "Could not construct integer from PyObject.");
-			return NULL;
+			return 0;
 		}
 		Py_DECREF(status);
 		return result;
@@ -3053,7 +3053,7 @@ public:
 				}
 				if (status == NULL) {
 					PyErr_SetString(PyExc_RuntimeError, "Could not access method 'propagate' in attached propagator.");
-					return NULL;
+					return 0;
 				}
 
 				// put into queue
@@ -3064,14 +3064,14 @@ public:
 						if (!succ) {
 							PyErr_SetString(PyExc_RuntimeError, "Could not convert return value of 'propagate' to vector.");
 							Py_DECREF(status);
-							return NULL;
+							return 0;
 						}
 						reverse(reason_clauses.begin(), reason_clauses.end());
 					}
 				} else {
 					Py_DECREF(status);
 					PyErr_SetString(PyExc_TypeError, "Python method 'provide reason' did not give a list return value.");
-					return NULL;
+					return 0;
 				}
 				Py_DECREF(status);
 			}
@@ -3085,20 +3085,20 @@ public:
 				if (!PyList_Check(sel)) {
 					PyErr_SetString(PyExc_TypeError, "'propagate' gave something that isn't a pylist.");
 					Py_DECREF(sel);
-					return NULL;
+					return 0;
 				}
 				int plist_size = PyList_GET_SIZE(sel);
 				if (plist_size < 1) {
 					PyErr_SetString(PyExc_ValueError, "Propagate gave an empty reason clause.");
 					Py_DECREF(sel);
-					return NULL;
+					return 0;
 				}
 				PyObject *plit = PyList_GET_ITEM(sel, 0); // get first item
 				if (!pyint_check(plit)) {
 					PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
 					Py_DECREF(plit);
 					Py_DECREF(sel);
-					return NULL;
+					return 0;
 				}
 				res = pyint_to_cint(plit);
 				provide_reason_queue.reserve(plist_size);
@@ -3108,7 +3108,7 @@ public:
 						PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
 						Py_DECREF(plit);
 						Py_DECREF(sel);
-						return NULL;
+						return 0;
 					}
 					provide_reason_queue.push_back(pyint_to_cint(plit)); // push
 					Py_DECREF(plit);
@@ -3127,7 +3127,7 @@ public:
 			}
 			if (status == NULL) {
 				PyErr_SetString(PyExc_RuntimeError, "Could not access method 'propagate' in attached propagator.");
-				return NULL;
+				return 0;
 			}
 			if (propagate_gives_reason) { // get propagate to give: [[reason_clauses]] where first literal in clause is propagated
 
@@ -3143,7 +3143,7 @@ public:
 			} else {
 				Py_DECREF(status);
 				PyErr_SetString(PyExc_TypeError, "Python method 'propagate' did not give a list return value.");
-				return NULL;
+				return 0;
 			}
 			Py_DECREF(status);
 		}
@@ -3176,7 +3176,7 @@ public:
 			if (propagate_gives_reason) {
 				// error?
 				PyErr_SetString(PyExc_RuntimeError, "provide reason queue is empty, but it shouldn't be?");
-				return NULL;
+				return 0;
 			}
 			// call python method
 			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
@@ -3185,7 +3185,7 @@ public:
 			}
 			if (status == NULL) {
 				PyErr_SetString(PyExc_RuntimeError, "Could not access method 'provide_reason' in attached propagator.");
-				return NULL;
+				return 0;
 			}
 			// put into queue
 			int dummy_max = 0;
@@ -3197,7 +3197,7 @@ public:
 			} else {
 				Py_DECREF(status);
 				PyErr_SetString(PyExc_TypeError, "Python method 'provide reason' did not give a list return value.");
-				return NULL;
+				return 0;
 			}
 			Py_DECREF(status);
 		}
@@ -3289,7 +3289,7 @@ public:
 				if (!pyiter_to_vector(sel, add_clause_queue, dummy_max)) {
 					Py_DECREF(sel);
 					PyErr_SetString(PyExc_RuntimeError, "Could not convert python iterable to vector.");
-					return NULL;
+					return false;
 				}
 				Py_DECREF(sel);
 				// return
@@ -3298,7 +3298,7 @@ public:
 			// query has_clause
 			if (!py_callmethod_to_vec("add_clause",add_clause_queue,ext_clauses)) {
 				PyErr_Print();
-				return NULL;
+				return false;
 			}
 			// if no clause, return false
 			// if has clause, return true
@@ -3310,13 +3310,13 @@ public:
 		}
 		if (status == NULL) {
 			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'has_clause' in attached propagator.");
-			return NULL;
+			return false;
 		}
 		int res = PyObject_IsTrue(status);
 		if (res == -1) {
 			Py_DECREF(status);
 			PyErr_SetString(PyExc_RuntimeError, "Error converting has_clause return to C boolean");
-			return NULL;
+			return false;
 		}
 		Py_DECREF(status);
 		return res;
@@ -3347,13 +3347,13 @@ public:
 			if (!pyiter_to_vector(sel, add_clause_queue, dummy_max)) {
 				Py_DECREF(sel);
 				PyErr_SetString(PyExc_RuntimeError, "Could not convert python iterable to vector.");
-				return NULL;
+				return 0;
 			}
 			Py_DECREF(sel);
 		} else if (add_clause_queue.empty()) { // otherwise, call add_clause
 			if (!py_callmethod_to_vec("add_clause",add_clause_queue,ext_clauses)) { // this should already load a clause into add_clause_queue
 				PyErr_Print();
-				return NULL;
+				return 0;
 			}
 		}
 
