@@ -1232,7 +1232,7 @@ diff -Naur build/solvers/glucose421/Makefile solvers/glucose421/Makefile
 +#CXX      := c++
 +#CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DINCREMENTAL
 +
-+CXX      := g++
++CXX      := c++
 +CXXFLAGS := -Wall -Wno-parentheses -std=c++11 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -fPIC
 +CXXOPT   := -O3 -DNDEBUG
 +CXXDEBUG := -O0 -g3
