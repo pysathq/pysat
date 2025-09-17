@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## xx.09.2025 (*1.8.dev22*)
+
+-   Minor fixes in the example scripts accepting input (W)CNF files.
+
 ## 14.09.2025 (*1.8.dev21*)
 
 -   Added literal freezing in the ``process`` module. This will allow one to
