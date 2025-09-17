@@ -458,8 +458,8 @@ if __name__ == '__main__':
 
     if files:
         # reading standard CNF or WCNF
-        if re.search(r'cnf(\.(gz|bz2|lzma|xz))?$', files[0]):
-            if re.search(r'\.wcnf(\.(gz|bz2|lzma|xz))?$', files[0]):
+        if re.search(r'cnf(\.(gz|bz2|lzma|xz|zst))?$', files[0]):
+            if re.search(r'\.wcnf(\.(gz|bz2|lzma|xz|zst))?$', files[0]):
                 formula = WCNF(from_file=files[0])
             else:  # expecting '*.cnf'
                 formula = CNF(from_file=files[0]).weighted()
@@ -468,10 +468,12 @@ if __name__ == '__main__':
                     expect_interrupt=(timeout != None), verbose=verbose)
 
         # reading WCNF+
-        elif re.search(r'\.wcnf[p,+](\.(gz|bz2|lzma|xz))?$', files[0]):
+        elif re.search(r'\.wcnf[p,+](\.(gz|bz2|lzma|xz|zst))?$', files[0]):
             formula = WCNFPlus(from_file=files[0])
             lsu = LSUPlus(formula, solver=solver, incr=incr,
                     expect_interrupt=(timeout != None), verbose=verbose)
+        else:
+            assert False, 'Unknown input file extension'
 
         # setting a timer if necessary
         if timeout is not None:

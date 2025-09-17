@@ -676,14 +676,14 @@ if __name__ == '__main__':
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
-        if re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
-            if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz))?$', files[0]):
-                formula = WCNFPlus(from_file=files[0])
-            else:  # expecting '*.cnf[,p,+].*'
-                formula = CNFPlus(from_file=files[0]).weighted()
+        assert re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz|zst))?$', files[0]), 'Unknown input file extension'
+        if re.search(r'\.wcnf[p|+]?(\.(gz|bz2|lzma|xz|zst))?$', files[0]):
+            formula = WCNFPlus(from_file=files[0])
+        else:  # expecting '*.cnf[,p,+].*'
+            formula = CNFPlus(from_file=files[0]).weighted()
 
         if cover:  # expecting  '*.cnf[,p,+].*' only!
-            assert re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz))?$', cover), 'wrong file for formula to cover'
+            assert re.search(r'cnf[p|+]?(\.(gz|bz2|lzma|xz|zst))?$', cover), 'Wrong file for formula to cover'
             cover = CNFPlus(from_file=cover)
 
         # creating an object of OptUx
