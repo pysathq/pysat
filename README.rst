@@ -1,29 +1,29 @@
 PySAT: SAT technology in Python
 ===============================
 
-|Version|
-|Tests|
-|Downloads|
-|License|
-|SAT18|
-|SAT24|
+|version|
+|tests|
+|downloads|
+|license|
+|sat18|
+|sat24|
 
-.. |Version| image:: https://img.shields.io/pypi/v/python-sat?color=blue&label=Version&logo=pypi&logoColor=white
+.. |version| image:: https://img.shields.io/pypi/v/python-sat
    :target: https://pysathq.github.io/
 
-.. |Tests| image:: https://github.com/pysathq/pysat/actions/workflows/test.yml/badge.svg
+.. |tests| image:: https://img.shields.io/github/actions/workflow/status/pysathq/pysat/test.yml?label=tests
    :target: https://github.com/pysathq/pysat
 
-.. |Downloads| image:: https://img.shields.io/pypi/dm/python-sat?label=PyPI%20Downloads&logo=pypi&logoColor=white
+.. |downloads| image:: https://img.shields.io/pypi/dm/python-sat
    :target: https://pypi.org/project/python-sat/
 
-.. |License| image:: https://img.shields.io/github/license/pysathq/pysat?label=License
+.. |license| image:: https://img.shields.io/github/license/pysathq/pysat
    :target: https://github.com/pysathq/pysat/blob/master/LICENSE.txt
 
-.. |SAT18| image:: https://img.shields.io/badge/DOI-10.1007%2F978--3--319--94144--8_26-blue
+.. |sat18| image:: https://img.shields.io/badge/doi-10.1007%2F978--3--319--94144--8_26-blue
    :target: https://doi.org/10.1007/978-3-319-94144-8_26
 
-.. |SAT24| image:: https://img.shields.io/badge/DOI-10.4230%2FLIPICS.SAT.2024.16-blue
+.. |sat24| image:: https://img.shields.io/badge/doi-10.4230%2FLIPICS.SAT.2024.16-blue
    :target: https://doi.org/10.4230/LIPIcs.SAT.2024.16
 
 PySAT is a Python (2.7, 3.4+) toolkit, which aims at providing a simple and
