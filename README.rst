@@ -1,24 +1,30 @@
 PySAT: SAT technology in Python
 ===============================
 
-`Version`_
-`Tests`_
-`PyPI Downloads`_
-`License`_
-`SAT18 Paper`_
-`SAT24 Paper`_
+|Version|
+|Tests|
+|Downloads|
+|License|
+|SAT18|
+|SAT24|
 
-.. _Version: https://img.shields.io/pypi/v/python-sat?color=blue&label=Version&logo=pypi&logoColor=white
+.. |Version| image:: https://img.shields.io/pypi/v/python-sat?color=blue&label=Version&logo=pypi&logoColor=white
+   :target: https://pysathq.github.io/
 
-.. _Tests: https://github.com/pysathq/pysat/actions/workflows/test.yml/badge.svg
+.. |Tests| image:: https://github.com/pysathq/pysat/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/pysathq/pysat
 
-.. _PyPI Downloads: https://img.shields.io/pypi/dm/python-sat?label=PyPI%20Downloads&logo=pypi&logoColor=white
+.. |Downloads| image:: https://img.shields.io/pypi/dm/python-sat?label=PyPI%20Downloads&logo=pypi&logoColor=white
+   :target: https://pypi.org/project/python-sat/
 
-.. _License: https://img.shields.io/github/license/pysathq/pysat?label=License
+.. |License| image:: https://img.shields.io/github/license/pysathq/pysat?label=License
+   :target: https://github.com/pysathq/pysat/blob/master/LICENSE.txt
 
-.. _SAT18 Paper: https://img.shields.io/badge/DOI-10.1007%2F978--3--319--94144--8_26-blue
+.. |SAT18| image:: https://img.shields.io/badge/DOI-10.1007%2F978--3--319--94144--8_26-blue
+   :target: https://doi.org/10.1007/978-3-319-94144-8_26
 
-.. _SAT24 Paper: https://img.shields.io/badge/DOI-10.4230%2FLIPICS.SAT.2024.16-blue
+.. |SAT24| image:: https://img.shields.io/badge/DOI-10.4230%2FLIPICS.SAT.2024.16-blue
+   :target: https://doi.org/10.4230/LIPIcs.SAT.2024.16
 
 PySAT is a Python (2.7, 3.4+) toolkit, which aims at providing a simple and
 unified interface to a number of state-of-art `Boolean satisfiability (SAT)
