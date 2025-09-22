@@ -259,7 +259,6 @@ class Bica:
         :type otrim: int
         :type weighted: bool
         :type verbose: int
-
     """
 
     def __init__(self, formula, negated=None, target='cnf', psolver='cd19',

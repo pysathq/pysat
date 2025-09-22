@@ -10,9 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## xx.09.2025 (*1.8.dev22*)
+## 22.09.2025 (*1.8.dev22*)
 
 -   Minor fixes in the example scripts accepting input (W)CNF files.
+-   Added BBScan, a tool for computing backbones literals of a formula.
 
 ## 14.09.2025 (*1.8.dev21*)
 

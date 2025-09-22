@@ -48,6 +48,7 @@ Supplementary :mod:`.examples` package
 .. toctree::
     :maxdepth: 1
 
+    api/examples/bbscan
     api/examples/bica
     api/examples/fm
     api/examples/genhard

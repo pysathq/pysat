@@ -75,8 +75,8 @@ to_install = ['cadical103', 'cadical153', 'cadical195', 'gluecard30',
 
 # example and allies scripts to install as standalone executables
 #==============================================================================
-example_scripts = ['bica', 'fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models',
-                   'musx', 'optux', 'primer', 'rc2']
+example_scripts = ['bbscan', 'bica', 'fm', 'genhard', 'lbx', 'lsu', 'mcsls',
+                   'models', 'musx', 'optux', 'primer', 'rc2']
 allies_scripts = ['approxmc', 'unigen']
 
 
