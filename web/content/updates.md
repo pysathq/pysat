@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 26.09.2025 (*1.8.dev23*)
+
+-   A few corrections in BBScan.
+
 ## 22.09.2025 (*1.8.dev22*)
 
 -   Minor fixes in the example scripts accepting input (W)CNF files.
