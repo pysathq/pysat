@@ -204,13 +204,16 @@ class BBScan:
 
             If the chunking algorithm is selected (either ``'chunk'`` or
             ``'corechunk'``), the user may specify the size of the chunk,
-            which is set to 100 by default.
+            which is set to 100 by default. Note that the chunk_size can be a
+            floating-point number in the interval (0, 1], which will set the
+            actual chunk_size relative to the total number of literals of
+            interest.
 
             Finally, one may opt for computing backbone literals out of a
-            particular subset of literals / variables, which may run faster
-            than computing the entire formula's backbone. To focus on a
-            particular set of variables / literals, the user should use the
-            parameter ``focus_on``, which is set to ``None`` by default.
+            particular subset of literals, which may run faster than computing
+            the entire formula's backbone. To focus on a particular set of
+            literals, the user should use the parameter ``focus_on``, which is
+            set to ``None`` by default.
 
             .. note::
 
@@ -222,7 +225,7 @@ class BBScan:
             :param focus_on: a list of literals to focus on
 
             :type algorithm: str
-            :type chunk_size: int
+            :type chunk_size: int or float
             :type focus_on: iterable(int)
         """
 
@@ -235,6 +238,10 @@ class BBScan:
                 self.model = [l for l in focus_on if l in model]
         else:
             raise ValueError('Unsatisfiable formula')
+
+        if isinstance(chunk_size, float):
+            assert 0 < chunk_size <= 1, f'Wrong chunk proportion {chunk_size}'
+            chunk_size = int(min(self.formula.nv, len(self.model)) * chunk_size)
 
         if algorithm == 'enum':
             result = self._compute_enum()
@@ -315,10 +322,8 @@ class BBScan:
             if not self.oracle.solve():
                 break
 
-            self.model = self.oracle.get_model()
-            # if self.lift:
-            #     self.model = self._get_implicant(self.model)
-
+            coex = set(self.oracle.get_model())
+            self.model = [l for l in bbone if l in coex]
             self.model = self._process_model(self.model)
 
             # updating backbone estimate - intersection
@@ -380,7 +385,8 @@ class BBScan:
             if self.oracle.solve() == False:
                 break
             else:
-                model = self._process_model(self.oracle.get_model())
+                coex = set(self.oracle.get_model())
+                model = [l for l in bbone if l in coex]
                 model = self._process_model(model)
                 bbone &= set(model)
 
@@ -580,7 +586,11 @@ def parse_options():
             algo = str(arg)
             assert algo in ('enum', 'iter', 'compl', 'chunk', 'core', 'corechunk'), 'Unknown algorithm'
         elif opt in ('-c', '--chunk'):
-            chunk = int(arg)
+            chunk = float(arg)
+            if chunk.is_integer():
+                chunk = int(chunk)
+            else:
+                assert 0 < chunk <= 1, f'Wrong chunk proportion {chunk_size}'
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
@@ -607,16 +617,16 @@ def usage():
 
     print('Usage:', os.path.basename(sys.argv[0]), '[options] file')
     print('Options:')
-    print('        -a, --algo=<string>      Algorithm to use')
-    print('                                 Available values: enum, iter, compl, chunk, core, corechunk (default: iter)')
-    print('        -c, --chunk=<int>        Chunk size for chunking algorithms')
-    print('                                 Available values: [1 .. INT_MAX] (default: 100)')
-    print('        -h, --help               Show this message')
-    print('        -l, --lift               Apply literal lifting for heuristic model reduction')
-    print('        -r, --rotate             Heuristically filter out rotatable literals')
-    print('        -s, --solver=<string>    SAT solver to use')
-    print('                                 Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default: g3)')
-    print('        -v, --verbose            Be verbose (can be used multiple times)')
+    print('        -a, --algo=<string>        Algorithm to use')
+    print('                                   Available values: enum, iter, compl, chunk, core, corechunk (default: iter)')
+    print('        -c, --chunk=<int,float>    Chunk size for chunking algorithms')
+    print('                                   Available values: [1 .. INT_MAX] or (0 .. 1] (default: 100)')
+    print('        -h, --help                 Show this message')
+    print('        -l, --lift                 Apply literal lifting for heuristic model reduction')
+    print('        -r, --rotate               Heuristically filter out rotatable literals')
+    print('        -s, --solver=<string>      SAT solver to use')
+    print('                                   Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default: g3)')
+    print('        -v, --verbose              Be verbose (can be used multiple times)')
 
 
 #
@@ -653,7 +663,7 @@ if __name__ == '__main__':
                 print('v 0')
 
             if verbose > 1:
-                print('c filtered: {0}; ({1:.2f})'.format(bbscan.filtered, 100. * bbscan.filtered / formula.nv))
+                print('c filtered: {0} ({1:.2f})'.format(bbscan.filtered, 100. * bbscan.filtered / formula.nv))
 
             print('c oracle time: {0:.4f}'.format(bbscan.oracle_time()))
             print('c oracle calls: {0}'.format(bbscan.calls))
