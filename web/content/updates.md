@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 13.10.2025 (*1.8.dev24*)
+
+-   A few impovements in BBScan.
+
 ## 26.09.2025 (*1.8.dev23*)
 
 -   A few corrections in BBScan.
