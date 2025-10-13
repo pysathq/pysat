@@ -189,7 +189,7 @@ class FileObject(object):
             self.ctype = 'bzip2'
         elif ext in ('.xz', '.lzma'):
             self.ctype = 'lzma'
-        elif ext == 'zst':
+        elif ext == '.zst':
             self.ctype = 'zstd'
         else:
             self.ctype = None
