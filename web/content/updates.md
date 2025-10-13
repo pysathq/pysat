@@ -13,6 +13,7 @@ then to keep it up-to-date is good idea.
 ## 13.10.2025 (*1.8.dev24*)
 
 -   A few impovements in BBScan.
+-   Fixed an issue in ztsd compression for Python 3.14.
 
 ## 26.09.2025 (*1.8.dev23*)
 
