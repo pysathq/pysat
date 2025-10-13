@@ -73,7 +73,7 @@
         >>> cnf = CNF(from_file='formula.wcnf.xz')
         >>>
         >>> # creating BBScan and running it
-        >>> with BBScan(cnf, solver='g3', lift=False, rotate=True) as bbscan:
+        >>> with BBScan(cnf, solver='g3', rotate=True) as bbscan:
         ...     bbone = bbscan.compute(algorithm='core')
         ...
         ...     # outputting the results
@@ -81,10 +81,10 @@
         ...         print(bbone)
         [1, -3]
 
-    Each of the available algorithms can be augmented with two simple
-    heuristics aiming at reducing satisfying assignments and, thus, filtering
-    out unnecessary literals: literal lifting and filtering rotatable
-    literals. Both are described in the aforementioned paper.
+    Each of the available algorithms can be augmented with a simple heuristic
+    aiming at reducing satisfying assignments and, thus, filtering out
+    unnecessary literals: namely, filtering rotatable literals. The heuristic
+    is described in the aforementioned paper.
 
     Note that most of the methods of the class :class:`BBScan` are made
     private. Therefore, the tool provides a minimalistic interface via which a
@@ -113,44 +113,42 @@ class BBScan:
     """
         A solver for computing all backbone literals of a given Boolean
         formula. It implements 6 algorithms for backbone computation described
-        in [1]_ augmented with two simple heuristics that can be speed up the
-        process.
+        in [1]_ augmented with a heuristic that can be speed up the process.
 
         Note that the input formula can be a :class:`.CNF` object but also any
         object of class :class:`.Formula`, thus the tool can used for
         computing backbone literals of non-clausal formulas.
 
         A user can select one of the SAT solvers available at hand
-        (``'glucose3'`` is used by default). The optional two heuristics can
-        be also specified as Boolean input arguments ``lift``, and ``rotate``
-        (turned off by default).
+        (``'glucose3'`` is used by default). The optional heuristic can be
+        also specified as a Boolean input arguments ``rotate`` (turned off by
+        default).
 
         The list of initialiser's arguments is as follows:
 
         :param formula: input formula whose backbone is sought
         :param solver: SAT oracle name
-        :param lift: apply literal lifting heuristic
         :param rotate: apply rotatable literal filtering
         :param verbose: verbosity level
 
         :type formula: :class:`.Formula` or :class:`.CNF`
         :type solver: str
-        :type lift: bool
         :type rotate: bool
         :type verbose: int
     """
 
-    def __init__(self, formula, solver='g3', lift=False, rotate=False, verbose=0):
+    def __init__(self, formula, solver='g3', rotate=False, verbose=0):
         """
             Constructor.
         """
 
         self.formula = formula
+        self.focuscl = list(range(len(formula.clauses))) if rotate else []
         self.verbose = verbose
         self.oracle  = None
 
         # implicant reduction heuristics
-        self.lift, self.rotate = lift, rotate
+        self.rotate = rotate
 
         # basic stats
         self.calls, self.filtered = 0, 0
@@ -230,12 +228,26 @@ class BBScan:
         """
 
         self.calls += 1
+        trivial = []
 
         if self.oracle.solve():
-            self.model = self.oracle.get_model()
+            self.model = set(self.oracle.get_model())
             if focus_on is not None:
-                model = set(self.model)
-                self.model = [l for l in focus_on if l in model]
+                self.model &= set(focus_on)
+
+                # if filtering rotatable literals is requested then
+                # we should be clever about the clauses to traverse
+                if self.rotate:
+                    self.focuscl = []
+                    for i, cl in enumerate(self.formula):
+                        for l in cl:
+                            if l in self.model:
+                                if len(cl) == 1:
+                                    trivial.append(l)
+                                    self.model.remove(l)
+                                else:
+                                    self.focuscl.append(i)
+                                break
         else:
             raise ValueError('Unsatisfiable formula')
 
@@ -258,50 +270,36 @@ class BBScan:
         else:
             assert 0, f'Unknown algorithm: {algorithm}'
 
-        return sorted(result, key=lambda l: abs(l))
-
-    def _get_implicant(self, model):
-        """
-            Simple literal lifting used to reduce a given model.
-        """
-
-        res, model = set(), set(model)
-
-        # traversing the clauses and collecting all literals
-        # that satisfy at least one clause of the formula
-        for cl in self.formula:
-            res |= set([l for l in cl if l in model])
-
-        return list(res)
+        return sorted(trivial + result, key=lambda l: abs(l))
 
     def _filter_rotatable(self, model):
         """
             Filter out rotatable literals.
         """
 
-        units, model = set([]), set(model)
+        def get_unit(cl):
+            # this is supposed to be a faster alternative to the
+            # complete clause traversal with a conditional inside
+            unit = None
+            for l in cl:
+                if l in model:
+                    if unit:
+                        return
+                    else:
+                        unit = l
+            return unit
+
+        # result of this procedure
+        units = set([])
 
         # determining unit literals
-        for cl in self.formula:
-            satisfied = [l for l in cl if l in model]
-            if len(satisfied) == 1:
-                units.add(satisfied[0])
+        for i in self.focuscl:
+            unit = get_unit(self.formula.clauses[i])
+            if unit:
+                units.add(unit)
 
         self.filtered += len(model) - len(units)
-        return list(units)
-
-    def _process_model(self, model):
-        """
-            Heuristically reduce a model.
-        """
-
-        if self.lift:
-            model = self._get_implicant(model)
-
-        if self.rotate:
-            model = self._filter_rotatable(model)
-
-        return model
+        return units
 
     def _compute_enum(self, focus_on=None):
         """
@@ -312,7 +310,7 @@ class BBScan:
             print('c using enumeration-based algorithm')
 
         # initial backbone estimate contains all literals
-        bbone = set(self.model) if focus_on is None else set(focus_on)
+        bbone = self.model if focus_on is None else focus_on
 
         while bbone:
             # counting the number of calls
@@ -322,15 +320,14 @@ class BBScan:
             if not self.oracle.solve():
                 break
 
-            coex = set(self.oracle.get_model())
-            self.model = [l for l in bbone if l in coex]
-            self.model = self._process_model(self.model)
-
             # updating backbone estimate - intersection
-            bbone &= set(self.model)
+            bbone &= set(self.oracle.get_model())
+
+            if self.rotate:
+                bbone = self._filter_rotatable(bbone)
 
             # blocking the previously found implicant
-            self.oracle.add_clause([-l for l in self.model])
+            self.oracle.add_clause([-l for l in bbone])
 
         return list(bbone)
 
@@ -342,6 +339,8 @@ class BBScan:
         if self.verbose:
             print('c using iterative algorithm')
 
+        # initial estimate
+        # using sets for model and assumps to save filtering time
         bbone, model = [], self.model if focus_on is None else focus_on
 
         while model:
@@ -357,9 +356,10 @@ class BBScan:
             else:
                 # it isn't and we've got a counterexample
                 # => using it to filter out more literals
-                coex = set(self.oracle.get_model())
-                model = [l for l in model if l in coex]
-                model = self._process_model(model)
+                model &= set(self.oracle.get_model())
+
+                if self.rotate:
+                    model = self._filter_rotatable(model)
 
         return bbone
 
@@ -372,7 +372,7 @@ class BBScan:
             print('c using complement of backbone estimate algorithm')
 
         # initial estimate
-        bbone = set(self.model) if focus_on is None else set(focus_on)
+        bbone = self.model if focus_on is None else focus_on
 
         # iterating until we find the backbone or determine there is none
         while bbone:
@@ -385,23 +385,23 @@ class BBScan:
             if self.oracle.solve() == False:
                 break
             else:
-                coex = set(self.oracle.get_model())
-                model = [l for l in bbone if l in coex]
-                model = self._process_model(model)
-                bbone &= set(model)
+                bbone &= set(self.oracle.get_model())
+
+                if self.rotate:
+                    bbone = self._filter_rotatable(bbone)
 
         return list(bbone)
 
     def _compute_chunking(self, chunk_size=100, focus_on=None):
         """
-            Algorithm 5: Chunking algorithm.
+            Chunking algorithm.
         """
 
         if self.verbose:
             print('c using chunking algorithm, with chunk size:', chunk_size)
 
         # initial estimate
-        bbone, model = [], self.model if focus_on is None else focus_on
+        bbone, model = [], list(self.model if focus_on is None else focus_on)
 
         # we are going to use clause selectors
         vpool = IDPool(start_from=self.formula.nv + 1)
@@ -427,7 +427,9 @@ class BBScan:
             else:
                 coex = set(self.oracle.get_model())
                 model = [l for l in model if l in coex]
-                model = self._process_model(model)
+
+                if self.rotate:
+                    model = list(self._filter_rotatable(set(model)))
 
         return bbone
 
@@ -440,21 +442,24 @@ class BBScan:
             print('c using core-based algorithm')
 
         # initial estimate
+        # using sets for model and assumps to save filtering time
         bbone, model = [], self.model if focus_on is None else focus_on
 
         # iterating until we find the backbone or determine there is none
         while model:
             # flipping all the literals
-            assumps = [-l for l in model]
+            assumps = {-l for l in model}
 
             # getting unsatisfiable cores with them
             while True:
                 self.calls += 1
 
                 if self.oracle.solve(assumptions=assumps):
-                    coex = set(self.oracle.get_model())
-                    model = [l for l in model if l in coex]
-                    model = self._process_model(model)
+                    model &= set(self.oracle.get_model())
+
+                    if self.rotate:
+                        model  = self._filter_rotatable(model)
+
                     break
 
                 else:
@@ -464,18 +469,12 @@ class BBScan:
                         self.oracle.add_clause([-core[0]])
 
                         # remove from the working model
-                        indx = model.index(-core[0])  # may be slow
-                        if indx < len(model) - 1:
-                            model[indx] = model.pop()
-                        else:
-                            model.pop()
+                        model.remove(-core[0])
 
                     # filtering out unnecessary flipped literals
-                    core = set(core)
-                    assumps = [l for l in assumps if l not in core]
+                    assumps -= set(core)
 
                     if not assumps:
-                        # resorting to the iterative traversal algorithm
                         self.model = model
                         return bbone + self._compute_iter()
 
@@ -490,7 +489,7 @@ class BBScan:
             print('c using core-based chunking, with chunk size:', chunk_size)
 
         # initial estimate
-        bbone, model = [], self.model if focus_on is None else focus_on
+        bbone, model = [], list(self.model if focus_on is None else focus_on)
 
         # we are going to use clause selectors
         vpool = IDPool(start_from=self.formula.nv + 1)
@@ -501,7 +500,7 @@ class BBScan:
             size = min(chunk_size, len(model))
 
             # flipping all the literals
-            assumps, skipped = [-model.pop() for i in range(size)], []
+            assumps, skipped = {-model.pop() for i in range(size)}, set()
 
             # getting unsatisfiable cores with them
             while True:
@@ -510,7 +509,9 @@ class BBScan:
                 if self.oracle.solve(assumptions=assumps):
                     coex = set(self.oracle.get_model())
                     model = [l for l in model if l in coex]
-                    model = self._process_model(model)
+
+                    if self.rotate:
+                        model = list(self._filter_rotatable(set(model)))
 
                     if skipped:
                         bbone += self._compute_iter(focus_on=skipped)
@@ -526,11 +527,10 @@ class BBScan:
                         self.oracle.add_clause([-core[0]])
                     else:
                         # all removed literals are going to be tested later
-                        skipped += [-l for l in core]
+                        skipped |= {-l for l in core}
 
                     # filtering out unnecessary flipped literals
-                    core = set(core)
-                    assumps = [l for l in assumps if l not in core]
+                    assumps -= set(core)
 
                     if not assumps:
                         # resorting to the iterative traversal algorithm
@@ -561,11 +561,10 @@ def parse_options():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   'a:c:hlrs:v',
+                                   'a:c:hrs:v',
                                    ['algo=',
                                     'chunk=',
                                     'help',
-                                    'lift',
                                     'rotate',
                                     'solver=',
                                     'verbose'])
@@ -576,7 +575,6 @@ def parse_options():
 
     algo = 'iter'
     chunk = 100
-    lift = False
     rotate = False
     solver = 'g3'
     verbose = 0
@@ -594,8 +592,6 @@ def parse_options():
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
-        elif opt in ('-l', '--lift'):
-            lift = True
         elif opt in ('-r', '--rotate'):
             rotate = True
         elif opt in ('-s', '--solver'):
@@ -605,7 +601,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return algo, chunk, lift, rotate, solver, verbose, args
+    return algo, chunk, rotate, solver, verbose, args
 
 
 #
@@ -622,7 +618,6 @@ def usage():
     print('        -c, --chunk=<int,float>    Chunk size for chunking algorithms')
     print('                                   Available values: [1 .. INT_MAX] or (0 .. 1] (default: 100)')
     print('        -h, --help                 Show this message')
-    print('        -l, --lift                 Apply literal lifting for heuristic model reduction')
     print('        -r, --rotate               Heuristically filter out rotatable literals')
     print('        -s, --solver=<string>      SAT solver to use')
     print('                                   Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default: g3)')
@@ -632,7 +627,7 @@ def usage():
 #
 #==============================================================================
 if __name__ == '__main__':
-    algo, chunk, lift, rotate, solver, verbose, files = parse_options()
+    algo, chunk, rotate, solver, verbose, files = parse_options()
 
     if files:
         # read CNF from file
@@ -645,8 +640,7 @@ if __name__ == '__main__':
                                                             len(formula.clauses)))
 
         # computing the backbone
-        with BBScan(formula, solver=solver, lift=lift, rotate=rotate,
-                    verbose=verbose) as bbscan:
+        with BBScan(formula, solver=solver, rotate=rotate, verbose=verbose) as bbscan:
             try:
                 bbone = bbscan.compute(algorithm=algo, chunk_size=chunk)
 
