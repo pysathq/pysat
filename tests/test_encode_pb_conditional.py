@@ -1,7 +1,9 @@
 from pysat.formula import IDPool
 from pysat.pb import PBEnc, EncType
 from pysat.card import CardEnc
+import pytest
 
+@pytest.mark.skip(reason="PBLIB not installed in CI")
 def test_pbenc_conditional():
     L = 3
     LITS = list(range(1, L + 1))  # Variables x1, x2, x3, x4
@@ -49,7 +51,4 @@ def test_pbenc_conditional():
     )
 
     assert cnf.clauses == []
-    
-    
-test_pbenc_conditional()
     
