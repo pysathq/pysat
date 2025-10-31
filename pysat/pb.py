@@ -341,8 +341,6 @@ class PBEnc(object):
         # add optional conditionals
         if len(conditionals) > 0:
             constr.add_conditionals(conditionals)
-            
-        print(constr.get_conditionals())
 
         # encoder configuration
         config = pblib.PBConfig()
