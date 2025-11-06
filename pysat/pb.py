@@ -137,6 +137,8 @@ class EncType(object):
         cases, this invokes the ``bdd`` encoder).
     """
 
+    assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
+
     best       = 0
     bdd        = 1
     seqcounter = 2
@@ -308,8 +310,6 @@ class PBEnc(object):
         # obtaining the top id from the variable pool
         if vpool:
             top_id = vpool.top
-            
-        
 
         # choosing the maximum id among the current top and the list of literals
         if conditionals is None:
@@ -335,9 +335,9 @@ class PBEnc(object):
         # pseudo-Boolean constraint and variable manager
         constr = pblib.PBConstraint([pblib.WeightedLit(*wl) for wl in wlits],
                 EncType._to_pbcmp[comparator], bound)
-        
+
         varmgr = pblib.AuxVarManager(top_id + 1)
-        
+
         # add optional conditionals
         if len(conditionals) > 0:
             constr.add_conditionals(conditionals)
@@ -354,7 +354,7 @@ class PBEnc(object):
         # extracting clauses
         ret.clauses = result.get_clauses()
         ret.nv = max(ret.nv, top_id, varmgr.get_biggest_returned_auxvar())  # needed if no auxiliary variable is used
-        
+
         # updating vpool if necessary
         if vpool:
             if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
@@ -383,12 +383,18 @@ class PBEnc(object):
             ``EncType.best``, i.e. it is up to the PBLib encoder to choose the
             encoding type.
 
+            The final optional argument is ``conditionals``, where a list of
+            literals can be passed to be used as the antecedent for the PB
+            constraint, which makes it *"reified"*. If the argument is set to
+            ``None``, the constraint won't be reified.
+
             :param lits: a list of literals in the sum.
             :param weights: a list of weights
             :param bound: the value of bound :math:`k`.
             :param top_id: top variable identifier used so far.
             :param vpool: variable pool for counting the number of variables.
             :param encoding: identifier of the encoding to use.
+            :param conditionals: a list of variables that imply this constraint.
 
             :type lits: iterable(int)
             :type weights: iterable(int)
@@ -396,12 +402,14 @@ class PBEnc(object):
             :type top_id: integer or None
             :type vpool: :class:`.IDPool`
             :type encoding: integer
+            :type conditionals: list(int) or None
 
             :rtype: :class:`pysat.formula.CNFPlus`
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='<', conditionals=conditionals)
+                           vpool=vpool, encoding=encoding, comparator='<',
+                           conditionals=conditionals)
 
     @classmethod
     def atmost(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
@@ -411,7 +419,8 @@ class PBEnc(object):
         """
 
         return cls.leq(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, conditionals=conditionals)
+                       vpool=vpool, encoding=encoding,
+                       conditionals=conditionals)
 
     @classmethod
     def geq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
@@ -425,7 +434,8 @@ class PBEnc(object):
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='>', conditionals=conditionals)
+                           vpool=vpool, encoding=encoding, comparator='>',
+                           conditionals=conditionals)
 
     @classmethod
     def atleast(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
@@ -435,7 +445,8 @@ class PBEnc(object):
         """
 
         return cls.geq(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, conditionals=conditionals)
+                       vpool=vpool, encoding=encoding,
+                       conditionals=conditionals)
 
     @classmethod
     def equals(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
@@ -448,4 +459,5 @@ class PBEnc(object):
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='=', conditionals=conditionals)
+                           vpool=vpool, encoding=encoding, comparator='=',
+                           conditionals=conditionals)
