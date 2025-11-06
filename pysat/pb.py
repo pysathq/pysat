@@ -242,7 +242,7 @@ class PBEnc(object):
 
     @classmethod
     def _encode(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best, comparator='<'):
+            encoding=EncType.best, comparator='<', conditionals=None):
         """
             This is the method that wraps the encoder of PyPBLib. Although the
             method can be invoked directly, a user is expected to call one of
@@ -308,9 +308,13 @@ class PBEnc(object):
         # obtaining the top id from the variable pool
         if vpool:
             top_id = vpool.top
+            
+        
 
         # choosing the maximum id among the current top and the list of literals
-        top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
+        if conditionals is None:
+            conditionals = []
+        top_id = max(map(lambda x: abs(x), conditionals + lits + [top_id if top_id != None else 0]))
 
         # native representation
         if encoding == 6:
@@ -331,7 +335,12 @@ class PBEnc(object):
         # pseudo-Boolean constraint and variable manager
         constr = pblib.PBConstraint([pblib.WeightedLit(*wl) for wl in wlits],
                 EncType._to_pbcmp[comparator], bound)
+        
         varmgr = pblib.AuxVarManager(top_id + 1)
+        
+        # add optional conditionals
+        if len(conditionals) > 0:
+            constr.add_conditionals(conditionals)
 
         # encoder configuration
         config = pblib.PBConfig()
@@ -345,7 +354,7 @@ class PBEnc(object):
         # extracting clauses
         ret.clauses = result.get_clauses()
         ret.nv = max(ret.nv, top_id, varmgr.get_biggest_returned_auxvar())  # needed if no auxiliary variable is used
-
+        
         # updating vpool if necessary
         if vpool:
             if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
@@ -358,7 +367,7 @@ class PBEnc(object):
 
     @classmethod
     def leq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best):
+            encoding=EncType.best, conditionals=None):
         """
             This method can be used for creating a CNF encoding of a LEQ
             (weighted AtMostK) constraint, i.e. of
@@ -392,21 +401,21 @@ class PBEnc(object):
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='<')
+                vpool=vpool, encoding=encoding, comparator='<', conditionals=conditionals)
 
     @classmethod
     def atmost(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best):
+            encoding=EncType.best, conditionals=None):
         """
             A synonim for :meth:`PBEnc.leq`.
         """
 
         return cls.leq(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding)
+                vpool=vpool, encoding=encoding, conditionals=conditionals)
 
     @classmethod
     def geq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best):
+            encoding=EncType.best, conditionals=None):
         """
             This method can be used for creating a CNF encoding of a GEQ
             (weighted AtLeastK) constraint, i.e. of
@@ -416,21 +425,21 @@ class PBEnc(object):
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='>')
+                vpool=vpool, encoding=encoding, comparator='>', conditionals=conditionals)
 
     @classmethod
     def atleast(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best):
+            encoding=EncType.best, conditionals=None):
         """
             A synonym for :meth:`PBEnc.geq`.
         """
 
         return cls.geq(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding)
+                vpool=vpool, encoding=encoding, conditionals=conditionals)
 
     @classmethod
     def equals(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
-            encoding=EncType.best):
+            encoding=EncType.best, conditionals=None):
         """
             This method can be used for creating a CNF encoding of a weighted
             EqualsK constraint, i.e. of :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}=
@@ -439,4 +448,4 @@ class PBEnc(object):
         """
 
         return cls._encode(lits, weights=weights, bound=bound, top_id=top_id,
-                vpool=vpool, encoding=encoding, comparator='=')
+                vpool=vpool, encoding=encoding, comparator='=', conditionals=conditionals)
