@@ -297,19 +297,28 @@ class IDPool(object):
         necessary the top variable ID can be accessed directly using the
         ``top`` variable.
 
+        The final parameter ``with_neg``, if set to ``True``, indicates that
+        the *negation* of an object assigned a variable ID ``n`` is to be
+        represented using the negative integer ``-n``. For this to work, the
+        object must have the method ``__neg__()`` implemented. This behaviour
+        is disabled by default.
+
         :param start_from: the smallest ID to assign.
         :param occupied: a list of occupied intervals.
+        :param with_neg: whether to support automatic negation handling
 
         :type start_from: int
         :type occupied: list(list(int))
+        :type with_neg: bool
     """
 
-    def __init__(self, start_from=1, occupied=[]):
+    def __init__(self, start_from=1, occupied=[], with_neg=False):
         """
             Constructor.
         """
 
-        self.restart(start_from=start_from, occupied=occupied)
+        self.restart(start_from=start_from, occupied=occupied,
+                     with_neg=with_neg)
 
     def __repr__(self):
         """
@@ -318,7 +327,7 @@ class IDPool(object):
 
         return f'IDPool(start_from={self.top+1}, occupied={self._occupied})'
 
-    def restart(self, start_from=1, occupied=[]):
+    def restart(self, start_from=1, occupied=[], with_neg=False):
         """
             Restart the manager from scratch. The arguments replicate those of
             the constructor of :class:`IDPool`.
@@ -336,6 +345,10 @@ class IDPool(object):
         # mapping back from variable IDs to objects
         # (if for whatever reason necessary)
         self.id2obj = {}
+
+        # flag to indicate whether this IDPool object
+        # should support automatic negation handling
+        self.with_neg = with_neg
 
     def id(self, obj=None):
         """
@@ -385,6 +398,11 @@ class IDPool(object):
 
             if vid not in self.id2obj:
                 self.id2obj[vid] = obj
+
+                # adding the object's negation, if required and supported
+                if self.with_neg and hasattr(obj, '__neg__'):
+                    self.obj2id[-obj] = -vid
+                    self.id2obj[-vid] = -obj
         else:
             # no object is provided => simply return a new ID
             vid = self._next()
@@ -1021,6 +1039,13 @@ class Formula(object):
                 return PYSAT_TRUE
             return Neg(self)
         return self.subformula
+
+    def __neg__(self):
+        """
+            Negation operator. Takes the same effect as ``__invert__()``.
+        """
+
+        return self.__invert__()
 
     def __and__(self, other):
         """

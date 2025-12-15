@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 15.12.2025 (*1.8.dev25*)
+
+-   Added automatic negation handling in IDPool.
+
 ## 13.10.2025 (*1.8.dev24*)
 
 -   A few impovements in BBScan.
