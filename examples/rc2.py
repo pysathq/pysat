@@ -248,6 +248,12 @@ class RC2(object):
         if not formula.hard and len(self.sels) > 100000 and min(wght) == max(wght):
             self.minz = False
 
+    def _oracle_solve(self, **kwargs):
+        """
+            Calls `oracle.solve(assumptions)` with possible interrupts
+        """
+        return self.oracle.solve_limited(expect_interrupt=self.expect_interrupt)
+
     def __del__(self):
         """
             Destructor.
@@ -469,7 +475,7 @@ class RC2(object):
             self.processor.delete()
             self.processor = None
 
-    def compute(self):
+    def compute(self, expect_interrupt=False):
         """
             This method can be used for computing one MaxSAT solution,
             i.e. for computing an assignment satisfying all hard
@@ -508,6 +514,7 @@ class RC2(object):
                 2
                 >>> rc2.delete()
         """
+        self.expect_interrupt = expect_interrupt
 
         # simply apply MaxSAT only once
         res = self.compute_()
@@ -632,7 +639,7 @@ class RC2(object):
             self.adapt_am1()
 
         # main solving loop
-        while not self.oracle.solve(assumptions=self.sels + self.sums):
+        while not self._oracle_solve(assumptions=self.sels + self.sums):
             self.get_core()
 
             if not self.core:
@@ -892,7 +899,7 @@ class RC2(object):
         for i in range(self.trim):
             # call solver with core assumption only
             # it must return 'unsatisfiable'
-            self.oracle.solve(assumptions=self.core)
+            self._oracle_solve(assumptions=self.core)
 
             # extract a new core
             new_core = self.oracle.get_core()
@@ -930,7 +937,7 @@ class RC2(object):
             while i < len(self.core):
                 to_test = self.core[:i] + self.core[(i + 1):]
 
-                if self.oracle.solve_limited(assumptions=to_test) == False:
+                if self._oracle_solve(assumptions=to_test) == False:
                     self.core = to_test
                 elif self.oracle.get_status() == True:
                     i += 1
@@ -962,7 +969,7 @@ class RC2(object):
         """
 
         # the first case is simpler
-        if self.oracle.solve(assumptions=[-tobj.rhs[1]]):
+        if self._oracle_solve(assumptions=[-tobj.rhs[1]]):
             return 1
         else:
             self.cost += self.minw
@@ -975,7 +982,7 @@ class RC2(object):
             # increasing the bound
             self.update_sum(-tobj.rhs[i - 1])
 
-            if self.oracle.solve(assumptions=[-tobj.rhs[i]]):
+            if self._oracle_solve(assumptions=[-tobj.rhs[i]]):
                 # the bound should be equal to i
                 return i
 
@@ -1259,6 +1266,14 @@ class RC2(object):
 
             return int(copysign(i, l))
 
+    def interrupt(self):
+        if self.oracle:
+            self.oracle.interrupt()
+
+    def clear_interrupt(self):
+        if self.oracle:
+            self.oracle.clear_interrupt()
+
 
 #
 #==============================================================================
@@ -1343,7 +1358,7 @@ class RC2Stratified(RC2, object):
         # number of finished levels
         self.done = 0
 
-    def compute(self):
+    def compute(self, expect_interrupt=False):
         """
             This method solves the MaxSAT problem iteratively. Each
             optimization level is tackled the standard way, i.e. by
@@ -1353,6 +1368,7 @@ class RC2Stratified(RC2, object):
             activates more soft clauses by invoking
             :func:`activate_clauses`.
         """
+        self.expect_interrupt = expect_interrupt
 
         if self.done == 0 and self.levl != None:
             # it is a fresh start of the solver
