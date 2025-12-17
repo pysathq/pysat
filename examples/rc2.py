@@ -250,9 +250,9 @@ class RC2(object):
 
     def _oracle_solve(self, **kwargs):
         """
-            Calls `oracle.solve(assumptions)` with possible interrupts
+            Calls `oracle.solve(**kwargs)` with possible interrupts
         """
-        return self.oracle.solve_limited(expect_interrupt=self.expect_interrupt)
+        return self.oracle.solve_limited(expect_interrupt=self.expect_interrupt, **kwargs)
 
     def __del__(self):
         """
