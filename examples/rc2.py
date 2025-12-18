@@ -1267,10 +1267,50 @@ class RC2(object):
             return int(copysign(i, l))
 
     def interrupt(self):
+        """
+            Interrupt the execution of the current *limited* SAT call in the RC2
+            algorithm. Can be used to enforce time limits using timer objects.
+            The interrupt must be cleared before performing another `compute`
+            call (see :meth:`clear_interrupt`).
+
+            **Note** that this method can be called if the `compute` call was
+            made with the option ``expect_interrupt`` set to ``True``. Behaviour is **undefined** if used to ``expect_interrupt`` was set to ``False``.
+
+            Example:
+
+            .. code-block:: python
+                >>> from pysat.examples.rc2 import RC2
+                >>> from pysat.examples.genhard import PHP
+                >>> from pysat.formula import WCNF
+                >>> from threading import Timer
+
+                >>> cnf = PHP(nof_holes=20)
+                >>> wcnf = WCNF()
+                >>> for c in cnf.clauses:
+                >>>     wcnf.append(c)
+
+                >>> with RC2(wcnf) as rc2:
+
+                >>>     def interrupt(s):
+                >>>         print("interrupted!")
+                >>>         s.interrupt()
+
+                >>>     timer = Timer(1, interrupt, [rc2])
+                >>>     timer.start()
+                >>>     print("computing..")
+                >>>     rc2.compute(expect_interrupt=True)
+                >>>     print("done.")
+        """
+
         if self.oracle:
             self.oracle.interrupt()
 
     def clear_interrupt(self):
+        """
+            Clears a previous interrupt. If a `compute` call was interrupted
+            using the :meth:`interrupt` method, this method **must be called**
+            before calling `compute` again.
+        """
         if self.oracle:
             self.oracle.clear_interrupt()
 
