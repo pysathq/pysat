@@ -248,11 +248,11 @@ class RC2(object):
         if not formula.hard and len(self.sels) > 100000 and min(wght) == max(wght):
             self.minz = False
 
-    def _oracle_solve(self, **kwargs):
+    def _oracle_solve(self, assumptions=[]):
         """
-            Calls `oracle.solve(**kwargs)` with possible interrupts
+            Calls `oracle.solve()` given `assumptions` and possible interrupts
         """
-        return self.oracle.solve_limited(expect_interrupt=self.expect_interrupt, **kwargs)
+        return self.oracle.solve_limited(assumptions=assumptions, expect_interrupt=self.expect_interrupt)
 
     def __del__(self):
         """
