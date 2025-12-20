@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 20.12.2025 (*1.8.dev26*)
+
+-   Added asynchronous interruption in RC2.
+
 ## 15.12.2025 (*1.8.dev25*)
 
 -   Added automatic negation handling in IDPool.
