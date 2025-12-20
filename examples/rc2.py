@@ -140,6 +140,7 @@ from pysat.formula import CNFPlus, WCNFPlus, IDPool
 from pysat.card import ITotalizer
 from pysat.process import Processor
 from pysat.solvers import Solver, SolverNames
+from threading import Timer
 import re
 import six
 from six.moves import range
@@ -222,6 +223,9 @@ class RC2(object):
         # oracles are initialised to be None
         self.oracle, self.processor = None, None
 
+        # parameters related to asynchronous interruption
+        self.expect_interrupt, self.interrupted = False, False
+
         # clause selectors and mapping from selectors to clause ids
         # .sall, .s2cl, and .sneg are required only for model enumeration
         self.sels, self.smap, self.sall, self.s2cl, self.sneg = [], {}, [], {}, set([])
@@ -248,11 +252,22 @@ class RC2(object):
         if not formula.hard and len(self.sels) > 100000 and min(wght) == max(wght):
             self.minz = False
 
-    def _oracle_solve(self, assumptions=[]):
+    def _call_oracle(self, assumptions=[], expect_interrupt=False):
         """
-            Calls `oracle.solve()` given `assumptions` and possible interrupts
+            Makes a call to the internal SAT solver by means of invoking
+            `oracle.solve_limited()`. The two arguments are the list of
+            assumption literals and the Boolean flag indicating whether the
+            call can be interrupted.
+
+            :param assumptions: a list of assumption literals.
+            :param expect_interrupt: whether :meth:`interrupt` may be called
+
+            :type assumptions: iterable(int)
+            :type expect_interrupt: bool
         """
-        return self.oracle.solve_limited(assumptions=assumptions, expect_interrupt=self.expect_interrupt)
+
+        return self.oracle.solve_limited(assumptions=assumptions,
+                                         expect_interrupt=expect_interrupt)
 
     def __del__(self):
         """
@@ -490,6 +505,12 @@ class RC2(object):
             can enumerate top-:math:`k` MaxSAT solutions (this can
             also be done by calling :meth:`enumerate()`).
 
+            This MaxSAT call can be asynchronously interrupted, in which case
+            the value of ``expect_interrupt`` must be set to ``True``.
+
+            :param expect_interrupt: whether :meth:`interrupt` may be called
+            :type expect_interrupt: bool
+
             :return: a MaxSAT model
             :rtype: list(int)
 
@@ -514,6 +535,8 @@ class RC2(object):
                 2
                 >>> rc2.delete()
         """
+
+        # keeping the current interruption preference
         self.expect_interrupt = expect_interrupt
 
         # simply apply MaxSAT only once
@@ -539,7 +562,7 @@ class RC2(object):
 
             return self.model
 
-    def enumerate(self, block=0):
+    def enumerate(self, block=0, expect_interrupt=False):
         """
             Enumerate top MaxSAT solutions (from best to worst). The
             method works as a generator, which iteratively calls
@@ -553,8 +576,15 @@ class RC2(object):
             it to ``-1``. By the default (for blocking MaxSAT models),
             ``block`` is set to ``0``.
 
+            This MaxSAT enumeration call can be asynchronously interrupted, in
+            which case the value of ``expect_interrupt`` must be set to
+            ``True``.
+
             :param block: preferred way to block solutions when enumerating
+            :param expect_interrupt: whether :meth:`interrupt` may be called
+
             :type block: int
+            :type expect_interrupt: bool
 
             :return: a MaxSAT model
             :rtype: list(int)
@@ -584,7 +614,7 @@ class RC2(object):
 
         done = False
         while not done:
-            model = self.compute()
+            model = self.compute(expect_interrupt=expect_interrupt)
 
             if model != None:
                 if block == 1:
@@ -638,8 +668,21 @@ class RC2(object):
         if self.adapt:
             self.adapt_am1()
 
+        # at the beginning, the solver is not interrupted
+        self.interrupted = False
+
         # main solving loop
-        while not self._oracle_solve(assumptions=self.sels + self.sums):
+        while not self._call_oracle(assumptions=self.sels + self.sums,
+                                    expect_interrupt=self.expect_interrupt):
+
+            # even if the call has been interrupted, we
+            # still need to finish the current iteration
+            if self.oracle.get_status() is None:
+                self.clear_interrupt()
+
+                if self.verbose > 1:
+                    print('c interrupted; processing the last found core')
+
             self.get_core()
 
             if not self.core:
@@ -651,6 +694,10 @@ class RC2(object):
             if self.verbose > 1:
                 print('c cost: {0}; core sz: {1}; soft sz: {2}'.format(self.cost,
                     len(self.core), len(self.sels) + len(self.sums)))
+
+            # the solver got interrupted => returning None
+            if self.interrupted:
+                return  # None
 
         return True
 
@@ -899,7 +946,7 @@ class RC2(object):
         for i in range(self.trim):
             # call solver with core assumption only
             # it must return 'unsatisfiable'
-            self._oracle_solve(assumptions=self.core)
+            self._call_oracle(assumptions=self.core)
 
             # extract a new core
             new_core = self.oracle.get_core()
@@ -937,12 +984,15 @@ class RC2(object):
             while i < len(self.core):
                 to_test = self.core[:i] + self.core[(i + 1):]
 
-                if self._oracle_solve(assumptions=to_test) == False:
+                if self._call_oracle(assumptions=to_test) == False:
                     self.core = to_test
                 elif self.oracle.get_status() == True:
                     i += 1
                 else:
                     break
+
+            # disabling the budget
+            self.oracle.conf_budget(budget=-1)
 
     def exhaust_core(self, tobj):
         """
@@ -969,7 +1019,7 @@ class RC2(object):
         """
 
         # the first case is simpler
-        if self._oracle_solve(assumptions=[-tobj.rhs[1]]):
+        if self._call_oracle(assumptions=[-tobj.rhs[1]]):
             return 1
         else:
             self.cost += self.minw
@@ -982,7 +1032,7 @@ class RC2(object):
             # increasing the bound
             self.update_sum(-tobj.rhs[i - 1])
 
-            if self._oracle_solve(assumptions=[-tobj.rhs[i]]):
+            if self._call_oracle(assumptions=[-tobj.rhs[i]]):
                 # the bound should be equal to i
                 return i
 
@@ -1268,49 +1318,60 @@ class RC2(object):
 
     def interrupt(self):
         """
-            Interrupt the execution of the current *limited* SAT call in the RC2
-            algorithm. Can be used to enforce time limits using timer objects.
-            The interrupt must be cleared before performing another `compute`
-            call (see :meth:`clear_interrupt`).
+            Interrupt the execution of the current *limited* SAT call in the
+            RC2 algorithm. Can be used to enforce time limits using timer
+            objects. The interrupt must be cleared before performing another
+            `compute` call (see :meth:`clear_interrupt`).
+
+            Importantly, interruption is implemented such that it can work
+            incrementally with multiple MaxSAT calls, i.e. upon an interrupted
+            invocation a user may extend the resources / time and call the
+            solver again. To make this work, none of the SAT calls used by the
+            heuristics are interrupted. For this reason, the solver may take
+            slightly more time than assumed (spent to properly finish the
+            processing of the last unsatisfiable core).
 
             **Note** that this method can be called if the `compute` call was
-            made with the option ``expect_interrupt`` set to ``True``. Behaviour is **undefined** if used to ``expect_interrupt`` was set to ``False``.
+            made with the option ``expect_interrupt`` set to ``True``.
+            Behaviour is **undefined** if used to ``expect_interrupt`` was set
+            to ``False``.
 
             Example:
 
             .. code-block:: python
+
                 >>> from pysat.examples.rc2 import RC2
-                >>> from pysat.examples.genhard import PHP
                 >>> from pysat.formula import WCNF
                 >>> from threading import Timer
-
-                >>> cnf = PHP(nof_holes=20)
-                >>> wcnf = WCNF()
-                >>> for c in cnf.clauses:
-                >>>     wcnf.append(c)
-
+                >>>
+                >>> wcnf = WCNF(from_file='somefile.wcnf')
+                >>>
                 >>> with RC2(wcnf) as rc2:
-
+                >>>
                 >>>     def interrupt(s):
-                >>>         print("interrupted!")
+                >>>         print('interrupted!')
                 >>>         s.interrupt()
-
+                >>>
                 >>>     timer = Timer(1, interrupt, [rc2])
                 >>>     timer.start()
-                >>>     print("computing..")
+                >>>     print('computing...')
                 >>>     rc2.compute(expect_interrupt=True)
-                >>>     print("done.")
+                >>>     print('done')
         """
 
         if self.oracle:
             self.oracle.interrupt()
 
+            # recording the interruption request
+            self.interrupted = True
+
     def clear_interrupt(self):
         """
-            Clears a previous interrupt. If a `compute` call was interrupted
-            using the :meth:`interrupt` method, this method **must be called**
-            before calling `compute` again.
+            Clears a previous interrupt. Technically, this method should be
+            used every time after the previous MaxSAT call gets interrupted.
+            **However**, the current implementation handles this on its own.
         """
+
         if self.oracle:
             self.oracle.clear_interrupt()
 
@@ -1408,6 +1469,8 @@ class RC2Stratified(RC2, object):
             activates more soft clauses by invoking
             :func:`activate_clauses`.
         """
+
+        # keeping the current interruption preference
         self.expect_interrupt = expect_interrupt
 
         if self.done == 0 and self.levl != None:
@@ -1425,7 +1488,7 @@ class RC2Stratified(RC2, object):
                     print('c wght str:', self.blop[self.levl])
 
                 # call RC2
-                if self.compute_() == False:
+                if self.compute_() != True:  # can be either False or None
                     return
 
                 # updating the list of distinct weight levels
@@ -1453,7 +1516,7 @@ class RC2Stratified(RC2, object):
             # i.e. all levels are finished and so all clauses are present
             # thus, we need to simply call RC2 for the next model
             self.done = -1  # we are done with stratification, disabling it
-            if self.compute_() == False:
+            if self.compute_() != True:
                 return
 
         # extracting a model
@@ -1735,10 +1798,10 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hil:mp:s:t:vx',
+        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:e:hil:mp:s:t:T:vx',
                 ['adapt', 'block=', 'comp=', 'enum=', 'exhaust', 'help',
                     'incr', 'blo=', 'minimize', 'process=', 'solver=',
-                    'trim=', 'verbose', 'vnew'])
+                    'trim=', 'timeout=', 'verbose', 'vnew'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -1755,6 +1818,7 @@ def parse_options():
     process = 0
     solver = 'g3'
     trim = 0
+    timeout = None
     verbose = 1
     vnew = False
 
@@ -1786,6 +1850,9 @@ def parse_options():
             solver = str(arg)
         elif opt in ('-t', '--trim'):
             trim = int(arg)
+        elif opt in ('-T', '--timeout'):
+            if str(arg) != 'none':
+                timeout = float(arg)
         elif opt in ('-v', '--verbose'):
             verbose += 1
         elif opt == '--vnew':
@@ -1801,7 +1868,7 @@ def parse_options():
     block = bmap[block]
 
     return adapt, blo, block, cmode, to_enum, exhaust, incr, minz, \
-            process, solver, trim, verbose, vnew, args
+            process, solver, trim, timeout, verbose, vnew, args
 
 
 #
@@ -1831,6 +1898,8 @@ def usage():
     print('                                 Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>         How many times to trim unsatisfiable cores')
     print('                                 Available values: [0 .. INT_MAX] (default = 0)')
+    print('        -T, --timeout=<float>    Set time limit for MaxSAT solver')
+    print('                                 Available values: [0 .. FLOAT_MAX], none (default: none)')
     print('        -v, --verbose            Be verbose')
     print('        --vnew                   Print v-line in the new format')
     print('        -x, --exhaust            Exhaust new unsatisfiable cores')
@@ -1840,7 +1909,7 @@ def usage():
 #==============================================================================
 if __name__ == '__main__':
     adapt, blo, block, cmode, to_enum, exhaust, incr, minz, process, solver, \
-            trim, verbose, vnew, files = parse_options()
+            trim, timeout, verbose, vnew, files = parse_options()
 
     if files:
         # parsing the input formula
@@ -1882,14 +1951,26 @@ if __name__ == '__main__':
                     print('c hardening is disabled for model enumeration')
                     rc2.hard = False
 
+            # setting a timer if necessary
+            if timeout is not None:
+                if verbose > 1:
+                    print('c timeout: {0}'.format(timeout))
+
+                timer = Timer(timeout, lambda s: s.interrupt(), [rc2])
+                timer.start()
+            else:
+                timer = None
+
             optimum_found = False
-            for i, model in enumerate(rc2.enumerate(block=block), 1):
+            for i, model in enumerate(rc2.enumerate(block=block,
+                                                    expect_interrupt=timeout is not None), 1):
                 optimum_found = True
 
                 if verbose:
                     if i == 1:
-                        print('s OPTIMUM FOUND')
-                        print('o {0}'.format(rc2.cost))
+                        if not rc2.interrupted:
+                            print('s OPTIMUM FOUND')
+                            print('o {0}'.format(rc2.cost))
 
                     if verbose > 2:
                         if vnew:  # new format of the v-line
@@ -1905,10 +1986,14 @@ if __name__ == '__main__':
                     print('v')
 
             if verbose:
-                if not optimum_found:
+                if not optimum_found and not rc2.interrupted:
                     print('s UNSATISFIABLE')
                 elif to_enum != 1:
                     print('c models found:', i)
 
                 if verbose > 1:
                     print('c oracle time: {0:.4f}'.format(rc2.oracle_time()))
+
+            # cancelling the timer (if any) because we are done
+            if timer:
+                timer.cancel()
