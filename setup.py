@@ -193,6 +193,7 @@ setup(name='python-sat',
         'approxmc': ['pyapproxmc>=4.1.8'],
         'cryptosat': ['pycryptosat>=5.11.18'],
         'pblib': ['pypblib>=0.0.3'],
+        'pindakaas': ['pindakaas>=0.3.0'],
         'unigen': ['pyunigen>=4.1.20']
     }
 )
