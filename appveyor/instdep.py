@@ -29,6 +29,7 @@ suffixes = {
     (3, 11, '32bit'): 'cp311-cp311-win_amd32',
     (3, 12, '32bit'): 'cp312-cp312-win_amd32',
     (3, 13, '32bit'): 'cp313-cp313-win_amd32',
+    (3, 14, '32bit'): 'cp314-cp314-win_amd32',
     (2,  7, '64bit'): None,
     (3,  6, '64bit'): 'cp36-cp36m-win_amd64',
     (3,  7, '64bit'): 'cp37-cp37m-win_amd64',
@@ -37,7 +38,8 @@ suffixes = {
     (3, 10, '64bit'): 'cp310-cp310-win_amd64',
     (3, 11, '64bit'): 'cp311-cp311-win_amd64',
     (3, 12, '64bit'): 'cp312-cp312-win_amd64',
-    (3, 13, '64bit'): 'cp313-cp313-win_amd64'
+    (3, 13, '64bit'): 'cp313-cp313-win_amd64',
+    (3, 14, '64bit'): 'cp314-cp314-win_amd64'
 }
 
 
