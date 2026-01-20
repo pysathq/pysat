@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 21.01.2026 (*1.8.dev27*)
+
+-   Fixed a bug in the initialiser of RC2.
+
 ## 20.12.2025 (*1.8.dev26*)
 
 -   Added asynchronous interruption in RC2.
