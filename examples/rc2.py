@@ -345,8 +345,8 @@ class RC2(object):
                 else:
                     # adding to formula's hard clauses
                     # if any preprocessing is required
-                    formula.hard.append(cl + [-sel])
-                    formula.soft[i] = [sel]
+                    formula.hard.append(cl)
+                    formula.soft[i] = [selv]
 
             if selv not in self.wght:
                 # record selector and its weight
