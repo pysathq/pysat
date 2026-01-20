@@ -3,6 +3,8 @@
 *.zip
 *.tar.gz
 *.swp
+.venv
+*.log
 build
 _build
 dist
