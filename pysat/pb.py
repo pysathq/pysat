@@ -79,6 +79,22 @@
         Translation of Pseudo-Boolean Constraints into CNF Such That
         Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
+    **Pindakaas Integration:**
+    
+    This module also supports pseudo-Boolean and cardinality encodings from the
+    Pindakaas library. Pindakaas provides efficient implementations of various
+    constraint encodings that can be used as alternatives to PyPBLib encodings.
+    To use Pindakaas encodings, the `pindakaas` package must be installed:
+
+    .. code-block::
+
+        $ pip install pindakaas
+
+    Currently supported Pindakaas encodings include:
+    - Pseudo-Boolean encodings: adder networks, sorted weight counters, totalizer
+    - Cardinality encodings: sorting networks
+    - AtMost1 (AMO) encodings: bitwise, ladder, pairwise    
+
     ==============
     Module details
     ==============
@@ -88,6 +104,7 @@
 #==============================================================================
 import math
 from pysat.formula import CNFPlus
+from typing import Iterable
 
 # checking whether or not pypblib is available and working as expected
 pblib_present = True
@@ -96,6 +113,13 @@ try:
 except ImportError:
     pblib_present = False
 
+# checking whether or not Pindakaas is available and working as expected
+pindakaas_present = True
+try:
+    from pindakaas import Encoder as PkEnc
+    from pindakaas.encoding import ClauseDatabase, Lit
+except ImportError:
+    pindakaas_present = False
 
 #
 #==============================================================================
@@ -135,6 +159,19 @@ class EncType(object):
         Note that the encoding type can be set to ``best``, in which case the
         encoder selects one of the other encodings from the list (in most
         cases, this invokes the ``bdd`` encoder).
+
+        Pindakaas encodings:
+        
+        Encodings with the ``_pk`` suffix use the Pindakaas library and require
+        the pindakaas package to be installed. These include:
+        
+        - ``adder_pk``: Adder network encoding for pseudo-Boolean constraints
+        - ``swc_pk``: Sorted weight counter encoding for pseudo-Boolean constraints
+        - ``totalizer_pk``: Totalizer encoding for pseudo-Boolean/cardinality constraints
+        - ``snet_pk``: Sorting network encoding for cardinality constraints
+        
+        Additional encodings are available but currently commented out for future use:
+        bitwise, ladder, pairwise (AMO encodings), decision diagrams, and Tseitin.
     """
 
     assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
@@ -146,6 +183,23 @@ class EncType(object):
     adder      = 4
     binmerge   = 5
     native     = 6
+
+    # Pindakaas pseudo-Boolean encodings
+    adder_pk     = 7
+    swc_pk       = 8
+    totalizer_pk = 9
+
+    # Pindakaas cardinality encodings
+    snet_pk      = 10
+
+    # AtMost1 (AMO) encodings
+    # bitwise_pk   = 11
+    # ladder_pk    = 12
+    # pairwise_pk  = 13
+
+    # Decision diagram encodings
+    # decision_pk  = 14
+    # tseitin_pk   = 15
 
     # mapping from internal encoding identifiers to the ones of PyPBLib
     _to_pbenc = {
@@ -164,6 +218,80 @@ class EncType(object):
             '=': pblib.BOTH
         }
 
+    # mapping from internal comparator identifiers to the ones of Pindakaas
+    _to_pind_enc = {
+        adder_pk:     PkEnc.ADDER,
+        swc_pk:       PkEnc.SORTED_WEIGHT_COUNTER,
+        totalizer_pk: PkEnc.TOTALIZER,
+        snet_pk:      PkEnc.SORTING_NETWORK,
+        # bitwise_pk:   PkEnc.BITWISE,
+        # ladder_pk:    PkEnc.LADDER,
+        # pairwise_pk:  PkEnc.PAIRWISE,
+        # decision_pk:  PkEnc.DECISION_DIAGRAM,
+        # tseitin_pk:   PkEnc.TSEITIN,
+    }
+
+class PySATClauseDB(ClauseDatabase):
+        """
+            Custom ClauseDatabase implementation for Pindakaas integration.
+        
+            This class integrates Pindakaas encodings with PySAT's CNFPlus format,
+            providing efficient variable management and clause storage.
+        
+            The class maintains a list of clauses and tracks variable allocation
+            to ensure no conflicts between input variables and auxiliary variables
+            introduced during encoding.
+        """
+        
+        def __init__(self, start_var: int = 1):
+            """
+                Initialize the clause database.
+            
+                :param start_var: starting variable identifier for auxiliary variables
+                :type start_var: int
+            """
+            self.clauses = []
+            self.next_var = start_var
+        
+        def add_clause(self, clause: Iterable[Lit]):
+            """
+                Add a clause directly to the clause list.
+            
+                Converts Pindakaas Lit objects to integer literals and stores them.
+            
+                :param clause: iterable of Pindakaas Lit objects
+                :type clause: Iterable[Lit]
+            """
+            self.clauses.append([int(lit) for lit in clause])
+        
+        def new_var_range(self, n: int) -> tuple[Lit, Lit]:
+            """
+                Allocate n consecutive variables for encoding purposes.
+                
+                This is called by Pindakaas when auxiliary variables are needed
+                during the encoding process.
+                
+                :param n: number of variables to allocate
+                :type n: int
+                
+                :return: tuple of (start, end) literals representing the allocated range
+                :rtype: tuple[Lit, Lit]
+            """
+            start = self.next_var
+            self.next_var += n
+            return (Lit.from_raw(start), Lit.from_raw(self.next_var - 1))
+        
+        def get_cnf_plus(self) -> CNFPlus:
+            """
+                Convert the clause database to PySAT's CNFPlus format.
+                
+                :return: CNFPlus object containing all encoded clauses
+                :rtype: CNFPlus
+            """
+            cnf = CNFPlus()
+            cnf.clauses = self.clauses.copy()
+            cnf.nv = self.next_var - 1
+            return cnf
 
 #
 #==============================================================================
@@ -191,6 +319,19 @@ class PBEnc(object):
             >>> cnf = PBEnc.equals(lits=[1, 2, 3], weights=[1, 2, 3], bound=3, encoding=EncType.bdd)
             >>> print(cnf.clauses)
             [[4], [-5, -2], [-5, 2, -1], [-5, -1], [-6, 1], [-7, -2, 6], [-7, 2], [-7, 6], [-8, -3, 5], [-8, 3, 7], [-8, 5, 7], [8]]
+
+        **Pindakaas encodings:**
+        
+        The class also supports Pindakaas-based encodings for both pseudo-Boolean
+        and cardinality constraints. For example:
+        
+        .. code-block:: python
+        
+            >>> from pysat.pb import *
+            >>> # Pseudo-Boolean constraint with weights
+            >>> cnf = PBEnc.atmost(lits=[1, 2, 3], weights=[2, 3, 4], bound=5, encoding=EncType.adder_pk)
+            >>> # Cardinality constraint (unit weights)
+            >>> cnf = PBEnc.atmost(lits=[1, 2, 3, 4], bound=2, encoding=EncType.snet_pk)
     """
 
     @classmethod
@@ -243,6 +384,117 @@ class PBEnc(object):
         cnf.nv = vpool.top
 
     @classmethod
+    def _encode_pindakaas(cls, lits, weights, bound, comparator, encoding, vpool=None):
+        """
+            Encode pseudo-Boolean or cardinality constraints using Pindakaas library.
+            
+            This method handles the encoding of weighted pseudo-Boolean constraints
+            and unweighted cardinality constraints using the Pindakaas library. It
+            properly manages variable allocation, handles negative literals through
+            algebraic transformation, and integrates seamlessly with PySAT's CNFPlus format.
+            
+            **Negative Literal Handling:**
+            For negative literals, the transformation w*(-x) = w - w*x is applied,
+            where the constant term w is subtracted from the bound, and the variable
+            x appears with a negative weight -w.
+            
+            :param lits: list of literals in the constraint
+            :param weights: list of weights corresponding to literals
+            :param bound: bound value for the constraint
+            :param comparator: comparison operator ('<', '>', or '=')
+            :param encoding: Pindakaas encoding type identifier
+            :param vpool: optional variable pool for managing variable IDs
+            
+            :type lits: list(int)
+            :type weights: list(int)
+            :type bound: int
+            :type comparator: str
+            :type encoding: int
+            :type vpool: :class:`.IDPool` or None
+            
+            :return: CNFPlus formula encoding the constraint
+            :rtype: :class:`pysat.formula.CNFPlus`
+        """
+        assert pindakaas_present, 'Package \'pindakaas\' is unavailable. Check your installation.'
+        
+        if encoding not in EncType._to_pind_enc:
+            raise NoSuchEncodingError(f'Unknown Pindakaas encoding: {encoding}')
+
+        try:
+            # determine starting variable ID for auxiliary variables
+            max_input_var = max(abs(l) for l in lits) if lits else 0
+            if vpool and hasattr(vpool, 'top'):
+                start_var = max(max_input_var, vpool.top) + 1
+            else:
+                start_var = max_input_var + 1
+            
+            # create clause database starting after input variables
+            db = PySATClauseDB(start_var)
+            
+            # ensure variable IDs up to max_input_var are accounted for
+            if max_input_var > 0 and start_var <= max_input_var:
+                db.next_var = max_input_var + 1
+            
+            # create Pindakaas literal objects for input variables
+            var_map = {}
+            for lit in lits:
+                var_id = abs(lit)
+                if var_id not in var_map:
+                    var_map[var_id] = Lit.from_raw(var_id)
+
+            # transform constraint to handle negative literals properly
+            # for a negative literal -x with weight w: w*(-x) = w - w*x
+            const_term = 0
+            normalized_lits = []
+            normalized_weights = []
+            
+            for lit, weight in zip(lits, weights):
+                var = abs(lit)
+                if lit < 0:
+                    # negative literal: w*(-x) becomes w - w*x
+                    const_term += weight
+                    normalized_lits.append(var)
+                    normalized_weights.append(-weight)
+                else:
+                    # positive literal: w*x stays as w*x
+                    normalized_lits.append(var)
+                    normalized_weights.append(weight)
+
+            # build the weighted sum expression
+            expr = None
+            for lit, weight in zip(normalized_lits, normalized_weights):
+                pk_lit = var_map[lit]
+                term = weight * pk_lit
+                expr = term if expr is None else expr + term
+
+            # adjust bound to account for negative literal transformation
+            adjusted_bound = bound - const_term
+
+            # apply comparator with adjusted bound
+            if comparator == '<':
+                constraint = expr <= adjusted_bound
+            elif comparator == '>':
+                constraint = expr >= adjusted_bound
+            else:  # '='
+                constraint = expr == adjusted_bound
+
+            # encode the constraint to clauses
+            encoder = EncType._to_pind_enc[encoding]
+            db.add_encoding(constraint, encoder=encoder, conditions=[])
+            
+            # convert to CNFPlus format
+            cnf = db.get_cnf_plus()
+            
+            # update variable pool if provided
+            if vpool:
+                vpool.top = cnf.nv
+
+            return cnf
+            
+        except Exception as e:
+            raise RuntimeError(f'Pindakaas encoding failed: {str(e)}') from e
+
+    @classmethod
     def _encode(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best, comparator='<', conditionals=None):
         """
@@ -275,7 +527,7 @@ class PBEnc(object):
             :rtype: :class:`pysat.formula.CNFPlus`
         """
 
-        if encoding < 0 or encoding > 6:
+        if encoding < 0 or encoding > 10:
             raise(NoSuchEncodingError(encoding))
 
         # checking if the bound is meaningless for any encoding
@@ -315,6 +567,10 @@ class PBEnc(object):
         if conditionals is None:
             conditionals = []
         top_id = max(map(lambda x: abs(x), conditionals + lits + [top_id if top_id != None else 0]))
+
+        # handle Pindakaas encodings (7-10)
+        if 7 <= encoding <= 10:
+            return cls._encode_pindakaas(lits, weights, bound, comparator, encoding, vpool)
 
         # native representation
         if encoding == 6:
