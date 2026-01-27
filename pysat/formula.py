@@ -4036,25 +4036,33 @@ class WCNF(object):
 
             .. code-block:: python
 
-                >>> with open('some-file.cnf', 'r') as fp:
+                >>> with open('some-file.wcnf', 'r') as fp:
                 ...     cnf1 = WCNF()
                 ...     cnf1.from_fp(fp)
                 >>>
-                >>> with open('another-file.cnf', 'r') as fp:
+                >>> with open('another-file.wcnf', 'r') as fp:
                 ...     cnf2 = WCNF(from_fp=fp)
         """
 
         def parse_wght(string):
-            wght = float(string)
-            return int(wght) if wght.is_integer() else decimal.Decimal(string)
+            if string == 'h':
+                return None
+            else:
+                wght = float(string)
+                return int(wght) if wght.is_integer() else decimal.Decimal(string)
 
         self.nv = 0
         self.hard = []
         self.soft = []
         self.wght = []
-        self.topw = 1
+        self.topw = decimal.Decimal('+inf')
         self.comments = []
         comment_lead = set(['p']).union(set(comment_lead))
+
+        # we are now expecting the new WCNF format
+        assert 'h' not in comment_lead, \
+                "Character 'h' cannot be used for comments" \
+                " (reserved to signify hard clauses)"
 
         # soft clauses with negative weights
         negs = []
@@ -4066,7 +4074,7 @@ class WCNF(object):
                     w, items = line.split(sep=None, maxsplit=1)
                     w = parse_wght(w)
 
-                    if w >= self.topw:
+                    if w is None or w >= self.topw:
                         self.hard.append(list(map(int, items.split()[:-1])))
                     elif w > 0:
                         self.soft.append(list(map(int, items.split()[:-1])))
@@ -4078,12 +4086,16 @@ class WCNF(object):
                 elif not line.startswith('p wcnf '):
                     self.comments.append(line)
                 else: # expecting the preamble
+                    assert len(self.soft) == len(self.hard) == 0, \
+                            'Preamble goes after some of the clauses have been read'
+
                     preamble = line.split(' ')
                     if len(preamble) == 5: # preamble should be "p wcnf nvars nclauses topw"
                         self.topw = parse_wght(preamble[-1])
                     else: # preamble should be "p wcnf nvars nclauses", with topw omitted
                         self.topw = decimal.Decimal('+inf')
 
+        # potentially expensive: calculating the largest variable identifier
         self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.hard, self.soft])))
 
         # if there is any soft clause with negative weight
@@ -4198,7 +4210,8 @@ class WCNF(object):
 
         return wcnf
 
-    def to_file(self, fname, comments=None, compress_with='use_ext'):
+    def to_file(self, fname, comments=None, compress_with='use_ext',
+                format='mse22'):
         """
             The method is for saving a WCNF formula into a file in the DIMACS
             CNF format. A file name is expected as an argument. Additionally,
@@ -4206,13 +4219,20 @@ class WCNF(object):
             parameter. Also, a file can be compressed using either gzip, bzip2,
             lzma (xz), or zstd.
 
+            The ``format`` parameter can be set either to value ``'mse22'``
+            (set by default) or ``'legacy'``. Both variants are described on
+            the `MSE 2022 webpage
+            <https://maxsat-evaluations.github.io/2022/rules.html#input>`__.
+
             :param fname: a file name where to store the formula.
             :param comments: additional comments to put in the file.
             :param compress_with: file compression algorithm
+            :param format: WCNF format to use
 
             :type fname: str
             :type comments: list(str)
             :type compress_with: str
+            :type format: str
 
             Note that the ``compressed_with`` parameter can be ``None`` (i.e.
             the file is uncompressed), ``'gzip'``, ``'bzip2'``, ``'lzma'``,
@@ -4234,20 +4254,27 @@ class WCNF(object):
         """
 
         with FileObject(fname, mode='w', compression=compress_with) as fobj:
-            self.to_fp(fobj.fp, comments)
+            self.to_fp(fobj.fp, comments, format=format)
 
-    def to_fp(self, file_pointer, comments=None):
+    def to_fp(self, file_pointer, comments=None, format='mse22'):
         """
             The method can be used to save a WCNF formula into a file pointer.
             The file pointer is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
+            The ``format`` parameter can be set either to value ``'mse22'``
+            (set by default) or ``'legacy'``. Both variants are described on
+            the `MSE 2022 webpage
+            <https://maxsat-evaluations.github.io/2022/rules.html#input>`__.
+
             :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
+            :param format: WCNF format to use
 
             :type file_pointer: file pointer
             :type comments: list(str)
+            :type format: str
 
             Example:
 
@@ -4270,21 +4297,32 @@ class WCNF(object):
             for c in comments:
                 print(c, file=file_pointer)
 
-        print('p wcnf', self.nv, len(self.hard) + len(self.soft), self.topw, file=file_pointer)
+        if format == 'legacy':
+            print('p wcnf', self.nv, len(self.hard) + len(self.soft), self.topw, file=file_pointer)
 
         # soft clauses are dumped first because
         # some tools (e.g. LBX) cannot count them properly
         for i, cl in enumerate(self.soft):
             print(self.wght[i], ' '.join(str(l) for l in cl), '0', file=file_pointer)
 
+        # hard clause either have a top weight or are marked as 'h'
+        topw = self.topw if format == 'legacy' else 'h'
         for cl in self.hard:
-            print(self.topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            print(topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
 
-    def to_dimacs(self):
+    def to_dimacs(self, format='mse22'):
         """
             Return the current state of the object in extended DIMACS format.
 
-            For example, if 'some-file.cnf' contains:
+            The ``format`` parameter can be set either to value ``'mse22'``
+            (set by default) or ``'legacy'``. Both variants are described on
+            the `MSE 2022 webpage
+            <https://maxsat-evaluations.github.io/2022/rules.html#input>`__.
+
+            :param format: WCNF format to use
+            :type format: str
+
+            For example, if 'some-file.wcnf' contains:
 
             ::
 
@@ -4299,19 +4337,30 @@ class WCNF(object):
             .. code-block:: python
 
                 >>> from pysat.formula import WCNF
-                >>> cnf = WCNF(from_file='some-file.cnf')
-                >>> print(cnf.to_dimacs())
+                >>> cnf = WCNF(from_file='some-file.wcnf')
+                >>> print(cnf.to_dimacs(format='legacy'))
                 c Example
                 p wcnf 2 3 10
                 10 1 2 0
                 1 -1 0
                 2 -2 0
+                >>>
+                >>> print(cnf.to_dimacs())
+                c Example
+                h 1 2 0
+                1 -1 0
+                2 -2 0
         """
 
-        header_lines = [f'p wcnf {self.nv} {len(self.hard) + len(self.soft)} {self.topw}']
         comment_lines = [f'{comment}' for comment in self.comments]
-        hard_lines = [f'{self.topw} ' + ' '.join(map(str, clause)) + ' 0' for clause in self.hard]
         soft_lines = [f'{weight} ' + ' '.join(map(str, clause)) + ' 0' for clause, weight in zip(self.soft, self.wght)]
+
+        if format == 'legacy':
+            header_lines = [f'p wcnf {self.nv} {len(self.hard) + len(self.soft)} {self.topw}']
+            hard_lines = [f'{self.topw} ' + ' '.join(map(str, clause)) + ' 0' for clause in self.hard]
+        else:
+            header_lines = []
+            hard_lines = ['h ' + ' '.join(map(str, clause)) + ' 0' for clause in self.hard]
 
         lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines)
         return lines
@@ -5173,17 +5222,25 @@ class WCNFPlus(WCNF, object):
         """
 
         def parse_wght(string):
-            wght = float(string)
-            return int(wght) if wght.is_integer() else decimal.Decimal(string)
+            if string == 'h':
+                return None
+            else:
+                wght = float(string)
+                return int(wght) if wght.is_integer() else decimal.Decimal(string)
 
         self.nv = 0
         self.hard = []
         self.atms = []
         self.soft = []
         self.wght = []
-        self.topw = 1
+        self.topw = decimal.Decimal('+inf')
         self.comments = []
         comment_lead = set(['p']).union(set(comment_lead))
+
+        # we are now expecting the new WCNF format
+        assert 'h' not in comment_lead, \
+                "Character 'h' cannot be used for comments" \
+                " (reserved to signify hard clauses)"
 
         # soft clauses with negative weights
         negs = []
@@ -5196,7 +5253,7 @@ class WCNFPlus(WCNF, object):
                         w, items = line.split(sep=None, maxsplit=1)
                         w = parse_wght(w)
 
-                        if w >= self.topw:
+                        if w is None or w >= self.topw:
                             self.hard.append(list(map(int, items.split()[:-1])))
                         elif w > 0:
                             self.soft.append(list(map(int, items.split()[:-1])))
@@ -5227,6 +5284,9 @@ class WCNFPlus(WCNF, object):
                 elif not line.startswith('p wcnf'):  # wcnf is allowed here
                     self.comments.append(line)
                 else:  # expecting the preamble
+                    assert len(self.soft) == len(self.hard) == len(self.atms) == 0, \
+                            'Preamble goes after some of the clauses have been read'
+
                     preamble = line.split(' ')
                     if len(preamble) == 5: # preamble should be "p wcnf nvars nclauses topw"
                         self.topw = parse_wght(preamble[-1])
@@ -5246,18 +5306,25 @@ class WCNFPlus(WCNF, object):
         if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
             self.topw = 1 + sum(self.wght)
 
-    def to_fp(self, file_pointer, comments=None):
+    def to_fp(self, file_pointer, comments=None, format='mse22'):
         """
             The method can be used to save a WCNF+ formula into a file pointer.
             The file pointer is expected as an argument. Additionally,
             supplementary comment lines can be specified in the ``comments``
             parameter.
 
+            The ``format`` parameter can be set either to value ``'mse22'``
+            (set by default) or ``'legacy'``. Both variants are described on
+            the `MSE 2022 webpage
+            <https://maxsat-evaluations.github.io/2022/rules.html#input>`__.
+
             :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
+            :param format: WCNF format to use
 
             :type file_pointer: file pointer
             :type comments: list(str)
+            :type format: str
 
             Example:
 
@@ -5280,25 +5347,28 @@ class WCNFPlus(WCNF, object):
             for c in comments:
                 print(c, file=file_pointer)
 
-        ftype = 'wcnf+' if self.atms else 'wcnf'
-        print('p', ftype, self.nv, len(self.hard) + len(self.soft) + len(self.atms),
-                self.topw, file=file_pointer)
+        if format == 'legacy':
+            ftype = 'wcnf+' if self.atms else 'wcnf'
+            print('p', ftype, self.nv, len(self.hard) + len(self.soft) + len(self.atms),
+                    self.topw, file=file_pointer)
 
         # soft clauses are dumped first because
         # some tools (e.g. LBX) cannot count them properly
         for i, cl in enumerate(self.soft):
             print(self.wght[i], ' '.join(str(l) for l in cl), '0', file=file_pointer)
 
+        # hard clause either have a top weight or are marked as 'h'
+        topw = self.topw if format == 'legacy' else 'h'
         for cl in self.hard:
-            print(self.topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            print(topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
 
         # atmost constraints are hard
         for am in self.atms:
             if len(am) == 2:  # cardinality constraint
-                print(self.topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+                print(topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
             else:  # len(am) == 3 => PB constraint
                 assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
-                print(self.topw, 'w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
+                print(topw, 'w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
 
     def to_dimacs(self):
         """
@@ -5329,18 +5399,25 @@ class WCNFPlus(WCNF, object):
                 10 -4 -5 -6 7 <= 2
         """
 
-        header_lines = [f'p wcnf+ {self.nv} {len(self.hard) + len(self.soft) + len(self.atms)} {self.topw}']
         comment_lines = [f'{comment}' for comment in self.comments]
-        hard_lines = [f'{self.topw} ' + ' '.join(map(str,clause)) + ' 0' for clause in self.hard]
         soft_lines = [f'{weight} ' + ' '.join(map(str,clause)) + ' 0' for clause, weight in zip(self.soft, self.wght)]
+
+        if format == 'legacy':
+            header_lines = [f'p wcnf+ {self.nv} {len(self.hard) + len(self.soft) + len(self.atms)} {self.topw}']
+            topw = self.topw
+        else:
+            header_lines = []
+            topw = 'h'
+
+        hard_lines = [f'{topw} ' + ' '.join(map(str,clause)) + ' 0' for clause in self.hard]
 
         atmost_lines = []
         for am in self.atms:
             if len(am) == 2:  # cardinality constraint
-                atmost_lines.append(f'{self.topw} ' + ' '.join(str(l) for l in am[0]) + ' <= ' + str(am[1]))
+                atmost_lines.append(f'{topw} ' + ' '.join(str(l) for l in am[0]) + ' <= ' + str(am[1]))
             else:  # len(am) == 3 => PB constraint
                 assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
-                atmost_lines.append(f'{self.topw} ' + 'w ' + ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])) + ' <= ' + str(am[1]))
+                atmost_lines.append(f'{topw} ' + 'w ' + ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])) + ' <= ' + str(am[1]))
 
         lines = '\n'.join(comment_lines + header_lines + hard_lines + soft_lines + atmost_lines) + '\n'
 
