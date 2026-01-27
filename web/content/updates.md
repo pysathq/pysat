@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 27.01.2026 (*1.8.dev28*)
+
+-   Added support for MSE22 WCNF format.
+
 ## 21.01.2026 (*1.8.dev27*)
 
 -   Fixed a bug in the initialiser of RC2.
