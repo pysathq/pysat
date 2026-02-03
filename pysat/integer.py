@@ -1493,6 +1493,10 @@ class IntegerEngine(BooleanEngine):
             constraints, while the latter are utilized for weighted
             constraints.
 
+            Note that parameters ``cardenc`` and ``pbenc`` default to
+            :attr:`.card.EncType.seqcounter` and
+            :class:`pysat.pb.EncType.best`, respectively.
+
             :param cardenc: cardinality encoding for unweighted constraints
             :param pbenc: PB encoding for weighted constraints
             :type cardenc: int

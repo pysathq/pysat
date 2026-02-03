@@ -340,7 +340,7 @@ class CardEnc(object):
             using ``top_id``. Also note that parameters ``top_id`` and
             ``vpool`` **cannot** be specified *simultaneously*.
 
-            The default value of ``encoding`` is :attr:`Enctype.seqcounter`.
+            The default value of ``encoding`` is :attr:`EncType.seqcounter`.
 
             The method *translates* the AtLeast constraint into an AtMost
             constraint by *negating* the literals of ``lits``, creating a new
