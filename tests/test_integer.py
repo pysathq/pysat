@@ -1,12 +1,12 @@
-from decimal import Decimal
-from pysat.integer import Integer, IntegerEngine, LinearExpr
-from pysat.solvers import Solver
 import pytest
-
 try:
     import pysat.pb
 except Exception:
     pytest.skip('pypblib is required for integer module tests', allow_module_level=True)
+
+from decimal import Decimal
+from pysat.integer import Integer, IntegerEngine, LinearExpr
+from pysat.solvers import Solver
 
 
 def _enum_models_engine(eng, vars):
