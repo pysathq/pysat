@@ -21,4 +21,4 @@ __version__ = '%d.%d.%s%d' % VERSION if len(VERSION) == 4 else \
 
 # all submodules
 #==============================================================================
-__all__ = ['card', 'engines', 'formula', 'pb', 'process', 'solvers']
+__all__ = ['card', 'engines', 'formula', 'integer', 'pb', 'process', 'solvers']
