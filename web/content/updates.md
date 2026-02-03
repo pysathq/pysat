@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 03.02.2026 (*1.8.dev29*)
+
+-   Added experimental support for rudimentary modelling with integer
+    variables.
+
 ## 27.01.2026 (*1.8.dev28*)
 
 -   Added support for MSE22 WCNF format.
