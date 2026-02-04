@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 04.02.2026 (*1.8.dev30*)
+
+-   Corrected a bug in Cadical195's propagation when an external engine is
+    attached.
+-   Added :meth:`decode_assignment()`.
+
 ## 03.02.2026 (*1.8.dev29*)
 
 -   Added experimental support for rudimentary modelling with integer
