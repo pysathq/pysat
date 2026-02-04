@@ -110,6 +110,43 @@ def test_singleton_order_encoding():
     assert values == [2], 'Singleton order domain should yield a single model'
 
 
+def test_decode_assignment_conflicts_and_fixes():
+    x = Integer('x', 1, 3, encoding='direct')
+    y = Integer('y', 1, 3, encoding='order')
+    z = Integer('z', 1, 3, encoding='order')
+    w = Integer('w', 1, 3, encoding='order')
+    u = Integer('u', 1, 3, encoding='direct')
+    v = Integer('v', 1, 3, encoding='direct')
+    eng = IntegerEngine([x, y, z, w, u, v], adaptive=False)
+
+    lits = [
+        x.equals(1),
+        x.equals(2),       # conflicting equality values
+        y.ge(2),
+        -y.ge(2),          # contradictory bounds
+        z.ge(2),
+        -z.ge(3),          # fixes z to 2
+        w.ge(2),
+        -u.equals(1),
+        -u.equals(2),      # fixes u to 3 by elimination
+        -v.equals(1),
+        -v.equals(2),
+        -v.equals(3),      # contradictory elimination
+    ]
+
+    vals = eng.decode_assignment(lits)
+
+    assert vals[x] == [1, 2], 'Conflicting equalities should return all values'
+    assert vals[y] == [], 'Contradictory bounds should return an empty list'
+    assert vals[z] == 2, 'Consistent bounds should yield a single value'
+    assert vals[w] == [2, 3], 'Non-fixed bounds should return all values in range'
+    assert vals[u] == 3, 'Eliminating all but one value should fix the variable'
+    assert vals[v] == [], 'Eliminating all values should return an empty list'
+
+    with pytest.raises(ValueError):
+        eng.decode_assignment([0])
+
+
 def test_operator_constraints():
     x = Integer('x', 0, 2)
     y = Integer('y', 0, 2)

@@ -2834,7 +2834,7 @@ diff -Naur solvers/cadical195/solution.cpp solvers/cdc195/solution.cpp
 +} // namespace CaDiCaL195
 diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 --- solvers/cadical195/solver.cpp	2024-02-29 02:59:11
-+++ solvers/cdc195/solver.cpp	2024-04-07 16:10:03
++++ solvers/cdc195/solver.cpp	2026-02-04 21:00:32
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -2981,7 +2981,7 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
  const char *Solver::write_dimacs (const char *path, int min_max_var) {
    LOG_API_CALL_BEGIN ("write_dimacs", path, min_max_var);
    REQUIRE_VALID_STATE ();
-@@ -1628,4 +1716,99 @@
+@@ -1628,4 +1716,112 @@
    va_end (ap);
  }
  
@@ -3044,9 +3044,22 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +      else
 +        internal->search_assume_decision(p);
 +
-+      noconfl = internal->propagate();
-+      if (noconfl)
-+        noconfl = internal->external_propagate();
++      // propagate to a fixpoint under assumptions + external propagator
++      size_t before = internal->trail.size();
++      do {
++        noconfl = internal->propagate();
++        if (noconfl)
++          noconfl = internal->external_propagate();
++
++        if (!noconfl)
++          break;
++
++        size_t after = internal->trail.size();
++        if (after == before)
++          break;
++
++        before = after;
++      } while (true);
 +    }
 +  }
 +

@@ -1752,6 +1752,127 @@ class IntegerEngine(BooleanEngine):
 
         return lits
 
+    def decode_assignment(self, lits, vars=None):
+        """
+            Given a list of assigned Boolean literals, return a mapping
+            ``{Integer: integer_value}`` for those variables whose value is
+            fixed by the assignment alone. Unlike :meth:`.decode_model`, this
+            method does not require a full model and only looks at literals
+            present in ``lits``. Also note that the method does not require
+            the input literals to be in any particular order.
+
+            If multiple inconsistent *equality* literals are present for the
+            same variable, the value is reported as a list of all observed
+            values, which (if an issue) can be used to find the culprit in the
+            encoding. For order-based literals, if the inferred bounds fix the
+            value, the value is reported as an integer; otherwise, the value
+            is reported as the list of all values within the inferred bounds.
+            If order-based bounds are contradictory (lower bound exceeds upper
+            bound), the value is reported as an empty list.
+
+            Example:
+
+            .. code-block:: python
+
+                >>> st, props = solver.propagate(assumptions=clues)
+                >>> vals = eng.decode_assignment(props)
+                >>> # vals[i] is an int if the value is fixed,
+                >>> # a list if conflicting if multiple values are present,
+                >>> # or [] if contradictory bounds were derived.
+
+            :param lits: literals in the assignment
+            :param vars: subset of variables to decode (optional)
+            :type lits: iterable(int)
+            :type vars: list(:class:`Integer`) or None
+
+            :rtype: dict
+        """
+
+        # don't anything about any variables!
+        if self.vpool is None:
+            return {}
+
+        # optional filtering by a subset of variables
+        allowed = None if vars is None else set(vars)
+
+        # per-variable state tracked only when we see relevant literals
+        eq_true, lbounds, ubounds = {}, {}, {}
+
+        seen = set()
+        for lit in lits:
+            if lit == 0:
+                # literal '0' makes no sense
+                raise ValueError('Literal 0 is not allowed')
+
+            if lit not in seen:
+                seen.add(lit)
+
+                # getting the object given a literal
+                obj = self.vpool.obj(abs(lit))
+
+                # we expect a tuple of (var, 'kind', value)
+                if not obj or not isinstance(obj, tuple) or len(obj) != 3:
+                    # not a variable we know!
+                    continue
+
+                var, kind, value = obj
+                if not isinstance(var, Integer) or kind not in ('eq', 'ge'):
+                    # still not our variable!
+                    continue
+
+                # checking if the variable is among those we are interested in
+                if allowed is not None and var not in allowed:
+                    continue
+
+                if kind == 'eq':
+                    if lit > 0:
+                        eq_true.setdefault(var, set()).add(value)
+                else:  # kind == 'ge'
+                    if var not in lbounds:
+                        lbounds[var] = var.lb
+                        ubounds[var] = var.ub
+
+                    # refining the bounds if we can
+                    if lit > 0:
+                        if value > lbounds[var]:
+                            lbounds[var] = value
+                    else:
+                        bound = value - 1
+                        if bound < ubounds[var]:
+                            ubounds[var] = bound
+
+        # now, we are going to collate the data and put it here
+        res = {}
+
+        # direct/coupled encodings expose equality literals
+        for var, values in eq_true.items():
+            if len(values) == 1:
+                # taking the concrete value we found
+                res[var] = next(iter(values))
+            else:
+                # multiple values are found
+                res[var] = sorted(values)
+
+        # order/coupled encodings may be fixed by bounds alone
+        for var in lbounds:
+            if var in res:
+                # well, we already have a concrete value for this variable
+                continue
+
+            if lbounds[var] == ubounds[var]:
+                # concrete value defined from the bounds
+                res[var] = lbounds[var]
+
+            elif lbounds[var] < ubounds[var]:
+                # the bounds represent a valid range
+                res[var] = list(range(lbounds[var], ubounds[var] + 1))
+            else:
+                # conflicting bounds detected; report as an empty list
+                # to signal contradiction without raising
+                res[var] = []
+
+        return res
+
 
 # example usage
 #==============================================================================
