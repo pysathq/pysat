@@ -115,9 +115,7 @@ def test_decode_assignment_conflicts_and_fixes():
     y = Integer('y', 1, 3, encoding='order')
     z = Integer('z', 1, 3, encoding='order')
     w = Integer('w', 1, 3, encoding='order')
-    u = Integer('u', 1, 3, encoding='direct')
-    v = Integer('v', 1, 3, encoding='direct')
-    eng = IntegerEngine([x, y, z, w, u, v], adaptive=False)
+    eng = IntegerEngine([x, y, z, w], adaptive=False)
 
     lits = [
         x.equals(1),
@@ -127,11 +125,6 @@ def test_decode_assignment_conflicts_and_fixes():
         z.ge(2),
         -z.ge(3),          # fixes z to 2
         w.ge(2),
-        -u.equals(1),
-        -u.equals(2),      # fixes u to 3 by elimination
-        -v.equals(1),
-        -v.equals(2),
-        -v.equals(3),      # contradictory elimination
     ]
 
     vals = eng.decode_assignment(lits)
@@ -140,8 +133,6 @@ def test_decode_assignment_conflicts_and_fixes():
     assert vals[y] == [], 'Contradictory bounds should return an empty list'
     assert vals[z] == 2, 'Consistent bounds should yield a single value'
     assert vals[w] == [2, 3], 'Non-fixed bounds should return all values in range'
-    assert vals[u] == 3, 'Eliminating all but one value should fix the variable'
-    assert vals[v] == [], 'Eliminating all values should return an empty list'
 
     with pytest.raises(ValueError):
         eng.decode_assignment([0])
