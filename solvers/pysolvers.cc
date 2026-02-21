@@ -82,6 +82,12 @@
 #include "minisatgh/core/Solver.h"
 #endif
 
+#ifdef WITH_KISSAT404
+extern "C" {
+#include "kissat404/src/kissat.h"
+}
+#endif
+
 using namespace std;
 
 // docstrings
@@ -480,6 +486,17 @@ extern "C" {
 	static PyObject *py_minisatgh_del       (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_acc_stats (PyObject *, PyObject *);
 #endif
+#ifdef WITH_KISSAT404
+	static PyObject *py_kissat404_new       (PyObject *, PyObject *);
+	static PyObject *py_kissat404_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_kissat404_solve     (PyObject *, PyObject *);
+	static PyObject *py_kissat404_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_kissat404_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_kissat404_dbudget   (PyObject *, PyObject *);
+	static PyObject *py_kissat404_model     (PyObject *, PyObject *);
+	static PyObject *py_kissat404_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_kissat404_del       (PyObject *, PyObject *);
+#endif
 }
 
 // module specification
@@ -808,6 +825,17 @@ static PyMethodDef module_methods[] = {
 	{ "minisatgh_nof_cls",   py_minisatgh_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "minisatgh_del",       py_minisatgh_del,       METH_VARARGS,       del_docstring },
 	{ "minisatgh_acc_stats", py_minisatgh_acc_stats, METH_VARARGS,  acc_stat_docstring },
+#endif
+#ifdef WITH_KISSAT404
+	{ "kissat404_new",       py_kissat404_new,       METH_VARARGS,       new_docstring },
+	{ "kissat404_add_cl",    py_kissat404_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "kissat404_solve",     py_kissat404_solve,     METH_VARARGS,     solve_docstring },
+	{ "kissat404_solve_lim", py_kissat404_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "kissat404_cbudget",   py_kissat404_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "kissat404_dbudget",   py_kissat404_dbudget,   METH_VARARGS,   dbudget_docstring },
+	{ "kissat404_model",     py_kissat404_model,     METH_VARARGS,     model_docstring },
+	{ "kissat404_nof_vars",  py_kissat404_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "kissat404_del",       py_kissat404_del,       METH_VARARGS,       del_docstring },
 #endif
 	{ NULL, NULL, 0, NULL }
 };
@@ -10632,5 +10660,269 @@ static PyObject *py_minisatgh_acc_stats(PyObject *self, PyObject *args)
 	);
 }
 #endif  // WITH_MINISATGH
+
+// API for Kissat 4.0.4
+//=============================================================================
+#ifdef WITH_KISSAT404
+// Structure to track number of variables
+typedef struct {
+	kissat *solver;
+	int max_var;
+} kissat_wrapper;
+
+static PyObject *py_kissat404_new(PyObject *self, PyObject *args)
+{
+	kissat_wrapper *w = (kissat_wrapper *)malloc(sizeof(kissat_wrapper));
+	if (w == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Cannot allocate wrapper.");
+		return NULL;
+	}
+
+	w->solver = kissat_init();
+	w->max_var = 0;
+
+	if (w->solver == NULL) {
+		free(w);
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)w);
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	// clause iterator
+	PyObject *i_obj = PyObject_GetIter(c_obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Clause does not seem to be an iterable object.");
+		return NULL;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return NULL;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return NULL;
+		}
+
+		kissat_add(w->solver, l);
+
+		// track max variable
+		int var = abs(l);
+		if (var > w->max_var)
+			w->max_var = var;
+	}
+
+	kissat_add(w->solver, 0);
+	Py_DECREF(i_obj);
+
+	PyObject *ret = PyBool_FromLong((long)true);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	int res = kissat_solve(w->solver);
+	bool sat = (res == 10);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = PyBool_FromLong((long)sat);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	int res = kissat_solve(w->solver);
+	// 10 = SAT, 20 = UNSAT, 0 = unknown/interrupted
+	res = (res == 10 ? 1 : (res == 20 ? -1 : 0));
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = pyint_from_cint(res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	if (budget > 0)
+		kissat_set_conflict_limit(w->solver, (unsigned)budget);
+	else
+		kissat_set_conflict_limit(w->solver, 0);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_dbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	if (budget > 0)
+		kissat_set_decision_limit(w->solver, (unsigned)budget);
+	else
+		kissat_set_decision_limit(w->solver, 0);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	int maxvar = w->max_var;
+	if (maxvar) {
+		PyObject *model = PyList_New(maxvar);
+		for (int i = 1; i <= maxvar; ++i) {
+			int val = kissat_value(w->solver, i);
+			int l = (val > 0) ? i : -i;
+
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i - 1, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	int nof_vars = w->max_var;
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_kissat404_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver wrapper
+	kissat_wrapper *w = (kissat_wrapper *)pyobj_to_void(s_obj);
+
+	if (w) {
+		if (w->solver)
+			kissat_release(w->solver);
+		free(w);
+	}
+
+	Py_RETURN_NONE;
+}
+#endif  // WITH_KISSAT404
 
 }  // extern "C"

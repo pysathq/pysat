@@ -93,6 +93,10 @@ sources = {
         'https://github.com/niklasso/minisat/archive/master.zip',
         'http://reason.di.fc.ul.pt/~aign/storage/mirror/minisatgh-master.zip',
         'solvers/minisatgh.zip'
+    ),
+    'kissat404': (
+        'https://github.com/arminbiere/kissat/archive/refs/tags/rel-4.0.4.tar.gz',
+        'solvers/kissat404.tar.gz'
     )
 }
 
@@ -114,7 +118,8 @@ to_extract = {
     'mergesat3': [],
     'minicard': [],
     'minisat22': [],
-    'minisatgh': []
+    'minisatgh': [],
+    'kissat404': []
 }
 
 #
@@ -544,6 +549,9 @@ to_move = {
         ('minisat/core', 'core'),
         ('minisat/mtl', 'mtl'),
         ('minisat/utils', 'utils')
+    ],
+    'kissat404': [
+        ('src', 'src')
     ]
 }
 
@@ -821,6 +829,24 @@ to_remove = {
         'Makefile',
         'README',
         '.gitignore'
+    ],
+    'kissat404': [
+        'scripts',
+        'test',
+        'src/main.c',
+        'src/application.c',
+        'src/application.h',
+        'src/parse.c',
+        'src/parse.h',
+        'src/witness.c',
+        'src/witness.h',
+        'configure',
+        'makefile.in',
+        'NEWS.md',
+        'README.md',
+        'CONTRIBUTING',
+        'LICENSE',
+        'VERSION'
     ]
 }
 

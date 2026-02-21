@@ -246,6 +246,7 @@ class SolverNames(object):
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
     glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
     glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
+    kissat404   = ('ks', 'ks4', 'kissat', 'kissat4', 'kissat404')
     lingeling   = ('lgl', 'lingeling')
     maplechrono = ('mcb', 'chrono', 'chronobt', 'maplechrono')
     maplecm     = ('mcm', 'maplecm')
@@ -429,6 +430,8 @@ class Solver(object):
                 self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.glucose42:
                 self.solver = Glucose42(bootstrap_with, use_timer, **kwargs)
+            elif name_ in SolverNames.kissat404:
+                self.solver = Kissat404(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.lingeling:
                 self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
             elif name_ in SolverNames.maplechrono:
@@ -7578,6 +7581,356 @@ class CryptoMinisat(object):
         if self.cryptosat:
             if type(formula) == CNFPlus and formula.atmosts:
                 raise NotImplementedError('Atmost constraints are not supported by CryptoMinisat')
+
+            for clause in formula:
+                self.add_clause(clause)
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return False
+
+
+#
+#==============================================================================
+class Kissat404(object):
+    """
+        Kissat 4.0.4 SAT solver.
+
+        Kissat is a non-incremental SAT solver, winner of the SAT Competition
+        2024. It does not support assumption-based solving or unsatisfiable
+        core extraction. However, it supports conflict and decision limits
+        for limited solving.
+
+        Note that Kissat is a **non-incremental** solver. This means:
+
+        - Assumptions are NOT supported (solve() ignores assumptions parameter)
+        - Unsatisfiable core extraction is NOT available
+        - Once solved, the solver state cannot be reused for incremental calls
+
+        :param bootstrap_with: a list of clauses for solver initialization.
+        :param use_timer: whether or not to measure SAT solving time.
+
+        :type bootstrap_with: iterable(iterable(int))
+        :type use_timer: bool
+
+        Usage example:
+
+        .. code-block:: python
+
+            >>> from pysat.solvers import Kissat404
+            >>>
+            >>> with Kissat404(bootstrap_with=[[-1, 2], [-2, 3]]) as ks:
+            ...     ks.solve()
+            True
+            ...     print(ks.get_model())
+            [-1, -2, -3]
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False, warm_start=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Kissat.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by Kissat.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by Kissat in PySAT.')
+
+        self.kissat = None
+        self.status = None
+
+        self.new(bootstrap_with, use_timer)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.kissat:
+            self.kissat = pysolvers.kissat404_new()
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    raise NotImplementedError('Atmost constraints are not supported by Kissat')
+
+                for clause in bootstrap_with:
+                    self.add_clause(clause)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.kissat:
+            pysolvers.kissat404_del(self.kissat)
+            self.kissat = None
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+
+            Note: Kissat does NOT support assumption-based solving.
+            The assumptions parameter is ignored. If you need incremental
+            solving with assumptions, use a different solver like CaDiCaL or Glucose.
+        """
+
+        if self.kissat:
+            if assumptions:
+                import warnings
+                warnings.warn('Kissat does not support assumptions. '
+                              'The assumptions parameter will be ignored.',
+                              RuntimeWarning)
+
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.kissat404_solve(self.kissat, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            decisions.
+
+            Note: Kissat does NOT support assumption-based solving.
+            The assumptions parameter is ignored.
+        """
+
+        if self.kissat:
+            if assumptions:
+                import warnings
+                warnings.warn('Kissat does not support assumptions. '
+                              'The assumptions parameter will be ignored.',
+                              RuntimeWarning)
+
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.kissat404_solve_lim(self.kissat, int(MainThread.check()))
+
+            self.status = None if self.status == 0 else bool((self.status + 1) / 2)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.kissat:
+            pysolvers.kissat404_cbudget(self.kissat, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.kissat:
+            pysolvers.kissat404_dbudget(self.kissat, budget)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is not supported by Kissat.')
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Propagation budget is not supported by Kissat.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Interrupt is not supported by Kissat in PySAT.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Interrupt is not supported by Kissat in PySAT.')
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        raise NotImplementedError('Propagation is not supported by Kissat.')
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        raise NotImplementedError('Setting phases is not supported by Kissat in PySAT.')
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.kissat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.kissat and self.status == True:
+            model = pysolvers.kissat404_model(self.kissat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+
+            Note: Kissat does NOT support UNSAT core extraction because
+            it does not support assumption-based solving.
+        """
+
+        raise NotImplementedError('UNSAT core extraction is not supported by Kissat.')
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        raise NotImplementedError('Proof logging is not supported by Kissat in PySAT.')
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.kissat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.kissat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.kissat:
+            return pysolvers.kissat404_nof_vars(self.kissat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        raise NotImplementedError('Number of clauses query is not supported by Kissat.')
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver.
+        """
+
+        raise NotImplementedError('Statistics are not exposed by Kissat in PySAT.')
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+
+            Note: Kissat is a non-incremental solver and does NOT support
+            model enumeration. Clauses cannot be added after solve() is called.
+            Use an incremental solver like CaDiCaL or Glucose for model enumeration.
+        """
+
+        raise NotImplementedError('Model enumeration is not supported by Kissat. '
+                                  'Kissat is non-incremental and cannot add blocking clauses after solve().')
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+
+            WARNING: Kissat is non-incremental. You cannot add clauses after
+            calling solve(). Doing so will cause undefined behavior.
+        """
+
+        if self.kissat:
+            pysolvers.kissat404_add_cl(self.kissat, clause)
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            Atmost constraints are not supported by Kissat.
+        """
+
+        raise NotImplementedError('Atmost constraints are not supported by Kissat.')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are not supported by Kissat.')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.kissat:
+            if type(formula) == CNFPlus and formula.atmosts:
+                raise NotImplementedError('Atmost constraints are not supported by Kissat')
 
             for clause in formula:
                 self.add_clause(clause)
