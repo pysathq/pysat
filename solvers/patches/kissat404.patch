@@ -1,0 +1,322 @@
+diff -Naur solvers/kissat404/Makefile solvers/kissat/Makefile
+--- solvers/kissat404/Makefile	1970-01-01 10:00:00.000000000 +1000
++++ solvers/kissat/Makefile	2026-02-21 12:00:00.000000000 +1000
+@@ -0,0 +1,57 @@
++### Makefile ---
++
++## Author: pysat
++## Keywords: kissat SAT solver
++
++# main parameters
++CC       := cc
++CFLAGS   := -std=gnu99 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing
++COPT     := -O3 -DNDEBUG -DNMETRICS -DQUIET
++INCLUDES := -I. -Isrc
++LIBS     := -L. -lm
++
++# source files (library sources only, no main.c or application files)
++SOURCES  := src/allocate.c src/analyze.c src/ands.c src/arena.c src/assign.c \
++            src/averages.c src/backbone.c src/backtrack.c src/build.c src/bump.c \
++            src/check.c src/classify.c src/clause.c src/collect.c src/colors.c \
++            src/compact.c src/config.c src/congruence.c src/decide.c src/deduce.c \
++            src/definition.c src/dense.c src/dump.c src/eliminate.c src/equivalences.c \
++            src/error.c src/extend.c src/factor.c src/fastel.c src/file.c src/flags.c \
++            src/format.c src/forward.c src/gates.c src/handle.c src/heap.c \
++            src/ifthenelse.c src/import.c src/internal.c src/kimits.c src/kitten.c \
++            src/krite.c src/learn.c src/logging.c src/lucky.c src/minimize.c src/mode.c \
++            src/options.c src/phases.c src/preprocess.c src/print.c src/probe.c \
++            src/profile.c src/promote.c src/proof.c src/propbeyond.c src/propdense.c \
++            src/propinitially.c src/proprobe.c src/propsearch.c src/queue.c src/reduce.c \
++            src/reluctant.c src/reorder.c src/rephase.c src/report.c src/resize.c \
++            src/resolve.c src/resources.c src/restart.c src/search.c src/shrink.c \
++            src/smooth.c src/sort.c src/statistics.c src/strengthen.c src/substitute.c \
++            src/sweep.c src/terminate.c src/tiers.c src/trail.c src/transitive.c \
++            src/utilities.c src/vector.c src/vivify.c src/walk.c src/warmup.c \
++            src/watch.c src/weaken.c
++
++OBJECTS  := $(SOURCES:.c=.o)
++TRGT     := kissat404
++
++# gather compiler options
++CARGS := $(CFLAGS) $(INCLUDES) $(COPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.c
++	$(CC) $(CARGS) -c $< -o $@
++
++clean:
++	@-rm -f $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+
+diff -Naur solvers/kissat404/src/build.h solvers/kissat/src/build.h
+--- solvers/kissat404/src/build.h	1970-01-01 10:00:00.000000000 +1000
++++ solvers/kissat/src/build.h	2026-02-21 12:00:00.000000000 +1000
+@@ -0,0 +1,9 @@
++#ifndef _build_h_INCLUDED
++#define _build_h_INCLUDED
++
++#define COMPILER "cc"
++#define ID "pysat"
++#define VERSION "4.0.4"
++#define BUILD "-O3 -DNDEBUG -DNMETRICS -DQUIET"
++
++#endif
+
+diff -Naur solvers/kissat404/src/internal.h solvers/kissat/src/internal.h
+--- solvers/kissat404/src/internal.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/internal.h	2026-02-21 12:00:00.000000000 +1000
+@@ -1,5 +1,9 @@
+ #ifndef _internal_h_INCLUDED
+ #define _internal_h_INCLUDED
+ 
++#ifndef QUIET
++#define QUIET
++#endif
++
+ #include "arena.h"
+ #include "array.h"
+
+diff -Naur solvers/kissat404/src/resources.c solvers/kissat/src/resources.c
+--- solvers/kissat404/src/resources.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/resources.c	2026-02-21 12:00:00.000000000 +1000
+@@ -1,5 +1,14 @@
+ #include "resources.h"
+ 
++#ifdef _MSC_VER
++#include <windows.h>
++double kissat_wall_clock_time (void) {
++  LARGE_INTEGER freq, count;
++  if (!QueryPerformanceFrequency (&freq) || !QueryPerformanceCounter (&count))
++    return 0;
++  return (double) count.QuadPart / (double) freq.QuadPart;
++}
++#else
+ #include <sys/time.h>
+ 
+ double kissat_wall_clock_time (void) {
+@@ -8,8 +17,9 @@
+     return 0;
+   return 1e-6 * tv.tv_usec + tv.tv_sec;
+ }
++#endif
+ 
+-#ifndef QUIET
++#if !defined(_MSC_VER) && !defined(QUIET)
+ 
+ #include "internal.h"
+ #include "statistics.h"
+
+diff -Naur solvers/kissat404/src/handle.h solvers/kissat/src/handle.h
+--- solvers/kissat404/src/handle.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/handle.h	2026-02-21 12:00:00.000000000 +1000
+@@ -9,7 +9,7 @@
+ void kissat_init_alarm (void (*handler) (void));
+ void kissat_reset_alarm (void);
+ 
+-#ifdef __MINGW32__
++#if defined(__MINGW32__) || defined(_MSC_VER)
+ #define SIGNAL_SIGBUS
+ #else
+ #define SIGNAL_SIGBUS SIGNAL (SIGBUS)
+@@ -31,7 +31,7 @@
+   if (sig == SIG) return #SIG;
+   SIGNALS
+ #undef SIGNAL
+-#ifndef __MINGW32__
++#if !defined(__MINGW32__) && !defined(_MSC_VER)
+   if (sig == SIGALRM)
+     return "SIGALRM";
+ #endif
+
+diff -Naur solvers/kissat404/src/handle.c solvers/kissat/src/handle.c
+--- solvers/kissat404/src/handle.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/handle.c	2026-02-21 12:00:00.000000000 +1000
+@@ -50,6 +50,7 @@
+ #undef SIGNAL
+ }
+ 
++#ifndef _MSC_VER
+ static volatile bool caught_alarm;
+ static volatile bool alarm_handler_set;
+ static void (*volatile SIGALRM_handler) (int);
+@@ -84,3 +85,4 @@
+   handle_alarm = 0;
+   (void) signal (SIGALRM, SIGALRM_handler);
+ }
++#endif
+
+diff -Naur solvers/kissat404/src/file.c solvers/kissat/src/file.c
+--- solvers/kissat404/src/file.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/file.c	2026-02-21 12:00:00.000000000 +1000
+@@ -8,6 +8,14 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <unistd.h>
++
++#ifdef _MSC_VER
++#define popen _popen
++#define pclose _pclose
++#ifndef S_ISDIR
++#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
++#endif
++#endif
+ 
+ bool kissat_file_exists (const char *path) {
+   if (!path)
+
+diff -Naur solvers/kissat404/src/inlineassign.h solvers/kissat/src/inlineassign.h
+--- solvers/kissat404/src/inlineassign.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/inlineassign.h	2026-02-21 12:00:00.000000000 +1000
+@@ -17,7 +17,9 @@
+   watches watches = WATCHES (not_lit);
+   if (!kissat_empty_vector (&watches)) {
+     watch *w = BEGIN_WATCHES (watches);
++#ifndef _MSC_VER
+     __builtin_prefetch (w, 0, 1);
++#endif
+   }
+ 
+ #ifndef FAST_ASSIGN
+
+diff -Naur solvers/kissat404/src/attribute.h solvers/kissat/src/attribute.h
+--- solvers/kissat404/src/attribute.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/attribute.h	2026-02-21 12:00:00.000000000 +1000
+@@ -1,10 +1,15 @@
+ #ifndef _attribute_h_INCLUDED
+ #define _attribute_h_INCLUDED
+ 
++#ifdef _MSC_VER
++#define ATTRIBUTE_FORMAT(FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION)
++#define ATTRIBUTE_ALWAYS_INLINE
++#else
+ #define ATTRIBUTE_FORMAT(FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION) \
+   __attribute__ (( \
+       format (printf, FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION)))
+ 
+ #define ATTRIBUTE_ALWAYS_INLINE __attribute__ ((always_inline))
++#endif
+ 
+ #endif
+
+diff -Naur solvers/kissat404/src/utilities.h solvers/kissat/src/utilities.h
+--- solvers/kissat404/src/utilities.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/utilities.h	2026-02-21 12:00:00.000000000 +1000
+@@ -5,6 +5,10 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdlib.h>
++
++#ifdef _MSC_VER
++#include <intrin.h>
++#endif
+ 
+ typedef uintptr_t word;
+ typedef uintptr_t w2rd[2];
+@@ -74,17 +78,35 @@
+ }
+ 
+ static inline unsigned kissat_leading_zeroes_of_unsigned (unsigned x) {
++#ifdef _MSC_VER
++  unsigned long idx;
++  return x ? (_BitScanReverse (&idx, x), 31u - idx)
++           : sizeof (unsigned) * 8;
++#else
+   return x ? __builtin_clz (x) : sizeof (unsigned) * 8;
++#endif
+ }
+ 
+ static inline unsigned kissat_leading_zeroes_of_word (word x) {
+   if (!x)
+     return sizeof (word) * 8;
++#ifdef _MSC_VER
++#ifdef _WIN64
++  unsigned long idx;
++  _BitScanReverse64 (&idx, (unsigned __int64) x);
++  return 63u - idx;
++#else
++  unsigned long idx;
++  _BitScanReverse (&idx, (unsigned long) x);
++  return 31u - idx;
++#endif
++#else
+   if (sizeof (word) == sizeof (unsigned long long))
+     return __builtin_clzll (x);
+   if (sizeof (word) == sizeof (unsigned long))
+     return __builtin_clzl (x);
+   return __builtin_clz (x);
++#endif
+ }
+ 
+ static inline unsigned kissat_log2_floor_of_word (word x) {
+@@ -101,11 +123,17 @@
+ static inline unsigned kissat_leading_zeroes_of_uint64 (uint64_t x) {
+   if (!x)
+     return sizeof (uint64_t) * 8;
++#ifdef _MSC_VER
++  unsigned long idx;
++  _BitScanReverse64 (&idx, (unsigned __int64) x);
++  return 63u - idx;
++#else
+   if (sizeof (uint64_t) == sizeof (unsigned long long))
+     return __builtin_clzll (x);
+   if (sizeof (uint64_t) == sizeof (unsigned long))
+     return __builtin_clzl (x);
+   return __builtin_clz (x);
++#endif
+ }
+ 
+ static inline unsigned kissat_log2_floor_of_uint64 (uint64_t x) {
+
+diff -Naur solvers/kissat404/src/rank.h solvers/kissat/src/rank.h
+--- solvers/kissat404/src/rank.h	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/rank.h	2026-02-21 12:00:00.000000000 +1000
+@@ -29,8 +29,8 @@
+ \
+     VTYPE *V_RADIX = (V); \
+ \
+-    const size_t LENGTH_RADIX = 8; \
+-    const size_t WIDTH_RADIX = (1 << LENGTH_RADIX); \
++    enum { LENGTH_RADIX = 8 }; \
++    enum { WIDTH_RADIX = (1 << LENGTH_RADIX) }; \
+     const RTYPE MASK_RADIX = WIDTH_RADIX - 1; \
+ \
+     size_t COUNT_RADIX[WIDTH_RADIX]; \
+
+diff -Naur solvers/kissat404/src/print.c solvers/kissat/src/print.c
+--- solvers/kissat404/src/print.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/print.c	2026-02-21 12:00:00.000000000 +1000
+@@ -1,3 +1,4 @@
++#define QUIET
+ #ifndef QUIET
+ 
+ #include "print.h"
+
+diff -Naur solvers/kissat404/src/profile.c solvers/kissat/src/profile.c
+--- solvers/kissat404/src/profile.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/profile.c	2026-02-21 12:00:00.000000000 +1000
+@@ -1,3 +1,4 @@
++#define QUIET
+ #ifndef QUIET
+ 
+ #include "internal.h"
+
+diff -Naur solvers/kissat404/src/report.c solvers/kissat/src/report.c
+--- solvers/kissat404/src/report.c	2025-10-16 12:00:00.000000000 +1000
++++ solvers/kissat/src/report.c	2026-02-21 12:00:00.000000000 +1000
+@@ -1,3 +1,4 @@
++#define QUIET
+ #ifndef QUIET
+ 
+ #include "report.h"
