@@ -7351,7 +7351,7 @@ class CryptoMinisat(object):
 
             # time and conflicts budget values
             self.time_limit = None
-            self.conf_limit = None
+            self.confl_limit = None
 
     def delete(self):
         """
@@ -7390,11 +7390,11 @@ class CryptoMinisat(object):
 
             self.status, self.model = self.cryptosat.solve(assumptions,
                                                            time_limit=self.time_limit,
-                                                           conf_limit=self.conf_limit)
+                                                           confl_limit=self.confl_limit)
 
             # limit values must be reset again for each new limited call
             self.time_limit = None
-            self.conf_limit = None
+            self.confl_limit = None
 
             if self.use_timer:
                 self.call_time = process_time() - start_time
@@ -7408,7 +7408,7 @@ class CryptoMinisat(object):
         """
 
         if self.cryptosat:
-            self.conf_limit = budget if budget != -1 else None
+            self.confl_limit = budget if budget != -1 else None
 
     def time_budget(self, budget):
         """
