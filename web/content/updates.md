@@ -10,6 +10,13 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 25.02.2026 (*1.9.dev1*)
+
+-   Added Kissat 4.0.4 (thanks to Hosein Hadipour). Kissat's wrapper supports
+    no incrementality.
+-   Fixed a minor issue in conflict budgetting in CryptoMiniSat (thanks to
+    Julien Drapeau).
+
 ## 04.02.2026 (*1.8.dev30*)
 
 -   Corrected a bug in Cadical195's propagation when an external engine is
