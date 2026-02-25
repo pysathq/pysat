@@ -17,6 +17,7 @@ solvers/gluecard41
 solvers/glucose30
 solvers/glucose41
 solvers/glucose421
+solvers/kissat404
 solvers/lingeling
 solvers/maplechrono
 solvers/maplecm
