@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 5.03.2026 (*1.9.dev2*)
+
+-   Fixed proof logging in Glucose 4.2.1.
+
 ## 25.02.2026 (*1.9.dev1*)
 
 -   Added Kissat 4.0.4 (thanks to Hosein Hadipour). Kissat's wrapper supports
