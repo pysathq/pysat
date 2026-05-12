@@ -2944,11 +2944,7 @@ public:
 			return;
 
 		PyObject *status = PyObject_CallMethod(py_prop, "on_assignment", "(ii)", lit, is_fixed, NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'on_assignment' in attached propagator.");
 			return;
 		}
 		Py_DECREF(status);
@@ -2966,26 +2962,18 @@ public:
 			return;
 
 		PyObject *status = PyObject_CallMethod(py_prop, "on_new_level", "()", NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'on_new_level' in attached propagator.");
 			return;
 		}
 		Py_DECREF(status);
 	}
 	void notify_backtrack (size_t new_level) {
 		if (!passive) {
-			if (PyErr_Occurred()) {
-				PyErr_Print();
-			}
 			propagations_queue.clear(); // we need to clear propagation
 						// queue when backtracking!
 
 			PyObject *status = PyObject_CallMethod(py_prop, "on_backtrack", "(i)", (int)new_level, NULL);
 			if (status == NULL) {
-				PyErr_SetString(PyExc_RuntimeError, "Could not access method 'on_backtrack' in attached propagator.");
 				return;
 			}
 			Py_DECREF(status);
@@ -3012,14 +3000,9 @@ public:
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert from vector to python list.");
 			return false;
 		}
-		if (PyErr_Occurred() == NULL) {
-		}
 		PyObject *status = PyObject_CallMethod(py_prop, "check_model", "(O)", pylist, NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'check_model' in attached propagator.");
+			Py_DECREF(pylist);
 			return false;
 		}
 		int res = PyObject_IsTrue(status);
@@ -3042,18 +3025,13 @@ public:
 			return 0;
 
 		PyObject *status = PyObject_CallMethod(py_prop, "decide", "()", NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'decide' in attached propagator.");
 			return 0;
 		}
 		int result = pyint_to_cint(status);
 
 		if (PyErr_Occurred() != NULL) {
 			Py_DECREF(status);
-			PyErr_SetString(PyExc_RuntimeError, "Could not construct integer from PyObject.");
 			return 0;
 		}
 		Py_DECREF(status);
@@ -3076,11 +3054,7 @@ public:
 			if (reason_clauses.empty()) {
 				// call python method
 				PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
-				if (PyErr_Occurred()) {
-					PyErr_Print();
-				}
 				if (status == NULL) {
-					PyErr_SetString(PyExc_RuntimeError, "Could not access method 'propagate' in attached propagator.");
 					return 0;
 				}
 
@@ -3150,11 +3124,7 @@ public:
 		if (propagations_queue.empty()) {
 			// call python method
 			PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
-			if (PyErr_Occurred()) {
-				PyErr_Print();
-			}
 			if (status == NULL) {
-				PyErr_SetString(PyExc_RuntimeError, "Could not access method 'propagate' in attached propagator.");
 				return 0;
 			}
 			if (propagate_gives_reason) { // get propagate to give: [[reason_clauses]] where first literal in clause is propagated
@@ -3208,11 +3178,7 @@ public:
 			}
 			// call python method
 			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
-			if (PyErr_Occurred()) {
-				PyErr_Print();
-			}
 			if (status == NULL) {
-				PyErr_SetString(PyExc_RuntimeError, "Could not access method 'provide_reason' in attached propagator.");
 				return 0;
 			}
 			// put into queue
@@ -3265,11 +3231,7 @@ public:
 	// TODO check if this works and polish it up
 	bool py_callmethod_to_vec (const char *name,std::vector<int>& outvect_int, std::vector<PyObject*>& outvect_pyobj) {
 		PyObject *status = PyObject_CallMethod(py_prop, "add_clause", "()", NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'add_clause' in attached propagator.");
 			return false;
 		}
 		// put into queue
@@ -3325,7 +3287,6 @@ public:
 			}
 			// query has_clause
 			if (!py_callmethod_to_vec("add_clause",add_clause_queue,ext_clauses)) {
-				PyErr_Print();
 				return false;
 			}
 			// if no clause, return false
@@ -3333,11 +3294,7 @@ public:
 			return !(add_clause_queue.empty());
 		}
 		PyObject *status = PyObject_CallMethod(py_prop, "has_clause", "()", NULL);
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-		}
 		if (status == NULL) {
-			PyErr_SetString(PyExc_RuntimeError, "Could not access method 'has_clause' in attached propagator.");
 			return false;
 		}
 		int res = PyObject_IsTrue(status);
@@ -3380,7 +3337,6 @@ public:
 			Py_DECREF(sel);
 		} else if (add_clause_queue.empty()) { // otherwise, call add_clause
 			if (!py_callmethod_to_vec("add_clause",add_clause_queue,ext_clauses)) { // this should already load a clause into add_clause_queue
-				PyErr_Print();
 				return 0;
 			}
 		}
