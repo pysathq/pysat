@@ -10,6 +10,13 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## xx.05.2026 (*1.9.dev3*)
+
+-   Added support for reification and absolute values in the ``integer``
+    module.
+-   Fixed the issue of misleading error messages when external propagation is
+    in use. The actual assertions and exceptions shouldn't get lost anymore.
+
 ## 5.03.2026 (*1.9.dev2*)
 
 -   Fixed proof logging in Glucose 4.2.1.

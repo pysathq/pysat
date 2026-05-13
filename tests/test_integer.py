@@ -24,6 +24,21 @@ def _enum_models_engine(eng, vars):
     return models
 
 
+def _enum_models_engine_assuming(eng, vars, assumptions):
+    models = set()
+    with Solver(name='cadical195') as solver:
+        solver.connect_propagator(eng)
+        eng.setup_observe(solver)
+        while solver.solve(assumptions=assumptions):
+            model = solver.get_model()
+            vals = eng.decode_model(model, vars=vars)
+            key = tuple(vals[var] for var in vars)
+            models.add(key)
+            blits = eng.encode_model(vals, vars=vars)
+            solver.add_clause([-l for l in blits])
+    return models
+
+
 def _enum_models_cnf(eng, vars):
     models = set()
     with Solver(name='glucose30', bootstrap_with=eng.clausify()) as solver:
@@ -110,7 +125,7 @@ def test_singleton_order_encoding():
     assert values == [2], 'Singleton order domain should yield a single model'
 
 
-def test_decode_assignment_conflicts_and_fixes():
+def test_decode_conflicts_and_fixes():
     x = Integer('x', 1, 3, encoding='direct')
     y = Integer('y', 1, 3, encoding='order')
     z = Integer('z', 1, 3, encoding='order')
@@ -127,7 +142,7 @@ def test_decode_assignment_conflicts_and_fixes():
         w.ge(2),
     ]
 
-    vals = eng.decode_assignment(lits)
+    vals = eng.decode(lits)
 
     assert vals[x] == [1, 2], 'Conflicting equalities should return all values'
     assert vals[y] == [], 'Contradictory bounds should return an empty list'
@@ -135,7 +150,7 @@ def test_decode_assignment_conflicts_and_fixes():
     assert vals[w] == [2, 3], 'Non-fixed bounds should return all values in range'
 
     with pytest.raises(ValueError):
-        eng.decode_assignment([0])
+        eng.decode([0])
 
 
 def test_operator_constraints():
@@ -151,6 +166,242 @@ def test_operator_constraints():
     expected = {(0, 2)}
     assert _enum_models_engine(eng, vars) == expected, 'Operator constraints mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Operator constraints mismatch [solver]'
+
+
+def test_abs_eq_constraint():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) == 1)
+
+    vars = [x]
+    expected = {(-1,), (1,)}
+    assert _enum_models_engine(eng, vars) == expected, 'abs == mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'abs == mismatch [solver]'
+
+
+def test_abs_eq_direct_avoids_linearization():
+    x = Integer('x', -1, 1, encoding='direct')
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) == 1)
+
+    vars = [x]
+    expected = {(-1,), (1,)}
+    assert eng._lcons == [], 'Direct abs == should not use PB constraints'
+    assert _enum_models_engine(eng, vars) == expected, 'Direct abs == mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Direct abs == mismatch [solver]'
+
+
+def test_clausify_does_not_duplicate_domain_clauses():
+    x = Integer('x', -1, 1, encoding='direct')
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) == 1)
+    cnf = eng.clausify()
+
+    expected = x.domain_clauses() + [[x.equals(-1), x.equals(1)]]
+    assert [sorted(cl) for cl in cnf.clauses] == [sorted(cl) for cl in expected]
+
+
+def test_abs_eq_registers_singleton_var():
+    x = Integer('x', -1, 1, encoding='direct')
+    eng = IntegerEngine([], adaptive=False)
+
+    eng.add_linear(abs(x) == 1)
+    cnf = eng.clausify()
+
+    assert eng.integers == [x]
+    expected = x.domain_clauses() + [[x.equals(-1), x.equals(1)]]
+    assert [sorted(cl) for cl in cnf.clauses] == [sorted(cl) for cl in expected]
+
+def test_abs_eq_order_avoids_linearization():
+    x = Integer('x', -1, 1, encoding='order')
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) == 1)
+
+    vars = [x]
+    expected = {(-1,), (1,)}
+    assert eng._lcons == [], 'Order abs == should not use PB constraints'
+    assert _enum_models_engine(eng, vars) == expected, 'Order abs == mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Order abs == mismatch [solver]'
+
+
+def test_abs_eq_zero_constraint():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) == 0)
+
+    vars = [x]
+    expected = {(0,)}
+    assert _enum_models_engine(eng, vars) == expected, 'abs == 0 mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'abs == 0 mismatch [solver]'
+
+
+def test_abs_le_constraint_on_expr():
+    x = Integer('x', -2, 2)
+    y = Integer('y', -2, 2)
+    eng = IntegerEngine([x, y], adaptive=False)
+
+    eng.add_linear(abs(x - y) <= 1)
+
+    vars = [x, y]
+    expected = {(i, j) for i in range(-2, 3) for j in range(-2, 3) if abs(i - j) <= 1}
+    assert _enum_models_engine(eng, vars) == expected, 'abs <= mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'abs <= mismatch [solver]'
+
+
+def test_abs_ge_constraint():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) >= 2)
+
+    vars = [x]
+    expected = {(-2,), (2,)}
+    assert _enum_models_engine(eng, vars) == expected, 'abs >= mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'abs >= mismatch [solver]'
+
+
+def test_abs_le_negative_bound_is_unsat():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    eng.add_linear(abs(x) <= -1)
+
+    vars = [x]
+    expected = set()
+    assert _enum_models_engine(eng, vars) == expected, 'abs <= negative mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'abs <= negative mismatch [solver]'
+
+
+def test_reified_linear_constraint():
+    x = Integer('x', 0, 1)
+    y = Integer('y', 0, 1)
+    eng1 = IntegerEngine([x, y], adaptive=False)
+    vars1 = [x, y]
+    all_models = _enum_models_engine(eng1, vars1)
+    assert len(all_models) == 4, 'Unexpected base model count'
+
+    x2 = Integer('x', 0, 1)
+    y2 = Integer('y', 0, 1)
+    eng2 = IntegerEngine([x2, y2], adaptive=False)
+    sel = eng2.add_linear(x2 + y2 <= 1, reified=True)
+
+    vars2 = [x2, y2]
+    expected = {(0, 0), (0, 1), (1, 0)}
+    assert _enum_models_engine_assuming(eng2, vars2, [sel]) == expected
+
+
+def test_reified_abs_eq_constraint():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    sel = eng.add_linear(abs(x) == 1, reified=True)
+
+    vars = [x]
+    expected = {(-1,), (1,)}
+    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+
+
+def test_reified_abs_eq_order():
+    x = Integer('x', -1, 1, encoding='order')
+    eng = IntegerEngine([x], adaptive=False)
+
+    sel = eng.add_linear(abs(x) == 1, reified=True)
+
+    vars = [x]
+    expected = {(-1,), (1,)}
+    assert eng._lcons == [], 'Reified order abs == should not use PB constraints'
+    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+
+
+def test_reified_abs_ge_zero_is_tautological():
+    x = Integer('x', -2, 2)
+    eng = IntegerEngine([x], adaptive=False)
+
+    sel = eng.add_linear(abs(x) >= 0, reified=True)
+
+    vars = [x]
+    expected = {(-2,), (-1,), (0,), (1,), (2,)}
+    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+
+
+def test_reified_equal_direct():
+    x = Integer('x', 0, 1, encoding='direct')
+    y = Integer('y', 0, 1, encoding='direct')
+    eng = IntegerEngine([x, y], adaptive=False)
+
+    sel = eng.add_linear(x.as_expr() == y.as_expr(), reified=True)
+
+    vars = [x, y]
+    assert _enum_models_engine_assuming(eng, vars, [sel]) == {(0, 0), (1, 1)}
+
+
+def test_eq_vars_direct_domain_intersection():
+    x = Integer('x', 0, 2, encoding='direct')
+    y = Integer('y', 1, 3, encoding='direct')
+    eng = IntegerEngine([x, y], adaptive=False)
+
+    eng.add_linear(x.as_expr() == y.as_expr())
+
+    vars = [x, y]
+    expected = {(1, 1), (2, 2)}
+    assert _enum_models_engine(eng, vars) == expected, 'Direct eq_vars mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Direct eq_vars mismatch [solver]'
+
+
+def test_eq_vars_order_domain_intersection():
+    x = Integer('x', 0, 2, encoding='order')
+    y = Integer('y', 1, 3, encoding='order')
+    eng = IntegerEngine([x, y], adaptive=False)
+
+    eng.add_linear(x.as_expr() == y.as_expr())
+
+    vars = [x, y]
+    expected = {(1, 1), (2, 2)}
+    assert _enum_models_engine(eng, vars) == expected, 'Order eq_vars mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Order eq_vars mismatch [solver]'
+
+
+def test_eq_vars_mixed_direct_order():
+    x = Integer('x', 0, 2, encoding='direct')
+    y = Integer('y', 0, 2, encoding='order', vpool=x.vpool)
+    eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
+
+    eng.add_linear(x.as_expr() == y.as_expr())
+
+    vars = [x, y]
+    expected = {(0, 0), (1, 1), (2, 2)}
+    assert _enum_models_engine(eng, vars) == expected, 'Mixed eq_vars mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Mixed eq_vars mismatch [solver]'
+
+
+def test_eq_vars_mixed_order_direct():
+    x = Integer('x', 0, 2, encoding='order')
+    y = Integer('y', 0, 2, encoding='direct', vpool=x.vpool)
+    eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
+
+    eng.add_linear(x.as_expr() == y.as_expr())
+
+    vars = [x, y]
+    expected = {(0, 0), (1, 1), (2, 2)}
+    assert _enum_models_engine(eng, vars) == expected, 'Mixed reverse eq_vars mismatch [engine]'
+    assert _enum_models_cnf(eng, vars) == expected, 'Mixed reverse eq_vars mismatch [solver]'
+
+
+def test_reified_equal_mixed_direct_order():
+    x = Integer('x', 0, 2, encoding='direct')
+    y = Integer('y', 0, 2, encoding='order', vpool=x.vpool)
+    eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
+
+    sel = eng.add_linear(x.as_expr() == y.as_expr(), reified=True)
+
+    vars = [x, y]
+    expected = {(0, 0), (1, 1), (2, 2)}
+    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
 
 
 def test_linear_expr_not_equal():
@@ -180,8 +431,46 @@ def test_linear_expr_not_equal_reif_vpool_cache():
     eng.add_linear(x + y != 2)
     eng.add_linear(x + y != 2)
 
-    found = sum([1 if key[1] == '_reif' else 0 for key in vpool.obj2id])
+    found = sum([1 if isinstance(key, tuple) and key and key[0] in ('lin_le', 'lin_ne')
+                 else 0 for key in vpool.obj2id])
     assert found == 2, 'Wrong reification (expected two selectors)'
+
+
+def test_deduplication():
+    x = Integer('x', 0, 2, encoding='direct')
+    eng = IntegerEngine([x])
+
+    # non-reified linear constraint
+    eng.add_linear(x <= 1)
+    eng.add_linear(x <= 1)
+    assert len(eng._lcons) == 1, 'Duplicate linear constraints in _lcons'
+
+    # reified linear constraint
+    eng = IntegerEngine([x])
+    eng.add_linear(x <= 1, reified=True)
+    eng.add_linear(x <= 1, reified=True)
+    assert len(eng._lcons) == 1, 'Duplicate reified linear constraints in _lcons'
+
+    # reified abs constraint (singleton)
+    eng = IntegerEngine([x])
+    c1 = eng.add_linear(abs(x) <= 1, reified=True)
+    c2 = eng.add_linear(abs(x) <= 1, reified=True)
+    assert c1 == c2, 'Duplicate reified abs selectors'
+    # we expect 4 domain clauses + 1 abs clause = 5
+    # (actually seqcounter might add more, but let's check for stability)
+    cnt1 = len(eng.clauses)
+    eng.add_linear(abs(x) <= 1, reified=True)
+    assert len(eng.clauses) == cnt1, 'Duplicate clauses for reified abs'
+
+    # reified equality constraint
+    y = Integer('y', 0, 2, encoding='direct', vpool=x.vpool)
+    eng = IntegerEngine([x, y])
+    cnt1 = len(eng.clauses)
+    eng.add_equal(x, y, reified=True)
+    cnt2 = len(eng.clauses)
+    eng.add_equal(x, y, reified=True)
+    assert len(eng.clauses) == cnt2, 'Duplicate clauses for reified equality'
+    assert cnt2 > cnt1
 
 
 def test_zero_weight_literals_removed():

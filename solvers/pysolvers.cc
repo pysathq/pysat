@@ -2454,6 +2454,10 @@ static PyObject *py_cadical195_restore(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static bool pycadical195_callback_failed = false;
+
+//
+//=============================================================================
 static PyObject *py_cadical195_solve(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -2465,6 +2469,7 @@ static PyObject *py_cadical195_solve(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 
 	// assumptions iterator
 	PyObject *i_obj = PyObject_GetIter(a_obj);
@@ -2512,6 +2517,9 @@ static PyObject *py_cadical195_solve(PyObject *self, PyObject *args)
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
 
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
+
 	PyObject *ret = PyBool_FromLong((long)res);
 	return ret;
 }
@@ -2529,6 +2537,7 @@ static PyObject *py_cadical195_solve_lim(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 
 	// assumptions iterator
 	PyObject *i_obj = PyObject_GetIter(a_obj);
@@ -2577,6 +2586,9 @@ static PyObject *py_cadical195_solve_lim(PyObject *self, PyObject *args)
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
 
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
+
 	PyObject *ret = pyint_from_cint(res);
 	return ret;
 }
@@ -2596,6 +2608,7 @@ static PyObject *py_cadical195_propagate(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 	std::vector<int> a;
 	int max_var = -1;
 
@@ -2627,6 +2640,9 @@ static PyObject *py_cadical195_propagate(PyObject *self, PyObject *args)
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
+
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
 
 	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
 	Py_DECREF(propagated);
@@ -2907,6 +2923,7 @@ public:
 		combined_has_clause = true;
 		multi_clause = false;
 		propagate_gives_reason = false;
+		pycadical195_callback_failed = false;
 	}
 
 	// dereference the python propagator
@@ -2940,16 +2957,27 @@ public:
 	// to an assignment.
 	//
 	void notify_assignment (int lit, bool is_fixed) {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return;
+		}
+
 		if (!zero_level && passive && !is_fixed)
 			return;
 
 		PyObject *status = PyObject_CallMethod(py_prop, "on_assignment", "(ii)", lit, is_fixed, NULL);
 		if (status == NULL) {
+			pycadical195_callback_failed = true;
 			return;
 		}
 		Py_DECREF(status);
 	}
 	void notify_new_decision_level () {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return;
+		}
+
 		if (enable && zero_level) {
 			/* enabling at level 0 only! */
 			passive = false;
@@ -2963,17 +2991,24 @@ public:
 
 		PyObject *status = PyObject_CallMethod(py_prop, "on_new_level", "()", NULL);
 		if (status == NULL) {
+			pycadical195_callback_failed = true;
 			return;
 		}
 		Py_DECREF(status);
 	}
 	void notify_backtrack (size_t new_level) {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return;
+		}
+
 		if (!passive) {
 			propagations_queue.clear(); // we need to clear propagation
-						// queue when backtracking!
+						    // queue when backtracking!
 
 			PyObject *status = PyObject_CallMethod(py_prop, "on_backtrack", "(i)", (int)new_level, NULL);
 			if (status == NULL) {
+				pycadical195_callback_failed = true;
 				return;
 			}
 			Py_DECREF(status);
@@ -2993,6 +3028,11 @@ public:
 	// provide an external clause during the next callback.
 	//
 	bool cb_check_found_model (const std::vector<int> &model) {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return true;
+		}
+
 		// convert to python list
 		PyObject *pylist = vector_to_pylist(model);
 
@@ -3003,7 +3043,8 @@ public:
 		PyObject *status = PyObject_CallMethod(py_prop, "check_model", "(O)", pylist, NULL);
 		if (status == NULL) {
 			Py_DECREF(pylist);
-			return false;
+			pycadical195_callback_failed = true;
+			return true;
 		}
 		int res = PyObject_IsTrue(status);
 		if (res == -1) {
@@ -3021,17 +3062,24 @@ public:
 	// returns 0, the solver makes its own choice.
 	//
 	int cb_decide () {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return 0;
+		}
+
 		if (passive)
 			return 0;
 
 		PyObject *status = PyObject_CallMethod(py_prop, "decide", "()", NULL);
 		if (status == NULL) {
+			pycadical195_callback_failed = true;
 			return 0;
 		}
 		int result = pyint_to_cint(status);
 
 		if (PyErr_Occurred() != NULL) {
 			Py_DECREF(status);
+			pycadical195_callback_failed = true;
 			return 0;
 		}
 		Py_DECREF(status);
@@ -3044,6 +3092,11 @@ public:
 	// the current assignment.
 	//
 	int cb_propagate () {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return 0;
+		}
+
 		if (!zero_level && passive)
 			return 0;
 
@@ -3055,6 +3108,7 @@ public:
 				// call python method
 				PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
 				if (status == NULL) {
+					pycadical195_callback_failed = true;
 					return 0;
 				}
 
@@ -3066,6 +3120,7 @@ public:
 						if (!succ) {
 							PyErr_SetString(PyExc_RuntimeError, "Could not convert return value of 'propagate' to vector.");
 							Py_DECREF(status);
+							pycadical195_callback_failed = true;
 							return 0;
 						}
 						reverse(reason_clauses.begin(), reason_clauses.end());
@@ -3073,6 +3128,7 @@ public:
 				} else {
 					Py_DECREF(status);
 					PyErr_SetString(PyExc_TypeError, "Python method 'provide reason' did not give a list return value.");
+					pycadical195_callback_failed = true;
 					return 0;
 				}
 				Py_DECREF(status);
@@ -3087,12 +3143,14 @@ public:
 				if (!PyList_Check(sel)) {
 					PyErr_SetString(PyExc_TypeError, "'propagate' gave something that isn't a pylist.");
 					Py_DECREF(sel);
+					pycadical195_callback_failed = true;
 					return 0;
 				}
 				int plist_size = PyList_GET_SIZE(sel);
 				if (plist_size < 1) {
 					PyErr_SetString(PyExc_ValueError, "Propagate gave an empty reason clause.");
 					Py_DECREF(sel);
+					pycadical195_callback_failed = true;
 					return 0;
 				}
 				PyObject *plit = PyList_GET_ITEM(sel, 0); // get first item
@@ -3100,6 +3158,7 @@ public:
 					PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
 					Py_DECREF(plit);
 					Py_DECREF(sel);
+					pycadical195_callback_failed = true;
 					return 0;
 				}
 				res = pyint_to_cint(plit);
@@ -3110,6 +3169,7 @@ public:
 						PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
 						Py_DECREF(plit);
 						Py_DECREF(sel);
+						pycadical195_callback_failed = true;
 						return 0;
 					}
 					provide_reason_queue.push_back(pyint_to_cint(plit)); // push
@@ -3125,6 +3185,7 @@ public:
 			// call python method
 			PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
 			if (status == NULL) {
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			if (propagate_gives_reason) { // get propagate to give: [[reason_clauses]] where first literal in clause is propagated
@@ -3141,6 +3202,7 @@ public:
 			} else {
 				Py_DECREF(status);
 				PyErr_SetString(PyExc_TypeError, "Python method 'propagate' did not give a list return value.");
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			Py_DECREF(status);
@@ -3165,6 +3227,11 @@ public:
 	// contain the propagated literal.
 	//
 	int cb_add_reason_clause_lit (int propagated_lit) {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return 0;
+		}
+
 		if (!zero_level && passive)
 			return 0;
 
@@ -3174,11 +3241,13 @@ public:
 			if (propagate_gives_reason) {
 				// error?
 				PyErr_SetString(PyExc_RuntimeError, "provide reason queue is empty, but it shouldn't be?");
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			// call python method
 			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
 			if (status == NULL) {
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			// put into queue
@@ -3191,6 +3260,7 @@ public:
 			} else {
 				Py_DECREF(status);
 				PyErr_SetString(PyExc_TypeError, "Python method 'provide reason' did not give a list return value.");
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			Py_DECREF(status);
@@ -3230,8 +3300,14 @@ public:
 	//
 	// TODO check if this works and polish it up
 	bool py_callmethod_to_vec (const char *name,std::vector<int>& outvect_int, std::vector<PyObject*>& outvect_pyobj) {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return false;
+		}
+
 		PyObject *status = PyObject_CallMethod(py_prop, "add_clause", "()", NULL);
 		if (status == NULL) {
+			pycadical195_callback_failed = true;
 			return false;
 		}
 		// put into queue
@@ -3245,6 +3321,7 @@ public:
 		if (!succ) {
 			Py_DECREF(status);
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert python iterable to vector.");
+			pycadical195_callback_failed = true;
 			return false;
 		}
 		Py_DECREF(status);
@@ -3258,6 +3335,7 @@ public:
 			if (!pyiter_to_vector(sel, outvect_int, dummy_max)) {
 				Py_DECREF(sel);
 				PyErr_SetString(PyExc_RuntimeError, "Could not convert python iterable to vector.");
+				pycadical195_callback_failed = true;
 				return false;
 			}
 			Py_DECREF(sel);
@@ -3265,13 +3343,18 @@ public:
 		return true;
 	}
 	bool cb_has_external_clause () {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return false;
+		}
+
 		if (combined_has_clause) {
 			if (!(add_clause_queue.empty())) {
 				perror("Warning: calling has_external clause while clauses are still in queue");
 				add_clause_queue.clear();
 			}
 			if ((!(ext_clauses.empty())) && multi_clause) { // add_clause_queue should be empty
-				// put item from ext_clauses into add_clause_queue
+									// put item from ext_clauses into add_clause_queue
 				int dummy_max = 0;
 				// put a clause from outvect_pyobj into outvect_int
 				PyObject *sel = *ext_clauses.rbegin();
@@ -3295,12 +3378,14 @@ public:
 		}
 		PyObject *status = PyObject_CallMethod(py_prop, "has_clause", "()", NULL);
 		if (status == NULL) {
+			pycadical195_callback_failed = true;
 			return false;
 		}
 		int res = PyObject_IsTrue(status);
 		if (res == -1) {
 			Py_DECREF(status);
 			PyErr_SetString(PyExc_RuntimeError, "Error converting has_clause return to C boolean");
+			pycadical195_callback_failed = true;
 			return false;
 		}
 		Py_DECREF(status);
@@ -3310,6 +3395,11 @@ public:
 	// The actual function called to add the external clause.
 	//
 	int cb_add_external_clause_lit () {
+		if (PyErr_Occurred()) {
+			pycadical195_callback_failed = true;
+			return 0;
+		}
+
 		if (combined_has_clause) {
 			int val;
 			// if queue empty, return 0
@@ -3324,7 +3414,7 @@ public:
 		int res = 0;
 		// if queue is empty
 		if ((!(ext_clauses.empty())) && multi_clause && (add_clause_queue.empty())) { // first check if we have a clause queued up
-			// put item from ext_clauses into add_clause_queue
+											      // put item from ext_clauses into add_clause_queue
 			int dummy_max = 0;
 			// put a clause from outvect_pyobj into outvect_int
 			PyObject *sel = *ext_clauses.rbegin();
@@ -3332,6 +3422,7 @@ public:
 			if (!pyiter_to_vector(sel, add_clause_queue, dummy_max)) {
 				Py_DECREF(sel);
 				PyErr_SetString(PyExc_RuntimeError, "Could not convert python iterable to vector.");
+				pycadical195_callback_failed = true;
 				return 0;
 			}
 			Py_DECREF(sel);
@@ -3488,8 +3579,12 @@ static PyObject *py_cadical195_vobserve(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 
 	s->add_observed_var(var);
+
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
 
 	Py_RETURN_NONE;
 }
@@ -3506,8 +3601,12 @@ static PyObject *py_cadical195_vignore(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 
 	s->remove_observed_var(var);
+
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
 
 	Py_RETURN_NONE;
 }
@@ -3523,8 +3622,12 @@ static PyObject *py_cadical195_vreset(PyObject *self, PyObject *args)
 
 	// get pointer to solver
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
+	pycadical195_callback_failed = false;
 
 	s->reset_observed_vars();
+
+	if (pycadical195_callback_failed || PyErr_Occurred())
+		return NULL;
 
 	Py_RETURN_NONE;
 }

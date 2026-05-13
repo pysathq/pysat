@@ -138,10 +138,18 @@
     The module also includes a minimal expression DSL (see
     :class:`.LinearExpr`) so that constraints can be written in a natural form
     (e.g. ``X + Y <= 4``). Supported syntactic sugar includes ``+``, ``-``,
-    unary negation, scalar ``*`` by numeric constants, and comparisons ``<=``,
-    ``>=``, ``<``, ``>``, ``==``, ``!=``. Notably **unsupported** are
-    variable-variable multiplication, division, modulus, absolute values, and
-    reification.
+    unary negation, scalar ``*`` by numeric constants, builtin ``abs()``, and
+    comparisons ``<=``, ``>=``, ``<``, ``>``, ``==``, ``!=``. Reification is
+    supported at the engine level via :meth:`IntegerEngine.add_linear`.
+    Equality between two plain :class:`.Integer` objects is a special case:
+    ``X == Y`` performs Python identity comparison and does **not** build a
+    modelling constraint. To express variable-variable equality, use
+    ``X.as_expr() == Y.as_expr()`` (preferred, as it enables the specialized
+    ``eq_vars`` encoding) or equivalently ``X - Y == 0``. By contrast,
+    ``X != Y`` and order comparisons such as ``X < Y`` work directly on
+    :class:`.Integer` objects and return constraints.
+    Notably **unsupported** are variable-variable multiplication, division,
+    and modulus.
 
     Integer variables can be declared to operate with either ``'float'`` or
     ``'decimal'`` coefficients, which is handled by the ``numeric``
@@ -332,12 +340,16 @@ class Integer:
                 return value
             if isinstance(value, numbers.Integral):
                 return Decimal(value)
+
             raise TypeError('Decimal mode does not accept non-decimal values')
 
-        if isinstance(value, Decimal):
-            raise TypeError('Float mode does not accept Decimal values')
-        if isinstance(value, numbers.Real):
-            return value
+        else:  # 'float'
+            if isinstance(value, Decimal):
+                raise TypeError('Float mode does not accept Decimal values')
+            if isinstance(value, numbers.Real):
+                return value
+
+        # neither decimal nor float
         raise TypeError('Numeric value expected')
 
     def equals(self, value):
@@ -421,14 +433,16 @@ class Integer:
 
     def __hash__(self):
         """
-            Hash by identity to keep Integer usable as dict keys.
+            Hash by identity to keep :class:`.Integer` usable as dict keys.
         """
 
         return object.__hash__(self)
 
-    def _as_expr(self):
+    def as_expr(self):
         """
-            Convert the variable to a linear expression.
+            Convert the variable to a linear expression, i.e. an object of
+            class :class:`LinearExpr`. Given ``self``, a new object of class
+            :class:`LinearExpr` is returned.
         """
 
         return LinearExpr({self: 1}, 0, numeric=self.numeric)
@@ -438,28 +452,28 @@ class Integer:
             Add a variable to another expression or numeric value.
         """
 
-        return self._as_expr() + other
+        return self.as_expr() + other
 
     def __radd__(self, other):
         """
             Right-add for numeric values and expressions.
         """
 
-        return other + self._as_expr()
+        return other + self.as_expr()
 
     def __sub__(self, other):
         """
             Subtract another expression or numeric value.
         """
 
-        return self._as_expr() - other
+        return self.as_expr() - other
 
     def __rsub__(self, other):
         """
             Right-subtract for numeric values and expressions.
         """
 
-        return other - self._as_expr()
+        return other - self.as_expr()
 
     def __mul__(self, other):
         """
@@ -470,6 +484,7 @@ class Integer:
             coeff = self._coerce_number(other)
         except TypeError:
             return NotImplemented
+
         return LinearExpr({self: coeff}, 0, numeric=self.numeric)
 
     def __rmul__(self, other):
@@ -481,50 +496,74 @@ class Integer:
 
     def __le__(self, other):
         """
-            Build a <= constraint against a numeric value.
+            Build a ``<=`` constraint against a numeric value.
         """
 
-        return self._as_expr() <= other
+        return self.as_expr() <= other
 
     def __ge__(self, other):
         """
-            Build a >= constraint against a numeric value.
+            Build a ``>=`` constraint against a numeric value.
         """
 
-        return self._as_expr() >= other
+        return self.as_expr() >= other
 
     def __lt__(self, other):
         """
-            Build a < constraint against a numeric value.
+            Build a ``<`` constraint against a numeric value.
         """
 
-        return self._as_expr() < other
+        return self.as_expr() < other
 
     def __gt__(self, other):
         """
-            Build a > constraint against a numeric value.
+            Build a ``>`` constraint against a numeric value.
         """
 
-        return self._as_expr() > other
+        return self.as_expr() > other
 
     def __eq__(self, other):
         """
             Equality comparison against a numeric value or identity check.
+
+            Note that ``Integer == Integer`` is reserved for Python object
+            identity so that :class:`.Integer` remains usable as a dict key.
+            It therefore does **not** construct a modelling constraint. For
+            variable-variable equality, use ``x.as_expr() == y.as_expr()`` or
+            ``x - y == 0``.
         """
 
         if isinstance(other, Integer):
             return self is other
 
-        return self._as_expr() == other
+        return self.as_expr() == other
 
     def __ne__(self, other):
         """
-            Inequality comparison against another Integer variable.
+            Inequality comparison against another :class:`.Integer` variable.
+
+            Unlike :meth:`__eq__`, ``Integer != Integer`` does construct a
+            modelling constraint.
         """
 
         if isinstance(other, Integer):
             return ('ne', self, other)
-        return self._as_expr().__ne__(other)
+
+        return self.as_expr().__ne__(other)
+
+    def abs(self):
+        """
+            Return an absolute-value wrapper for this variable.
+        """
+
+        return AbsExpr(self)
+
+    def __abs__(self):
+        """
+            Builtin abs() support.
+        """
+
+        return self.abs()
 
     def decode(self, model):
         """
@@ -544,7 +583,7 @@ class Integer:
             for value in self.domain:
                 if is_satisfied(self.vpool.id((self, 'eq', value))):
                     return value
-            return None
+            return
 
         # for order or coupled encodings,
         # applying binary search, due to monotonicity
@@ -768,14 +807,19 @@ class Int(Integer):
 class LinearExpr:
     """
         Minimal linear expression builder for :class:`Integer` with numeric
-        coefficients. Supports comparisons against numeric values.
+        coefficients. Supports comparisons against numeric values and other
+        linear expressions.
 
         The resulting comparisons return :class:`.BooleanEngine`-style
         constraints (tuples) that can be passed to
         :meth:`.IntegerEngine.add_linear`. Syntactic sugar supports ``+``,
-        ``-``, unary negation, scalar ``*`` by numeric constants, and
-        comparisons. Variable-variable multiplication, division, modulus,
-        absolute values, and reification are not supported.
+        ``-``, unary negation, scalar ``*`` by numeric constants, builtin
+        ``abs()``, and comparisons. Reification is supported at the engine
+        level via :meth:`.IntegerEngine.add_linear`. Variable-variable
+        multiplication, division, and modulus are not supported. In
+        particular, variable-variable equality is best written as
+        ``x.as_expr() == y.as_expr()`` so that the specialized ``eq_vars``
+        encoding can be used.
 
         Example:
 
@@ -853,6 +897,41 @@ class LinearExpr:
         if self.terms[var] == 0:
             del self.terms[var]
 
+    def _singleton(self):
+        """
+            Return the single :class:`.Integer` variable if this is a plain
+            variable expression; otherwise return ``None``.
+        """
+
+        if self.const == 0 and len(self.terms) == 1:
+            var, coeff = next(iter(self.terms.items()))
+            return var if coeff == 1 else None
+
+    def _norm(self, other):
+        """
+            Normalize the operand: check numeric mode and convert to
+            LinearExpr or coerced constant. Returns a pair (expr, val).
+        """
+
+        # constant numeric value
+        try:
+            val = self._coerce_number(other)
+            return None, val
+        except TypeError:
+            pass
+
+        # Integer variable
+        if isinstance(other, Integer):
+            self._check_numeric(other.numeric)
+            return other.as_expr(), None
+
+        # Linear expression
+        if isinstance(other, LinearExpr):
+            self._check_numeric(other.numeric)
+            return other, None
+
+        return NotImplemented, None
+
     def bounds(self):
         """
             Compute a (min, max) pair for the expression over variable domains.
@@ -878,30 +957,19 @@ class LinearExpr:
             Add a numeric value, variable, or expression.
         """
 
-        # constant numeric value
-        try:
-            value = self._coerce_number(other)
-        except TypeError:
-            value = None
-        if value is not None:
-            return LinearExpr(dict(self.terms), self.const + value,
-                              numeric=self.numeric)
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
+            return NotImplemented
 
-        # another Integer
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            other = other._as_expr()
-
-        # another LinearExpr
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            res = LinearExpr(dict(self.terms), self.const + other.const,
+        if expr:
+            res = LinearExpr(dict(self.terms), self.const + expr.const,
                              numeric=self.numeric)
-            for v, c in other.terms.items():
+            for v, c in expr.terms.items():
                 res._add_term(v, c)
             return res
 
-        return NotImplemented
+        return LinearExpr(dict(self.terms), self.const + val,
+                          numeric=self.numeric)
 
     def __radd__(self, other):
         """
@@ -915,30 +983,19 @@ class LinearExpr:
             Subtract a numeric value, variable, or expression.
         """
 
-        # constant numeric value
-        try:
-            value = self._coerce_number(other)
-        except TypeError:
-            value = None
-        if value is not None:
-            return LinearExpr(dict(self.terms), self.const - value,
-                              numeric=self.numeric)
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
+            return NotImplemented
 
-        # another Integer
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            other = other._as_expr()
-
-        # another LinearExpr
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            res = LinearExpr(dict(self.terms), self.const - other.const,
+        if expr:
+            res = LinearExpr(dict(self.terms), self.const - expr.const,
                              numeric=self.numeric)
-            for v, c in other.terms.items():
+            for v, c in expr.terms.items():
                 res._add_term(v, -c)
             return res
 
-        return NotImplemented
+        return LinearExpr(dict(self.terms), self.const - val,
+                          numeric=self.numeric)
 
     def __rsub__(self, other):
         """
@@ -957,7 +1014,7 @@ class LinearExpr:
         except TypeError:
             return NotImplemented
         if value == 1:
-            return self
+            return LinearExpr(dict(self.terms), self.const, numeric=self.numeric)
 
         # general case of multiplying by a constant numeric value
         res = LinearExpr({}, self.const * value, numeric=self.numeric)
@@ -979,125 +1036,128 @@ class LinearExpr:
 
         return (-1) * self
 
+    def abs(self):
+        """
+            Return an absolute-value wrapper for this expression.
+        """
+
+        return AbsExpr(self)
+
+    def __abs__(self):
+        """
+            Builtin ``abs()`` support.
+        """
+
+        return self.abs()
+
     def __le__(self, other):
         """
-            Build a <= constraint against a numeric value.
+            Build a ``<=`` constraint against a numeric value.
         """
 
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            return (self - other) <= 0
-
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            return (self - other) <= 0
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
+        if expr:
+            return (self - expr) <= 0
+
         terms = [(c, v) for v, c in self.terms.items()]
-        return LinearExpr.pb_linear_leq(terms, bound - self.const)
+        return LinearExpr.pb_linear_leq(terms, val - self.const)
 
     def __ge__(self, other):
         """
-            Build a >= constraint against a numeric value.
+            Build a ``>=`` constraint against a numeric value.
         """
 
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            return (self - other) >= 0
-
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            return (self - other) >= 0
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
-        return (-self) <= (-bound)
+        if expr:
+            return (self - expr) >= 0
+
+        return (-self) <= (-val)
 
     def __lt__(self, other):
         """
-            Build a < constraint against a numeric value.
+            Build a ``<`` constraint against a numeric value.
         """
 
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            return (self - other) <= -1
-
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            return (self - other) <= -1
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
-        if self.numeric == 'decimal':
-            return self <= bound.next_minus()
+        if expr:
+            return (self - expr) <= -1
 
-        return self <= math.nextafter(float(bound), float('-inf'))
+        if self.numeric == 'decimal':
+            return self <= val.next_minus()
+
+        return self <= math.nextafter(float(val), float('-inf'))
 
     def __gt__(self, other):
         """
-            Build a > constraint against a numeric value.
+            Build a ``>`` constraint against a numeric value.
         """
 
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            return (self - other) >= 1
-
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            return (self - other) >= 1
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
-        if self.numeric == 'decimal':
-            return self >= bound.next_plus()
+        if expr:
+            return (self - expr) >= 1
 
-        return self >= math.nextafter(float(bound), float('inf'))
+        if self.numeric == 'decimal':
+            return self >= val.next_plus()
+
+        return self >= math.nextafter(float(val), float('inf'))
 
     def __eq__(self, other):
         """
-            Build an == constraint against a numeric value.
+            Build an ``==`` constraint against a numeric value or expression.
 
             Returns a list with two inequalities.
+
+            Note that if both sides are plain :class:`.Integer` variables
+            (coefficient 1 and no constant involved), a specialized equality
+            constraint is emitted to allow more direct domain pruning.
         """
 
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        # checking if the inputs are singletons
+        svar = self._singleton()
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
-        return [self <= bound, self >= bound]
+        # singletons
+        if svar is not None:
+            if isinstance(other, Integer):
+                return ('eq_vars', svar, other)
+            if expr and expr._singleton() is not None:
+                return ('eq_vars', svar, expr._singleton())
+
+        # generic linear expressions
+        if expr:
+            diff = self - expr
+            return ('lin_eq', [diff <= 0, diff >= 0])
+
+        return ('lin_eq', [self <= val, self >= val])
 
     def __ne__(self, other):
         """
             Build a != constraint against another expression or numeric value.
         """
 
-        # other is an integer variable
-        if isinstance(other, Integer):
-            self._check_numeric(other.numeric)
-            other = other._as_expr()
-
-        # other is a linear expression
-        if isinstance(other, LinearExpr):
-            self._check_numeric(other.numeric)
-            return ('ne_linear', self, other)
-
-        # other is a constant number
-        try:
-            bound = self._coerce_number(other)
-        except TypeError:
+        expr, val = self._norm(other)
+        if expr is NotImplemented:
             return NotImplemented
 
-        return ('ne_linear', self, LinearExpr({}, bound, numeric=self.numeric))
+        if expr:
+            return ('ne_linear', self, expr)
+
+        return ('ne_linear', self, LinearExpr({}, val, numeric=self.numeric))
+
 
     @staticmethod
     def pb_linear_leq(terms, bound):
@@ -1161,6 +1221,48 @@ class LinearExpr:
         lits = sorted(weights.keys())
 
         return ('linear', [lits, bound + shift, weights])
+
+
+#
+#==============================================================================
+class AbsExpr:
+    """
+        Absolute-value wrapper for :class:`LinearExpr`.
+    """
+
+    def __init__(self, expr):
+        """
+            Initialiser.
+        """
+
+        if isinstance(expr, Integer):
+            expr = expr.as_expr()
+
+        if not isinstance(expr, LinearExpr):
+            raise TypeError('Absolute value requires a LinearExpr or Integer')
+
+        self.expr = expr
+
+    def __le__(self, other):
+        """
+            Less-than-or-equal constraint.
+        """
+
+        return ('abs_le', self.expr, other)
+
+    def __ge__(self, other):
+        """
+            Greater-than-or-equal constraint.
+        """
+
+        return ('abs_ge', self.expr, other)
+
+    def __eq__(self, other):
+        """
+            Equality constraint.
+        """
+
+        return ('abs_eq', self.expr, other)
 
 
 #
@@ -1229,6 +1331,10 @@ class IntegerEngine(BooleanEngine):
         # variables, if any, and their domain clauses
         self.integers, self.clauses = vars or [], []
 
+        # de-duplication caches for linear and high-level constraints
+        self._lcons_seen = set()
+        self._constr_seen = set()
+
         # variable manager
         self.vpool = vpool
 
@@ -1259,14 +1365,31 @@ class IntegerEngine(BooleanEngine):
             :type var: :class:`Integer`
         """
 
+        # do nothing if the variable is already known
+        if var in self._venc:
+            return
+
         # first, we need to make sure all variables share the same IDPool
         if self.vpool is None:
             self.vpool = var.vpool
         elif var.vpool is not self.vpool:
             raise ValueError('All variables must share the same IDPool')
 
-        self.integers.append(var)
+        if var not in self.integers:
+            self.integers.append(var)
+
         self._encode_domain(var)
+
+    def _is_new_constr(self, key, selv):
+        """
+            Check if a logical constraint with a given selector is new.
+        """
+
+        if (key, selv) in self._constr_seen:
+            return False
+
+        self._constr_seen.add((key, selv))
+        return True
 
     def _encode_domain(self, var):
         """
@@ -1281,17 +1404,235 @@ class IntegerEngine(BooleanEngine):
         self._venc.add(var)
 
         # encoding process
-        clauses = var.domain_clauses()
-        self.clauses.extend(clauses)
+        for cl in var.domain_clauses():
+            self._add_clause(cl)
 
         # if we are attached, pass the variable and its clauses to the solver
         if self._attached:
-            for cl in clauses:
-                self.solver.add_clause(cl)
-
             self._vatt.add(var)
 
-    def add_linear(self, constraint):
+    def _add_clause(self, clause, selv=None):
+        """
+            Add a clause to the internal list. If a solver is attached, add
+            the clause to the solver as well. When the selector variable
+            ``selv`` is provided, add its negation to guard the clause's
+            enabled / disabled state.
+        """
+
+        # a selector is given: relaxing the clause first
+        if selv is not None:
+            clause = [-selv] + clause
+
+        # adding the clause to the internal clause list
+        self.clauses.append(clause)
+
+        # if we are attached to a solver, pass the clause to the solver too
+        if self._attached:
+            self.solver.add_clause(clause)
+
+    def _expr_key(self, expr):
+        """
+            Build a stable key for a :class:`LinearExpr` object.
+        """
+
+        items = tuple(sorted(expr.terms.items(), key=lambda it: id(it[0])))
+        return ('lin_expr', items, expr.const, expr.numeric)
+
+    def _pair_key(self, left, right):
+        """
+            Build an order-insensitive key for a pair of objects.
+        """
+
+        return (left, right) if id(left) <= id(right) else (right, left)
+
+    def _linear_key(self, constr):
+        """
+            Build a key and normalized components for a
+            :class:`.BooleanEngine` linear constraint. Not to be confused with
+            :meth:`_expr_key`.
+        """
+
+        lits, bound = constr[1][0], constr[1][1]
+        weights = {} if len(constr[1]) == 2 else constr[1][2]
+
+        if not weights:
+            weights = {l: 1 for l in lits}
+        if any(l not in weights for l in lits):
+            raise ValueError('PB encoding requires explicit weights for all literals')
+
+        ltup = tuple(sorted(lits, key=id))
+        wtup = tuple(weights[lit] for lit in ltup)
+
+        return (ltup, wtup, bound, lits, weights)
+
+    def _guard_linear(self, selv, parts):
+        """
+            Add a linear constraint guarded by a given selector literal.
+
+            The resulting encoding enforces ``selv -> linear(parts)``. If the
+            underlying linear is unsatisfiable, ``selv`` is forced to false.
+        """
+
+        ltup, wtup, bound, lits, weights = parts
+        max_sum = sum(wtup)
+        if bound >= max_sum:
+            return
+
+        if bound < 0:
+            self._add_clause([-selv])
+            return
+
+        wght = max_sum - bound
+        rweights = dict(weights)
+        rweights[selv] = wght
+        rlits = list(lits) + [selv]
+
+        rcons = ('linear', [rlits, bound + wght, rweights])
+        self._record_linear(rcons)
+        self._add_constraint_internal(rcons)
+
+    def _get_selv(self, key):
+        """
+            Allocate (or reuse) a selector literal for a given key in the
+            current variable pool.
+        """
+
+        if self.vpool is None:
+            self.vpool = Formula.export_vpool()
+
+        return self.vpool.id(key)
+
+    def _singleton_var(self, expr):
+        """
+            Return the underlying variable for a plain expression ``x``.
+        """
+
+        if isinstance(expr, Integer):
+            return expr
+
+        if isinstance(expr, LinearExpr):
+            return expr._singleton()
+
+    def _add_ge(self, var, value, selv=None):
+        """
+            Add a lower-bound literal if it is non-trivial.
+        """
+
+        if value <= var.lb:
+            return True
+        if value > var.ub:
+            self._add_clause([], selv=selv)
+            return False
+
+        self._add_clause([var.ge(value)], selv=selv)
+        return True
+
+    def _add_le(self, var, value, selv=None):
+        """
+            Add an upper-bound literal if it is non-trivial.
+        """
+
+        if value >= var.ub:
+            return True
+        if value < var.lb:
+            self._add_clause([], selv=selv)
+            return False
+
+        self._add_clause([var.le(value)], selv=selv)
+        return True
+
+    def _add_val_constr(self, var, pred, selv=None):
+        """
+            Check a constraint on a variable's value for triviality.
+            Returns the list of allowed values if the constraint is non-trivial.
+        """
+
+        vals = [v for v in var.domain if pred(v)]
+
+        if not vals:
+            self._add_clause([], selv=selv)
+            return None
+
+        if len(vals) == len(var.domain):
+            return None
+
+        return vals
+
+    def _add_abs_var_le(self, var, bound, selv=None):
+        """
+            Add ``|var| <= bound`` using domain literals only.
+        """
+
+        vals = self._add_val_constr(var, lambda v: abs(v) <= bound, selv=selv)
+        if vals:
+            if var.encoding == 'direct':
+                for v in var.domain:
+                    if abs(v) > bound:
+                        self._add_clause([-var.equals(v)], selv=selv)
+            else:
+                self._add_ge(var, vals[0], selv=selv)
+                self._add_le(var, vals[-1], selv=selv)
+
+    def _add_abs_var_ge(self, var, bound, selv=None):
+        """
+            Add ``|var| >= bound`` using domain literals only.
+        """
+
+        vals = self._add_val_constr(var, lambda v: abs(v) >= bound, selv=selv)
+        if not vals:
+            return
+
+        if var.encoding == 'direct':
+            for v in var.domain:
+                if abs(v) < bound:
+                    self._add_clause([-var.equals(v)], selv=selv)
+        else:
+            # for order encoding, we exclude a central interval
+            # of values v such that abs(v) < bound
+            excluded = [v for v in var.domain if abs(v) < bound]
+            lo, hi = excluded[0], excluded[-1]
+
+            cl = []
+            if lo > var.lb:
+                cl.append(var.le(lo - 1))
+            if hi < var.ub:
+                cl.append(var.ge(hi + 1))
+
+            self._add_clause(cl, selv=selv)
+
+    def _add_abs_var_eq(self, var, bound, selv=None):
+        """
+            Add ``|var| == bound`` using domain literals only.
+        """
+
+        vals = self._add_val_constr(var, lambda v: abs(v) == bound, selv=selv)
+        if vals:
+            if var.encoding == 'direct':
+                self._add_clause([var.equals(v) for v in vals], selv=selv)
+            else:
+                lo, hi = vals[0], vals[-1]
+                self._add_ge(var, lo, selv=selv)
+                self._add_le(var, hi, selv=selv)
+                if lo < hi:
+                    self._add_clause([var.le(lo), var.ge(hi)], selv=selv)
+
+    def _add_lin_list(self, conss, key, reif):
+        """
+            Add a list of linear constraints (conjunction). Returns a selector.
+        """
+
+        selv = self._get_selv(key) if reif else None
+
+        if self._is_new_constr(key, selv):
+            for c in conss:
+                if reif:
+                    self._guard_linear(selv, self._linear_key(c))
+                elif self._record_linear(c):
+                    self._add_constraint_internal(c)
+
+        return selv
+
+    def add_linear(self, constr, reified=False):
         """
             Add a constraint or a bundle of constraints to the engine.
 
@@ -1306,85 +1647,110 @@ class IntegerEngine(BooleanEngine):
             constraints, those are internally transformed into
             :class:`.BooleanEngine`-style PB constraint first.
 
-            :param constraint: constraint or list of constraints
-            :type constraint: LinearExpr | tuple | list
+            :param constr: constraint or list of constraints
+            :type constr: LinearExpr | tuple | list
+            :param reified: if ``True``, return a selector literal for the constraint
+            :type reified: bool
         """
 
-        # it's a '!=' constraint on two Integer variables
-        if isinstance(constraint, tuple) and constraint and constraint[0] == 'ne':
-            self.add_not_equal(constraint[1], constraint[2])
+        # dispatching to specialized methods if needed
+        if isinstance(constr, tuple) and constr:
+            tag = constr[0]
+
+            if tag == 'abs_le':
+                return self.add_abs_le(constr[1], constr[2], reified=reified)
+            if tag == 'abs_ge':
+                return self.add_abs_ge(constr[1], constr[2], reified=reified)
+            if tag == 'abs_eq':
+                return self.add_abs_eq(constr[1], constr[2], reified=reified)
+            if tag == 'eq_vars':
+                return self.add_equal(constr[1], constr[2], reified=reified)
+            if tag == 'ne':
+                return self.add_not_equal(constr[1], constr[2], reified=reified)
+
+            # equality or inequality of linear expressions
+            if tag in ('lin_eq', 'ne_linear'):
+                if tag == 'lin_eq':
+                    lkeys = tuple(sorted(self._linear_key(c)[:3] for c in constr[1]))
+                    return self._add_lin_list(constr[1], ('lin_eq', lkeys), reified)
+
+                # ne_linear: (left - right <= -1) OR (left - right >= 1)
+                diff = constr[1] - constr[2]
+                c1, c2 = diff <= -1, diff >= 1
+                lks = sorted([self._linear_key(c1)[:3], self._linear_key(c2)[:3]])
+
+                key = ('lin_ne', tuple(lks))
+                selv = self._get_selv(key) if reified else None
+
+                if self._is_new_constr(key, selv):
+                    s1, s2 = self._reify_linear(c1), self._reify_linear(c2)
+                    if s1 is not None and s2 is not None:
+                        self._add_clause([s1, s2], selv=selv)
+                return selv
+
+            # atomic linear constraint
+            if tag == 'linear':
+                if reified:
+                    return self._reify_linear(constr)
+                if self._record_linear(constr):
+                    self._add_constraint_internal(constr)
+                return
+
+        # a collection of atomic linear constraints
+        if isinstance(constr, (list, tuple)) and constr:
+            lkeys = tuple(sorted(self._linear_key(c)[:3] for c in constr))
+            return self._add_lin_list(constr, ('lin_le_list', lkeys), reified)
+
+        if not constr:
             return
-
-        # it's a '!=' constraint on two LinearExpr objects
-        if isinstance(constraint, tuple) and constraint and constraint[0] == 'ne_linear':
-            left, right = constraint[1], constraint[2]
-            if not isinstance(left, LinearExpr) or not isinstance(right, LinearExpr):
-                raise TypeError('Linear != requires LinearExpr arguments')
-
-            # reified disjunction: (left-right <= -1) or (left-right >= 1)
-            diff = left - right
-            c1, c2 = diff <= -1, diff >= 1
-            s1, s2 = self._reify_linear(c1), self._reify_linear(c2)
-            if s1 is None or s2 is None:
-                # one side is tautological => disjunction always true
-                return
-
-            # enforce the disjunction of s1 or s2
-            self.clauses.append([s1, s2])
-            if self._attached:
-                self.solver.add_clause([s1, s2])
-
-            return
-
-        # a linear constraint or a collection of those
-        if isinstance(constraint, (list, tuple)):
-            # empty constraint
-            if not constraint:
-                return
-
-            # a single constraint
-            if constraint and isinstance(constraint[0], str):
-                self._record_linear(constraint)
-                self._add_constraint_internal(constraint)
-                return
-
-            # a collection of constraints
-            if constraint and all(
-                isinstance(c, (list, tuple)) and c and isinstance(c[0], str)
-                for c in constraint
-            ):
-                for c in constraint:
-                    self._record_linear(c)
-                    self._add_constraint_internal(c)
-                return
 
         raise TypeError('Unsupported constraint type; expected linear tuple or list of tuples')
 
-    def _record_linear(self, constraint):
+    def _record_linear(self, constr, parts=None):
         """
             Store a linear constraint for later clausification.
         """
 
-        if isinstance(constraint, (list, tuple)) and constraint and constraint[0] == 'linear':
-            self._lcons.append(constraint)
+        if not (isinstance(constr, (list, tuple)) and constr and constr[0] == 'linear'):
+            return False
 
-    def add_alldifferent(self, vars):
+        if parts is None:
+            parts = self._linear_key(constr)
+
+        key = parts[:3]
+        if key in self._lcons_seen:
+            return False
+
+        self._lcons_seen.add(key)
+        self._lcons.append(constr)
+        return True
+
+    def add_alldifferent(self, vars, reified=False):
         """
             Add an AllDifferent constraint over variables (for direct/coupled
             encoding only).
 
             :param vars: variables to be all-different
             :type vars: list(:class:`Integer`)
+            :param reified: if ``True``, return a selector literal for the constraint
+            :type reified: bool
         """
 
         # no variables -> nothing to do
         if not vars:
             return
 
+        # de-duplication
+        key = ('int_alldiff', tuple(sorted(vars, key=id)))
+        selv = self._get_selv(key) if reified else None
+        if not self._is_new_constr(key, selv):
+            return selv
+
         # every variable must share the same IDPool,
         # and its domainencoding must not be 'order'
         vpool = vars[0].vpool
         for var in vars:
+            self.add_var(var)
             if var.vpool is not vpool:
                 raise ValueError('AllDifferent variables must share the same IDPool')
             if var.encoding not in ('direct', 'coupled'):
@@ -1399,9 +1765,16 @@ class IntegerEngine(BooleanEngine):
         for v in values:
             lits = [var.equals(v) for var in vars if v in var.domain]
             if len(lits) > 1:
-                self.add_linear(('linear', [lits, 1]))
+                if reified:
+                    t = self._reify_linear(('linear', [lits, 1]))
+                    if t is not None:
+                        self._add_clause([t], selv=selv)
+                else:
+                    self.add_linear(('linear', [lits, 1]))
 
-    def _reify_linear(self, constraint):
+        return selv
+
+    def _reify_linear(self, constr):
         """
             Reify a :class:`.BooleanEngine`'s ``'linear'`` constraint.
 
@@ -1410,55 +1783,68 @@ class IntegerEngine(BooleanEngine):
         """
 
         # we can verify only BooleanEngine's linears
-        if not (isinstance(constraint, tuple) and constraint and constraint[0] == 'linear'):
+        if not (isinstance(constr, tuple) and constr and constr[0] == 'linear'):
             raise TypeError('Expected a BooleanEngine linear constraint')
 
-        lits, bound = constraint[1][0], constraint[1][1]
-        weights = {} if len(constraint[1]) == 2 else constraint[1][2]
-
-        if not weights:
-            weights = {l: 1 for l in lits}
-        if any(l not in weights for l in lits):
-            raise ValueError('PB encoding requires explicit weights for all literals')
-
-        # computing the key
-        ltup = tuple(sorted(lits))
-        wtup = tuple(weights[lit] for lit in ltup)
-        key = (ltup, wtup, bound)
-
+        parts = self._linear_key(constr)
+        ltup, wtup, bound, _, _ = parts
         max_sum = sum(wtup)
         if bound >= max_sum:
-            # the contraint is trivially satisfiable
-            return None
+            # the constraint is trivially satisfiable
+            return
 
-        # first, checking if we actually have an IDPool to work with!
+        rkey = ('lin_le', (ltup, wtup, bound))
         if self.vpool is None:
             self.vpool = Formula.export_vpool()
 
-        if (self, '_reif', key) not in self.vpool.obj2id:
-            selv = self.vpool.id((self, '_reif', key))
+        if rkey in self.vpool.obj2id:
+            return self.vpool.id(rkey)
+
+        selv = self._get_selv(rkey)
+        self._guard_linear(selv, parts)
+        return selv
+
+    def _reify_lin_conj(self, conss, key):
+        """
+            Reify a conjunction of linear constraints under a single
+            selector.
+
+            The returned selector literal ``b`` satisfies
+            ``b -> (c1 and c2 and ...)`` for the constraints in ``conss``.
+            Tautological conjuncts are ignored; if every conjunct is
+            tautological, the method returns ``None``. If any conjunct is
+            unsatisfiable, the returned selector is forced to false.
+        """
+
+        parts_list = []
+        for constr in conss:
+            if not (isinstance(constr, tuple) and constr and constr[0] == 'linear'):
+                raise TypeError('Expected a list of BooleanEngine linear constraints')
+
+            parts = self._linear_key(constr)
+            _, wtup, bound, _, _ = parts
+            max_sum = sum(wtup)
 
             if bound < 0:
-                # constraint unsatisfiable => selv must be false
-                self.clauses.append([-selv])
-                if self._attached:
-                    self.solver.add_clause([-selv])
+                selv = self._get_selv(key)
+                if self._is_new_constr(key, selv):
+                    self._add_clause([-selv])
                 return selv
 
-            # computing selector's weight and recording the literal
-            wght = max_sum - bound
-            rweights = dict(weights)
-            rweights[selv] = wght
-            rlits = list(lits) + [selv]
+            if bound < max_sum:
+                parts_list.append(parts)
 
-            # creating the actual constraint
-            rcons = ('linear', [rlits, bound + wght, rweights])
-            self._record_linear(rcons)
-            self._add_constraint_internal(rcons)
+        if not parts_list:
+            return
 
-        return self.vpool.id((self, '_reif', key))
+        selv = self._get_selv(key)
+        if self._is_new_constr(key, selv):
+            for parts in parts_list:
+                self._guard_linear(selv, parts)
 
-    def add_not_equal(self, left, right):
+        return selv
+
+    def add_not_equal(self, left, right, reified=False):
         """
             Add a not-equal constraint on two :class:`Integer` variables: left
             != right (for direct/coupled encodings only).
@@ -1467,23 +1853,294 @@ class IntegerEngine(BooleanEngine):
             :param right: right variable
             :type left: :class:`Integer`
             :type right: :class:`Integer`
+            :param reified: if ``True``, return a selector literal ``b`` such
+                that ``b -> (left != right)``
+            :type reified: bool
         """
 
         # common-sense checks first
         if left.vpool is not right.vpool:
             raise ValueError('NotEqual variables must share the same IDPool')
+
+        self.add_var(left)
+        self.add_var(right)
+
         if left.encoding not in ('direct', 'coupled'):
             raise ValueError('NotEqual requires direct or coupled encoding on left')
         if right.encoding not in ('direct', 'coupled'):
             raise ValueError('NotEqual requires direct or coupled encoding on right')
 
+        # de-duplication
+        key = ('int_ne', self._pair_key(left, right))
+        selv = self._get_selv(key) if reified else None
+        if not self._is_new_constr(key, selv):
+            return selv
+
         # adding CNF clauses for value inequality
         values = set(left.domain).intersection(right.domain)
         for v in values:
             cl = [-left.equals(v), -right.equals(v)]
-            self.clauses.append(cl)
-            if self._attached:
-                self.solver.add_clause(cl)
+            self._add_clause(cl, selv=selv)
+
+        return selv
+
+    def _add_eq_dir(self, v1, v2, lb, ub, selv):
+        """
+            Enforce equality of two variables for direct-direct encoding.
+        """
+
+        for v in range(lb, ub + 1):
+            self._add_clause([-v1.equals(v), +v2.equals(v)], selv=selv)
+            self._add_clause([+v1.equals(v), -v2.equals(v)], selv=selv)
+
+    def _add_eq_ord(self, v1, v2, lb, ub, selv):
+        """
+            Enforce equality of two variables for order-order encoding.
+        """
+
+        for k in range(lb + 1, ub + 1):
+            self._add_clause([-v1.ge(k), +v2.ge(k)], selv=selv)
+            self._add_clause([+v1.ge(k), -v2.ge(k)], selv=selv)
+
+    def _add_eq_mix(self, dvar, ovar, lb, ub, selv):
+        """
+            Enforce equality of two variables for mixed direct-order encoding.
+            Done by channeling the two encodings
+        """
+
+        for v in range(lb, ub + 1):
+            deq = dvar.equals(v)
+            final = [deq]  # third clause to add
+
+            # 1. dvar=v -> ovar>=v
+            if v > ovar.lb:
+                self._add_clause([-deq, ovar.ge(v)], selv=selv)
+                final.append(-ovar.ge(v))
+
+            # 2. dvar=v -> NOT ovar>=v+1
+            if v < ovar.ub:
+                self._add_clause([-deq, -ovar.ge(v + 1)], selv=selv)
+                final.append(ovar.ge(v + 1))
+
+            # 3. (ovar>=v AND NOT ovar>=v+1) -> dvar=v
+            self._add_clause(final, selv=selv)
+
+    def add_equal(self, left, right, reified=False):
+        """
+            Add an equality constraint on two :class:`Integer` variables.
+
+            Uses direct/order encodings when available, falling back to a
+            linear equality otherwise.
+
+            The intersection of domains is enforced upfront to prune
+            impossible values early. If the intersection is empty, the
+            constraint is unsatisfiable.
+
+            If ``reified`` is ``True``, a selector literal ``b`` is returned
+            such that ``b -> (left == right)``.
+        """
+
+        if left.vpool is not right.vpool:
+            raise ValueError('Equal variables must share the same IDPool')
+
+        self.add_var(left)
+        self.add_var(right)
+
+        # de-duplication
+        key = ('int_eq', self._pair_key(left, right))
+        selv = self._get_selv(key) if reified else None
+        if not self._is_new_constr(key, selv):
+            return selv
+
+        lb, ub = max(left.lb, right.lb), min(left.ub, right.ub)
+        if lb > ub:
+            self._add_clause([], selv=selv)
+            return selv
+
+        # domain pruning for both variables
+        for var in (left, right):
+            if var.encoding in ('direct'):
+                for v in var.domain:
+                    if v < lb or v > ub:
+                        self._add_clause([-var.equals(v)], selv=selv)
+
+            if var.encoding in ('order', 'coupled'):
+                if lb > var.lb:
+                    self._add_clause([var.ge(lb)], selv=selv)
+                if ub < var.ub and ub + 1 <= var.ub:
+                    self._add_clause([-var.ge(ub + 1)], selv=selv)
+
+        # strategy 1: direct vs direct
+        if left.encoding in ('direct', 'coupled') and right.encoding in ('direct', 'coupled'):
+            self._add_eq_dir(left, right, lb, ub, selv)
+
+        # strategy 2: order vs order
+        elif left.encoding in ('order', 'coupled') and right.encoding in ('order', 'coupled'):
+            self._add_eq_ord(left, right, lb, ub, selv)
+
+        # strategy 3: mixed (direct vs order)
+        else:
+            if left.encoding in ('direct', 'coupled'):
+                self._add_eq_mix(left, right, lb, ub, selv)
+            else:
+                self._add_eq_mix(right, left, lb, ub, selv)
+
+        return selv
+
+    def _prep_abs(self, expr, bound, reif, tag):
+        """
+            Normalize and de-duplicate an absolute-value constraint.
+
+            Returns a triplet ``(expr, selv, var)`` where ``expr`` is the
+            normalized :class:`LinearExpr`, ``selv`` is the top-level selector
+            when ``reif`` is requested (or ``None`` otherwise), and ``var`` is
+            the underlying :class:`Integer` when ``expr`` is a plain variable.
+            If the constraint was already added before, ``expr`` is returned
+            as ``None`` and the existing selector (if any) is reused.
+        """
+
+        if isinstance(expr, Integer):
+            expr = expr.as_expr()
+
+        if not isinstance(expr, LinearExpr):
+            raise TypeError('Absolute value requires a LinearExpr or Integer')
+
+        # de-duplication
+        key = (tag, self._expr_key(expr), bound)
+        selv = self._get_selv(key) if reif else None
+        if not self._is_new_constr(key, selv):
+            return None, selv, None
+
+        return expr, selv, self._singleton_var(expr)
+
+    def add_abs_le(self, expr, bound, reified=False):
+        """
+            Add an absolute value constraint: ``|expr| <= bound``.
+
+            For a plain variable expression, a direct domain-based encoding is
+            used. Otherwise the constraint is encoded as the conjunction
+            ``expr <= bound`` and ``-expr <= bound``. If ``reified`` is
+            ``True``, the returned selector literal ``b`` satisfies
+            ``b -> (|expr| <= bound)``.
+
+            :param expr: linear expression or Integer
+            :param bound: numeric bound
+            :param reified: if ``True``, return a selector literal for the constraint
+            :type reified: bool
+        """
+
+        expr, selv, var = self._prep_abs(expr, bound, reified, 'abs_le')
+        if expr is None:
+            return selv
+
+        if bound < 0:
+            # unsatisfiable
+            self._add_clause([], selv=selv)
+            return selv
+
+        # plain-variable constraints can be handled natively
+        if var is not None:
+            self.add_var(var)
+            self._add_abs_var_le(var, bound, selv=selv)
+            return selv
+
+        conss = [expr <= bound, (-expr) <= bound]
+
+        if reified:
+            key = ('abs_le_and', self._expr_key(expr), bound)
+            branch = self._reify_lin_conj(conss, key)
+            if branch is not None:
+                self._add_clause([branch], selv=selv)
+            return selv
+
+        for constr in conss:
+            self.add_linear(constr)
+        return
+
+    def add_abs_eq(self, expr, bound, reified=False):
+        """
+            Add an absolute value constraint: ``|expr| == bound``.
+
+            For a plain variable expression, a direct domain-based encoding is
+            used. Otherwise the constraint is encoded as the disjunction
+            ``(expr == bound) or (expr == -bound)``, where each equality is
+            represented internally as a conjunction of two linear
+            inequalities. If ``reified`` is ``True``, the returned selector
+            literal ``b`` satisfies ``b -> (|expr| == bound)``.
+
+            :param expr: linear expression or Integer
+            :param bound: numeric bound
+            :param reified: if ``True``, return a selector literal for the constraint
+            :type reified: bool
+        """
+
+        expr, selv, var = self._prep_abs(expr, bound, reified, 'abs_eq')
+        if expr is None:
+            return selv
+
+        if bound < 0:
+            # unsatisfiable
+            self._add_clause([], selv=selv)
+            return selv
+
+        # plain-variable constraints can be handled natively
+        if var is not None:
+            self.add_var(var)
+            self._add_abs_var_eq(var, bound, selv=selv)
+            return selv
+
+        pos = [expr <= +bound, expr >= +bound]
+        neg = [expr <= -bound, expr >= -bound]
+
+        # |expr| == bound  <=>  (expr == bound) OR (expr == -bound)
+        s1 = self._reify_lin_conj(pos, ('abs_eq_pos', self._expr_key(expr), bound))
+        s2 = self._reify_lin_conj(neg, ('abs_eq_neg', self._expr_key(expr), bound))
+        if s1 is None or s2 is None:
+            return selv
+
+        self._add_clause([s1] if s1 == s2 else [s1, s2], selv=selv)
+
+        return selv
+
+    def add_abs_ge(self, expr, bound, reified=False):
+        """
+            Add an absolute value constraint: ``|expr| >= bound``.
+
+            For a plain variable expression, a direct domain-based encoding is
+            used. Otherwise the constraint is encoded as the disjunction
+            ``(expr >= bound) or (expr <= -bound)``. If ``reified`` is
+            ``True``, the returned selector literal ``b`` satisfies
+            ``b -> (|expr| >= bound)``.
+
+            :param expr: linear expression or Integer
+            :param bound: numeric bound
+            :param reified: if ``True``, return a selector literal for the constraint
+            :type reified: bool
+        """
+
+        expr, selv, var = self._prep_abs(expr, bound, reified, 'abs_ge')
+        if expr is None:
+            return selv
+
+        if bound <= 0:
+            # |expr| >= 0 is always true
+            return selv
+
+        # plain-variable constraints can be handled natively
+        if var is not None:
+            self.add_var(var)
+            self._add_abs_var_ge(var, bound, selv=selv)
+            return selv
+
+        # |expr| >= bound  <=>  (expr >= bound) OR (expr <= -bound)
+        s1 = self._reify_lin_conj([expr >= +bound], ('abs_ge_pos', self._expr_key(expr), bound))
+        s2 = self._reify_lin_conj([expr <= -bound], ('abs_ge_neg', self._expr_key(expr), bound))
+        if s1 is None or s2 is None:
+            # one side is tautological => disjunction always true
+            return selv
+
+        self._add_clause([s1, s2], selv=selv)
+        return selv
 
     def clausify(self, cardenc=CardEncType.seqcounter, pbenc=PBEncType.best):
         """
@@ -1523,11 +2180,8 @@ class IntegerEngine(BooleanEngine):
             if self.integers[i].vpool is not vpool:
                 raise ValueError('All variables must share the same IDPool')
 
-        # extracting domain clauses for all the variables
-        for var in self.integers:
-            res.extend(var.domain_clauses())
-
-        # include any extra CNF clauses (e.g., reified disjunctions)
+        # include domain clauses and any extra CNF clauses
+        # (e.g. reified disjunctions) already cached in the engine
         res.extend(self.clauses)
 
         # the main part is to encode all linear constraints
@@ -1608,14 +2262,14 @@ class IntegerEngine(BooleanEngine):
         # no, we can't convert it
         return False
 
-    def _add_constraint_internal(self, constraint):
+    def _add_constraint_internal(self, constr):
         """
             Add a constraint regardless of whether the solver is connected.
         """
 
         if self.solver is None:
             # the solver does not exist yet, we can't do setup_observe()
-            cs = self._add_constraint(constraint)
+            cs = self._add_constraint(constr)
             cs.register_watched(self.wlst)
 
             for lit in cs.lits:
@@ -1632,7 +2286,7 @@ class IntegerEngine(BooleanEngine):
             cs.attach_values(self.value)
         else:
             # all good, resorting to BooleanEngine's add_constraint()
-            super().add_constraint(constraint)
+            super().add_constraint(constr)
 
     @staticmethod
     def pb_linear_leq(terms, bound):
@@ -1752,7 +2406,7 @@ class IntegerEngine(BooleanEngine):
 
         return lits
 
-    def decode_assignment(self, lits, vars=None):
+    def decode(self, lits, vars=None):
         """
             Given a list of assigned Boolean literals, return a mapping
             ``{Integer: integer_value}`` for those variables whose value is
@@ -1775,7 +2429,7 @@ class IntegerEngine(BooleanEngine):
             .. code-block:: python
 
                 >>> st, props = solver.propagate(assumptions=clues)
-                >>> vals = eng.decode_assignment(props)
+                >>> vals = eng.decode(props)
                 >>> # vals[i] is an int if the value is fixed,
                 >>> # a list if conflicting if multiple values are present,
                 >>> # or [] if contradictory bounds were derived.
@@ -1872,6 +2526,13 @@ class IntegerEngine(BooleanEngine):
                 res[var] = []
 
         return res
+
+    def decode_assignment(self, lits, vars=None):
+        """
+            Backward-compatible alias for :meth:`decode`.
+        """
+
+        return self.decode(lits, vars=vars)
 
 
 # example usage

@@ -1,5 +1,9 @@
+import pytest
+
 from pysat.card import *
 from pysat.solvers import Solver
+from pysat.solvers import Cadical195
+from pysat.engines import Propagator
 
 solvers = ['cadical153',
            'cadical195',
@@ -34,3 +38,36 @@ def test_solvers():
             st, lits = solver.propagate(assumptions=[1])
             assert not st, 'wrong status of {0} after propagate()'.format(name)
             assert not lits, 'wrong list of propagated literals: {0}'.format(lits)
+
+
+@pytest.mark.parametrize('bootstrap, action, failing_method, message', [
+    ([[1]], lambda solver: solver.observe(1), 'on_assignment', 'boom in on_assignment'),
+    ([[1]], lambda solver: solver.solve(), 'propagate', 'boom in propagate'),
+    ([], lambda solver: solver.propagate(assumptions=[1]), 'propagate', 'boom in propagate'),
+])
+def test_cadical195_callback_exceptions(bootstrap, action, failing_method, message):
+    class BoomPropagator(Propagator):
+        def setup_observe(self, solver):
+            solver.observe(1)
+
+        def on_assignment(self, lit, fixed=False):
+            if failing_method == 'on_assignment':
+                raise AssertionError('boom in on_assignment')
+
+        def propagate(self):
+            if failing_method == 'propagate':
+                raise AssertionError('boom in propagate')
+            return []
+
+        def decide(self):
+            return 0
+
+    with Cadical195(bootstrap_with=bootstrap) as solver:
+        prop = BoomPropagator()
+        solver.connect_propagator(prop)
+
+        if failing_method != 'on_assignment':
+            prop.setup_observe(solver)
+
+        with pytest.raises(AssertionError, match=message):
+            action(solver)
