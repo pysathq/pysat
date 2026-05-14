@@ -6,6 +6,7 @@ from pysat.solvers import Solver, SolverNames
 # all available solvers
 solvers = ['cadical103',
            'cadical153',
+           'cadical300',
            'gluecard30',
            'gluecard41',
            'glucose30',

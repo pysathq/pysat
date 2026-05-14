@@ -1,0 +1,4230 @@
+diff -Naur solvers/cadical300/Makefile solvers/cdc300/Makefile
+--- solvers/cadical300/Makefile	1970-01-01 10:00:00
++++ solvers/cdc300/Makefile	2026-05-13 16:19:43
+@@ -0,0 +1,53 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CC       := cc
++CXX      := c++
++CFLAGS   := -fPIC -Wall -DQUIET -DNCLOSEFROM
++CXXFLAGS := -std=c++11 -fPIC -Wall -Wno-deprecated -fno-strict-aliasing -DQUIET -DNCLOSEFROM
++CXXOPT   := -O3 -DNDEBUG
++CXXDEBUG := -O0 -g3
++CXXPROF  := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I.
++LIBS     := -L.
++SOURCES  := analyze.cpp arena.cpp assume.cpp averages.cpp backbone.cpp backtrack.cpp backward.cpp bins.cpp block.cpp checker.cpp clause.cpp collect.cpp compact.cpp condition.cpp config.cpp congruence.cpp constrain.cpp contract.cpp cover.cpp decide.cpp decompose.cpp deduplicate.cpp definition.cpp drattracer.cpp elim.cpp elimfast.cpp ema.cpp extend.cpp external.cpp external_propagate.cpp factor.cpp file0.cpp flags.cpp flip.cpp format.cpp frattracer.cpp gates.cpp idruptracer.cpp instantiate.cpp internal.cpp lidruptracer.cpp limit.cpp logging.cpp lookahead.cpp lratchecker.cpp lrattracer.cpp lucky.cpp message.cpp minimize.cpp occs.cpp options.cpp parse.cpp phases.cpp probe.cpp profile.cpp proof.cpp propagate.cpp queue.cpp random.cpp reap.cpp reduce.cpp rephase.cpp report.cpp resources.cpp restart.cpp restore.cpp score.cpp shrink.cpp signal.cpp solution.cpp solver.cpp stable.cpp stats.cpp subsume.cpp sweep.cpp terminal.cpp ternary.cpp tier.cpp transred.cpp unstable.cpp util.cpp var.cpp veripbtracer.cpp version.cpp vivify.cpp walk.cpp walk_full_occs.cpp warmup.cpp watch.cpp
++CSOURCES := kitten.c
++OBJECTS  := $(SOURCES:.cpp=.o) $(CSOURCES:.c=.o)
++TRGT     := cadical300
++
++# gather compiler options
++CXXARGS := $(CXXFLAGS) $(INCLUDES) $(CXXOPT)
++CARGS   := $(CFLAGS) $(INCLUDES) -O3 -DNDEBUG
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: build.hpp $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++build.hpp:
++	@-mkdir -p build
++	@-printf 'CXX=$(CXX)\nCXXFLAGS=$(CXXFLAGS)\n' > build/makefile
++	@-cd build && ../make-build-header.sh > ../build.hpp
++
++%.o: %.cpp
++	$(CXX) $(CXXARGS) -c $< -o $@
++
++%.o: %.c
++	$(CC) $(CARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++	@-rm -rf build.hpp build
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++	@-rm -rf build.hpp build
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/cadical300/analyze.cpp solvers/cdc300/analyze.cpp
+--- solvers/cadical300/analyze.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/analyze.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -1357,4 +1357,4 @@
+   report ('i');
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/arena.cpp solvers/cdc300/arena.cpp
+--- solvers/cadical300/arena.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/arena.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Arena::Arena (Internal *i) {
+   memset ((void *) this, 0, sizeof *this);
+@@ -27,4 +27,4 @@
+   to.start = to.top = to.end = 0;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/arena.hpp solvers/cdc300/arena.hpp
+--- solvers/cadical300/arena.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/arena.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _arena_hpp_INCLUDED
+-#define _arena_hpp_INCLUDED
++#ifndef _arena300_hpp_INCLUDED
++#define _arena300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This memory allocation arena provides fixed size pre-allocated memory for
+ // the moving garbage collector 'copy_non_garbage_clauses' in 'collect.cpp'
+@@ -18,7 +18,7 @@
+ // pointers.  This would restrict the maximum number of clauses and thus is
+ // a restriction we do not want to use anymore.
+ 
+-// New learned clauses are allocated in CaDiCaL outside of this arena and
++// New learned clauses are allocated in CaDiCaL300 outside of this arena and
+ // moved to the arena during garbage collection.  The additional 'to' space
+ // required for such a moving garbage collector is only allocated for those
+ // clauses surviving garbage collection, which usually needs much less
+@@ -100,6 +100,6 @@
+   void swap ();
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/assume.cpp solvers/cdc300/assume.cpp
+--- solvers/cadical300/assume.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/assume.cpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+ #include "internal.hpp"
+ #include "options.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Failed literal handling as pioneered by MiniSAT.  This first function
+ // adds an assumption literal onto the assumption stack.
+@@ -613,4 +613,4 @@
+   else
+     stats.assumptionsreused += level;
+ }
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/averages.cpp solvers/cdc300/averages.cpp
+--- solvers/cadical300/averages.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/averages.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::init_averages () {
+ 
+@@ -31,4 +31,4 @@
+   averages.swapped++;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/averages.hpp solvers/cdc300/averages.hpp
+--- solvers/cadical300/averages.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/averages.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _averages_hpp_INCLUDED
+-#define _averages_hpp_INCLUDED
++#ifndef _averages300_hpp_INCLUDED
++#define _averages300_hpp_INCLUDED
+ 
+ #include "ema.hpp" // alphabetically after 'averages.hpp'
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Averages {
+ 
+@@ -32,6 +32,6 @@
+   Averages () : swapped (0) {}
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/backbone.cpp solvers/cdc300/backbone.cpp
+--- solvers/cadical300/backbone.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/backbone.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ #include "message.hpp"
+ #include "util.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ inline void Internal::backbone_lrat_for_units (int lit, Clause *reason) {
+   if (!lrat)
+@@ -628,4 +628,4 @@
+   STOP_SIMPLIFIER (backbone, BACKBONE);
+ }
+ 
+-} // namespace CaDiCaL
+\ No newline at end of file
++} // namespace CaDiCaL300
+\ No newline at end of file
+diff -Naur solvers/cadical300/backtrack.cpp solvers/cdc300/backtrack.cpp
+--- solvers/cadical300/backtrack.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/backtrack.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // The global assignment stack can only be (partially) reset through
+ // 'backtrack' which is the only function using 'unassign' (inlined and thus
+@@ -174,4 +174,4 @@
+   assert (num_assigned == trail.size ());
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/backward.cpp solvers/cdc300/backward.cpp
+--- solvers/cadical300/backward.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/backward.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -228,4 +228,4 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/bins.cpp solvers/cdc300/bins.cpp
+--- solvers/cadical300/bins.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/bins.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -19,4 +19,4 @@
+   LOG ("reset binary implication graph");
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/bins.hpp solvers/cdc300/bins.hpp
+--- solvers/cadical300/bins.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/bins.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _bins_hpp_INCLUDED
+-#define _bins_hpp_INCLUDED
++#ifndef _bins300_hpp_INCLUDED
++#define _bins300_hpp_INCLUDED
+ 
+ #include "util.hpp" // Alphabetically after 'bins'.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+@@ -17,6 +17,6 @@
+ inline void shrink_bins (Bins &bs) { shrink_vector (bs); }
+ inline void erase_bins (Bins &bs) { erase_vector (bs); }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/block.cpp solvers/cdc300/block.cpp
+--- solvers/cadical300/block.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/block.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -821,4 +821,4 @@
+   return blocked;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/block.hpp solvers/cdc300/block.hpp
+--- solvers/cadical300/block.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/block.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _block_hpp_INCLUDED
+-#define _block_hpp_INCLUDED
++#ifndef _block300_hpp_INCLUDED
++#define _block300_hpp_INCLUDED
+ 
+ #include "heap.hpp" // Alphabetically after 'block.hpp'.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -32,6 +32,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/cadical.cpp solvers/cdc300/cadical.cpp
+--- solvers/cadical300/cadical.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/cadical.cpp	2026-05-13 16:19:43
+@@ -7,9 +7,9 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+-// A wrapper app which makes up the CaDiCaL stand alone solver.  It in
++// A wrapper app which makes up the CaDiCaL300 stand alone solver.  It in
+ // essence only consists of the 'App::main' function.  So this class
+ // contains code, which is not required if only the library interface in
+ // the class 'Solver' is used (defined in 'cadical.hpp').  It further uses
+@@ -357,7 +357,7 @@
+       print_usage (true);
+       return 0;
+     } else if (!strcmp (arg, "--version")) {
+-      printf ("%s\n", CaDiCaL::version ());
++      printf ("%s\n", CaDiCaL300::version ());
+       return 0;
+     } else if (!strcmp (arg, "--build")) {
+       tout.disable ();
+@@ -630,7 +630,7 @@
+     solver->message ("%s%s%s", tout.bright_magenta_code (), affiliations (),
+                      tout.normal_code ());
+     solver->message ();
+-    CaDiCaL::Solver::build (stdout, "c ");
++    CaDiCaL300::Solver::build (stdout, "c ");
+   }
+ #endif
+   if (preprocessing > 0 || localsearch > 0 ||
+@@ -955,7 +955,7 @@
+   // library usage it should remain 'false'.  See the explanation in
+   // 'options.hpp' related to 'reportdefault' for details.
+ 
+-  CaDiCaL::Options::reportdefault = 1;
++  CaDiCaL300::Options::reportdefault = 1;
+   solver = new Solver ();
+   Signal::set (this);
+ }
+@@ -1009,7 +1009,7 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -1020,7 +1020,7 @@
+ // options table 'Options::table'.  All are shared among solvers.
+ 
+ int main (int argc, char **argv) {
+-  CaDiCaL::App app;
++  CaDiCaL300::App app;
+   int res = app.main (argc, argv);
+   return res;
+ }
+diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
+--- solvers/cadical300/cadical.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/cadical.hpp	2026-05-13 20:37:22
+@@ -1,10 +1,12 @@
+-#ifndef _cadical_hpp_INCLUDED
+-#define _cadical_hpp_INCLUDED
++#ifndef _cadical300_hpp_INCLUDED
++#define _cadical300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ #include <cstdio>
+ #include <vector>
+ 
++using namespace std;
++
+ /*========================================================================*/
+ 
+ // We support semantic versioning (https://semver.org/), which means that we
+@@ -15,11 +17,11 @@
+ #define CADICAL_MINOR 0 // Minor semantic version.
+ #define CADICAL_PATCH 0 // Semantic patch version.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*========================================================================*/
+ 
+-// This provides the actual API of the CaDiCaL solver, which is implemented
++// This provides the actual API of the CaDiCaL300 solver, which is implemented
+ // in the class 'Solver' below.  Beside its constructor and destructor most
+ // important is the IPASIR part which you can find between 'BEGIN IPASIR'
+ // and 'END IPASIR' comments below.  The following '[Example]' below might
+@@ -47,7 +49,7 @@
+ //
+ // Consider the following code (from 'test/api/example.cpp') of API usage:
+ //
+-//   CaDiCaL::Solver * solver = new CaDiCaL::Solver;
++//   CaDiCaL300::Solver * solver = new CaDiCaL300::Solver;
+ //
+ //   // ------------------------------------------------------------------
+ //   // Encode Problem and check without assumptions.
+@@ -389,6 +391,9 @@
+ 
+   // ====== END IPASIR =====================================================
+ 
++  bool prop_check (const vector<int> &assumps, vector<int> &prop,
++                   int psaving);
++
+   // Add call-back which allows to observe when a variable is fixed.
+   //
+   //   require (VALID)
+@@ -411,6 +416,7 @@
+   //
+   void connect_external_propagator (ExternalPropagator *propagator);
+   void disconnect_external_propagator ();
++  ExternalPropagator *get_external_propagator ();
+ 
+   // Mark as 'observed' those variables that are relevant to the external
+   // propagator. External propagation, clause addition during search and
+@@ -771,6 +777,10 @@
+   int active () const;          // Number of active variables.
+   int64_t redundant () const;   // Number of active redundant clauses.
+   int64_t irredundant () const; // Number of active irredundant clauses.
++  int64_t conflicts () const;   // Number of conflicts.
++  int64_t decisions () const;   // Number of decisions.
++  int64_t restarts () const;    // Number of restarts.
++  int64_t propagations () const; // Number of propagations.
+ 
+   //------------------------------------------------------------------------
+   // This function executes the given number of preprocessing rounds. It is
+@@ -787,6 +797,8 @@
+   //   ensure (INCONCLUSIVE  | SATISFIED | UNSATISFIED)
+   //
+   int simplify (int rounds = 3);
++  void set_state (State s);
++  std::vector<bool> extend (std::vector<int> &solution);
+ 
+   //------------------------------------------------------------------------
+   // Force termination of 'solve' asynchronously.
+@@ -1016,6 +1028,7 @@
+   //   ensure (VALID)
+   //
+   const char *write_dimacs (const char *path, int min_max_var = 0);
++  void get_dimacs (vector<vector<int>> &dest);
+ 
+   // The extension stack for reconstruction a solution can be written too.
+   //
+@@ -1046,13 +1059,13 @@
+   //
+   // This approach has the benefit of decoupling this header file from all
+   // internal data structures, which is particularly useful if the rest of
+-  // the source is not available. For instance if only a CaDiCaL library is
++  // the source is not available. For instance if only a CaDiCaL300 library is
+   // installed in a system, then only this header file has to be installed
+   // too, and still allows to compile and link against the library.
+ 
+   /*----------------------------------------------------------------------*/
+ 
+-  // More precisely the CaDiCaL code is split into three layers:
++  // More precisely the CaDiCaL300 code is split into three layers:
+   //
+   //   Solver:       facade object providing the actual API of the solver
+   //   External:     communication layer between 'Solver' and 'Internal'
+@@ -1141,10 +1154,15 @@
+   //
+   // TODO: support for other compilers (beside 'gcc' and 'clang').
+ 
++#ifdef _MSC_VER
+ #define CADICAL_ATTRIBUTE_FORMAT(FORMAT_POSITION, \
++                                 VARIADIC_ARGUMENT_POSITION)
++#else
++#define CADICAL_ATTRIBUTE_FORMAT(FORMAT_POSITION, \
+                                  VARIADIC_ARGUMENT_POSITION) \
+   __attribute__ ((format (PRINTF_FORMAT, FORMAT_POSITION, \
+                           VARIADIC_ARGUMENT_POSITION)))
++#endif
+ 
+   // Messages in a common style.
+   //
+@@ -1414,6 +1432,6 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/ccadical.cpp solvers/cdc300/ccadical.cpp
+--- solvers/cadical300/ccadical.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/ccadical.cpp	2026-05-13 16:19:43
+@@ -3,7 +3,7 @@
+ #include <cstdlib>
+ #include <cstring>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Wrapper : Learner, Terminator {
+ 
+@@ -61,9 +61,9 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+-using namespace CaDiCaL;
++using namespace CaDiCaL300;
+ 
+ extern "C" {
+ 
+diff -Naur solvers/cadical300/ccadical.h solvers/cdc300/ccadical.h
+--- solvers/cadical300/ccadical.h	2025-12-24 05:25:57
++++ solvers/cdc300/ccadical.h	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _ccadical_h_INCLUDED
+-#define _ccadical_h_INCLUDED
++#ifndef _ccadical300_h_INCLUDED
++#define _ccadical300_h_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #ifdef __cplusplus
+@@ -10,7 +10,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ 
+-// C wrapper for CaDiCaL's C++ API following IPASIR.
++// C wrapper for CaDiCaL300's C++ API following IPASIR.
+ 
+ typedef struct CCaDiCaL CCaDiCaL;
+ 
+diff -Naur solvers/cadical300/checker.cpp solvers/cdc300/checker.cpp
+--- solvers/cadical300/checker.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/checker.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -646,4 +646,4 @@
+     }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/checker.hpp solvers/cdc300/checker.hpp
+--- solvers/cadical300/checker.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/checker.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _checker_hpp_INCLUDED
+-#define _checker_hpp_INCLUDED
++#ifndef _checker300_hpp_INCLUDED
++#define _checker300_hpp_INCLUDED
+ 
+ #include "tracer.hpp" // Alphabetically after 'checker'.
+ 
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -168,6 +168,6 @@
+   void dump (); // for debugging purposes only
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/clause.cpp solvers/cdc300/clause.cpp
+--- solvers/cadical300/clause.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/clause.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -686,4 +686,4 @@
+   ++stats.incremental_decay;
+   last.incremental_decay.last_id = clause_id;
+ }
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/clause.hpp solvers/cdc300/clause.hpp
+--- solvers/cadical300/clause.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/clause.hpp	2026-05-13 16:19:43
+@@ -1,12 +1,12 @@
+-#ifndef _clause_hpp_INCLUDED
+-#define _clause_hpp_INCLUDED
++#ifndef _clause300_hpp_INCLUDED
++#define _clause300_hpp_INCLUDED
+ 
+ #include "util.hpp"
+ #include <climits>
+ #include <cstdint>
+ #include <cstdlib>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -185,6 +185,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/collect.cpp solvers/cdc300/collect.cpp
+--- solvers/cadical300/collect.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/collect.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -542,4 +542,4 @@
+   STOP (collect);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/compact.cpp solvers/cdc300/compact.cpp
+--- solvers/cadical300/compact.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/compact.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -547,4 +547,4 @@
+   STOP (compact);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/condition.cpp solvers/cdc300/condition.cpp
+--- solvers/cadical300/condition.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/condition.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -9,7 +9,7 @@
+ // extended version, which in particular describes the algorithm implemented
+ // below is in our invited ATVA'19 paper [KieslHeuleBiere-ATVA'19].  This
+ // accordingly needs witnesses consisting potentially of more than one
+-// literal.  It is the first technique implemented in CaDiCaL with this
++// literal.  It is the first technique implemented in CaDiCaL300 with this
+ // feature (PR clause elimination thus should work in principle too).
+ 
+ // Basically globally blocked clauses are like set blocked clauses, except
+@@ -937,4 +937,4 @@
+          delta);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/config.cpp solvers/cdc300/config.cpp
+--- solvers/cadical300/config.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/config.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -98,4 +98,4 @@
+ const char **Config::begin () { return configs; }
+ const char **Config::end () { return &configs[num_configs]; }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/config.hpp solvers/cdc300/config.hpp
+--- solvers/cadical300/config.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/config.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _config_hpp_INCLUDED
+-#define _config_hpp_INCLUDED
++#ifndef _config300_hpp_INCLUDED
++#define _config300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class Options;
+ 
+@@ -15,6 +15,6 @@
+   static const char **end ();
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/congruence.cpp solvers/cdc300/congruence.cpp
+--- solvers/cadical300/congruence.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/congruence.cpp	2026-05-13 16:19:43
+@@ -7,7 +7,7 @@
+ #include <utility>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Closure::Closure (Internal *i)
+     : internal (i), table (128, Hash (nonces))
+@@ -158,7 +158,7 @@
+ }
+ /*------------------------------------------------------------------------*/
+ struct compact_binary_rank {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   typedef uint64_t Type;
+   compact_binary_rank (Internal *i) : internal (i) {}
+   uint64_t operator() (const CompactBinary &a) {
+@@ -168,7 +168,7 @@
+ };
+ 
+ struct compact_binary_order {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   compact_binary_order (Internal *i) : internal (i) {}
+   bool operator() (const CompactBinary &a, const CompactBinary &b) {
+     return compact_binary_rank (internal) (a) <
+@@ -376,7 +376,7 @@
+ }
+ 
+ struct sort_literals_by_var_rank {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   sort_literals_by_var_rank (Internal *i) : internal (i) {}
+ 
+   typedef uint64_t Type;
+@@ -384,7 +384,7 @@
+   Type operator() (const int &a) const { return internal->vlit (a); }
+ };
+ struct sort_literals_by_var_rank_except {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   int lhs;
+   int except;
+   sort_literals_by_var_rank_except (Internal *i, int my_lhs, int except2)
+@@ -405,7 +405,7 @@
+ };
+ 
+ struct sort_literals_by_var_smaller_except {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   int lhs;
+   int except;
+   sort_literals_by_var_smaller_except (Internal *i, int my_lhs, int except2)
+@@ -418,7 +418,7 @@
+   }
+ };
+ struct sort_literals_by_var_smaller {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   sort_literals_by_var_smaller (Internal *i) : internal (i) {}
+   bool operator() (const int &a, const int &b) const {
+     return sort_literals_by_var_rank (internal) (a) <
+@@ -7341,7 +7341,7 @@
+   return (c < d);
+ }
+ struct litpair_rank {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   litpair_rank (Internal *i) : internal (i) {}
+   typedef uint64_t Type;
+   Type operator() (const lit_implication &a) const {
+@@ -7352,7 +7352,7 @@
+ };
+ 
+ struct litpair_smaller {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   litpair_smaller (Internal *i) : internal (i) {}
+   bool operator() (const lit_implication &a,
+                    const lit_implication &b) const {
+@@ -7363,7 +7363,7 @@
+ };
+ 
+ struct litequivalence_rank {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   litequivalence_rank (Internal *i) : internal (i) {}
+   typedef uint64_t Type;
+   Type operator() (const lit_equivalence &a) const {
+@@ -7374,7 +7374,7 @@
+ };
+ 
+ struct litequivalence_smaller {
+-  CaDiCaL::Internal *internal;
++  CaDiCaL300::Internal *internal;
+   litequivalence_smaller (Internal *i) : internal (i) {}
+   bool operator() (const lit_equivalence &a,
+                    const lit_equivalence &b) const {
+@@ -7877,4 +7877,4 @@
+   return new_merged != old_merged;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/congruence.hpp solvers/cdc300/congruence.hpp
+--- solvers/cadical300/congruence.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/congruence.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _congruenc_hpp_INCLUDED
+-#define _congruenc_hpp_INCLUDED
++#ifndef _congruenc300_hpp_INCLUDED
++#define _congruenc300_hpp_INCLUDED
+ 
+ #include <algorithm>
+ #include <array>
+@@ -17,7 +17,7 @@
+ #include "util.hpp"
+ #include "watch.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ typedef int64_t LRAT_ID;
+ 
+@@ -752,6 +752,6 @@
+   bool normalize_ite_lits_gate (Gate *rhs);
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/constrain.cpp solvers/cdc300/constrain.cpp
+--- solvers/cadical300/constrain.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/constrain.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::constrain (int lit) {
+   if (lit)
+@@ -61,4 +61,4 @@
+   marked_failed = true;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/contract.cpp solvers/cdc300/contract.cpp
+--- solvers/cadical300/contract.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/contract.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void fatal_message_start ();
+ 
+@@ -22,6 +22,6 @@
+   abort ();
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/contract.hpp solvers/cdc300/contract.hpp
+--- solvers/cadical300/contract.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/contract.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _contract_hpp_INCLUDED
+-#define _contract_hpp_INCLUDED
++#ifndef _contract300_hpp_INCLUDED
++#define _contract300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #ifndef NCONTRACTS
+@@ -25,7 +25,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // It would be much easier to just write 'REQUIRE (this, "not initialized")'
+ // which however produces warnings due to the '-Wnonnull' check. Note, that
+@@ -49,7 +49,7 @@
+                                            __FILE__); \
+   } while (0)
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+diff -Naur solvers/cadical300/cover.cpp solvers/cdc300/cover.cpp
+--- solvers/cadical300/cover.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/cover.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -701,4 +701,4 @@
+   return covered;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/cover.hpp solvers/cdc300/cover.hpp
+--- solvers/cadical300/cover.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/cover.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _cover_hpp_INCLUDED
+-#define _cover_hpp_INCLUDED
++#ifndef _cover300_hpp_INCLUDED
++#define _cover300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ 
+diff -Naur solvers/cadical300/decide.cpp solvers/cdc300/decide.cpp
+--- solvers/cadical300/decide.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/decide.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This function determines the next decision variable on the queue, without
+ // actually removing it from the decision queue, e.g., calling it multiple
+@@ -344,4 +344,4 @@
+   STOP (decide);
+   return res;
+ }
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/decompose.cpp solvers/cdc300/decompose.cpp
+--- solvers/cadical300/decompose.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/decompose.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::decompose_analyze_binary_chain (DFS *dfs, int from) {
+   if (!lrat)
+@@ -735,4 +735,4 @@
+       break;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/decompose.hpp solvers/cdc300/decompose.hpp
+--- solvers/cadical300/decompose.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/decompose.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _decompose_hpp_INCLUDED
+-#define _decompose_hpp_INCLUDED
++#ifndef _decompose300_hpp_INCLUDED
++#define _decompose300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This implements Tarjan's algorithm for decomposing the binary implication
+ // graph intro strongly connected components (SCCs).  Literals in one SCC
+@@ -18,6 +18,6 @@
+   DFS () : idx (0), min (0), parent (0) {}
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/deduplicate.cpp solvers/cdc300/deduplicate.cpp
+--- solvers/cadical300/deduplicate.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/deduplicate.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Equivalent literal substitution in 'decompose' and shrinking in 'subsume'
+ // or 'vivify' might produce duplicated binary clauses.  They can not be
+@@ -272,4 +272,4 @@
+   connect_watches ();
+   report ('d', !opts.reportall && !subsumed);
+ }
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/definition.cpp solvers/cdc300/definition.cpp
+--- solvers/cadical300/definition.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/definition.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ #define INVALID_LIT UINT_MAX
+ 
+@@ -169,7 +169,7 @@
+ } // end extern C
+ 
+ // Code ported from kissat. Kitten (and kissat) use unsigned representation
+-// for literals whereas CaDiCaL uses signed representation. Conversion is
++// for literals whereas CaDiCaL300 uses signed representation. Conversion is
+ // necessary for communication using lit2citten and citten2lit.
+ // This code is called in elim and kitten is initialized beforehand.
+ // To avoid confusion all cadical interal definitions with kitten are called
+@@ -280,4 +280,4 @@
+   return;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/delay.hpp solvers/cdc300/delay.hpp
+--- solvers/cadical300/delay.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/delay.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _delay_hpp_INCLUDED
+-#define _delay_hpp_INCLUDED
++#ifndef _delay300_hpp_INCLUDED
++#define _delay300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ #include <limits>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ struct Delay {
+   unsigned count;
+   unsigned current;
+@@ -33,6 +33,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/drattracer.cpp solvers/cdc300/drattracer.cpp
+--- solvers/cadical300/drattracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/drattracer.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -150,4 +150,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/drattracer.hpp solvers/cdc300/drattracer.hpp
+--- solvers/cadical300/drattracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/drattracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _drattracer_h_INCLUDED
+-#define _drattracer_h_INCLUDED
++#ifndef _drattracer300_h_INCLUDED
++#define _drattracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class DratTracer : public FileTracer {
+ 
+@@ -50,6 +50,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/elim.cpp solvers/cdc300/elim.cpp
+--- solvers/cadical300/elim.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/elim.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -1168,4 +1168,4 @@
+   last.elim.fixed = stats.all.fixed;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/elim.hpp solvers/cdc300/elim.hpp
+--- solvers/cadical300/elim.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/elim.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _elim_hpp_INCLUDED
+-#define _elim_hpp_INCLUDED
++#ifndef _elim300_hpp_INCLUDED
++#define _elim300_hpp_INCLUDED
+ 
+ #include "heap.hpp" // Alphabetically after 'elim.hpp'.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -48,6 +48,6 @@
+   GateType gatetype;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/elimfast.cpp solvers/cdc300/elimfast.cpp
+--- solvers/cadical300/elimfast.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/elimfast.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -567,4 +567,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/ema.cpp solvers/cdc300/ema.cpp
+--- solvers/cadical300/ema.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/ema.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Updating an exponential moving average is placed here since we want to
+ // log both updates and phases of initialization, thus need 'LOG'.
+@@ -92,4 +92,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/ema.hpp solvers/cdc300/ema.hpp
+--- solvers/cadical300/ema.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/ema.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _ema_hpp_INCLUDED
+-#define _ema_hpp_INCLUDED
++#ifndef _ema300_hpp_INCLUDED
++#define _ema300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -43,7 +43,7 @@
+   void update (Internal *, double y, const char *name);
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+diff -Naur solvers/cadical300/extend.cpp solvers/cdc300/extend.cpp
+--- solvers/cadical300/extend.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/extend.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void External::push_zero_on_extension_stack () {
+   extension.push_back (0);
+@@ -286,4 +286,4 @@
+   internal->proof->conclude_sat (model);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/external.cpp solvers/cdc300/external.cpp
+--- solvers/cadical300/external.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/external.cpp	2026-05-13 16:19:43
+@@ -3,7 +3,7 @@
+ 
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ External::External (Internal *i)
+     : internal (i), max_var (0), vsize (0), extended (false),
+@@ -635,7 +635,7 @@
+   return elit;
+ }
+ 
+-CaDiCaL::CubesWithStatus External::generate_cubes (int depth,
++CaDiCaL300::CubesWithStatus External::generate_cubes (int depth,
+                                                    int min_depth = 0) {
+   reset_extended ();
+   update_molten_literals ();
+@@ -1031,4 +1031,4 @@
+     LOG ("not exporting learned clause of size %zu", size);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
+--- solvers/cadical300/external.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/external.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _external_hpp_INCLUDED
+-#define _external_hpp_INCLUDED
++#ifndef _external300_hpp_INCLUDED
++#define _external300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -10,13 +10,13 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-// The CaDiCaL code is split into three layers:
++// The CaDiCaL300 code is split into three layers:
+ //
+ //   Solver:       facade object providing the actual API of the solver
+ //   External:     communication layer between 'Solver' and 'Internal'
+@@ -277,7 +277,7 @@
+ 
+   /*----------------------------------------------------------------------*/
+ 
+-  // According to the CaDiCaL API contract (as well as IPASIR) we have to
++  // According to the CaDiCaL300 API contract (as well as IPASIR) we have to
+   // forget about the previous assumptions after a 'solve' call.  This
+   // should however be delayed until we transition out of an 'UNSATISFIED'
+   // state, i.e., after no more 'failed' calls are expected.  Note that
+@@ -340,7 +340,7 @@
+   //   ival (-13) = 13        as '-13' is false
+   //
+   // To summarize we can think of the IPASIR 'ipasir_val' function, which
+-  // 'CaDiCaL' follows as returning the phase of the literal which is true
++  // 'CaDiCaL300' follows as returning the phase of the literal which is true
+   // under the current assignment no matter whether you give the positive
+   // literal or its negation and thus 'ival (lit) == ival (-lit))"
+ 
+@@ -388,7 +388,7 @@
+ 
+   /*----------------------------------------------------------------------*/
+   int lookahead ();
+-  CaDiCaL::CubesWithStatus generate_cubes (int, int);
++  CaDiCaL300::CubesWithStatus generate_cubes (int, int);
+ 
+   int fixed (int elit) const; // Implemented in 'internal.hpp'.
+ 
+@@ -482,6 +482,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/external_propagate.cpp solvers/cdc300/external_propagate.cpp
+--- solvers/cadical300/external_propagate.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/external_propagate.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include <algorithm>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*----------------------------------------------------------------------------*/
+ //
+@@ -178,7 +178,7 @@
+ // It repeats ALL assignments of the trail, so the already notified
+ // root-level assignments will be notified multiple times.
+ //
+-// As CaDiCaL is missing some '0' seperators, it is important to go
++// As CaDiCaL300 is missing some '0' seperators, it is important to go
+ // over slices from the control stack instead of going over the trail
+ // directly.
+ void Internal::renotify_full_trail () {
+@@ -1313,4 +1313,4 @@
+ }
+ #endif
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/factor.cpp solvers/cdc300/factor.cpp
+--- solvers/cadical300/factor.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/factor.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ #define FACTORS 1
+ #define QUOTIENT 2
+@@ -1008,4 +1008,4 @@
+   return true;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/factor.hpp solvers/cdc300/factor.hpp
+--- solvers/cadical300/factor.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/factor.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _factor_hpp_INCLUDED
+-#define _factor_hpp_INCLUDED
++#ifndef _factor300_hpp_INCLUDED
++#define _factor300_hpp_INCLUDED
+ 
+ #include "clause.hpp"
+ #include "heap.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -49,6 +49,6 @@
+   } quotients;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/file.hpp solvers/cdc300/file.hpp
+--- solvers/cadical300/file.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/file.hpp	2026-05-13 20:37:22
+@@ -1,5 +1,5 @@
+-#ifndef _file_hpp_INCLUDED
+-#define _file_hpp_INCLUDED
++#ifndef _file300_hpp_INCLUDED
++#define _file300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <cstdint>
+@@ -11,6 +11,10 @@
+ #include <climits>
+ #endif
+ 
++#ifdef _MSC_VER
++#define NUNLOCKED
++#endif
++
+ /*------------------------------------------------------------------------*/
+ #ifndef NUNLOCKED
+ #define cadical_putc_unlocked putc_unlocked
+@@ -21,7 +25,7 @@
+ #endif
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Wraps a 'C' file 'FILE' with name and supports zipped reading and writing
+ // through 'popen' using external helper tools.  Reading has line numbers.
+@@ -205,6 +209,6 @@
+   void flush ();
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
+--- solvers/cadical300/file0.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/file0.cpp	2026-05-13 20:38:34
+@@ -11,7 +11,12 @@
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#ifdef _MSC_VER
++#include <io.h>
++#include <process.h>
++#else
+ #include <unistd.h>
++#endif
+ }
+ 
+ #ifndef _WIN32
+@@ -35,10 +40,23 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
++#ifdef _MSC_VER
++#ifndef S_ISDIR
++#define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
++#endif
++
++#ifndef S_ISREG
++#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
++#endif
++
++#define popen _popen
++#define pclose _pclose
++#endif
++
+ // Private constructor.
+ 
+ File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
+@@ -111,13 +129,17 @@
+   int fd = fileno (file);
+   if (fstat (fd, &stat))
+     return true;
++#ifdef _MSC_VER
++  return false;
++#else
+   return S_ISFIFO (stat.st_mode);
++#endif
+ }
+ 
+ // These are signatures for supported compressed file types.  In 2018 the
+ // SAT Competition was running on StarExec and used internally 'bzip2'
+ // compressed files, but gave them uncompressed to the solver using exactly
+-// the same path (with '.bz2' suffix).  Then 'CaDiCaL' tried to read that
++// the same path (with '.bz2' suffix).  Then 'CaDiCaL300' tried to read that
+ // actually uncompressed file through 'bzip2', which of course failed.  Now
+ // we double check and fall back to reading the file as is, if the signature
+ // does not match after issuing a warning.
+@@ -503,4 +525,4 @@
+   free (_name);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/flags.cpp solvers/cdc300/flags.cpp
+--- solvers/cadical300/flags.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/flags.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::mark_fixed (int lit) {
+   if (external->fixed_listener) {
+@@ -132,4 +132,4 @@
+   stats.active++;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/flags.hpp solvers/cdc300/flags.hpp
+--- solvers/cadical300/flags.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/flags.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _flags_hpp_INCLUDED
+-#define _flags_hpp_INCLUDED
++#ifndef _flags300_hpp_INCLUDED
++#define _flags300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Flags { // Variable flags.
+ 
+@@ -88,6 +88,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/flip.cpp solvers/cdc300/flip.cpp
+--- solvers/cadical300/flip.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/flip.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ bool Internal::flip (int lit) {
+ 
+@@ -266,4 +266,4 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/format.cpp solvers/cdc300/format.cpp
+--- solvers/cadical300/format.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/format.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Format::enlarge () {
+   char *old = buffer;
+@@ -86,4 +86,4 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/format.hpp solvers/cdc300/format.hpp
+--- solvers/cadical300/format.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/format.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _format_hpp_INCLUDED
+-#define _format_hpp_INCLUDED
++#ifndef _format300_hpp_INCLUDED
++#define _format300_hpp_INCLUDED
+ 
+ #include <cstdarg>
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This class provides a 'printf' style formatting utility.
+ // Only '%c', '%d', '%s' are supported at this point.
+@@ -31,6 +31,6 @@
+   operator const char * () const { return count ? buffer : 0; }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/frattracer.cpp solvers/cdc300/frattracer.cpp
+--- solvers/cadical300/frattracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/frattracer.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -274,4 +274,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/frattracer.hpp solvers/cdc300/frattracer.hpp
+--- solvers/cadical300/frattracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/frattracer.hpp	2026-05-13 16:19:43
+@@ -1,12 +1,12 @@
+-#ifndef _frattracer_h_INCLUDED
+-#define _frattracer_h_INCLUDED
++#ifndef _frattracer300_h_INCLUDED
++#define _frattracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class FratTracer : public FileTracer {
+ 
+@@ -62,6 +62,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/gates.cpp solvers/cdc300/gates.cpp
+--- solvers/cadical300/gates.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/gates.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -763,4 +763,4 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/heap.hpp solvers/cdc300/heap.hpp
+--- solvers/cadical300/heap.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/heap.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _heap_hpp_INCLUDED
+-#define _heap_hpp_INCLUDED
++#ifndef _heap300_hpp_INCLUDED
++#define _heap300_hpp_INCLUDED
+ 
+ #include "util.hpp" // Alphabetically after 'heap.hpp'.
+ 
+ #include <cassert>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+@@ -207,6 +207,6 @@
+   const_iterator end () const { return array.end (); }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/idruptracer.cpp solvers/cdc300/idruptracer.cpp
+--- solvers/cadical300/idruptracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/idruptracer.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -563,4 +563,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/idruptracer.hpp solvers/cdc300/idruptracer.hpp
+--- solvers/cadical300/idruptracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/idruptracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _idruptracer_h_INCLUDED
+-#define _idruptracer_h_INCLUDED
++#ifndef _idruptracer300_h_INCLUDED
++#define _idruptracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct IdrupClause {
+   IdrupClause *next; // collision chain link for hash table
+@@ -107,6 +107,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/instantiate.cpp solvers/cdc300/instantiate.cpp
+--- solvers/cadical300/instantiate.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/instantiate.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -362,4 +362,4 @@
+   STOP (instantiate);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/instantiate.hpp solvers/cdc300/instantiate.hpp
+--- solvers/cadical300/instantiate.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/instantiate.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _instantiate_hpp_INCLUDED
+-#define _instantiate_hpp_INCLUDED
++#ifndef _instantiate300_hpp_INCLUDED
++#define _instantiate300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // We are trying to remove literals in clauses, which occur in few clauses
+ // and further restrict this removal to variables for which variable
+@@ -40,6 +40,6 @@
+   operator bool () const { return !candidates.empty (); }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/internal.cpp solvers/cdc300/internal.cpp
+--- solvers/cadical300/internal.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/internal.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ static Clause external_reason_clause;
+@@ -1262,4 +1262,4 @@
+   return true;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
+--- solvers/cadical300/internal.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/internal.hpp	2026-05-13 20:37:22
+@@ -1,5 +1,5 @@
+-#ifndef _internal_hpp_INCLUDED
+-#define _internal_hpp_INCLUDED
++#ifndef _internal300_hpp_INCLUDED
++#define _internal300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -24,7 +24,12 @@
+ // Less common 'C' header.
+ 
+ extern "C" {
++#ifdef _MSC_VER
++#include <io.h>
++#include <process.h>
++#else
+ #include <unistd.h>
++#endif
+ }
+ 
+ /*------------------------------------------------------------------------*/
+@@ -111,7 +116,7 @@
+ }
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+@@ -1936,6 +1941,6 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/inttypes.hpp solvers/cdc300/inttypes.hpp
+--- solvers/cadical300/inttypes.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/inttypes.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _inttypes_h_INCLUDED
+-#define _inttypes_h_INCLUDED
++#ifndef _inttypes300_h_INCLUDED
++#define _inttypes300_h_INCLUDED
+ 
+ // This is an essence a wrapper around '<cinttypes>' respectively
+ // 'inttypes.h' in order to please the 'MinGW' cross-compiler (we are using
+diff -Naur solvers/cadical300/ipasir.h solvers/cdc300/ipasir.h
+--- solvers/cadical300/ipasir.h	2025-12-24 05:25:57
++++ solvers/cdc300/ipasir.h	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _ipasir_h_INCLUDED
+-#define _ipasir_h_INCLUDED
++#ifndef _ipasir300_h_INCLUDED
++#define _ipasir300_h_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #ifdef __cplusplus
+@@ -10,7 +10,7 @@
+ // Here are the declarations for the actual IPASIR functions, which is the
+ // generic incremental reentrant SAT solver API used for instance in the SAT
+ // competition.  The other 'C' API in 'ccadical.h' is (more) type safe and
+-// has additional functions only supported by the CaDiCaL library.  Please
++// has additional functions only supported by the CaDiCaL300 library.  Please
+ // also refer to our SAT Race 2015 article in the Journal of AI from 2016.
+ 
+ const char *ipasir_signature (void);
+diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
+--- solvers/cadical300/kitten.c	2025-12-24 05:25:57
++++ solvers/cdc300/kitten.c	2026-05-13 20:37:23
+@@ -267,10 +267,18 @@
+ 
+ #ifdef LOGGING
+ 
++#ifdef _MSC_VER
++#define KITTEN_ATTRIBUTE_FORMAT(FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION)
++#else
++#define KITTEN_ATTRIBUTE_FORMAT(FORMAT_POSITION, VARIADIC_ARGUMENT_POSITION) \
++  __attribute__ ((format (printf, FORMAT_POSITION, \
++                          VARIADIC_ARGUMENT_POSITION)))
++#endif
++
+ #define logging (kitten->logging)
+ 
+ static void log_basic (kitten *, const char *, ...)
+-    __attribute__ ((format (printf, 2, 3)));
++    KITTEN_ATTRIBUTE_FORMAT (2, 3);
+ 
+ static void log_basic (kitten *kitten, const char *fmt, ...) {
+   assert (logging);
+@@ -284,7 +292,7 @@
+ }
+ 
+ static void log_reference (kitten *, unsigned, const char *, ...)
+-    __attribute__ ((format (printf, 3, 4)));
++    KITTEN_ATTRIBUTE_FORMAT (3, 4);
+ 
+ static void log_reference (kitten *kitten, unsigned ref, const char *fmt,
+                            ...) {
+@@ -318,7 +326,7 @@
+ }
+ 
+ static void log_literals (kitten *, unsigned *, unsigned, const char *, ...)
+-    __attribute__ ((format (printf, 4, 5)));
++    KITTEN_ATTRIBUTE_FORMAT (4, 5);
+ 
+ static void log_literals (kitten *kitten, unsigned *lits, unsigned size,
+                          const char *fmt, ...) {
+@@ -873,7 +881,7 @@
+   return elit;
+ }
+ 
+-unsigned new_learned_klause (kitten *kitten) {
++static unsigned new_learned_klause (kitten *kitten) {
+   unsigned res = new_reference (kitten);
+   unsigneds *klauses = &kitten->klauses;
+   const size_t size = SIZE_STACK (kitten->klause);
+@@ -1150,7 +1158,7 @@
+   kitten->level = jump;
+   check_queue (kitten);
+ }
+ 
+-void completely_backtrack_to_root_level (kitten *kitten) {
++static void completely_backtrack_to_root_level (kitten *kitten) {
+   check_queue (kitten);
+   LOG ("completely backtracking to level 0");
+   value *values = kitten->values;
+diff -Naur solvers/cadical300/kitten.h solvers/cdc300/kitten.h
+--- solvers/cadical300/kitten.h	2025-12-24 05:25:57
++++ solvers/cdc300/kitten.h	2026-05-13 16:19:43
+@@ -10,6 +10,47 @@
+ extern "C" {
+ #endif
+ 
++#define kitten_init cadical300_kitten_init
++#define kitten_clear cadical300_kitten_clear
++#define kitten_release cadical300_kitten_release
++#define kitten_set_logging cadical300_kitten_set_logging
++#define kitten_track_antecedents cadical300_kitten_track_antecedents
++#define kitten_shuffle_clauses cadical300_kitten_shuffle_clauses
++#define kitten_flip_phases cadical300_kitten_flip_phases
++#define kitten_randomize_phases cadical300_kitten_randomize_phases
++#define kitten_assume cadical300_kitten_assume
++#define kitten_assume_signed cadical300_kitten_assume_signed
++#define kitten_clause cadical300_kitten_clause
++#define citten_clause_with_id cadical300_citten_clause_with_id
++#define kitten_unit cadical300_kitten_unit
++#define kitten_binary cadical300_kitten_binary
++#define kitten_clause_with_id_and_exception cadical300_kitten_clause_with_id_and_exception
++#define citten_clause_with_id_and_exception cadical300_citten_clause_with_id_and_exception
++#define citten_clause_with_id_and_equivalence cadical300_citten_clause_with_id_and_equivalence
++#define kitten_no_ticks_limit cadical300_kitten_no_ticks_limit
++#define kitten_set_ticks_limit cadical300_kitten_set_ticks_limit
++#define kitten_current_ticks cadical300_kitten_current_ticks
++#define kitten_no_terminator cadical300_kitten_no_terminator
++#define kitten_set_terminator cadical300_kitten_set_terminator
++#define kitten_solve cadical300_kitten_solve
++#define kitten_status cadical300_kitten_status
++#define kitten_value cadical300_kitten_value
++#define kitten_signed_value cadical300_kitten_signed_value
++#define kitten_fixed cadical300_kitten_fixed
++#define kitten_fixed_signed cadical300_kitten_fixed_signed
++#define kitten_failed cadical300_kitten_failed
++#define kitten_flip_literal cadical300_kitten_flip_literal
++#define kitten_flip_signed_literal cadical300_kitten_flip_signed_literal
++#define kitten_compute_clausal_core cadical300_kitten_compute_clausal_core
++#define kitten_shrink_to_clausal_core cadical300_kitten_shrink_to_clausal_core
++#define kitten_traverse_core_ids cadical300_kitten_traverse_core_ids
++#define kitten_traverse_core_clauses cadical300_kitten_traverse_core_clauses
++#define kitten_traverse_core_clauses_with_id cadical300_kitten_traverse_core_clauses_with_id
++#define kitten_trace_core cadical300_kitten_trace_core
++#define kitten_compute_prime_implicant cadical300_kitten_compute_prime_implicant
++#define kitten_add_prime_implicant cadical300_kitten_add_prime_implicant
++#define kitten_flip_and_implicant_for_signed_literal cadical300_kitten_flip_and_implicant_for_signed_literal
++
+ typedef struct kitten kitten;
+ 
+ kitten *kitten_init (void);
+diff -Naur solvers/cadical300/level.hpp solvers/cdc300/level.hpp
+--- solvers/cadical300/level.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/level.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _level_hpp_INCLUDED
+-#define _level_hpp_INCLUDED
++#ifndef _level300_hpp_INCLUDED
++#define _level300_hpp_INCLUDED
+ 
+ #include <climits>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // For each new decision we increase the decision level and push a 'Level'
+ // on the 'control' stack.  The information gathered here is used in
+@@ -28,6 +28,6 @@
+   Level () {}
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/lidruptracer.cpp solvers/cdc300/lidruptracer.cpp
+--- solvers/cadical300/lidruptracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/lidruptracer.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -654,4 +654,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/lidruptracer.hpp solvers/cdc300/lidruptracer.hpp
+--- solvers/cadical300/lidruptracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/lidruptracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _lidruptracer_h_INCLUDED
+-#define _lidruptracer_h_INCLUDED
++#ifndef _lidruptracer300_h_INCLUDED
++#define _lidruptracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct LidrupClause {
+   LidrupClause *next; // collision chain link for hash table
+@@ -117,6 +117,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/limit.cpp solvers/cdc300/limit.cpp
+--- solvers/cadical300/limit.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/limit.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Limit::Limit () { memset (this, 0, sizeof *this); }
+ 
+@@ -143,4 +143,4 @@
+   limit_ticks (-1);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/limit.hpp solvers/cdc300/limit.hpp
+--- solvers/cadical300/limit.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/limit.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _limit_hpp_INCLUDED
+-#define _limit_hpp_INCLUDED
++#ifndef _limit300_hpp_INCLUDED
++#define _limit300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ #include <limits>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -163,6 +163,6 @@
+              NEW_LIMIT, OLD_LIMIT, EFFORT, REFERENCE); \
+   } while (0)
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/logging.cpp solvers/cdc300/logging.cpp
+--- solvers/cadical300/logging.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/logging.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Logger::print_log_prefix (Internal *internal) {
+   internal->print_prefix ();
+@@ -209,6 +209,6 @@
+   }
+   return v;
+ }
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/logging.hpp solvers/cdc300/logging.hpp
+--- solvers/cadical300/logging.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/logging.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _logging_hpp_INCLUDED
+-#define _logging_hpp_INCLUDED
++#ifndef _logging300_hpp_INCLUDED
++#define _logging300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #ifdef LOGGING
+@@ -8,7 +8,7 @@
+ #include <cstdint>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // For debugging purposes and to help understanding what the solver is doing
+ // there is a logging facility which is compiled in by './configure -l'.  It
+@@ -66,7 +66,7 @@
+   static string loglit (Internal *, int lit);
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+diff -Naur solvers/cadical300/lookahead.cpp solvers/cdc300/lookahead.cpp
+--- solvers/cadical300/lookahead.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/lookahead.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct literal_occ {
+   int lit;
+@@ -517,4 +517,4 @@
+   return rcubes;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/lratchecker.cpp solvers/cdc300/lratchecker.cpp
+--- solvers/cadical300/lratchecker.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/lratchecker.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -830,4 +830,4 @@
+ 
+ void LratChecker::begin_proof (int64_t id) { current_id = id; }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/lratchecker.hpp solvers/cdc300/lratchecker.hpp
+--- solvers/cadical300/lratchecker.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/lratchecker.hpp	2026-05-13 16:19:43
+@@ -1,12 +1,12 @@
+-#ifndef _lratchecker_hpp_INCLUDED
+-#define _lratchecker_hpp_INCLUDED
++#ifndef _lratchecker300_hpp_INCLUDED
++#define _lratchecker300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #include "tracer.hpp"
+ #include <cstdint>
+ #include <unordered_map>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -163,6 +163,6 @@
+   void dump (); // for debugging purposes only
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/lrattracer.cpp solvers/cdc300/lrattracer.cpp
+--- solvers/cadical300/lrattracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/lrattracer.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include <limits.h>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -197,4 +197,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/lrattracer.hpp solvers/cdc300/lrattracer.hpp
+--- solvers/cadical300/lrattracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/lrattracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _lrattracer_h_INCLUDED
+-#define _lrattracer_h_INCLUDED
++#ifndef _lrattracer300_h_INCLUDED
++#define _lrattracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class LratTracer : public FileTracer {
+ 
+@@ -56,6 +56,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/lucky.cpp solvers/cdc300/lucky.cpp
+--- solvers/cadical300/lucky.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/lucky.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // It turns out that even in the competition there are formulas which are
+ // easy to satisfy by either setting all variables to the same truth value
+@@ -503,4 +503,4 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/make-build-header.sh solvers/cdc300/make-build-header.sh
+--- solvers/cadical300/make-build-header.sh	2025-12-24 05:25:57
++++ solvers/cdc300/make-build-header.sh	2026-05-13 16:19:43
+@@ -20,7 +20,7 @@
+ 
+ #--------------------------------------------------------------------------#
+ 
+-[ ! -f VERSION -a ! -f ../VERSION ] && \
++[ ! -f VERSION -a ! -f ../VERSION -a ! -f ../VERSION.txt ] && \
+ die "needs to be called from build sub-directory"
+ 
+ [ -f makefile ] || \
+@@ -29,7 +29,11 @@
+ #--------------------------------------------------------------------------#
+ # The version.
+ #
+-VERSION="`cat ../VERSION`"
++if [ -f ../VERSION ]; then
++  VERSION="`cat ../VERSION`"
++else
++  VERSION="`cat ../VERSION.txt`"
++fi
+ if [ x"$VERSION" = x ]
+ then
+   warning "could not determine 'VERSION'"
+@@ -40,7 +44,13 @@
+ #--------------------------------------------------------------------------#
+ # The unique GIT hash.
+ #
+-IDENTIFIER="`../scripts/get-git-id.sh`"
++if [ -x ../scripts/get-git-id.sh ]; then
++  IDENTIFIER="`../scripts/get-git-id.sh`"
++elif [ -x ../get-git-id.sh ]; then
++  IDENTIFIER="`../get-git-id.sh`"
++else
++  IDENTIFIER=""
++fi
+ if [ x"$IDENTIFIER" = x ]
+ then
+   warning "could not determine 'IDENTIFIER' (git id)"
+diff -Naur solvers/cadical300/message.cpp solvers/cdc300/message.cpp
+--- solvers/cadical300/message.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/message.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ #ifndef QUIET
+@@ -215,4 +215,4 @@
+   abort ();
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/message.hpp solvers/cdc300/message.hpp
+--- solvers/cadical300/message.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/message.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _message_h_INCLUDED
+-#define _message_h_INCLUDED
++#ifndef _message300_h_INCLUDED
++#define _message300_h_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -62,4 +62,4 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-#endif // ifndef _message_h_INCLUDED
++#endif // ifndef _message300_h_INCLUDED
+diff -Naur solvers/cadical300/minimize.cpp solvers/cdc300/minimize.cpp
+--- solvers/cadical300/minimize.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/minimize.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Functions for learned clause minimization. We only have the recursive
+ // version, which actually really is implemented recursively.  We also
+@@ -221,4 +221,4 @@
+   minimized.clear ();
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/occs.cpp solvers/cdc300/occs.cpp
+--- solvers/cadical300/occs.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/occs.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -49,4 +49,4 @@
+   LOG ("reset two-sided occurrence counters");
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/occs.hpp solvers/cdc300/occs.hpp
+--- solvers/cadical300/occs.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/occs.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _occs_h_INCLUDED
+-#define _occs_h_INCLUDED
++#ifndef _occs300_h_INCLUDED
++#define _occs300_h_INCLUDED
+ 
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Full occurrence lists used in a one-watch scheme for all clauses in
+ // subsumption checking and for irredundant clauses in variable elimination.
+@@ -31,6 +31,6 @@
+ typedef Occs::iterator occs_iterator;
+ typedef Occs::const_iterator const_occs_iterator;
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/options.cpp solvers/cdc300/options.cpp
+--- solvers/cadical300/options.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/options.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -356,4 +356,4 @@
+ #undef OPTION
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/options.hpp solvers/cdc300/options.hpp
+--- solvers/cadical300/options.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/options.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _options_hpp_INCLUDED
+-#define _options_hpp_INCLUDED
++#ifndef _options300_hpp_INCLUDED
++#define _options300_hpp_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -305,7 +305,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -437,6 +437,6 @@
+   return opts->val (this - Options::table);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/parse.cpp solvers/cdc300/parse.cpp
+--- solvers/cadical300/parse.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/parse.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -468,4 +468,4 @@
+   return err;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/parse.hpp solvers/cdc300/parse.hpp
+--- solvers/cadical300/parse.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/parse.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _parse_hpp_INCLUDED
+-#define _parse_hpp_INCLUDED
++#ifndef _parse300_hpp_INCLUDED
++#define _parse300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <cstdint>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Factors out common functions for parsing of DIMACS and solution files.
+ 
+@@ -70,6 +70,6 @@
+   const char *parse_solution ();
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/phases.cpp solvers/cdc300/phases.cpp
+--- solvers/cadical300/phases.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/phases.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::copy_phases (vector<signed char> &dst) {
+   START (copy);
+@@ -53,4 +53,4 @@
+   phases.forced[idx] = 0;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/phases.hpp solvers/cdc300/phases.hpp
+--- solvers/cadical300/phases.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/phases.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _phases_hpp_INCLUDED
+-#define _phases_hpp_INCLUDED
++#ifndef _phases300_hpp_INCLUDED
++#define _phases300_hpp_INCLUDED
+ 
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Phases {
+ 
+@@ -14,6 +14,6 @@
+   std::vector<signed char> target; // The current target phase.
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/probe.cpp solvers/cdc300/probe.cpp
+--- solvers/cadical300/probe.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/probe.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -911,7 +911,7 @@
+ // switches to the latter delay until the budget is big enough, such that
+ // sweeping can be run. Then we switch back to the other delay.
+ 
+-void CaDiCaL::Internal::inprobe (bool update_limits) {
++void CaDiCaL300::Internal::inprobe (bool update_limits) {
+ 
+   if (unsat)
+     return;
+@@ -987,4 +987,4 @@
+   last.inprobe.reductions = stats.reductions;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/profile.cpp solvers/cdc300/profile.cpp
+--- solvers/cadical300/profile.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/profile.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Initialize all profile counters with constant name and profiling level.
+ 
+@@ -102,6 +102,6 @@
+   PRT ("(percentage relative to total %s time)", time_type);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif // ifndef QUIET
+diff -Naur solvers/cadical300/profile.hpp solvers/cdc300/profile.hpp
+--- solvers/cadical300/profile.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/profile.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _profiles_h_INCLUDED
+-#define _profiles_h_INCLUDED
++#ifndef _profiles300_h_INCLUDED
++#define _profiles300_h_INCLUDED
+ 
+ /*------------------------------------------------------------------------*/
+ #ifndef QUIET
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -136,7 +136,7 @@
+   Profiles (Internal *);
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #define NON_QUIET_PROFILE_CODE(CODE) CODE
+ 
+@@ -280,4 +280,4 @@
+     NON_QUIET_PROFILE_CODE (STOP (walk);) \
+   } while (0)
+ 
+-#endif // ifndef _profiles_h_INCLUDED
++#endif // ifndef _profiles300_h_INCLUDED
+diff -Naur solvers/cadical300/proof.cpp solvers/cdc300/proof.cpp
+--- solvers/cadical300/proof.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/proof.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+@@ -688,4 +688,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/proof.hpp solvers/cdc300/proof.hpp
+--- solvers/cadical300/proof.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/proof.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _proof_h_INCLUDED
+-#define _proof_h_INCLUDED
++#ifndef _proof300_h_INCLUDED
++#define _proof300_h_INCLUDED
+ 
+ #include "tracer.hpp"
+ #include <stdint.h>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -120,6 +120,6 @@
+   void flush ();
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/propagate.cpp solvers/cdc300/propagate.cpp
+--- solvers/cadical300/propagate.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/propagate.cpp	2026-05-13 20:37:23
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -161,7 +161,9 @@
+     const Watches &ws = watches (-lit);
+     if (!ws.empty ()) {
+       const Watch &w = ws[0];
++#ifndef _MSC_VER
+       __builtin_prefetch (&w, 0, 1);
++#endif
+     }
+   }
+   lrat_chain.clear ();
+@@ -581,4 +583,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/queue.cpp solvers/cdc300/queue.cpp
+--- solvers/cadical300/queue.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/queue.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Slightly different than 'bump_variable' since the variable is not
+ // enqueued at all.
+@@ -87,4 +87,4 @@
+   queue.unassigned = queue.last;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/queue.hpp solvers/cdc300/queue.hpp
+--- solvers/cadical300/queue.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/queue.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _queue_hpp_INCLUDED
+-#define _queue_hpp_INCLUDED
++#ifndef _queue300_hpp_INCLUDED
++#define _queue300_hpp_INCLUDED
+ 
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Links for double linked decision queue.
+ 
+@@ -69,6 +69,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
+--- solvers/cadical300/radix.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/radix.hpp	2026-05-13 16:19:43
+@@ -1,18 +1,18 @@
+-#ifndef _radix_hpp_INCLUDED
+-#define _radix_hpp_INCLUDED
++#ifndef _radix300_hpp_INCLUDED
++#define _radix300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <cstring>
+ #include <iterator>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+ // This provides an implementation of a generic radix sort algorithm. The
+ // reason for having it is that for certain benchmarks and certain parts of
+-// CaDiCaL where sorting is used, the standard sorting algorithm 'sort'
++// CaDiCaL300 where sorting is used, the standard sorting algorithm 'sort'
+ // turned out to be a hot-spot. Up to 30% of the total running time was for
+ // instance used for some benchmarks in sorting variables during bumping
+ // to make sure to bump them in 'enqueued' order.
+@@ -175,6 +175,6 @@
+       rsort (FIRST, LAST, RANK); \
+   } while (0)
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
+--- solvers/cadical300/random.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/random.cpp	2026-05-13 20:37:23
+@@ -46,7 +46,7 @@
+ // does not have any effect.  TODO: add a similar machine identity hashing
+ // function for other operating systems (Windows and macOS).
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static uint64_t hash_machine_identifier () {
+   FILE *file = fopen ("/var/lib/dbus/machine-id", "r");
+@@ -66,7 +66,7 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -78,7 +78,7 @@
+ // work.  As an additional measure to increase the possibility to get
+ // different seeds we are now also using network addresses (explicitly).
+ 
+-#ifndef _WIN32
++#ifndef _MSC_VER
+ 
+ extern "C" {
+ #include <ifaddrs.h>
+@@ -91,7 +91,7 @@
+ 
+ #endif
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static uint64_t hash_network_addresses () {
+   uint64_t res = 0;
+@@ -102,7 +102,7 @@
+   // you really need to run 'mobical' on a Windows cluster where each node
+   // has identical IP addresses.
+ 
+-#ifndef _WIN32
++#ifndef _MSC_VER
+   struct ifaddrs *addrs;
+   if (!getifaddrs (&addrs)) {
+     for (struct ifaddrs *addr = addrs; addr; addr = addr->ifa_next) {
+@@ -133,7 +133,7 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -143,7 +143,7 @@
+ #include <time.h>
+ }
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static uint64_t hash_time () {
+   uint64_t res = ::time (0);
+@@ -151,26 +151,34 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+ // Hash the process identified.
+ 
+ extern "C" {
++#ifdef _MSC_VER
++#include <process.h>
++#else
+ #include <sys/types.h>
+ #include <unistd.h>
++#endif
+ }
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static uint64_t hash_process () {
++#ifdef _MSC_VER
++  uint64_t res = _getpid ();
++#else
+   uint64_t res = getpid ();
++#endif
+   PRINT_HASH (res);
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -178,7 +186,7 @@
+ 
+ #include <ctime>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static uint64_t hash_clock_cycles () {
+   uint64_t res = std::clock ();
+@@ -186,11 +194,11 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Random::Random () : state (1) {
+   add (hash_machine_identifier ());
+@@ -204,4 +212,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/random.h solvers/cdc300/random.h
+--- solvers/cadical300/random.h	2025-12-24 05:25:57
++++ solvers/cdc300/random.h	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _random_h_INCLUDED
+-#define _random_h_INCLUDED
++#ifndef _random300_h_INCLUDED
++#define _random300_h_INCLUDED
+ 
+ #include <assert.h>
+ #include <stdbool.h>
+diff -Naur solvers/cadical300/random.hpp solvers/cdc300/random.hpp
+--- solvers/cadical300/random.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/random.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _random_hpp_INCLUDED
+-#define _random_hpp_INCLUDED
++#ifndef _random300_hpp_INCLUDED
++#define _random300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ 
+ // Random number generator.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class Random {
+ 
+@@ -93,6 +93,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/range.hpp solvers/cdc300/range.hpp
+--- solvers/cadical300/range.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/range.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _range_hpp_INCLUDED
+-#define _range_hpp_INCLUDED
++#ifndef _range300_hpp_INCLUDED
++#define _range300_hpp_INCLUDED
+ 
+ #include <cassert>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Clause;
+ 
+@@ -120,6 +120,6 @@
+   Sange (int &m) : n (m) { assert (m >= 0); }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/reap.cpp solvers/cdc300/reap.cpp
+--- solvers/cadical300/reap.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/reap.cpp	2026-05-13 20:37:23
+@@ -3,6 +3,8 @@
+ #include <climits>
+ #include <cstring>
+ 
++namespace CaDiCaL300 {
++
+ void Reap::init () {
+   for (auto &bucket : buckets)
+     bucket = {0};
+@@ -26,9 +28,16 @@
+   max_bucket = 0;
+ }
+ 
++#ifndef _MSC_VER
+ static inline unsigned leading_zeroes_of_unsigned (unsigned x) {
+   return x ? __builtin_clz (x) : sizeof (unsigned) * 8;
+ }
++#else
++#include <intrin.h>
++static inline unsigned leading_zeroes_of_unsigned (unsigned x) {
++  return x ? __lzcnt (x) : sizeof (unsigned) * 8;
++}
++#endif
+ 
+ void Reap::push (unsigned e) {
+   assert (last_deleted <= e);
+@@ -125,3 +134,5 @@
+   min_bucket = 32;
+   max_bucket = 0;
+ }
++
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/reap.hpp solvers/cdc300/reap.hpp
+--- solvers/cadical300/reap.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/reap.hpp	2026-05-13 20:37:23
+@@ -1,9 +1,11 @@
+-#ifndef _reap_h_INCLUDED
+-#define _reap_h_INCLUDED
++#ifndef _reap300_h_INCLUDED
++#define _reap300_h_INCLUDED
+ 
+ #include <cstddef>
+ #include <vector>
+ 
++namespace CaDiCaL300 {
++
+ class Reap {
+ public:
+   Reap ();
+@@ -24,5 +26,7 @@
+   unsigned max_bucket;
+   std::vector<unsigned> buckets[33];
+ };
++
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/reduce.cpp solvers/cdc300/reduce.cpp
+--- solvers/cadical300/reduce.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/reduce.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -275,4 +275,4 @@
+   STOP (reduce);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/reluctant.hpp solvers/cdc300/reluctant.hpp
+--- solvers/cadical300/reluctant.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/reluctant.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _reluctant_hpp_INCLUDED
+-#define _reluctant_hpp_INCLUDED
++#ifndef _reluctant300_hpp_INCLUDED
++#define _reluctant300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This is Donald Knuth's version of the Luby restart sequence which he
+ // called 'reluctant doubling'.  His bit-twiddling formulation in line (DK)
+@@ -77,6 +77,6 @@
+   }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/rephase.cpp solvers/cdc300/rephase.cpp
+--- solvers/cadical300/rephase.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/rephase.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -399,4 +399,4 @@
+     shuffle_queue ();
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/report.cpp solvers/cdc300/report.cpp
+--- solvers/cadical300/report.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/report.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ #ifndef QUIET
+ 
+@@ -310,4 +310,4 @@
+ 
+ #endif
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
+--- solvers/cadical300/resources.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/resources.cpp	2026-05-13 16:19:43
+@@ -37,7 +37,7 @@
+ #include <string.h>
+ }
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -157,4 +157,4 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/resources.hpp solvers/cdc300/resources.hpp
+--- solvers/cadical300/resources.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/resources.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _resources_hpp_INCLUDED
+-#define _resources_hpp_INCLUDED
++#ifndef _resources300_hpp_INCLUDED
++#define _resources300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ double absolute_real_time ();
+ double absolute_process_time ();
+@@ -11,6 +11,6 @@
+ uint64_t maximum_resident_set_size ();
+ uint64_t current_resident_set_size ();
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+-#endif // ifndef _resources_hpp_INCLUDED
++#endif // ifndef _resources300_hpp_INCLUDED
+diff -Naur solvers/cadical300/restart.cpp solvers/cdc300/restart.cpp
+--- solvers/cadical300/restart.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/restart.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // As observed by Chanseok Oh and implemented in MapleSAT solvers too,
+ // various mostly satisfiable instances benefit from long quiet phases
+@@ -175,4 +175,4 @@
+   STOP (restart);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/restore.cpp solvers/cdc300/restore.cpp
+--- solvers/cadical300/restore.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/restore.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -264,4 +264,4 @@
+   STOP (restore);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/score.cpp solvers/cdc300/score.cpp
+--- solvers/cadical300/score.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/score.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // This initializes variables on the binary 'scores' heap also with
+ // smallest variable index first (thus picked first) and larger indices at
+@@ -48,4 +48,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/score.hpp solvers/cdc300/score.hpp
+--- solvers/cadical300/score.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/score.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _score_hpp_INCLUDED
+-#define _score_hpp_INCLUDED
++#ifndef _score300_hpp_INCLUDED
++#define _score300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct score_smaller {
+   Internal *internal;
+@@ -11,6 +11,6 @@
+ 
+ typedef heap<score_smaller> ScoreSchedule;
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/shrink.cpp solvers/cdc300/shrink.cpp
+--- solvers/cadical300/shrink.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/shrink.cpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+ #include "internal.hpp"
+ #include "reap.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::reset_shrinkable () {
+ #ifdef LOGGING
+@@ -504,4 +504,4 @@
+   STOP (minimize);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
+--- solvers/cadical300/signal.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/signal.cpp	2026-05-13 20:37:30
+@@ -10,19 +10,23 @@
+ /*------------------------------------------------------------------------*/
+ 
+ extern "C" {
++#ifdef _MSC_VER
++#include <io.h>
++#else
+ #include <unistd.h>
++#endif
+ }
+ 
+ /*------------------------------------------------------------------------*/
+ 
+ // Signal handlers for printing statistics even if solver is interrupted.
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ static volatile bool caught_signal = false;
+ static Handler *signal_handler;
+ 
+-#ifndef _WIN32
++#ifndef _MSC_VER
+ 
+ static volatile bool caught_alarm = false;
+ static volatile bool alarm_set = false;
+@@ -42,7 +46,7 @@
+ SIGNALS
+ #undef SIGNAL
+ 
+-#ifndef _WIN32
++#ifndef _MSC_VER
+ 
+ static void (*SIGALRM_handler) (int);
+ 
+@@ -65,7 +69,7 @@
+   SIG##_handler = 0;
+   SIGNALS
+ #undef SIGNAL
+-#ifndef _WIN32
++#ifndef _MSC_VER
+   reset_alarm ();
+ #endif
+   caught_signal = false;
+@@ -77,7 +81,7 @@
+     return #SIG;
+   SIGNALS
+ #undef SIGNAL
+-#ifndef _WIN32
++#ifndef _MSC_VER
+   if (sig == SIGALRM)
+     return "SIGALRM";
+ #endif
+@@ -91,7 +95,7 @@
+ // exclusive access to.  All these solutions are painful and not elegant.
+ 
+ static void catch_signal (int sig) {
+-#ifndef _WIN32
++#ifndef _MSC_VER
+   if (sig == SIGALRM && absolute_real_time () >= alarm_time) {
+     if (!caught_alarm) {
+       caught_alarm = true;
+@@ -119,7 +123,7 @@
+ #undef SIGNAL
+ }
+ 
+-#ifndef _WIN32
++#ifndef _MSC_VER
+ 
+ void Signal::alarm (int seconds) {
+   assert (seconds >= 0);
+@@ -133,4 +137,4 @@
+ 
+ #endif
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/signal.hpp solvers/cdc300/signal.hpp
+--- solvers/cadical300/signal.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/signal.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _signal_hpp_INCLUDED
+-#define _signal_hpp_INCLUDED
++#ifndef _signal300_hpp_INCLUDED
++#define _signal300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Helper class for handling signals in applications.
+ 
+@@ -28,6 +28,6 @@
+   static const char *name (int sig);
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/solution.cpp solvers/cdc300/solution.cpp
+--- solvers/cadical300/solution.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/solution.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Sam Buss suggested to debug the case where a solver incorrectly claims
+ // the formula to be unsatisfiable by checking every learned clause to be
+@@ -47,4 +47,4 @@
+   FATAL ("learned unit %d contradicts solution", unit);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/solver.cpp solvers/cdc300/solver.cpp
+--- solvers/cadical300/solver.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/solver.cpp	2026-05-13 20:38:00
+@@ -4,7 +4,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -880,6 +880,29 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
++void Solver::set_state (State s) { STATE (s); }
++
++vector<bool> Solver::extend (vector<int> &solution) {
++  for (int i = 1; i <= (int) solution.size (); i++) {
++    if (internal->vals[i])
++      continue;
++
++    int val = solution[i - 1];
++    if (val > 0) {
++      internal->vals[i] = 1;
++      internal->vals[-i] = -1;
++    } else {
++      internal->vals[i] = -1;
++      internal->vals[-i] = 1;
++    }
++  }
++
++  external->extend ();
++  return external->vals;
++}
++
++/*------------------------------------------------------------------------*/
++
+ int Solver::val (
+     int lit, bool use_default_value_for_declared_but_not_used_variable) {
+   LOG_API_CALL_BEGIN (
+@@ -1114,6 +1137,12 @@
+   LOG_API_CALL_END ("disconnect_external_propagator");
+ }
+ 
++ExternalPropagator *Solver::get_external_propagator () {
++  if (external->propagator)
++    return external->propagator;
++  return NULL;
++}
++
+ void Solver::add_observed_var (int idx) {
+   TRACE ("observe", idx);
+   REQUIRE_VALID_OR_SOLVING_STATE ();
+@@ -1170,6 +1199,45 @@
+   return res;
+ }
+ 
++int64_t Solver::conflicts () const {
++  TRACE ("conflicts");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.conflicts;
++  LOG_API_CALL_RETURNS ("conflicts", res);
++  return res;
++}
++
++int64_t Solver::decisions () const {
++  TRACE ("decisions");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.decisions;
++  LOG_API_CALL_RETURNS ("decisions", res);
++  return res;
++}
++
++int64_t Solver::restarts () const {
++  TRACE ("restarts");
++  REQUIRE_VALID_STATE ();
++  int64_t res = internal->stats.restarts;
++  LOG_API_CALL_RETURNS ("restarts", res);
++  return res;
++}
++
++int64_t Solver::propagations () const {
++  TRACE ("propagations");
++  REQUIRE_VALID_STATE ();
++  int64_t res = 0;
++  res += internal->stats.propagations.backbone;
++  res += internal->stats.propagations.cover;
++  res += internal->stats.propagations.instantiate;
++  res += internal->stats.propagations.probe;
++  res += internal->stats.propagations.search;
++  res += internal->stats.propagations.transred;
++  res += internal->stats.propagations.vivify;
++  LOG_API_CALL_RETURNS ("propagations", res);
++  return res;
++}
++
+ /*------------------------------------------------------------------------*/
+ 
+ void Solver::freeze (int lit) {
+@@ -1357,7 +1425,7 @@
+   else
+     terminal = 0;
+ 
+-  const char *v = CaDiCaL::version ();
++  const char *v = CaDiCaL300::version ();
+   const char *i = identifier ();
+   const char *c = compiler ();
+   const char *b = date ();
+@@ -1409,9 +1477,9 @@
+   fflush (file);
+ }
+ 
+-const char *Solver::version () { return CaDiCaL::version (); }
++const char *Solver::version () { return CaDiCaL300::version (); }
+ 
+-const char *Solver::signature () { return CaDiCaL::signature (); }
++const char *Solver::signature () { return CaDiCaL300::signature (); }
+ 
+ void Solver::options () {
+   REQUIRE_VALID_STATE ();
+@@ -1645,6 +1713,23 @@
+   }
+ };
+ 
++class ClauseGetter : public ClauseIterator {
++public:
++  vector<vector<int>> clauses;
++  ClauseGetter () : clauses () {}
++  bool clause (const vector<int> &c) {
++    clauses.push_back (c);
++    return true;
++  }
++};
++
++void Solver::get_dimacs (vector<vector<int>> &dest) {
++  internal->restore_clauses ();
++  ClauseGetter getter;
++  traverse_clauses (getter);
++  dest = getter.clauses;
++}
++
+ const char *Solver::write_dimacs (const char *path, int min_max_var) {
+   LOG_API_CALL_BEGIN ("write_dimacs", path, min_max_var);
+   REQUIRE_VALID_STATE ();
+@@ -1868,4 +1953,98 @@
+     return internal->stats.all.substituted;
+   return -1;
+ }
+-} // namespace CaDiCaL
++
++bool Solver::prop_check (const vector<int> &assump, vector<int> &prop,
++                         int psaving) {
++  prop.clear ();
++
++  if (internal->unsat || internal->unsat_constraint)
++    return false;
++
++  int old_ilb = internal->opts.ilb;
++  int old_psave = internal->opts.rephase;
++  int old_lucky = internal->opts.lucky;
++  int old_resall = internal->opts.restoreall;
++
++  internal->opts.ilb = 0;
++  internal->opts.lucky = psaving;
++  internal->opts.rephase = psaving;
++  internal->opts.restoreall = 2;
++
++  int tmp = internal->already_solved ();
++  if (!tmp)
++    tmp = internal->restore_clauses ();
++  if (tmp) {
++    internal->opts.ilb = old_ilb;
++    internal->opts.lucky = old_lucky;
++    internal->opts.rephase = old_psave;
++    internal->opts.restoreall = old_resall;
++    internal->reset_solving ();
++    internal->report_solving (tmp);
++    return false;
++  }
++  internal->opts.restoreall = old_resall;
++
++  bool st = true;
++  int level = internal->level;
++  bool noconfl = true;
++  Clause *old_conflict = internal->conflict;
++
++  for (size_t i = 0; st && noconfl && i < assump.size (); ++i) {
++    int p = assump[i];
++    const signed char tmp = internal->val (p);
++
++    if (tmp < 0) {
++      st = false;
++    } else {
++      if (tmp > 0) {
++        internal->level++;
++        internal->control.push_back (Level (0, internal->trail.size ()));
++        internal->notify_decision ();
++      } else {
++        internal->search_assume_decision (p);
++      }
++
++      size_t before = internal->trail.size ();
++      do {
++        noconfl = internal->propagate ();
++        if (noconfl)
++          noconfl = internal->external_propagate ();
++
++        if (!noconfl)
++          break;
++
++        size_t after = internal->trail.size ();
++        if (after == before)
++          break;
++
++        before = after;
++      } while (true);
++    }
++  }
++
++  if (internal->level > level) {
++    for (size_t i = internal->control[level + 1].trail;
++         i < internal->trail.size (); ++i) {
++      prop.push_back (internal->trail[i]);
++    }
++
++    if (!noconfl) {
++      literal_iterator conflict_ptr = internal->conflict->begin ();
++      int conflict_val = *conflict_ptr;
++      prop.push_back (conflict_val);
++    }
++
++    internal->backtrack (level);
++  }
++
++  internal->opts.ilb = old_ilb;
++  internal->opts.rephase = old_psave;
++  internal->opts.lucky = old_lucky;
++  internal->conflict = old_conflict;
++  internal->reset_solving ();
++  internal->report_solving (tmp);
++
++  return st && noconfl;
++}
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/stable.cpp solvers/cdc300/stable.cpp
+--- solvers/cadical300/stable.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/stable.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ bool Internal::propagate_stable () {
+   assert (stable);
+@@ -24,7 +24,7 @@
+   return decide ();
+ }
+ 
+-}; // namespace CaDiCaL
++}; // namespace CaDiCaL300
+ 
+ #else
+ int stable_if_not_profile_mode_dummy;
+diff -Naur solvers/cadical300/stack.h solvers/cdc300/stack.h
+--- solvers/cadical300/stack.h	2025-12-24 05:25:57
++++ solvers/cdc300/stack.h	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _stack_h_INCLUDED
+-#define _stack_h_INCLUDED
++#ifndef _stack300_h_INCLUDED
++#define _stack300_h_INCLUDED
+ 
+ #include <stdlib.h>
+ 
+diff -Naur solvers/cadical300/stats.cpp solvers/cdc300/stats.cpp
+--- solvers/cadical300/stats.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/stats.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ 
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -917,4 +917,4 @@
+   MSG ("searches:        %15" PRId64 "", stats.searches);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/stats.hpp solvers/cdc300/stats.hpp
+--- solvers/cadical300/stats.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/stats.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _stats_hpp_INCLUDED
+-#define _stats_hpp_INCLUDED
++#ifndef _stats300_hpp_INCLUDED
++#define _stats300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ #include <cstdlib>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -413,6 +413,6 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/subsume.cpp solvers/cdc300/subsume.cpp
+--- solvers/cadical300/subsume.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/subsume.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -642,4 +642,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/sweep.cpp solvers/cdc300/sweep.cpp
+--- solvers/cadical300/sweep.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/sweep.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Sweeper::Sweeper (Internal *i)
+     : internal (i), random (internal->opts.seed) {
+@@ -1957,4 +1957,4 @@
+   return eliminated;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/sweep.hpp solvers/cdc300/sweep.hpp
+--- solvers/cadical300/sweep.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/sweep.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _sweep_hpp_INCLUDED
+-#define _sweep_hpp_INCLUDED
++#ifndef _sweep300_hpp_INCLUDED
++#define _sweep300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -56,6 +56,6 @@
+   } limit;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/terminal.cpp solvers/cdc300/terminal.cpp
+--- solvers/cadical300/terminal.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/terminal.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ Terminal::Terminal (FILE *f) : file (f), reset_on_exit (false) {
+   assert (file);
+@@ -35,4 +35,4 @@
+ Terminal tout (stdout);
+ Terminal terr (stderr);
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/terminal.hpp solvers/cdc300/terminal.hpp
+--- solvers/cadical300/terminal.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/terminal.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _terminal_hpp_INCLUDED
+-#define _terminal_hpp_INCLUDED
++#ifndef _terminal300_hpp_INCLUDED
++#define _terminal300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class Terminal {
+ 
+@@ -91,6 +91,6 @@
+ extern Terminal tout; // Terminal of 'stdout' (file descriptor '1')
+ extern Terminal terr; // Terminal of 'stderr' (file descriptor '2')
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/ternary.cpp solvers/cdc300/ternary.cpp
+--- solvers/cadical300/ternary.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/ternary.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -447,4 +447,4 @@
+   return resolved_binary_clause;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/testing.hpp solvers/cdc300/testing.hpp
+--- solvers/cadical300/testing.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/testing.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _testing_hpp_INCLUDED
+-#define _testing_hpp_INCLUDED
++#ifndef _testing300_hpp_INCLUDED
++#define _testing300_hpp_INCLUDED
+ 
+ // This class provides access to 'internal' which should only be used for
+ // internal testing and not for any other purpose as 'internal' is supposed
+@@ -7,7 +7,7 @@
+ 
+ #include "cadical.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ class Testing {
+   Solver *solver;
+@@ -19,6 +19,6 @@
+   External *external () { return solver->external; }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/tier.cpp solvers/cdc300/tier.cpp
+--- solvers/cadical300/tier.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/tier.cpp	2026-05-13 16:19:43
+@@ -2,7 +2,7 @@
+ #include "util.hpp"
+ #include <string>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::recompute_tier () {
+   if (!opts.recomputetier)
+@@ -186,4 +186,4 @@
+     LINE ();
+   }
+ }
+-} // namespace CaDiCaL
+\ No newline at end of file
++} // namespace CaDiCaL300
+\ No newline at end of file
+diff -Naur solvers/cadical300/tracer.hpp solvers/cdc300/tracer.hpp
+--- solvers/cadical300/tracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/tracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _tracer_hpp_INCLUDED
+-#define _tracer_hpp_INCLUDED
++#ifndef _tracer300_hpp_INCLUDED
++#define _tracer300_hpp_INCLUDED
+ 
+ #include <cstdint>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Internal;
+ 
+@@ -181,6 +181,6 @@
+   virtual void flush (bool print = false) = 0;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/transred.cpp solvers/cdc300/transred.cpp
+--- solvers/cadical300/transred.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/transred.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Implement transitive reduction in the binary implication graph.  This is
+ // important for hyper binary resolution, which has the risk to produce too
+@@ -250,4 +250,4 @@
+   report ('t', !opts.reportall && !(removed + units));
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/unstable.cpp solvers/cdc300/unstable.cpp
+--- solvers/cadical300/unstable.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/unstable.cpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+ #ifdef PROFILE_MODE
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ bool Internal::propagate_unstable () {
+   assert (!stable);
+@@ -23,7 +23,7 @@
+   return decide ();
+ }
+ 
+-}; // namespace CaDiCaL
++}; // namespace CaDiCaL300
+ #else
+ int unstable_if_no_profile_mode;
+ #endif
+diff -Naur solvers/cadical300/util.cpp solvers/cdc300/util.cpp
+--- solvers/cadical300/util.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/util.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -126,4 +126,4 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/util.hpp solvers/cdc300/util.hpp
+--- solvers/cadical300/util.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/util.hpp	2026-05-13 16:19:43
+@@ -1,11 +1,11 @@
+-#ifndef _util_hpp_INCLUDED
+-#define _util_hpp_INCLUDED
++#ifndef _util300_hpp_INCLUDED
++#define _util300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <cstdint>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ using namespace std;
+ 
+@@ -176,6 +176,6 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/var.cpp solvers/cdc300/var.cpp
+--- solvers/cadical300/var.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/var.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::reset_subsume_bits () {
+   LOG ("marking all variables as not subsume");
+@@ -36,4 +36,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/var.hpp solvers/cdc300/var.hpp
+--- solvers/cadical300/var.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/var.hpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+-#ifndef _var_hpp_INCLUDED
+-#define _var_hpp_INCLUDED
++#ifndef _var300_hpp_INCLUDED
++#define _var300_hpp_INCLUDED
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Clause;
+ 
+@@ -17,6 +17,6 @@
+   Clause *reason; // implication graph edge during search
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/veripbtracer.cpp solvers/cdc300/veripbtracer.cpp
+--- solvers/cadical300/veripbtracer.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/veripbtracer.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -424,4 +424,4 @@
+ #endif
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/veripbtracer.hpp solvers/cdc300/veripbtracer.hpp
+--- solvers/cadical300/veripbtracer.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/veripbtracer.hpp	2026-05-13 16:19:43
+@@ -1,10 +1,10 @@
+-#ifndef _veripbtracer_h_INCLUDED
+-#define _veripbtracer_h_INCLUDED
++#ifndef _veripbtracer300_h_INCLUDED
++#define _veripbtracer300_h_INCLUDED
+ 
+ #include "file.hpp"
+ #include "tracer.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct HashId {
+   HashId *next;  // collision chain link for hash table
+@@ -101,6 +101,6 @@
+   void flush (bool) override;
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/version.cpp solvers/cdc300/version.cpp
+--- solvers/cadical300/version.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/version.cpp	2026-05-13 16:19:43
+@@ -92,7 +92,7 @@
+ 
+ #include "version.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ const char *version () { return VERSION; }
+ const char *copyright () { return COPYRIGHT; }
+@@ -104,4 +104,4 @@
+ const char *date () { return DATE; }
+ const char *flags () { return FLAGS; }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/version.hpp solvers/cdc300/version.hpp
+--- solvers/cadical300/version.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/version.hpp	2026-05-13 16:19:43
+@@ -1,4 +1,4 @@
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ const char *version ();
+ const char *copyright ();
+@@ -10,4 +10,4 @@
+ const char *date ();
+ const char *flags ();
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
+--- solvers/cadical300/vivify.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/vivify.cpp	2026-05-13 16:19:43
+@@ -5,7 +5,7 @@
+ #include <limits>
+ #include <utility>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -1100,7 +1100,7 @@
+ 
+   // For an explanation of the code, see our POS'25 paper ``Revisiting
+   // Clause Vivification'' (although for the experiments we focused on
+-  // Kissat instead of CaDiCaL)
++  // Kissat instead of CaDiCaL300)
+   if (subsuming) {
+     assert (c != subsuming);
+     vivify_subsume_clause (subsuming, c);
+@@ -1618,7 +1618,7 @@
+     // now two possibilities: (i) we consider all clauses as leftovers, or (ii) only the leftovers
+     // from previous round are considered leftovers.
+     //
+-    // CaDiCaL had the first version before. If
++    // CaDiCaL300 had the first version before. If
+     // commented out we go to the second version.
+     for (auto c : schedule)
+       c->vivify = true;
+@@ -1890,4 +1890,4 @@
+   return true;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/vivify.hpp solvers/cdc300/vivify.hpp
+--- solvers/cadical300/vivify.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/vivify.hpp	2026-05-13 16:19:43
+@@ -1,5 +1,5 @@
+-#ifndef _vivify_hpp_INCLUDED
+-#define _vivify_hpp_INCLUDED
++#ifndef _vivify300_hpp_INCLUDED
++#define _vivify300_hpp_INCLUDED
+ 
+ #include "util.hpp"
+ 
+@@ -7,7 +7,7 @@
+ #include <cstdint>
+ #include <vector>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ struct Clause;
+ 
+@@ -45,6 +45,6 @@
+   void erase () { erase_vector (sorted); }
+ };
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
+--- solvers/cadical300/walk.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/walk.cpp	2026-05-13 20:37:23
+@@ -2,7 +2,7 @@
+ #include "internal.hpp"
+ #include "random.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -479,7 +479,9 @@
+   const Watches &ws = watches (-lit);
+   if (!ws.empty ()) {
+     const Watch &w = ws[0];
++#ifndef _MSC_VER
+     __builtin_prefetch (&w, 0, 1);
++#endif
+   }
+ 
+   // Then remove 'c' and all other now satisfied (made) clauses.
+@@ -1085,4 +1087,4 @@
+   assert (!unsat);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/walk.hpp solvers/cdc300/walk.hpp
+--- solvers/cadical300/walk.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/walk.hpp	2026-05-13 16:19:43
+@@ -1,9 +1,9 @@
+-#ifndef _walk_hpp_INCLUDED
+-#define _walk_hpp_INCLUDED
++#ifndef _walk300_hpp_INCLUDED
++#define _walk300_hpp_INCLUDED
+ 
+ #include "clause.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ struct TaggedBinary {
+   int lit, other;
+ #if defined(LOGGING) || !defined(NDEBUG)
+@@ -86,6 +86,6 @@
+     return tagged.b;
+   }
+ };
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif
+diff -Naur solvers/cadical300/walk_full_occs.cpp solvers/cdc300/walk_full_occs.cpp
+--- solvers/cadical300/walk_full_occs.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/walk_full_occs.cpp	2026-05-13 16:19:43
+@@ -1,7 +1,7 @@
+ #include "internal.hpp"
+ #include <cstdint>
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ /*------------------------------------------------------------------------*/
+ 
+@@ -963,4 +963,4 @@
+   assert (!unsat);
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/warmup.cpp solvers/cdc300/warmup.cpp
+--- solvers/cadical300/warmup.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/warmup.cpp	2026-05-13 20:37:23
+@@ -1,7 +1,7 @@
+ #include "cadical.hpp"
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // The idea of warmup is to reuse the strength of CDCL, namely
+ // propagating, before calling random walk that is not good at
+@@ -56,7 +56,9 @@
+   const Watches &ws = watches (-lit);
+   if (!ws.empty ()) {
+     const Watch &w = ws[0];
++#ifndef _MSC_VER
+     __builtin_prefetch (&w, 0, 1);
++#endif
+   }
+ }
+ 
+@@ -400,4 +402,4 @@
+   return res;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/watch.cpp solvers/cdc300/watch.cpp
+--- solvers/cadical300/watch.cpp	2025-12-24 05:25:57
++++ solvers/cdc300/watch.cpp	2026-05-13 16:19:43
+@@ -1,6 +1,6 @@
+ #include "internal.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ void Internal::init_watches () {
+   assert (wtab.empty ());
+@@ -123,4 +123,4 @@
+   }
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+diff -Naur solvers/cadical300/watch.hpp solvers/cdc300/watch.hpp
+--- solvers/cadical300/watch.hpp	2025-12-24 05:25:57
++++ solvers/cdc300/watch.hpp	2026-05-13 16:19:43
+@@ -1,12 +1,12 @@
+-#ifndef _watch_hpp_INCLUDED
+-#define _watch_hpp_INCLUDED
++#ifndef _watch300_hpp_INCLUDED
++#define _watch300_hpp_INCLUDED
+ 
+ #include <cassert>
+ #include <vector>
+ 
+ #include "clause.hpp"
+ 
+-namespace CaDiCaL {
++namespace CaDiCaL300 {
+ 
+ // Watch lists for CDCL search.  The blocking literal (see also comments
+ // related to 'propagate') is a must and thus combining that with a 64 bit
+@@ -72,6 +72,6 @@
+   assert (found), (void) found;
+ }
+ 
+-} // namespace CaDiCaL
++} // namespace CaDiCaL300
+ 
+ #endif

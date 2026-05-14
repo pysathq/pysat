@@ -21,6 +21,7 @@
         Cadical103
         Cadical153
         Cadical195
+        Cadical300
         CryptoMinisat
         Gluecard3
         Gluecard4
@@ -44,6 +45,8 @@
     solvers supported by PySAT are:
 
     -  CaDiCaL (`rel-1.0.3 <https://github.com/arminbiere/cadical>`__)
+    -  CaDiCaL (`rel-1.5.3 <https://github.com/arminbiere/cadical>`__)
+    -  CaDiCaL (`3.0.0 <https://github.com/arminbiere/cadical>`__)
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
@@ -83,14 +86,15 @@
 
     The module provides direct access to all supported solvers using the
     corresponding classes :class:`Cadical103`, :class:`Cadical153`,
-    :class:`Cadical195`, :class:`CryptoMinisat`, :class:`Gluecard3`,
-    :class:`Gluecard4`, :class:`Glucose3`, :class:`Glucose4`,
-    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
-    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
-    :class:`Minisat22`, and :class:`MinisatGH`. However, the solvers can also
-    be accessed through the common base class :class:`Solver` using the solver
-    ``name`` argument. For example, both of the following pieces of code
-    create a copy of the :class:`Glucose3` solver:
+    :class:`Cadical195`, :class:`Cadical300`, :class:`CryptoMinisat`,
+    :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
+    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
+    :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
+    :class:`Minicard`, :class:`Minisat22`, and :class:`MinisatGH`. However,
+    the solvers can also be accessed through the common base class
+    :class:`Solver` using the solver ``name`` argument. For example, both of
+    the following pieces of code create a copy of the :class:`Glucose3`
+    solver:
 
     .. code-block:: python
 
@@ -153,13 +157,25 @@
 
     In order to shorten the description of the module, the classes providing
     direct access to the individual solvers, i.e. classes :class:`Cadical103`,
-    :class:`Cadical153`, :class:`Cadical195`, :class:`CryptoMinisat`,
-    :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Glucose42`, :class:`Lingeling`,
-    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
-    :class:`Mergesat3`, :class:`Minicard`, :class:`Minisat22`, and
-    :class:`MinisatGH`, are **omitted**. They replicate the interface of the
-    base class :class:`Solver` and, thus, can be used the same exact way.
+    :class:`Cadical153`, :class:`Cadical195`, :class:`Cadical300`,
+    :class:`CryptoMinisat`, :class:`Gluecard3`, :class:`Gluecard4`,
+    :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
+    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
+    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
+    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
+    replicate the interface of the base class :class:`Solver` and, thus, can
+    be used the same exact way.
+
+    PySAT's :class:`Cadical300` wrapper supports CaDiCaL 3's bounded variable
+    addition (BVA, option ``factor``), which may let the solver create
+    auxiliary extension variables internally during solving and preprocessing.
+    This can clash with user-managed variable ID pools in incremental
+    settings. For that reason, :class:`Cadical300`'s BVA is disabled by
+    default whenever it is created without a synchronized
+    :class:`.pysat.formula.IDPool`. Users who want BVA can either enable it
+    manually with :meth:`.configure` or attach a shared pool with
+    :meth:`.attach_vpool` and keep it synchronized explicitly with
+    :meth:`.sync_vpool`.
 
     ==============
     Module details
@@ -170,7 +186,7 @@
 #==============================================================================
 from pysat._utils import MainThread
 from pysat.engines import BooleanEngine
-from pysat.formula import CNFPlus
+from pysat.formula import CNFPlus, IDPool
 import pysolvers
 import signal
 import tempfile
@@ -194,8 +210,8 @@ class NoSuchSolverError(Exception):
         This exception is raised when creating a new SAT solver whose name
         does not match any name in :class:`SolverNames`. The list of *known*
         solvers includes the names `'cadical103'`, `'cadical153'`,
-        `'cadical195'`, `'cryptosat'`, `'gluecard3'`, `'gluecard4'`,
-        `'glucose3'`, `'glucose4'`, `glucose42`, `'lingeling'`,
+        `'cadical195'`, `'cadical300'`, `'cryptosat'`, `'gluecard3'`,
+        `'gluecard4'`, `'glucose3'`, `'glucose4'`, `glucose42`, `'lingeling'`,
         `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'mergesat3'`,
         `'minicard'`, `'minisat22'`, and `'minisatgh'`.
     """
@@ -216,6 +232,7 @@ class SolverNames(object):
             cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
             cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
             cadical195  = ('cd19', 'cd195', 'cdl19', 'cdl195', 'cadical195')
+            cadical300  = ('cd30', 'cd300', 'cdl30', 'cdl300', 'cadical300')
             cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
             gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
             gluecard41  = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
@@ -240,6 +257,7 @@ class SolverNames(object):
     cadical103  = ('cd', 'cd103', 'cdl', 'cdl103', 'cadical103')
     cadical153  = ('cd15', 'cd153', 'cdl15', 'cdl153', 'cadical153')
     cadical195  = ('cd19', 'cd195', 'cdl19', 'cdl195', 'cadical195')
+    cadical300  = ('cd30', 'cd300', 'cdl30', 'cdl300', 'cadical300')
     cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
     gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
@@ -405,49 +423,60 @@ class Solver(object):
         """
 
         # checking keyword arguments
-        kwallowed = set(['incr', 'with_proof', 'warm_start', 'native_card'])
+        kwallowed = set(['incr', 'with_proof', 'warm_start', 'native_card',
+                         'sync_with'])
         for a in kwargs:
             if a not in kwallowed:
                 raise TypeError('Unexpected keyword argument \'{0}\''.format(a))
 
         if not self.solver:
             name_ = name.lower()
+            extra = dict(kwargs)
+
+            if name_ not in SolverNames.cadical300:
+                extra.pop('sync_with', None)
+
+            if name_ not in SolverNames.cadical195 and name_ not in SolverNames.cadical300:
+                extra.pop('native_card', None)
+
             if name_ in SolverNames.cadical103:
-                self.solver = Cadical103(bootstrap_with, use_timer, **kwargs)
+                self.solver = Cadical103(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.cadical153:
-                self.solver = Cadical153(bootstrap_with, use_timer, **kwargs)
+                self.solver = Cadical153(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.cadical195:
-                self.solver = Cadical195(bootstrap_with, use_timer, **kwargs)
+                self.solver = Cadical195(bootstrap_with, use_timer, **extra)
+            elif name_ in SolverNames.cadical300:
+                self.solver = Cadical300(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.cryptosat:
-                self.solver = CryptoMinisat(bootstrap_with, use_timer, **kwargs)
+                self.solver = CryptoMinisat(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.gluecard3:
-                self.solver = Gluecard3(bootstrap_with, use_timer, **kwargs)
+                self.solver = Gluecard3(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.gluecard4:
-                self.solver = Gluecard4(bootstrap_with, use_timer, **kwargs)
+                self.solver = Gluecard4(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.glucose3:
-                self.solver = Glucose3(bootstrap_with, use_timer, **kwargs)
+                self.solver = Glucose3(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.glucose4:
-                self.solver = Glucose4(bootstrap_with, use_timer, **kwargs)
+                self.solver = Glucose4(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.glucose42:
-                self.solver = Glucose42(bootstrap_with, use_timer, **kwargs)
+                self.solver = Glucose42(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.kissat404:
-                self.solver = Kissat404(bootstrap_with, use_timer, **kwargs)
+                self.solver = Kissat404(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.lingeling:
-                self.solver = Lingeling(bootstrap_with, use_timer, **kwargs)
+                self.solver = Lingeling(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.maplechrono:
-                self.solver = MapleChrono(bootstrap_with, use_timer, **kwargs)
+                self.solver = MapleChrono(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.maplecm:
-                self.solver = MapleCM(bootstrap_with, use_timer, **kwargs)
+                self.solver = MapleCM(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.maplesat:
-                self.solver = Maplesat(bootstrap_with, use_timer, **kwargs)
+                self.solver = Maplesat(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.mergesat3:
                 self.solver = Mergesat3(bootstrap_with, use_timer)
             elif name_ in SolverNames.minicard:
-                self.solver = Minicard(bootstrap_with, use_timer, **kwargs)
+                self.solver = Minicard(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.minisat22:
-                self.solver = Minisat22(bootstrap_with, use_timer, **kwargs)
+                self.solver = Minisat22(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.minisatgh:
-                self.solver = MinisatGH(bootstrap_with, use_timer, **kwargs)
+                self.solver = MinisatGH(bootstrap_with, use_timer, **extra)
             else:
                 raise(NoSuchSolverError(name))
 
@@ -529,8 +558,46 @@ class Solver(object):
             :type parameters: dict
         """
 
-        if self.solver and type(self.solver) in (Cadical153, Cadical195, Glucose42):
+        if self.solver and type(self.solver) in (Cadical153, Cadical195, Cadical300, Glucose42):
             self.solver.configure(parameters)
+
+    def attach_vpool(self, vpool=None):
+        """
+            Given a user-provided :class:`IDPool`, ask the solver to
+            synchronize its internally introduced auxiliary variables (if any)
+            with the :class:`IDPool`'s state. This allows one to safely use
+            bounded variable addition (BVA) in incremental settings when extra
+            variables are introduced externally between the SAT calls.
+
+            .. note::
+
+                Supported only by :class:`Cadical300`.
+        """
+
+        if self.solver:
+            if type(self.solver) is Cadical300:
+                self.solver.attach_vpool(vpool=vpool)
+            else:
+                raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
+
+    def sync_vpool(self):
+        """
+            Synchronize a user-provided :class:`IDPool` with the variables
+            already known to the solver. This may be needed if one wants to
+            safely use of bounded variable addition (BVA), which may introduce
+            auxiliary variables internally, and avoid potential variable
+            clashes if no such synchronization is done.
+
+            .. note::
+
+                Supported only by :class:`Cadical300`.
+        """
+
+        if self.solver:
+            if type(self.solver) is Cadical300:
+                self.solver.sync_vpool()
+            else:
+                raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
 
     def activate_atmost(self):
         """
@@ -545,7 +612,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.activate_atmost()
             else:
                 raise NotImplementedError('Native cardinality constraint activation is supported only by CaDiCaL 1.9.5')
@@ -562,7 +629,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.connect_propagator(propagator)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -579,7 +646,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.disconnect_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -595,7 +662,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.enable_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -612,7 +679,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.disable_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -629,7 +696,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 return self.solver.propagator_active()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -645,7 +712,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.observe(var)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -661,7 +728,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 self.solver.ignore(var)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -676,7 +743,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 return self.solver.reset_observed()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -695,7 +762,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) == Cadical195:
+            if type(self.solver) in (Cadical195, Cadical300):
                 return self.solver.is_decision(lit)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
@@ -2308,7 +2375,8 @@ class Cadical195(object):
 
         self.delete()
 
-    def new(self, bootstrap_with=None, use_timer=False, with_proof=False, native_card=False):
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
+            native_card=False):
         """
             Actual constructor of the solver.
         """
@@ -2778,6 +2846,572 @@ class Cadical195(object):
 
         if self.cadical:
             return pysolvers.cadical195_isdeclit(self.cadical, lit)
+
+
+#
+#==============================================================================
+class Cadical300(object):
+    """
+        CaDiCaL 3.0.0 SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+            with_proof=False, warm_start=False, native_card=False,
+            sync_with=None):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
+
+        self.cadical = None
+        self.pengine = None
+        self.status = None
+        self.prfile = None
+        self.sync_with = None
+
+        self.new(bootstrap_with, use_timer, with_proof, native_card, sync_with)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
+            native_card=False, sync_with=None):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.cadical:
+            self.cadical = pysolvers.cadical300_new()
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                pysolvers.cadical300_tracepr(self.cadical, self.prfile)
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    if not native_card:
+                        raise NotImplementedError('To support atmost constraints, use \'native_card\' parameter')
+                    else:
+                        # creating the engine
+                        self.activate_atmost()
+
+                for clause in bootstrap_with:
+                    if isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [])
+
+            # if the user wants to use BVA and synchronise with their IDPool
+            self.attach_vpool(sync_with)
+
+            # otherwise, if synchronisation is disabled, BVA defaults to 0
+            # however, the user can still enable BVA afterwards
+            if self.sync_with is None:
+                self.configure({'factor': 0})
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def sync_vpool(self):
+        """
+            Synchronize a user-provided IDPool with the variables already
+            known to CaDiCaL.
+        """
+
+        if self.cadical and self.sync_with is not None:
+            top = pysolvers.cadical300_nof_vars(self.cadical)
+
+            if top > self.sync_with.top:
+                self.sync_with.occupy(self.sync_with.top + 1, top)
+                self.sync_with.top = top
+
+    def attach_vpool(self, vpool=None):
+        """
+            Set a shared variable pool to keep synchronized with the solver.
+
+            When a pool is attached, users may enable bounded variable
+            addition (BVA) and then resynchronize the pool explicitly or rely
+            on the built-in sync points after solving and preprocessing calls.
+        """
+
+        if vpool is not None and not isinstance(vpool, IDPool):
+            raise TypeError('Cadical300 expects \'sync_with\' to be an IDPool object or None')
+
+        self.sync_with = vpool
+        self.sync_vpool()
+
+    def activate_atmost(self):
+        """
+            This method enable native cardinality mode. Note that it is
+            impossible to disable this mode once it's activated. (This would
+            require the engine to support cleaning constraints and reencoding
+            them to CNF on the fly).
+
+            Note that activating native AtMost constraints support makes it
+            impossible to add another user-defined propagator.
+        """
+
+        if self.cadical:
+            if not self.pengine:
+                # creating the engine
+                pengine = BooleanEngine(adaptive=True)
+
+                # attaching it to the solver
+                self.connect_propagator(pengine)
+
+                self.pengine = pengine
+                self.pengine.setup_observe(self)
+            else:
+                raise Exception('Another propagator is already attached')
+
+    def configure(self, parameters):
+        """
+            Configure Cadical300 by setting some of the predefined parameters.
+            This call must follow the creation of the new solver object;
+            otherwise, an exception will be thrown.
+
+            The list of available options and the corresponding
+            values they can be assigned to is provided `here
+            <https://github.com/arminbiere/cadical/blob/master/src/options.hpp>`__.
+
+            :param parameters: parameter names mapped to integer values
+            :type parameters: dict
+        """
+
+        if self.cadical:
+            for name, value in parameters.items():
+                pysolvers.cadical300_set(self.cadical, name, value)
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.cadical:
+            if self.pengine:
+                self.disconnect_propagator()
+                self.pengine = None
+
+            pysolvers.cadical300_del(self.cadical, self.prfile)
+            self.cadical = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.cadical300_solve(self.cadical, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.prev_assumps = assumptions
+            self.sync_vpool()
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            decisions.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.cadical300_solve_lim(self.cadical,
+                    assumptions, int(MainThread.check()))
+
+            self.status = None if self.status == 0 else bool((self.status + 1) / 2)
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.prev_assumps = assumptions
+            self.sync_vpool()
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_cbudget(self.cadical, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_dbudget(self.cadical, budget)
+
+    def process(self, rounds=1, block=False, cover=False, condition=False,
+                decompose=True, elim=True, probe=True, probehbr=True,
+                subsume=True, vivify=True, freeze=[]):
+        """
+            Apply the preprocessor for the internal formula. See the
+            documentation for the ``process`` module for details.
+        """
+
+        if self.cadical:
+            result = pysolvers.cadical300_process(self.cadical, rounds,
+                                                  int(block), int(cover),
+                                                  int(condition),
+                                                  int(decompose), int(elim),
+                                                  int(probe), int(probehbr),
+                                                  int(subsume), int(vivify),
+                                                  freeze,
+                                                  int(MainThread.check()))
+
+            self.sync_vpool()
+
+            return result
+
+    def restore(self, model):
+        """
+            Given a model for the processed formula, reconstruct a model for
+            the original formula. See the documentation for the ``process``
+            module for details.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_restore(self.cadical, model)
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        raise NotImplementedError('Warm-start mode is currently unsupported by CaDiCaL.')
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        raise NotImplementedError('Limit on propagations is currently unsupported by CaDiCaL.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        raise NotImplementedError('Limited solve is currently unsupported by CaDiCaL.')
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.cadical:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.cadical300_propagate(self.cadical,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.cadical:
+            # making sure 'lucky' phases don't interfere with our preferences
+            self.configure({'lucky': 0})
+
+            # setting preferred phases
+            pysolvers.cadical300_setphases(self.cadical, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.cadical:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.cadical and self.status == True:
+            model = pysolvers.cadical300_model(self.cadical)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.cadical and self.status == False:
+            return pysolvers.cadical300_core(self.cadical, self.prev_assumps)
+
+    def get_proof(self):
+        """
+            Get a proof produced when deciding the formula.
+        """
+
+        if self.cadical and self.prfile:
+            self.prfile.seek(0)
+
+            # stripping may cause issues here!
+            return Solver._proof_bin2text(bytearray(self.prfile.read()).strip())
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.cadical:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.cadical:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_nof_vars(self.cadical)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_nof_cls(self.cadical)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_acc_stats(self.cadical)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.cadical:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = pysolvers.cadical300_add_cl(self.cadical, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            This method is responsible for adding a new *native* AtMostK (see
+            :mod:`pysat.card`) constraint.
+
+            **Note that :class:`Cadical300` supports this by means of an
+            external propagator :class:`BooleanEngine`.**
+
+            Before calling this method, make sure native cardinality support
+            is activated.
+        """
+
+        if self.cadical:
+            if self.supports_atmost():
+                self.pengine.add_constraint(('linear', [lits, k, weights]))
+
+                if not no_return:
+                    return True  # we don't check satisfiability here;
+                                # returning true to be compatible with the API
+            else:
+                raise NotImplementedError('Native atmost constraints are currently disabled')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.cadical:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                if not self.supports_atmost():
+                    raise NotImplementedError('Native atmost constraints are currently disabled')
+
+            for clause in formula:
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1],
+                                          weights=clause[2] if len(clause) == 3 else [],
+                                          no_return=no_return)
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return self.pengine and type(self.pengine) == BooleanEngine
+
+    def connect_propagator(self, propagator):
+        """
+            Attach an external propagator through the IPASIR-UP interface.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_pconn(self.cadical, propagator)
+            self.pengine = propagator
+
+    def disconnect_propagator(self):
+        """
+            Disconnect the propagator. This also reset the observed variables.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_pdisconn(self.cadical)
+            self.pengine = None
+
+    def enable_propagator(self):
+        """
+            Enable the propagator on the fly. (Put it in active mode.)
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_penable(self.cadical)
+
+    def disable_propagator(self):
+        """
+            Disable the propagator on the fly. (Put it in passive mode.)
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_pdisable(self.cadical)
+
+    def propagator_active(self):
+        """
+            Check if the propagator is currently active or passive.
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_pactive(self.cadical)
+
+    def observe(self, var):
+        """
+            Inform the solver that a given variable is observed by the
+            propagator.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_vobserve(self.cadical, var)
+
+    def ignore(self, var):
+        """
+            Inform the solver that a given variable is ignored by the
+            propagator.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_vignore(self.cadical, var)
+
+    def reset_observed(self):
+        """
+            Reset all observed variables.
+        """
+
+        if self.cadical:
+            pysolvers.cadical300_vreset(self.cadical)
+
+    def is_decision(self, lit):
+        """
+            Check whether a current observed literal is a assigned by
+            branching or by propagation (decision or not).
+        """
+
+        if self.cadical:
+            return pysolvers.cadical300_isdeclit(self.cadical, lit)
 
 
 #

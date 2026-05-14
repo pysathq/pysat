@@ -3,6 +3,7 @@ from pysat.formula import CNF
 
 solvers = ['cadical103',
            'cadical153',
+           'cadical300',
            'gluecard30',
            'gluecard41',
            'glucose30',

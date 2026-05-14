@@ -8,10 +8,11 @@ from decimal import Decimal
 from pysat.integer import Integer, IntegerEngine, LinearExpr
 from pysat.solvers import Solver
 
+engine_solvers = ['cadical195', 'cadical300']
 
-def _enum_models_engine(eng, vars):
+def _enum_models_engine(eng, vars, solver_name):
     models = set()
-    with Solver(name='cadical195') as solver:
+    with Solver(name=solver_name) as solver:
         solver.connect_propagator(eng)
         eng.setup_observe(solver)
         while solver.solve():
@@ -24,9 +25,9 @@ def _enum_models_engine(eng, vars):
     return models
 
 
-def _enum_models_engine_assuming(eng, vars, assumptions):
+def _enum_models_engine_assuming(eng, vars, assumptions, solver_name):
     models = set()
-    with Solver(name='cadical195') as solver:
+    with Solver(name=solver_name) as solver:
         solver.connect_propagator(eng)
         eng.setup_observe(solver)
         while solver.solve(assumptions=assumptions):
@@ -56,7 +57,8 @@ def _is_true(model, lit):
     return model[abs(lit) - 1] == lit
 
 
-def test_engine_models_match():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_engine_models_match(solver_name):
     x = Integer('x', 0, 2, encoding='direct')
     y = Integer('y', 0, 2, encoding='order')
     eng = IntegerEngine([x, y], adaptive=False)
@@ -66,13 +68,14 @@ def test_engine_models_match():
     eng.add_linear(x + y != x)
 
     vars = [x, y]
-    m1 = _enum_models_engine(eng, vars)
+    m1 = _enum_models_engine(eng, vars, solver_name)
     m2 = _enum_models_cnf(eng, vars)
 
     assert m1 == m2, 'Model sets from engine and solver do not match'
 
 
-def test_engine_unsat():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_engine_unsat(solver_name):
     a = Integer('a', 0, 2)
     b = Integer('b', 0, 2)
     eng = IntegerEngine([a, b], adaptive=False)
@@ -80,7 +83,7 @@ def test_engine_unsat():
     eng.add_linear(a + b <= 1)
     eng.add_linear(a - b >= 2)
 
-    with Solver(name='cadical195') as solver:
+    with Solver(name=solver_name) as solver:
         solver.connect_propagator(eng)
         eng.setup_observe(solver)
         assert solver.solve() is False, 'UNSAT instance reported SAT [engine]'
@@ -153,7 +156,8 @@ def test_decode_conflicts_and_fixes():
         eng.decode([0])
 
 
-def test_operator_constraints():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_operator_constraints(solver_name):
     x = Integer('x', 0, 2)
     y = Integer('y', 0, 2)
     eng = IntegerEngine([x, y], adaptive=False)
@@ -164,11 +168,12 @@ def test_operator_constraints():
 
     vars = [x, y]
     expected = {(0, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Operator constraints mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Operator constraints mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Operator constraints mismatch [solver]'
 
 
-def test_abs_eq_constraint():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_eq_constraint(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -176,11 +181,12 @@ def test_abs_eq_constraint():
 
     vars = [x]
     expected = {(-1,), (1,)}
-    assert _enum_models_engine(eng, vars) == expected, 'abs == mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'abs == mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'abs == mismatch [solver]'
 
 
-def test_abs_eq_direct_avoids_linearization():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_eq_direct_avoids_linearization(solver_name):
     x = Integer('x', -1, 1, encoding='direct')
     eng = IntegerEngine([x], adaptive=False)
 
@@ -189,7 +195,7 @@ def test_abs_eq_direct_avoids_linearization():
     vars = [x]
     expected = {(-1,), (1,)}
     assert eng._lcons == [], 'Direct abs == should not use PB constraints'
-    assert _enum_models_engine(eng, vars) == expected, 'Direct abs == mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Direct abs == mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Direct abs == mismatch [solver]'
 
 
@@ -215,7 +221,8 @@ def test_abs_eq_registers_singleton_var():
     expected = x.domain_clauses() + [[x.equals(-1), x.equals(1)]]
     assert [sorted(cl) for cl in cnf.clauses] == [sorted(cl) for cl in expected]
 
-def test_abs_eq_order_avoids_linearization():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_eq_order_avoids_linearization(solver_name):
     x = Integer('x', -1, 1, encoding='order')
     eng = IntegerEngine([x], adaptive=False)
 
@@ -224,11 +231,12 @@ def test_abs_eq_order_avoids_linearization():
     vars = [x]
     expected = {(-1,), (1,)}
     assert eng._lcons == [], 'Order abs == should not use PB constraints'
-    assert _enum_models_engine(eng, vars) == expected, 'Order abs == mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Order abs == mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Order abs == mismatch [solver]'
 
 
-def test_abs_eq_zero_constraint():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_eq_zero_constraint(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -236,11 +244,12 @@ def test_abs_eq_zero_constraint():
 
     vars = [x]
     expected = {(0,)}
-    assert _enum_models_engine(eng, vars) == expected, 'abs == 0 mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'abs == 0 mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'abs == 0 mismatch [solver]'
 
 
-def test_abs_le_constraint_on_expr():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_le_constraint_on_expr(solver_name):
     x = Integer('x', -2, 2)
     y = Integer('y', -2, 2)
     eng = IntegerEngine([x, y], adaptive=False)
@@ -249,11 +258,12 @@ def test_abs_le_constraint_on_expr():
 
     vars = [x, y]
     expected = {(i, j) for i in range(-2, 3) for j in range(-2, 3) if abs(i - j) <= 1}
-    assert _enum_models_engine(eng, vars) == expected, 'abs <= mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'abs <= mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'abs <= mismatch [solver]'
 
 
-def test_abs_ge_constraint():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_ge_constraint(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -261,11 +271,12 @@ def test_abs_ge_constraint():
 
     vars = [x]
     expected = {(-2,), (2,)}
-    assert _enum_models_engine(eng, vars) == expected, 'abs >= mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'abs >= mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'abs >= mismatch [solver]'
 
 
-def test_abs_le_negative_bound_is_unsat():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_abs_le_negative_bound_is_unsat(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -273,16 +284,17 @@ def test_abs_le_negative_bound_is_unsat():
 
     vars = [x]
     expected = set()
-    assert _enum_models_engine(eng, vars) == expected, 'abs <= negative mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'abs <= negative mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'abs <= negative mismatch [solver]'
 
 
-def test_reified_linear_constraint():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_linear_constraint(solver_name):
     x = Integer('x', 0, 1)
     y = Integer('y', 0, 1)
     eng1 = IntegerEngine([x, y], adaptive=False)
     vars1 = [x, y]
-    all_models = _enum_models_engine(eng1, vars1)
+    all_models = _enum_models_engine(eng1, vars1, solver_name)
     assert len(all_models) == 4, 'Unexpected base model count'
 
     x2 = Integer('x', 0, 1)
@@ -292,10 +304,11 @@ def test_reified_linear_constraint():
 
     vars2 = [x2, y2]
     expected = {(0, 0), (0, 1), (1, 0)}
-    assert _enum_models_engine_assuming(eng2, vars2, [sel]) == expected
+    assert _enum_models_engine_assuming(eng2, vars2, [sel], solver_name) == expected
 
 
-def test_reified_abs_eq_constraint():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_abs_eq_constraint(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -303,10 +316,11 @@ def test_reified_abs_eq_constraint():
 
     vars = [x]
     expected = {(-1,), (1,)}
-    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+    assert _enum_models_engine_assuming(eng, vars, [sel], solver_name) == expected
 
 
-def test_reified_abs_eq_order():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_abs_eq_order(solver_name):
     x = Integer('x', -1, 1, encoding='order')
     eng = IntegerEngine([x], adaptive=False)
 
@@ -315,10 +329,11 @@ def test_reified_abs_eq_order():
     vars = [x]
     expected = {(-1,), (1,)}
     assert eng._lcons == [], 'Reified order abs == should not use PB constraints'
-    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+    assert _enum_models_engine_assuming(eng, vars, [sel], solver_name) == expected
 
 
-def test_reified_abs_ge_zero_is_tautological():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_abs_ge_zero_is_tautological(solver_name):
     x = Integer('x', -2, 2)
     eng = IntegerEngine([x], adaptive=False)
 
@@ -326,10 +341,11 @@ def test_reified_abs_ge_zero_is_tautological():
 
     vars = [x]
     expected = {(-2,), (-1,), (0,), (1,), (2,)}
-    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+    assert _enum_models_engine_assuming(eng, vars, [sel], solver_name) == expected
 
 
-def test_reified_equal_direct():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_equal_direct(solver_name):
     x = Integer('x', 0, 1, encoding='direct')
     y = Integer('y', 0, 1, encoding='direct')
     eng = IntegerEngine([x, y], adaptive=False)
@@ -337,10 +353,11 @@ def test_reified_equal_direct():
     sel = eng.add_linear(x.as_expr() == y.as_expr(), reified=True)
 
     vars = [x, y]
-    assert _enum_models_engine_assuming(eng, vars, [sel]) == {(0, 0), (1, 1)}
+    assert _enum_models_engine_assuming(eng, vars, [sel], solver_name) == {(0, 0), (1, 1)}
 
 
-def test_eq_vars_direct_domain_intersection():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_eq_vars_direct_domain_intersection(solver_name):
     x = Integer('x', 0, 2, encoding='direct')
     y = Integer('y', 1, 3, encoding='direct')
     eng = IntegerEngine([x, y], adaptive=False)
@@ -349,11 +366,12 @@ def test_eq_vars_direct_domain_intersection():
 
     vars = [x, y]
     expected = {(1, 1), (2, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Direct eq_vars mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Direct eq_vars mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Direct eq_vars mismatch [solver]'
 
 
-def test_eq_vars_order_domain_intersection():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_eq_vars_order_domain_intersection(solver_name):
     x = Integer('x', 0, 2, encoding='order')
     y = Integer('y', 1, 3, encoding='order')
     eng = IntegerEngine([x, y], adaptive=False)
@@ -362,11 +380,12 @@ def test_eq_vars_order_domain_intersection():
 
     vars = [x, y]
     expected = {(1, 1), (2, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Order eq_vars mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Order eq_vars mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Order eq_vars mismatch [solver]'
 
 
-def test_eq_vars_mixed_direct_order():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_eq_vars_mixed_direct_order(solver_name):
     x = Integer('x', 0, 2, encoding='direct')
     y = Integer('y', 0, 2, encoding='order', vpool=x.vpool)
     eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
@@ -375,11 +394,12 @@ def test_eq_vars_mixed_direct_order():
 
     vars = [x, y]
     expected = {(0, 0), (1, 1), (2, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Mixed eq_vars mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Mixed eq_vars mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Mixed eq_vars mismatch [solver]'
 
 
-def test_eq_vars_mixed_order_direct():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_eq_vars_mixed_order_direct(solver_name):
     x = Integer('x', 0, 2, encoding='order')
     y = Integer('y', 0, 2, encoding='direct', vpool=x.vpool)
     eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
@@ -388,11 +408,12 @@ def test_eq_vars_mixed_order_direct():
 
     vars = [x, y]
     expected = {(0, 0), (1, 1), (2, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Mixed reverse eq_vars mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Mixed reverse eq_vars mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Mixed reverse eq_vars mismatch [solver]'
 
 
-def test_reified_equal_mixed_direct_order():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_reified_equal_mixed_direct_order(solver_name):
     x = Integer('x', 0, 2, encoding='direct')
     y = Integer('y', 0, 2, encoding='order', vpool=x.vpool)
     eng = IntegerEngine([x, y], adaptive=False, vpool=x.vpool)
@@ -401,10 +422,11 @@ def test_reified_equal_mixed_direct_order():
 
     vars = [x, y]
     expected = {(0, 0), (1, 1), (2, 2)}
-    assert _enum_models_engine_assuming(eng, vars, [sel]) == expected
+    assert _enum_models_engine_assuming(eng, vars, [sel], solver_name) == expected
 
 
-def test_linear_expr_not_equal():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_linear_expr_not_equal(solver_name):
     x = Integer('x', 0, 2)
     y = Integer('y', 0, 2)
     eng = IntegerEngine([x, y], adaptive=False)
@@ -415,7 +437,7 @@ def test_linear_expr_not_equal():
     vars = [x, y]
     expected = {(0, 0), (0, 2), (1, 1), (1, 2),
                 (2, 0), (2, 1), (2, 2)}
-    assert _enum_models_engine(eng, vars) == expected, 'Linear != expr mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Linear != expr mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Linear != expr mismatch [solver]'
 
 
@@ -513,7 +535,8 @@ def test_float_decimal_blend_raises():
         _ = 1.5 * d
 
 
-def test_decimal_constraints():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_decimal_constraints(solver_name):
     d = Integer('d', 0, 2, numeric='decimal')
     e = Integer('e', 0, 2, numeric='decimal')
     eng = IntegerEngine([d, e], adaptive=False)
@@ -522,11 +545,12 @@ def test_decimal_constraints():
 
     vars = [d, e]
     expected = {(0, 2), (1, 1), (2, 0)}
-    assert _enum_models_engine(eng, vars) == expected, 'Decimal constraints mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Decimal constraints mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Decimal constraints mismatch [solver]'
 
 
-def test_integral_with_decimal_coeffs_ok():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_integral_with_decimal_coeffs_ok(solver_name):
     d = Integer('d', 0, 2, numeric='decimal')
     e = Integer('e', 0, 2, numeric='decimal')
     eng = IntegerEngine([d, e], adaptive=False)
@@ -535,11 +559,12 @@ def test_integral_with_decimal_coeffs_ok():
 
     vars = [d, e]
     expected = {(0, 1), (2, 0)}
-    assert _enum_models_engine(eng, vars) == expected, 'Integral+decimal coeffs mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Integral+decimal coeffs mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Integral+decimal coeffs mismatch [solver]'
 
 
-def test_integral_with_float_coeffs_ok():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_integral_with_float_coeffs_ok(solver_name):
     x = Integer('x', 0, 2)
     y = Integer('y', 0, 2)
     eng = IntegerEngine([x, y], adaptive=False)
@@ -548,17 +573,18 @@ def test_integral_with_float_coeffs_ok():
 
     vars = [x, y]
     expected = {(0, 1), (2, 0)}
-    assert _enum_models_engine(eng, vars) == expected, 'Integral+float coeffs mismatch [engine]'
+    assert _enum_models_engine(eng, vars, solver_name) == expected, 'Integral+float coeffs mismatch [engine]'
     assert _enum_models_cnf(eng, vars) == expected, 'Integral+float coeffs mismatch [solver]'
 
 
-def test_coupled_channeling():
+@pytest.mark.parametrize('solver_name', engine_solvers)
+def test_coupled_channeling(solver_name):
     x = Integer('x', 0, 2, encoding='coupled')
     eng = IntegerEngine([x], adaptive=False)
     cnf = eng.clausify()
 
     # with propagator (no clausification)
-    with Solver(name='cadical195') as solver:
+    with Solver(name=solver_name) as solver:
         solver.connect_propagator(eng)
         eng.setup_observe(solver)
 

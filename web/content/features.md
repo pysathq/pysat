@@ -18,6 +18,7 @@ Minisat-based solvers only *core* versions are integrated):
 -   CaDiCaL ([rel-1.0.3](https://github.com/arminbiere/cadical))
 -   CaDiCaL ([rel-1.5.3](https://github.com/arminbiere/cadical))
 -   CaDiCaL ([rel-1.9.5](https://github.com/arminbiere/cadical))
+-   CaDiCaL ([rel-3.0.0](https://github.com/arminbiere/cadical))
 -   Glucose ([3.0](http://www.labri.fr/perso/lsimon/glucose/))
 -   Glucose ([4.1](http://www.labri.fr/perso/lsimon/glucose/))
 -   Glucose ([4.2.1](http://www.labri.fr/perso/lsimon/glucose/))

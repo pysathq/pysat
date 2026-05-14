@@ -16,6 +16,7 @@ then to keep it up-to-date is good idea.
     module.
 -   Fixed the issue of misleading error messages when external propagation is
     in use. The actual assertions and exceptions shouldn't get lost anymore.
+-   Added support for CaDiCaL 3.0.0.
 
 ## 5.03.2026 (*1.9.dev2*)
 
