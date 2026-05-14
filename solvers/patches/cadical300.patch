@@ -1903,7 +1903,7 @@ diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
 +    KITTEN_ATTRIBUTE_FORMAT (4, 5);
  
  static void log_literals (kitten *kitten, unsigned *lits, unsigned size,
-                          const char *fmt, ...) {
+                           const char *fmt, ...) {
 @@ -873,7 +881,7 @@
    return elit;
  }
@@ -1914,7 +1914,6 @@ diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
    unsigneds *klauses = &kitten->klauses;
    const size_t size = SIZE_STACK (kitten->klause);
 @@ -1150,7 +1158,7 @@
-   kitten->level = jump;
    check_queue (kitten);
  }
  
