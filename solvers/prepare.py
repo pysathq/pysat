@@ -780,6 +780,7 @@ to_remove = {
         'scripts',
         'src',
         'test',
+        'cadical.cpp',
         'mobical.cpp',
         '.clang-format',
         '.dockerignore',
