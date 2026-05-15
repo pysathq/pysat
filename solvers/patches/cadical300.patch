@@ -91,7 +91,7 @@ diff -Naur solvers/cadical300/arena.cpp solvers/cdc300/arena.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/arena.hpp solvers/cdc300/arena.hpp
 --- solvers/cadical300/arena.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/arena.hpp	2026-05-15 10:44:05
++++ solvers/cdc300/arena.hpp	2026-05-15 12:33:02
 @@ -1,7 +1,7 @@
 -#ifndef _arena_hpp_INCLUDED
 -#define _arena_hpp_INCLUDED
@@ -103,15 +103,6 @@ diff -Naur solvers/cadical300/arena.hpp solvers/cdc300/arena.hpp
  
  // This memory allocation arena provides fixed size pre-allocated memory for
  // the moving garbage collector 'copy_non_garbage_clauses' in 'collect.cpp'
-@@ -18,7 +18,7 @@
- // pointers.  This would restrict the maximum number of clauses and thus is
- // a restriction we do not want to use anymore.
- 
--// New learned clauses are allocated in CaDiCaL outside of this arena and
-+// New learned clauses are allocated in CaDiCaL300 outside of this arena and
- // moved to the arena during garbage collection.  The additional 'to' space
- // required for such a moving garbage collector is only allocated for those
- // clauses surviving garbage collection, which usually needs much less
 @@ -100,6 +100,6 @@
    void swap ();
  };
@@ -317,7 +308,7 @@ diff -Naur solvers/cadical300/block.hpp solvers/cdc300/block.hpp
  #endif
 diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
 --- solvers/cadical300/cadical.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/cadical.hpp	2026-05-15 10:44:04
++++ solvers/cdc300/cadical.hpp	2026-05-15 12:38:15
 @@ -1,10 +1,12 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
@@ -333,7 +324,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  /*========================================================================*/
  
  // We support semantic versioning (https://semver.org/), which means that we
-@@ -15,11 +17,11 @@
+@@ -15,7 +17,7 @@
  #define CADICAL_MINOR 0 // Minor semantic version.
  #define CADICAL_PATCH 0 // Semantic patch version.
  
@@ -342,11 +333,6 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
  /*========================================================================*/
  
--// This provides the actual API of the CaDiCaL solver, which is implemented
-+// This provides the actual API of the CaDiCaL300 solver, which is implemented
- // in the class 'Solver' below.  Beside its constructor and destructor most
- // important is the IPASIR part which you can find between 'BEGIN IPASIR'
- // and 'END IPASIR' comments below.  The following '[Example]' below might
 @@ -47,7 +49,7 @@
  //
  // Consider the following code (from 'test/api/example.cpp') of API usage:
@@ -609,7 +595,7 @@ diff -Naur solvers/cadical300/compact.cpp solvers/cdc300/compact.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/condition.cpp solvers/cdc300/condition.cpp
 --- solvers/cadical300/condition.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/condition.cpp	2026-05-15 10:44:04
++++ solvers/cdc300/condition.cpp	2026-05-15 12:38:07
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -618,15 +604,6 @@ diff -Naur solvers/cadical300/condition.cpp solvers/cdc300/condition.cpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -9,7 +9,7 @@
- // extended version, which in particular describes the algorithm implemented
- // below is in our invited ATVA'19 paper [KieslHeuleBiere-ATVA'19].  This
- // accordingly needs witnesses consisting potentially of more than one
--// literal.  It is the first technique implemented in CaDiCaL with this
-+// literal.  It is the first technique implemented in CaDiCaL300 with this
- // feature (PR clause elimination thus should work in principle too).
- 
- // Basically globally blocked clauses are like set blocked clauses, except
 @@ -937,4 +937,4 @@
           delta);
  }
@@ -1000,7 +977,7 @@ diff -Naur solvers/cadical300/deduplicate.cpp solvers/cdc300/deduplicate.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/definition.cpp solvers/cdc300/definition.cpp
 --- solvers/cadical300/definition.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/definition.cpp	2026-05-15 10:44:05
++++ solvers/cdc300/definition.cpp	2026-05-15 12:40:25
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1009,15 +986,6 @@ diff -Naur solvers/cadical300/definition.cpp solvers/cdc300/definition.cpp
  
  #define INVALID_LIT UINT_MAX
  
-@@ -169,7 +169,7 @@
- } // end extern C
- 
- // Code ported from kissat. Kitten (and kissat) use unsigned representation
--// for literals whereas CaDiCaL uses signed representation. Conversion is
-+// for literals whereas CaDiCaL300 uses signed representation. Conversion is
- // necessary for communication using lit2citten and citten2lit.
- // This code is called in elim and kitten is initialized beforehand.
- // To avoid confusion all cadical interal definitions with kitten are called
 @@ -280,4 +280,4 @@
    return;
  }
@@ -1237,7 +1205,7 @@ diff -Naur solvers/cadical300/external.cpp solvers/cdc300/external.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
 --- solvers/cadical300/external.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/external.hpp	2026-05-15 10:44:04
++++ solvers/cdc300/external.hpp	2026-05-15 12:42:04
 @@ -1,5 +1,5 @@
 -#ifndef _external_hpp_INCLUDED
 -#define _external_hpp_INCLUDED
@@ -1262,24 +1230,6 @@ diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
  //
  //   Solver:       facade object providing the actual API of the solver
  //   External:     communication layer between 'Solver' and 'Internal'
-@@ -277,7 +277,7 @@
- 
-   /*----------------------------------------------------------------------*/
- 
--  // According to the CaDiCaL API contract (as well as IPASIR) we have to
-+  // According to the CaDiCaL300 API contract (as well as IPASIR) we have to
-   // forget about the previous assumptions after a 'solve' call.  This
-   // should however be delayed until we transition out of an 'UNSATISFIED'
-   // state, i.e., after no more 'failed' calls are expected.  Note that
-@@ -340,7 +340,7 @@
-   //   ival (-13) = 13        as '-13' is false
-   //
-   // To summarize we can think of the IPASIR 'ipasir_val' function, which
--  // 'CaDiCaL' follows as returning the phase of the literal which is true
-+  // 'CaDiCaL300' follows as returning the phase of the literal which is true
-   // under the current assignment no matter whether you give the positive
-   // literal or its negation and thus 'ival (lit) == ival (-lit))"
- 
 @@ -388,7 +388,7 @@
  
    /*----------------------------------------------------------------------*/
@@ -1299,7 +1249,7 @@ diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
  #endif
 diff -Naur solvers/cadical300/external_propagate.cpp solvers/cdc300/external_propagate.cpp
 --- solvers/cadical300/external_propagate.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/external_propagate.cpp	2026-05-15 10:44:04
++++ solvers/cdc300/external_propagate.cpp	2026-05-15 12:42:16
 @@ -2,7 +2,7 @@
  
  #include <algorithm>
@@ -1309,15 +1259,6 @@ diff -Naur solvers/cadical300/external_propagate.cpp solvers/cdc300/external_pro
  
  /*----------------------------------------------------------------------------*/
  //
-@@ -178,7 +178,7 @@
- // It repeats ALL assignments of the trail, so the already notified
- // root-level assignments will be notified multiple times.
- //
--// As CaDiCaL is missing some '0' seperators, it is important to go
-+// As CaDiCaL300 is missing some '0' seperators, it is important to go
- // over slices from the control stack instead of going over the trail
- // directly.
- void Internal::renotify_full_trail () {
 @@ -1313,4 +1313,4 @@
  }
  #endif
@@ -1407,21 +1348,8 @@ diff -Naur solvers/cadical300/file.hpp solvers/cdc300/file.hpp
  #endif
 diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
 --- solvers/cadical300/file0.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/file0.cpp	2026-05-15 10:44:05
-@@ -11,7 +11,12 @@
- #include <string.h>
- #include <sys/stat.h>
- #include <sys/types.h>
-+#ifdef _MSC_VER
-+#include <io.h>
-+#include <process.h>
-+#else
- #include <unistd.h>
-+#endif
- }
- 
- #ifndef _WIN32
-@@ -35,10 +40,23 @@
++++ solvers/cdc300/file0.cpp	2026-05-15 12:43:21
+@@ -35,10 +35,23 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -1446,7 +1374,7 @@ diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
  // Private constructor.
  
  File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
-@@ -111,13 +129,17 @@
+@@ -111,7 +124,11 @@
    int fd = fileno (file);
    if (fstat (fd, &stat))
      return true;
@@ -1458,14 +1386,7 @@ diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
  }
  
  // These are signatures for supported compressed file types.  In 2018 the
- // SAT Competition was running on StarExec and used internally 'bzip2'
- // compressed files, but gave them uncompressed to the solver using exactly
--// the same path (with '.bz2' suffix).  Then 'CaDiCaL' tried to read that
-+// the same path (with '.bz2' suffix).  Then 'CaDiCaL300' tried to read that
- // actually uncompressed file through 'bzip2', which of course failed.  Now
- // we double check and fall back to reading the file as is, if the signature
- // does not match after issuing a warning.
-@@ -503,4 +525,4 @@
+@@ -503,4 +520,4 @@
    free (_name);
  }
  
@@ -1756,7 +1677,7 @@ diff -Naur solvers/cadical300/internal.cpp solvers/cdc300/internal.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
 --- solvers/cadical300/internal.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/internal.hpp	2026-05-15 10:44:05
++++ solvers/cdc300/internal.hpp	2026-05-15 12:45:45
 @@ -1,5 +1,5 @@
 -#ifndef _internal_hpp_INCLUDED
 -#define _internal_hpp_INCLUDED
@@ -1765,20 +1686,7 @@ diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -24,7 +24,12 @@
- // Less common 'C' header.
- 
- extern "C" {
-+#ifdef _MSC_VER
-+#include <io.h>
-+#include <process.h>
-+#else
- #include <unistd.h>
-+#endif
- }
- 
- /*------------------------------------------------------------------------*/
-@@ -111,7 +116,7 @@
+@@ -111,7 +111,7 @@
  }
  /*------------------------------------------------------------------------*/
  
@@ -1787,7 +1695,7 @@ diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
  
  using namespace std;
  
-@@ -1936,6 +1941,6 @@
+@@ -1936,6 +1936,6 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -1817,7 +1725,7 @@ diff -Naur solvers/cadical300/inttypes.hpp solvers/cdc300/inttypes.hpp
  #endif
 diff -Naur solvers/cadical300/ipasir.h solvers/cdc300/ipasir.h
 --- solvers/cadical300/ipasir.h	2025-12-24 05:25:57
-+++ solvers/cdc300/ipasir.h	2026-05-15 10:44:05
++++ solvers/cdc300/ipasir.h	2026-05-15 12:46:10
 @@ -1,5 +1,5 @@
 -#ifndef _ipasir_h_INCLUDED
 -#define _ipasir_h_INCLUDED
@@ -1826,15 +1734,6 @@ diff -Naur solvers/cadical300/ipasir.h solvers/cdc300/ipasir.h
  
  /*------------------------------------------------------------------------*/
  #ifdef __cplusplus
-@@ -10,7 +10,7 @@
- // Here are the declarations for the actual IPASIR functions, which is the
- // generic incremental reentrant SAT solver API used for instance in the SAT
- // competition.  The other 'C' API in 'ccadical.h' is (more) type safe and
--// has additional functions only supported by the CaDiCaL library.  Please
-+// has additional functions only supported by the CaDiCaL300 library.  Please
- // also refer to our SAT Race 2015 article in the Journal of AI from 2016.
- 
- const char *ipasir_signature (void);
 diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
 --- solvers/cadical300/kitten.c	2025-12-24 05:25:57
 +++ solvers/cdc300/kitten.c	2026-05-15 10:44:05
@@ -2104,7 +2003,7 @@ diff -Naur solvers/cadical300/logging.hpp solvers/cdc300/logging.hpp
  
 diff -Naur solvers/cadical300/lookahead.cpp solvers/cdc300/lookahead.cpp
 --- solvers/cadical300/lookahead.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lookahead.cpp	2026-05-15 10:44:05
++++ solvers/cdc300/lookahead.cpp	2026-05-15 12:48:12
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2113,6 +2012,15 @@ diff -Naur solvers/cadical300/lookahead.cpp solvers/cdc300/lookahead.cpp
  
  struct literal_occ {
    int lit;
+@@ -438,7 +438,7 @@
+   assert (ntab.empty ());
+   std::vector<int> current_assumptions{assumptions};
+   std::vector<std::vector<int>> cubes{{assumptions}};
+-  auto loccs{lookahead_populate_locc ()};
++  auto loccs = lookahead_populate_locc();
+   LOG ("loccs populated\n");
+   assert (ntab.empty ());
+ 
 @@ -517,4 +517,4 @@
    return rcubes;
  }
@@ -2676,8 +2584,8 @@ diff -Naur solvers/cadical300/queue.hpp solvers/cdc300/queue.hpp
  #endif
 diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
 --- solvers/cadical300/radix.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/radix.hpp	2026-05-15 10:44:04
-@@ -1,18 +1,18 @@
++++ solvers/cdc300/radix.hpp	2026-05-15 12:51:45
+@@ -1,12 +1,12 @@
 -#ifndef _radix_hpp_INCLUDED
 -#define _radix_hpp_INCLUDED
 +#ifndef _radix300_hpp_INCLUDED
@@ -2693,13 +2601,6 @@ diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
  
  using namespace std;
  
- // This provides an implementation of a generic radix sort algorithm. The
- // reason for having it is that for certain benchmarks and certain parts of
--// CaDiCaL where sorting is used, the standard sorting algorithm 'sort'
-+// CaDiCaL300 where sorting is used, the standard sorting algorithm 'sort'
- // turned out to be a hot-spot. Up to 30% of the total running time was for
- // instance used for some benchmarks in sorting variables during bumping
- // to make sure to bump them in 'enqueued' order.
 @@ -175,6 +175,6 @@
        rsort (FIRST, LAST, RANK); \
    } while (0)
@@ -2710,7 +2611,7 @@ diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
  #endif
 diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
 --- solvers/cadical300/random.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/random.cpp	2026-05-15 10:44:04
++++ solvers/cdc300/random.cpp	2026-05-15 12:52:50
 @@ -46,7 +46,7 @@
  // does not have any effect.  TODO: add a similar machine identity hashing
  // function for other operating systems (Windows and macOS).
@@ -2774,7 +2675,7 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
  
  static uint64_t hash_time () {
    uint64_t res = ::time (0);
-@@ -151,26 +151,34 @@
+@@ -151,7 +151,7 @@
    return res;
  }
  
@@ -2783,27 +2684,16 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
  
  /*------------------------------------------------------------------------*/
  
- // Hash the process identified.
- 
- extern "C" {
-+#ifdef _MSC_VER
-+#include <process.h>
-+#else
- #include <sys/types.h>
+@@ -162,7 +162,7 @@
  #include <unistd.h>
-+#endif
  }
  
 -namespace CaDiCaL {
 +namespace CaDiCaL300 {
  
  static uint64_t hash_process () {
-+#ifdef _MSC_VER
-+  uint64_t res = _getpid ();
-+#else
    uint64_t res = getpid ();
-+#endif
-   PRINT_HASH (res);
+@@ -170,7 +170,7 @@
    return res;
  }
  
@@ -2812,7 +2702,7 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -178,7 +186,7 @@
+@@ -178,7 +178,7 @@
  
  #include <ctime>
  
@@ -2821,7 +2711,7 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
  
  static uint64_t hash_clock_cycles () {
    uint64_t res = std::clock ();
-@@ -186,11 +194,11 @@
+@@ -186,11 +186,11 @@
    return res;
  }
  
@@ -2835,7 +2725,7 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
  
  Random::Random () : state (1) {
    add (hash_machine_identifier ());
-@@ -204,4 +212,4 @@
+@@ -204,4 +204,4 @@
  #endif
  }
  
@@ -3040,8 +2930,33 @@ diff -Naur solvers/cadical300/report.cpp solvers/cdc300/report.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
 --- solvers/cadical300/resources.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/resources.cpp	2026-05-15 10:44:05
-@@ -37,7 +37,7 @@
++++ solvers/cdc300/resources.cpp	2026-05-15 13:25:19
+@@ -9,7 +9,7 @@
+ 
+ extern "C" {
+ 
+-#ifdef _WIN32
++#ifdef _MSC_VER
+ 
+ #ifndef _WIN32_WINNT
+ #define _WIN32_WINNT 0x0600
+@@ -27,8 +27,15 @@
+ 
+ #else
+ 
++#ifndef _MSC_VER
+ #include <sys/resource.h>
+ #include <sys/time.h>
++#else
++#include <time.h>
++#include <windows.h>
++#include <psapi.h>
++#endif
++
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+@@ -37,12 +44,45 @@
  #include <string.h>
  }
  
@@ -3050,7 +2965,122 @@ diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -157,4 +157,4 @@
+-#ifdef _WIN32
++#ifdef _MSC_VER
++#define WIN32_LEAN_AND_MEAN
+ 
++#include <stdint.h> // portable: uint64_t   MSVC: __int64
++
++// MSVC defines this in winsock2.h!?
++typedef struct timeval {
++    long tv_sec;
++    long tv_usec;
++} timeval;
++
++int gettimeofday(struct timeval * tp, struct timezone * tzp)
++{
++    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
++    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
++    // until 00:00:00 January 1, 1970
++    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
++
++    SYSTEMTIME  system_time;
++    FILETIME    file_time;
++    uint64_t    time;
++
++    GetSystemTime( &system_time );
++    SystemTimeToFileTime( &system_time, &file_time );
++    time =  ((uint64_t)file_time.dwLowDateTime )      ;
++    time += ((uint64_t)file_time.dwHighDateTime) << 32;
++
++    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
++    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
++    return 0;
++}
++#endif
++
++#ifdef _MSC_VER
++
+ double absolute_real_time () {
+   FILETIME f;
+   GetSystemTimeAsFileTime (&f);
+@@ -55,6 +95,7 @@
+ }
+ 
+ double absolute_process_time () {
++#ifndef _MSC_VER
+   double res = 0;
+   FILETIME fc, fe, fu, fs;
+   if (GetProcessTimes (GetCurrentProcess (), &fc, &fe, &fu, &fs)) {
+@@ -67,6 +108,21 @@
+     res *= 1e-7;
+   }
+   return res;
++#else
++  HANDLE hProcess;
++  FILETIME creationTime;
++  FILETIME exitTime;
++  FILETIME kernelTime;
++  FILETIME userTime;
++  ULARGE_INTEGER wrkTime;
++  hProcess=GetCurrentProcess();
++  if (GetProcessTimes(hProcess,  &creationTime, &exitTime, &kernelTime, &userTime)) {
++      wrkTime.LowPart = userTime.dwLowDateTime;
++      wrkTime.HighPart = userTime.dwHighDateTime;
++      return wrkTime.QuadPart / 10000000.0;
++      }
++  return 0;
++#endif
+ }
+ 
+ #else
+@@ -127,10 +183,21 @@
+ // This seems to work on Linux (man page says since Linux 2.6.32).
+ 
+ uint64_t maximum_resident_set_size () {
++#ifndef _MSC_VER
+   struct rusage u;
+   if (getrusage (RUSAGE_SELF, &u))
+     return 0;
+   return ((uint64_t) u.ru_maxrss) << 10;
++#else
++  HANDLE hProcess;
++  PROCESS_MEMORY_COUNTERS processMemoryCounters;
++
++  hProcess=GetCurrentProcess();
++  if (GetProcessMemoryInfo(hProcess,  &processMemoryCounters, sizeof(processMemoryCounters))) {
++    return processMemoryCounters.PeakWorkingSetSize;
++  }
++  return 0;
++#endif
+ }
+ 
+ // Unfortunately 'getrusage' on Linux does not support current resident set
+@@ -141,6 +208,7 @@
+ // '_SC_PAGESIZE' are available).
+ 
+ uint64_t current_resident_set_size () {
++#ifndef _MSC_VER
+   char path[64];
+   snprintf (path, sizeof path, "/proc/%" PRId64 "/statm",
+             (int64_t) getpid ());
+@@ -151,10 +219,20 @@
+   int scanned = fscanf (file, "%" PRIu64 " %" PRIu64 "", &dummy, &rss);
+   fclose (file);
+   return scanned == 2 ? rss * sysconf (_SC_PAGESIZE) : 0;
++#else
++  HANDLE hProcess;
++  PROCESS_MEMORY_COUNTERS processMemoryCounters;
++
++  hProcess=GetCurrentProcess();
++  if (GetProcessMemoryInfo(hProcess,  &processMemoryCounters, sizeof(processMemoryCounters))) {
++      return processMemoryCounters.WorkingSetSize;
++      }
++  return 0;
++#endif
+ }
+ 
+ #endif
  
  /*------------------------------------------------------------------------*/
  
@@ -3174,19 +3204,8 @@ diff -Naur solvers/cadical300/shrink.cpp solvers/cdc300/shrink.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
 --- solvers/cadical300/signal.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/signal.cpp	2026-05-15 10:44:05
-@@ -10,19 +10,23 @@
- /*------------------------------------------------------------------------*/
- 
- extern "C" {
-+#ifdef _MSC_VER
-+#include <io.h>
-+#else
- #include <unistd.h>
-+#endif
- }
- 
- /*------------------------------------------------------------------------*/
++++ solvers/cdc300/signal.cpp	2026-05-15 13:47:06
+@@ -17,7 +17,7 @@
  
  // Signal handlers for printing statistics even if solver is interrupted.
  
@@ -3195,22 +3214,30 @@ diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
  
  static volatile bool caught_signal = false;
  static Handler *signal_handler;
- 
--#ifndef _WIN32
-+#ifndef _MSC_VER
- 
- static volatile bool caught_alarm = false;
+@@ -28,7 +28,11 @@
  static volatile bool alarm_set = false;
-@@ -42,7 +46,7 @@
- SIGNALS
- #undef SIGNAL
+ static int alarm_time = -1;
  
--#ifndef _WIN32
+-void Handler::catch_alarm () { catch_signal (SIGALRM); }
++void Handler::catch_alarm () {
 +#ifndef _MSC_VER
++catch_signal (SIGALRM);
++#endif
++}
  
- static void (*SIGALRM_handler) (int);
+ #endif
  
-@@ -65,7 +69,7 @@
+@@ -49,7 +53,9 @@
+ void Signal::reset_alarm () {
+   if (!alarm_set)
+     return;
++#ifndef _MSC_VER
+   (void) signal (SIGALRM, SIGALRM_handler);
++#endif
+   SIGALRM_handler = 0;
+   caught_alarm = false;
+   alarm_set = false;
+@@ -65,7 +71,7 @@
    SIG##_handler = 0;
    SIGNALS
  #undef SIGNAL
@@ -3219,7 +3246,7 @@ diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
    reset_alarm ();
  #endif
    caught_signal = false;
-@@ -77,7 +81,7 @@
+@@ -77,7 +83,7 @@
      return #SIG;
    SIGNALS
  #undef SIGNAL
@@ -3228,25 +3255,49 @@ diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
    if (sig == SIGALRM)
      return "SIGALRM";
  #endif
-@@ -91,7 +95,7 @@
- // exclusive access to.  All these solutions are painful and not elegant.
+@@ -92,6 +98,7 @@
  
  static void catch_signal (int sig) {
--#ifndef _WIN32
+ #ifndef _WIN32
 +#ifndef _MSC_VER
    if (sig == SIGALRM && absolute_real_time () >= alarm_time) {
      if (!caught_alarm) {
        caught_alarm = true;
-@@ -119,7 +123,7 @@
- #undef SIGNAL
+@@ -99,9 +106,9 @@
+         signal_handler->catch_alarm ();
+     }
+     Signal::reset_alarm ();
+-  } else
++  } else {
+ #endif
+-  {
++#endif
+     if (!caught_signal) {
+       caught_signal = true;
+       if (signal_handler)
+@@ -109,7 +116,9 @@
+     }
+     Signal::reset ();
+     ::raise (sig);
++#ifndef _MSC_VER
+   }
++#endif
  }
  
--#ifndef _WIN32
-+#ifndef _MSC_VER
- 
- void Signal::alarm (int seconds) {
+ void Signal::set (Handler *h) {
+@@ -125,12 +134,16 @@
    assert (seconds >= 0);
-@@ -133,4 +137,4 @@
+   assert (!alarm_set);
+   assert (alarm_time < 0);
++#ifndef _MSC_VER
+   SIGALRM_handler = signal (SIGALRM, catch_signal);
++#endif
+   alarm_set = true;
+   alarm_time = absolute_real_time () + seconds;
++#ifndef _MSC_VER
+   ::alarm (seconds);
++#endif
+ }
  
  #endif
  
@@ -3962,7 +4013,16 @@ diff -Naur solvers/cadical300/veripbtracer.hpp solvers/cdc300/veripbtracer.hpp
  #endif
 diff -Naur solvers/cadical300/version.cpp solvers/cdc300/version.cpp
 --- solvers/cadical300/version.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/version.cpp	2026-05-15 10:44:04
++++ solvers/cdc300/version.cpp	2026-05-15 13:35:46
+@@ -6,7 +6,7 @@
+ 
+ #ifndef NBUILD
+ #if __GNUC__ > 4
+-#if __has_include(<build.hpp>)
++#if __has_include("build.hpp")
+ #include "build.hpp"
+ #endif // __has_include
+ #else
 @@ -92,7 +92,7 @@
  
  #include "version.hpp"
@@ -3995,7 +4055,7 @@ diff -Naur solvers/cadical300/version.hpp solvers/cdc300/version.hpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
 --- solvers/cadical300/vivify.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/vivify.cpp	2026-05-15 10:44:05
++++ solvers/cdc300/vivify.cpp	2026-05-15 13:36:27
 @@ -5,7 +5,7 @@
  #include <limits>
  #include <utility>
@@ -4005,15 +4065,6 @@ diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -1100,7 +1100,7 @@
- 
-   // For an explanation of the code, see our POS'25 paper ``Revisiting
-   // Clause Vivification'' (although for the experiments we focused on
--  // Kissat instead of CaDiCaL)
-+  // Kissat instead of CaDiCaL300)
-   if (subsuming) {
-     assert (c != subsuming);
-     vivify_subsume_clause (subsuming, c);
 @@ -1457,7 +1457,8 @@
      return vivifier.schedule_irred;
      break;
@@ -4024,15 +4075,6 @@ diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
  }
  
  struct vivify_refcount_rank {
-@@ -1618,7 +1619,7 @@
-     // now two possibilities: (i) we consider all clauses as leftovers, or (ii) only the leftovers
-     // from previous round are considered leftovers.
-     //
--    // CaDiCaL had the first version before. If
-+    // CaDiCaL300 had the first version before. If
-     // commented out we go to the second version.
-     for (auto c : schedule)
-       c->vivify = true;
 @@ -1890,4 +1891,4 @@
    return true;
  }
