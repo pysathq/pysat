@@ -651,8 +651,6 @@ to_move = {
         ('VERSION', 'VERSION.txt'),
         ('src/backbone.cpp', 'backbone.cpp'),
         ('src/cadical.cpp', 'cadical.cpp'),
-        ('src/ccadical.cpp', 'ccadical.cpp'),
-        ('src/ccadical.h', 'ccadical.h'),
         ('src/congruence.cpp', 'congruence.cpp'),
         ('src/congruence.hpp', 'congruence.hpp'),
         ('src/definition.cpp', 'definition.cpp'),
