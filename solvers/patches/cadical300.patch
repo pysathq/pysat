@@ -2875,16 +2875,21 @@ diff -Naur solvers/cadical300/report.cpp solvers/cdc300/report.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
 --- solvers/cadical300/resources.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/resources.cpp	2026-05-15 13:25:19
-@@ -9,7 +9,7 @@
++++ solvers/cdc300/resources.cpp	2026-05-15 14:38:35
+@@ -9,10 +9,10 @@
  
  extern "C" {
  
 -#ifdef _WIN32
 +#ifdef _MSC_VER
  
- #ifndef _WIN32_WINNT
- #define _WIN32_WINNT 0x0600
+-#ifndef _WIN32_WINNT
+-#define _WIN32_WINNT 0x0600
++#ifndef __WIN32_WINNT
++#define __WIN32_WINNT 0x0600
+ #endif
+ 
+ // Clang-format would reorder the includes which breaks the Windows code
 @@ -27,8 +27,15 @@
  
  #else
@@ -2949,17 +2954,17 @@ diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
  double absolute_real_time () {
    FILETIME f;
    GetSystemTimeAsFileTime (&f);
-@@ -55,6 +95,7 @@
- }
+@@ -83,6 +123,7 @@
+ // etc.  For different variants of Unix not all fields are meaningful.
  
  double absolute_process_time () {
 +#ifndef _MSC_VER
-   double res = 0;
-   FILETIME fc, fe, fu, fs;
-   if (GetProcessTimes (GetCurrentProcess (), &fc, &fe, &fu, &fs)) {
-@@ -67,6 +108,21 @@
-     res *= 1e-7;
-   }
+   double res;
+   struct rusage u;
+   if (getrusage (RUSAGE_SELF, &u))
+@@ -90,6 +131,21 @@
+   res = u.ru_utime.tv_sec + 1e-6 * u.ru_utime.tv_usec;  // user time
+   res += u.ru_stime.tv_sec + 1e-6 * u.ru_stime.tv_usec; // + system time
    return res;
 +#else
 +  HANDLE hProcess;
@@ -2978,7 +2983,16 @@ diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
 +#endif
  }
  
- #else
+ #endif
+@@ -104,7 +160,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-#ifdef _WIN32
++#ifdef __WIN32
+ 
+ uint64_t current_resident_set_size () {
+   PROCESS_MEMORY_COUNTERS pmc;
 @@ -127,10 +183,21 @@
  // This seems to work on Linux (man page says since Linux 2.6.32).
  
