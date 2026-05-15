@@ -658,8 +658,6 @@ to_move = {
         ('src/elimfast.cpp', 'elimfast.cpp'),
         ('src/factor.cpp', 'factor.cpp'),
         ('src/factor.hpp', 'factor.hpp'),
-        ('src/ipasir.cpp', 'ipasir.cpp'),
-        ('src/ipasir.h', 'ipasir.h'),
         ('src/kitten.c', 'kitten.c'),
         ('src/kitten.h', 'kitten.h'),
         ('src/lidruptracer.cpp', 'lidruptracer.cpp'),
