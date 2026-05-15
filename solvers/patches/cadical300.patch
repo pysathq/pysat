@@ -1,6 +1,6 @@
 diff -Naur solvers/cadical300/Makefile solvers/cdc300/Makefile
 --- solvers/cadical300/Makefile	1970-01-01 10:00:00
-+++ solvers/cdc300/Makefile	2026-05-15 00:11:41
++++ solvers/cdc300/Makefile	2026-05-15 10:44:04
 @@ -0,0 +1,53 @@
 +### Makefile ---
 +
@@ -57,7 +57,7 @@ diff -Naur solvers/cadical300/Makefile solvers/cdc300/Makefile
 +#-------------------------------------------------------------------------------
 diff -Naur solvers/cadical300/analyze.cpp solvers/cdc300/analyze.cpp
 --- solvers/cadical300/analyze.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/analyze.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/analyze.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -74,7 +74,7 @@ diff -Naur solvers/cadical300/analyze.cpp solvers/cdc300/analyze.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/arena.cpp solvers/cdc300/arena.cpp
 --- solvers/cadical300/arena.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/arena.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/arena.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -91,7 +91,7 @@ diff -Naur solvers/cadical300/arena.cpp solvers/cdc300/arena.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/arena.hpp solvers/cdc300/arena.hpp
 --- solvers/cadical300/arena.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/arena.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/arena.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _arena_hpp_INCLUDED
 -#define _arena_hpp_INCLUDED
@@ -122,7 +122,7 @@ diff -Naur solvers/cadical300/arena.hpp solvers/cdc300/arena.hpp
  #endif
 diff -Naur solvers/cadical300/assume.cpp solvers/cdc300/assume.cpp
 --- solvers/cadical300/assume.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/assume.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/assume.cpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include "options.hpp"
@@ -140,7 +140,7 @@ diff -Naur solvers/cadical300/assume.cpp solvers/cdc300/assume.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/averages.cpp solvers/cdc300/averages.cpp
 --- solvers/cadical300/averages.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/averages.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/averages.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -157,7 +157,7 @@ diff -Naur solvers/cadical300/averages.cpp solvers/cdc300/averages.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/averages.hpp solvers/cdc300/averages.hpp
 --- solvers/cadical300/averages.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/averages.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/averages.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _averages_hpp_INCLUDED
 -#define _averages_hpp_INCLUDED
@@ -181,7 +181,7 @@ diff -Naur solvers/cadical300/averages.hpp solvers/cdc300/averages.hpp
  #endif
 diff -Naur solvers/cadical300/backbone.cpp solvers/cdc300/backbone.cpp
 --- solvers/cadical300/backbone.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/backbone.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/backbone.cpp	2026-05-15 10:44:05
 @@ -2,7 +2,7 @@
  #include "message.hpp"
  #include "util.hpp"
@@ -201,7 +201,7 @@ diff -Naur solvers/cadical300/backbone.cpp solvers/cdc300/backbone.cpp
 \ No newline at end of file
 diff -Naur solvers/cadical300/backtrack.cpp solvers/cdc300/backtrack.cpp
 --- solvers/cadical300/backtrack.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/backtrack.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/backtrack.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -218,7 +218,7 @@ diff -Naur solvers/cadical300/backtrack.cpp solvers/cdc300/backtrack.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/backward.cpp solvers/cdc300/backward.cpp
 --- solvers/cadical300/backward.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/backward.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/backward.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -235,7 +235,7 @@ diff -Naur solvers/cadical300/backward.cpp solvers/cdc300/backward.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/bins.cpp solvers/cdc300/bins.cpp
 --- solvers/cadical300/bins.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/bins.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/bins.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -252,7 +252,7 @@ diff -Naur solvers/cadical300/bins.cpp solvers/cdc300/bins.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/bins.hpp solvers/cdc300/bins.hpp
 --- solvers/cadical300/bins.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/bins.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/bins.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _bins_hpp_INCLUDED
 -#define _bins_hpp_INCLUDED
@@ -276,7 +276,7 @@ diff -Naur solvers/cadical300/bins.hpp solvers/cdc300/bins.hpp
  #endif
 diff -Naur solvers/cadical300/block.cpp solvers/cdc300/block.cpp
 --- solvers/cadical300/block.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/block.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/block.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -293,7 +293,7 @@ diff -Naur solvers/cadical300/block.cpp solvers/cdc300/block.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/block.hpp solvers/cdc300/block.hpp
 --- solvers/cadical300/block.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/block.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/block.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _block_hpp_INCLUDED
 -#define _block_hpp_INCLUDED
@@ -317,7 +317,7 @@ diff -Naur solvers/cadical300/block.hpp solvers/cdc300/block.hpp
  #endif
 diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
 --- solvers/cadical300/cadical.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/cadical.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/cadical.hpp	2026-05-15 10:44:04
 @@ -1,10 +1,12 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
@@ -444,7 +444,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  #endif
 diff -Naur solvers/cadical300/ccadical.cpp solvers/cdc300/ccadical.cpp
 --- solvers/cadical300/ccadical.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/ccadical.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/ccadical.cpp	2026-05-15 10:44:05
 @@ -3,7 +3,7 @@
  #include <cstdlib>
  #include <cstring>
@@ -468,7 +468,7 @@ diff -Naur solvers/cadical300/ccadical.cpp solvers/cdc300/ccadical.cpp
  
 diff -Naur solvers/cadical300/ccadical.h solvers/cdc300/ccadical.h
 --- solvers/cadical300/ccadical.h	2025-12-24 05:25:57
-+++ solvers/cdc300/ccadical.h	2026-05-15 00:11:41
++++ solvers/cdc300/ccadical.h	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _ccadical_h_INCLUDED
 -#define _ccadical_h_INCLUDED
@@ -488,7 +488,7 @@ diff -Naur solvers/cadical300/ccadical.h solvers/cdc300/ccadical.h
  
 diff -Naur solvers/cadical300/checker.cpp solvers/cdc300/checker.cpp
 --- solvers/cadical300/checker.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/checker.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/checker.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -505,7 +505,7 @@ diff -Naur solvers/cadical300/checker.cpp solvers/cdc300/checker.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/checker.hpp solvers/cdc300/checker.hpp
 --- solvers/cadical300/checker.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/checker.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/checker.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _checker_hpp_INCLUDED
 -#define _checker_hpp_INCLUDED
@@ -531,7 +531,7 @@ diff -Naur solvers/cadical300/checker.hpp solvers/cdc300/checker.hpp
  #endif
 diff -Naur solvers/cadical300/clause.cpp solvers/cdc300/clause.cpp
 --- solvers/cadical300/clause.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/clause.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/clause.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -548,7 +548,7 @@ diff -Naur solvers/cadical300/clause.cpp solvers/cdc300/clause.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/clause.hpp solvers/cdc300/clause.hpp
 --- solvers/cadical300/clause.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/clause.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/clause.hpp	2026-05-15 10:44:05
 @@ -1,12 +1,12 @@
 -#ifndef _clause_hpp_INCLUDED
 -#define _clause_hpp_INCLUDED
@@ -575,7 +575,7 @@ diff -Naur solvers/cadical300/clause.hpp solvers/cdc300/clause.hpp
  #endif
 diff -Naur solvers/cadical300/collect.cpp solvers/cdc300/collect.cpp
 --- solvers/cadical300/collect.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/collect.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/collect.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -592,7 +592,7 @@ diff -Naur solvers/cadical300/collect.cpp solvers/cdc300/collect.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/compact.cpp solvers/cdc300/compact.cpp
 --- solvers/cadical300/compact.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/compact.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/compact.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -609,7 +609,7 @@ diff -Naur solvers/cadical300/compact.cpp solvers/cdc300/compact.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/condition.cpp solvers/cdc300/condition.cpp
 --- solvers/cadical300/condition.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/condition.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/condition.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -635,7 +635,7 @@ diff -Naur solvers/cadical300/condition.cpp solvers/cdc300/condition.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/config.cpp solvers/cdc300/config.cpp
 --- solvers/cadical300/config.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/config.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/config.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -652,7 +652,7 @@ diff -Naur solvers/cadical300/config.cpp solvers/cdc300/config.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/config.hpp solvers/cdc300/config.hpp
 --- solvers/cadical300/config.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/config.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/config.hpp	2026-05-15 10:44:04
 @@ -1,7 +1,7 @@
 -#ifndef _config_hpp_INCLUDED
 -#define _config_hpp_INCLUDED
@@ -674,7 +674,7 @@ diff -Naur solvers/cadical300/config.hpp solvers/cdc300/config.hpp
  #endif
 diff -Naur solvers/cadical300/congruence.cpp solvers/cdc300/congruence.cpp
 --- solvers/cadical300/congruence.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/congruence.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/congruence.cpp	2026-05-15 10:44:05
 @@ -7,7 +7,7 @@
  #include <utility>
  #include <vector>
@@ -791,7 +791,7 @@ diff -Naur solvers/cadical300/congruence.cpp solvers/cdc300/congruence.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/congruence.hpp solvers/cdc300/congruence.hpp
 --- solvers/cadical300/congruence.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/congruence.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/congruence.hpp	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _congruenc_hpp_INCLUDED
 -#define _congruenc_hpp_INCLUDED
@@ -819,7 +819,7 @@ diff -Naur solvers/cadical300/congruence.hpp solvers/cdc300/congruence.hpp
  #endif
 diff -Naur solvers/cadical300/constrain.cpp solvers/cdc300/constrain.cpp
 --- solvers/cadical300/constrain.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/constrain.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/constrain.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -836,7 +836,7 @@ diff -Naur solvers/cadical300/constrain.cpp solvers/cdc300/constrain.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/contract.cpp solvers/cdc300/contract.cpp
 --- solvers/cadical300/contract.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/contract.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/contract.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -856,16 +856,21 @@ diff -Naur solvers/cadical300/contract.cpp solvers/cdc300/contract.cpp
  #endif
 diff -Naur solvers/cadical300/contract.hpp solvers/cdc300/contract.hpp
 --- solvers/cadical300/contract.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/contract.hpp	2026-05-15 00:11:41
-@@ -1,5 +1,5 @@
++++ solvers/cdc300/contract.hpp	2026-05-15 10:44:05
+@@ -1,6 +1,10 @@
 -#ifndef _contract_hpp_INCLUDED
 -#define _contract_hpp_INCLUDED
 +#ifndef _contract300_hpp_INCLUDED
 +#define _contract300_hpp_INCLUDED
  
++#ifdef _MSC_VER
++#define __PRETTY_FUNCTION__ __FUNCTION__
++#endif
++
  /*------------------------------------------------------------------------*/
  #ifndef NCONTRACTS
-@@ -25,7 +25,7 @@
+ /*------------------------------------------------------------------------*/
+@@ -25,7 +29,7 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -874,7 +879,7 @@ diff -Naur solvers/cadical300/contract.hpp solvers/cdc300/contract.hpp
  
  // It would be much easier to just write 'REQUIRE (this, "not initialized")'
  // which however produces warnings due to the '-Wnonnull' check. Note, that
-@@ -49,7 +49,7 @@
+@@ -49,7 +53,7 @@
                                             __FILE__); \
    } while (0)
  
@@ -885,7 +890,7 @@ diff -Naur solvers/cadical300/contract.hpp solvers/cdc300/contract.hpp
  
 diff -Naur solvers/cadical300/cover.cpp solvers/cdc300/cover.cpp
 --- solvers/cadical300/cover.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/cover.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/cover.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -902,7 +907,7 @@ diff -Naur solvers/cadical300/cover.cpp solvers/cdc300/cover.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/cover.hpp solvers/cdc300/cover.hpp
 --- solvers/cadical300/cover.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/cover.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/cover.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _cover_hpp_INCLUDED
 -#define _cover_hpp_INCLUDED
@@ -913,7 +918,7 @@ diff -Naur solvers/cadical300/cover.hpp solvers/cdc300/cover.hpp
  
 diff -Naur solvers/cadical300/decide.cpp solvers/cdc300/decide.cpp
 --- solvers/cadical300/decide.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/decide.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/decide.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -939,7 +944,7 @@ diff -Naur solvers/cadical300/decide.cpp solvers/cdc300/decide.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/decompose.cpp solvers/cdc300/decompose.cpp
 --- solvers/cadical300/decompose.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/decompose.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/decompose.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -956,7 +961,7 @@ diff -Naur solvers/cadical300/decompose.cpp solvers/cdc300/decompose.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/decompose.hpp solvers/cdc300/decompose.hpp
 --- solvers/cadical300/decompose.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/decompose.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/decompose.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _decompose_hpp_INCLUDED
 -#define _decompose_hpp_INCLUDED
@@ -978,7 +983,7 @@ diff -Naur solvers/cadical300/decompose.hpp solvers/cdc300/decompose.hpp
  #endif
 diff -Naur solvers/cadical300/deduplicate.cpp solvers/cdc300/deduplicate.cpp
 --- solvers/cadical300/deduplicate.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/deduplicate.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/deduplicate.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -995,7 +1000,7 @@ diff -Naur solvers/cadical300/deduplicate.cpp solvers/cdc300/deduplicate.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/definition.cpp solvers/cdc300/definition.cpp
 --- solvers/cadical300/definition.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/definition.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/definition.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1021,7 +1026,7 @@ diff -Naur solvers/cadical300/definition.cpp solvers/cdc300/definition.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/delay.hpp solvers/cdc300/delay.hpp
 --- solvers/cadical300/delay.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/delay.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/delay.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _delay_hpp_INCLUDED
 -#define _delay_hpp_INCLUDED
@@ -1046,7 +1051,7 @@ diff -Naur solvers/cadical300/delay.hpp solvers/cdc300/delay.hpp
  #endif
 diff -Naur solvers/cadical300/drattracer.cpp solvers/cdc300/drattracer.cpp
 --- solvers/cadical300/drattracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/drattracer.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/drattracer.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1063,7 +1068,7 @@ diff -Naur solvers/cadical300/drattracer.cpp solvers/cdc300/drattracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/drattracer.hpp solvers/cdc300/drattracer.hpp
 --- solvers/cadical300/drattracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/drattracer.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/drattracer.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _drattracer_h_INCLUDED
 -#define _drattracer_h_INCLUDED
@@ -1088,7 +1093,7 @@ diff -Naur solvers/cadical300/drattracer.hpp solvers/cdc300/drattracer.hpp
  #endif
 diff -Naur solvers/cadical300/elim.cpp solvers/cdc300/elim.cpp
 --- solvers/cadical300/elim.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/elim.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/elim.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1105,7 +1110,7 @@ diff -Naur solvers/cadical300/elim.cpp solvers/cdc300/elim.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/elim.hpp solvers/cdc300/elim.hpp
 --- solvers/cadical300/elim.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/elim.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/elim.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _elim_hpp_INCLUDED
 -#define _elim_hpp_INCLUDED
@@ -1129,7 +1134,7 @@ diff -Naur solvers/cadical300/elim.hpp solvers/cdc300/elim.hpp
  #endif
 diff -Naur solvers/cadical300/elimfast.cpp solvers/cdc300/elimfast.cpp
 --- solvers/cadical300/elimfast.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/elimfast.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/elimfast.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1146,7 +1151,7 @@ diff -Naur solvers/cadical300/elimfast.cpp solvers/cdc300/elimfast.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/ema.cpp solvers/cdc300/ema.cpp
 --- solvers/cadical300/ema.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/ema.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/ema.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1163,7 +1168,7 @@ diff -Naur solvers/cadical300/ema.cpp solvers/cdc300/ema.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/ema.hpp solvers/cdc300/ema.hpp
 --- solvers/cadical300/ema.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/ema.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/ema.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _ema_hpp_INCLUDED
 -#define _ema_hpp_INCLUDED
@@ -1188,7 +1193,7 @@ diff -Naur solvers/cadical300/ema.hpp solvers/cdc300/ema.hpp
  
 diff -Naur solvers/cadical300/extend.cpp solvers/cdc300/extend.cpp
 --- solvers/cadical300/extend.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/extend.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/extend.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1205,7 +1210,7 @@ diff -Naur solvers/cadical300/extend.cpp solvers/cdc300/extend.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/external.cpp solvers/cdc300/external.cpp
 --- solvers/cadical300/external.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/external.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/external.cpp	2026-05-15 10:44:05
 @@ -3,7 +3,7 @@
  
  #include <cstdint>
@@ -1232,7 +1237,7 @@ diff -Naur solvers/cadical300/external.cpp solvers/cdc300/external.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
 --- solvers/cadical300/external.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/external.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/external.hpp	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _external_hpp_INCLUDED
 -#define _external_hpp_INCLUDED
@@ -1294,7 +1299,7 @@ diff -Naur solvers/cadical300/external.hpp solvers/cdc300/external.hpp
  #endif
 diff -Naur solvers/cadical300/external_propagate.cpp solvers/cdc300/external_propagate.cpp
 --- solvers/cadical300/external_propagate.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/external_propagate.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/external_propagate.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  
  #include <algorithm>
@@ -1321,7 +1326,7 @@ diff -Naur solvers/cadical300/external_propagate.cpp solvers/cdc300/external_pro
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/factor.cpp solvers/cdc300/factor.cpp
 --- solvers/cadical300/factor.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/factor.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/factor.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1338,7 +1343,7 @@ diff -Naur solvers/cadical300/factor.cpp solvers/cdc300/factor.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/factor.hpp solvers/cdc300/factor.hpp
 --- solvers/cadical300/factor.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/factor.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/factor.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _factor_hpp_INCLUDED
 -#define _factor_hpp_INCLUDED
@@ -1363,7 +1368,7 @@ diff -Naur solvers/cadical300/factor.hpp solvers/cdc300/factor.hpp
  #endif
 diff -Naur solvers/cadical300/file.hpp solvers/cdc300/file.hpp
 --- solvers/cadical300/file.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/file.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/file.hpp	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _file_hpp_INCLUDED
 -#define _file_hpp_INCLUDED
@@ -1402,7 +1407,7 @@ diff -Naur solvers/cadical300/file.hpp solvers/cdc300/file.hpp
  #endif
 diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
 --- solvers/cadical300/file0.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/file0.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/file0.cpp	2026-05-15 10:44:05
 @@ -11,7 +11,12 @@
  #include <string.h>
  #include <sys/stat.h>
@@ -1468,7 +1473,7 @@ diff -Naur solvers/cadical300/file0.cpp solvers/cdc300/file0.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/flags.cpp solvers/cdc300/flags.cpp
 --- solvers/cadical300/flags.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/flags.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/flags.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1485,7 +1490,7 @@ diff -Naur solvers/cadical300/flags.cpp solvers/cdc300/flags.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/flags.hpp solvers/cdc300/flags.hpp
 --- solvers/cadical300/flags.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/flags.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/flags.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _flags_hpp_INCLUDED
 -#define _flags_hpp_INCLUDED
@@ -1507,7 +1512,7 @@ diff -Naur solvers/cadical300/flags.hpp solvers/cdc300/flags.hpp
  #endif
 diff -Naur solvers/cadical300/flip.cpp solvers/cdc300/flip.cpp
 --- solvers/cadical300/flip.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/flip.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/flip.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1524,7 +1529,7 @@ diff -Naur solvers/cadical300/flip.cpp solvers/cdc300/flip.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/format.cpp solvers/cdc300/format.cpp
 --- solvers/cadical300/format.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/format.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/format.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1541,7 +1546,7 @@ diff -Naur solvers/cadical300/format.cpp solvers/cdc300/format.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/format.hpp solvers/cdc300/format.hpp
 --- solvers/cadical300/format.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/format.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/format.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _format_hpp_INCLUDED
 -#define _format_hpp_INCLUDED
@@ -1566,7 +1571,7 @@ diff -Naur solvers/cadical300/format.hpp solvers/cdc300/format.hpp
  #endif
 diff -Naur solvers/cadical300/frattracer.cpp solvers/cdc300/frattracer.cpp
 --- solvers/cadical300/frattracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/frattracer.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/frattracer.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1583,7 +1588,7 @@ diff -Naur solvers/cadical300/frattracer.cpp solvers/cdc300/frattracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/frattracer.hpp solvers/cdc300/frattracer.hpp
 --- solvers/cadical300/frattracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/frattracer.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/frattracer.hpp	2026-05-15 10:44:04
 @@ -1,12 +1,12 @@
 -#ifndef _frattracer_h_INCLUDED
 -#define _frattracer_h_INCLUDED
@@ -1610,7 +1615,7 @@ diff -Naur solvers/cadical300/frattracer.hpp solvers/cdc300/frattracer.hpp
  #endif
 diff -Naur solvers/cadical300/gates.cpp solvers/cdc300/gates.cpp
 --- solvers/cadical300/gates.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/gates.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/gates.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1627,7 +1632,7 @@ diff -Naur solvers/cadical300/gates.cpp solvers/cdc300/gates.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/heap.hpp solvers/cdc300/heap.hpp
 --- solvers/cadical300/heap.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/heap.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/heap.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _heap_hpp_INCLUDED
 -#define _heap_hpp_INCLUDED
@@ -1653,7 +1658,7 @@ diff -Naur solvers/cadical300/heap.hpp solvers/cdc300/heap.hpp
  #endif
 diff -Naur solvers/cadical300/idruptracer.cpp solvers/cdc300/idruptracer.cpp
 --- solvers/cadical300/idruptracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/idruptracer.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/idruptracer.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1670,7 +1675,7 @@ diff -Naur solvers/cadical300/idruptracer.cpp solvers/cdc300/idruptracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/idruptracer.hpp solvers/cdc300/idruptracer.hpp
 --- solvers/cadical300/idruptracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/idruptracer.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/idruptracer.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _idruptracer_h_INCLUDED
 -#define _idruptracer_h_INCLUDED
@@ -1695,7 +1700,7 @@ diff -Naur solvers/cadical300/idruptracer.hpp solvers/cdc300/idruptracer.hpp
  #endif
 diff -Naur solvers/cadical300/instantiate.cpp solvers/cdc300/instantiate.cpp
 --- solvers/cadical300/instantiate.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/instantiate.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/instantiate.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1712,7 +1717,7 @@ diff -Naur solvers/cadical300/instantiate.cpp solvers/cdc300/instantiate.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/instantiate.hpp solvers/cdc300/instantiate.hpp
 --- solvers/cadical300/instantiate.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/instantiate.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/instantiate.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _instantiate_hpp_INCLUDED
 -#define _instantiate_hpp_INCLUDED
@@ -1734,7 +1739,7 @@ diff -Naur solvers/cadical300/instantiate.hpp solvers/cdc300/instantiate.hpp
  #endif
 diff -Naur solvers/cadical300/internal.cpp solvers/cdc300/internal.cpp
 --- solvers/cadical300/internal.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/internal.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/internal.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1751,7 +1756,7 @@ diff -Naur solvers/cadical300/internal.cpp solvers/cdc300/internal.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
 --- solvers/cadical300/internal.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/internal.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/internal.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _internal_hpp_INCLUDED
 -#define _internal_hpp_INCLUDED
@@ -1792,7 +1797,7 @@ diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
  #endif
 diff -Naur solvers/cadical300/inttypes.hpp solvers/cdc300/inttypes.hpp
 --- solvers/cadical300/inttypes.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/inttypes.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/inttypes.hpp	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _inttypes_h_INCLUDED
 -#define _inttypes_h_INCLUDED
@@ -1812,7 +1817,7 @@ diff -Naur solvers/cadical300/inttypes.hpp solvers/cdc300/inttypes.hpp
  #endif
 diff -Naur solvers/cadical300/ipasir.h solvers/cdc300/ipasir.h
 --- solvers/cadical300/ipasir.h	2025-12-24 05:25:57
-+++ solvers/cdc300/ipasir.h	2026-05-15 00:11:41
++++ solvers/cdc300/ipasir.h	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _ipasir_h_INCLUDED
 -#define _ipasir_h_INCLUDED
@@ -1832,7 +1837,7 @@ diff -Naur solvers/cadical300/ipasir.h solvers/cdc300/ipasir.h
  const char *ipasir_signature (void);
 diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
 --- solvers/cadical300/kitten.c	2025-12-24 05:25:57
-+++ solvers/cdc300/kitten.c	2026-05-15 00:11:41
++++ solvers/cdc300/kitten.c	2026-05-15 10:44:05
 @@ -267,10 +267,18 @@
  
  #ifdef LOGGING
@@ -1891,7 +1896,7 @@ diff -Naur solvers/cadical300/kitten.c solvers/cdc300/kitten.c
    value *values = kitten->values;
 diff -Naur solvers/cadical300/kitten.h solvers/cdc300/kitten.h
 --- solvers/cadical300/kitten.h	2025-12-24 05:25:57
-+++ solvers/cdc300/kitten.h	2026-05-15 00:11:41
++++ solvers/cdc300/kitten.h	2026-05-15 10:44:05
 @@ -10,6 +10,47 @@
  extern "C" {
  #endif
@@ -1942,7 +1947,7 @@ diff -Naur solvers/cadical300/kitten.h solvers/cdc300/kitten.h
  kitten *kitten_init (void);
 diff -Naur solvers/cadical300/level.hpp solvers/cdc300/level.hpp
 --- solvers/cadical300/level.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/level.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/level.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _level_hpp_INCLUDED
 -#define _level_hpp_INCLUDED
@@ -1966,7 +1971,7 @@ diff -Naur solvers/cadical300/level.hpp solvers/cdc300/level.hpp
  #endif
 diff -Naur solvers/cadical300/lidruptracer.cpp solvers/cdc300/lidruptracer.cpp
 --- solvers/cadical300/lidruptracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lidruptracer.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/lidruptracer.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -1983,7 +1988,7 @@ diff -Naur solvers/cadical300/lidruptracer.cpp solvers/cdc300/lidruptracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/lidruptracer.hpp solvers/cdc300/lidruptracer.hpp
 --- solvers/cadical300/lidruptracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lidruptracer.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/lidruptracer.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _lidruptracer_h_INCLUDED
 -#define _lidruptracer_h_INCLUDED
@@ -2008,7 +2013,7 @@ diff -Naur solvers/cadical300/lidruptracer.hpp solvers/cdc300/lidruptracer.hpp
  #endif
 diff -Naur solvers/cadical300/limit.cpp solvers/cdc300/limit.cpp
 --- solvers/cadical300/limit.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/limit.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/limit.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2025,7 +2030,7 @@ diff -Naur solvers/cadical300/limit.cpp solvers/cdc300/limit.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/limit.hpp solvers/cdc300/limit.hpp
 --- solvers/cadical300/limit.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/limit.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/limit.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _limit_hpp_INCLUDED
 -#define _limit_hpp_INCLUDED
@@ -2050,7 +2055,7 @@ diff -Naur solvers/cadical300/limit.hpp solvers/cdc300/limit.hpp
  #endif
 diff -Naur solvers/cadical300/logging.cpp solvers/cdc300/logging.cpp
 --- solvers/cadical300/logging.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/logging.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/logging.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -2070,7 +2075,7 @@ diff -Naur solvers/cadical300/logging.cpp solvers/cdc300/logging.cpp
  #endif
 diff -Naur solvers/cadical300/logging.hpp solvers/cdc300/logging.hpp
 --- solvers/cadical300/logging.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/logging.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/logging.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _logging_hpp_INCLUDED
 -#define _logging_hpp_INCLUDED
@@ -2099,7 +2104,7 @@ diff -Naur solvers/cadical300/logging.hpp solvers/cdc300/logging.hpp
  
 diff -Naur solvers/cadical300/lookahead.cpp solvers/cdc300/lookahead.cpp
 --- solvers/cadical300/lookahead.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lookahead.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/lookahead.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2116,7 +2121,7 @@ diff -Naur solvers/cadical300/lookahead.cpp solvers/cdc300/lookahead.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/lratchecker.cpp solvers/cdc300/lratchecker.cpp
 --- solvers/cadical300/lratchecker.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lratchecker.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/lratchecker.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2133,7 +2138,7 @@ diff -Naur solvers/cadical300/lratchecker.cpp solvers/cdc300/lratchecker.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/lratchecker.hpp solvers/cdc300/lratchecker.hpp
 --- solvers/cadical300/lratchecker.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lratchecker.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/lratchecker.hpp	2026-05-15 10:44:04
 @@ -1,12 +1,12 @@
 -#ifndef _lratchecker_hpp_INCLUDED
 -#define _lratchecker_hpp_INCLUDED
@@ -2160,7 +2165,7 @@ diff -Naur solvers/cadical300/lratchecker.hpp solvers/cdc300/lratchecker.hpp
  #endif
 diff -Naur solvers/cadical300/lrattracer.cpp solvers/cdc300/lrattracer.cpp
 --- solvers/cadical300/lrattracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lrattracer.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/lrattracer.cpp	2026-05-15 10:44:05
 @@ -2,7 +2,7 @@
  
  #include <limits.h>
@@ -2178,7 +2183,7 @@ diff -Naur solvers/cadical300/lrattracer.cpp solvers/cdc300/lrattracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/lrattracer.hpp solvers/cdc300/lrattracer.hpp
 --- solvers/cadical300/lrattracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lrattracer.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/lrattracer.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _lrattracer_h_INCLUDED
 -#define _lrattracer_h_INCLUDED
@@ -2203,7 +2208,7 @@ diff -Naur solvers/cadical300/lrattracer.hpp solvers/cdc300/lrattracer.hpp
  #endif
 diff -Naur solvers/cadical300/lucky.cpp solvers/cdc300/lucky.cpp
 --- solvers/cadical300/lucky.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/lucky.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/lucky.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2220,7 +2225,7 @@ diff -Naur solvers/cadical300/lucky.cpp solvers/cdc300/lucky.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/make-build-header.sh solvers/cdc300/make-build-header.sh
 --- solvers/cadical300/make-build-header.sh	2025-12-24 05:25:57
-+++ solvers/cdc300/make-build-header.sh	2026-05-15 00:11:40
++++ solvers/cdc300/make-build-header.sh	2026-05-15 10:44:04
 @@ -20,7 +20,7 @@
  
  #--------------------------------------------------------------------------#
@@ -2260,7 +2265,7 @@ diff -Naur solvers/cadical300/make-build-header.sh solvers/cdc300/make-build-hea
    warning "could not determine 'IDENTIFIER' (git id)"
 diff -Naur solvers/cadical300/message.cpp solvers/cdc300/message.cpp
 --- solvers/cadical300/message.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/message.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/message.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2277,7 +2282,7 @@ diff -Naur solvers/cadical300/message.cpp solvers/cdc300/message.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/message.hpp solvers/cdc300/message.hpp
 --- solvers/cadical300/message.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/message.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/message.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _message_h_INCLUDED
 -#define _message_h_INCLUDED
@@ -2294,7 +2299,7 @@ diff -Naur solvers/cadical300/message.hpp solvers/cdc300/message.hpp
 +#endif // ifndef _message300_h_INCLUDED
 diff -Naur solvers/cadical300/minimize.cpp solvers/cdc300/minimize.cpp
 --- solvers/cadical300/minimize.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/minimize.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/minimize.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2311,7 +2316,7 @@ diff -Naur solvers/cadical300/minimize.cpp solvers/cdc300/minimize.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/occs.cpp solvers/cdc300/occs.cpp
 --- solvers/cadical300/occs.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/occs.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/occs.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2328,7 +2333,7 @@ diff -Naur solvers/cadical300/occs.cpp solvers/cdc300/occs.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/occs.hpp solvers/cdc300/occs.hpp
 --- solvers/cadical300/occs.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/occs.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/occs.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _occs_h_INCLUDED
 -#define _occs_h_INCLUDED
@@ -2352,7 +2357,7 @@ diff -Naur solvers/cadical300/occs.hpp solvers/cdc300/occs.hpp
  #endif
 diff -Naur solvers/cadical300/options.cpp solvers/cdc300/options.cpp
 --- solvers/cadical300/options.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/options.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/options.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2369,7 +2374,7 @@ diff -Naur solvers/cadical300/options.cpp solvers/cdc300/options.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/options.hpp solvers/cdc300/options.hpp
 --- solvers/cadical300/options.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/options.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/options.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _options_hpp_INCLUDED
 -#define _options_hpp_INCLUDED
@@ -2397,7 +2402,7 @@ diff -Naur solvers/cadical300/options.hpp solvers/cdc300/options.hpp
  #endif
 diff -Naur solvers/cadical300/parse.cpp solvers/cdc300/parse.cpp
 --- solvers/cadical300/parse.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/parse.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/parse.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -2415,7 +2420,7 @@ diff -Naur solvers/cadical300/parse.cpp solvers/cdc300/parse.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/parse.hpp solvers/cdc300/parse.hpp
 --- solvers/cadical300/parse.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/parse.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/parse.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _parse_hpp_INCLUDED
 -#define _parse_hpp_INCLUDED
@@ -2441,7 +2446,7 @@ diff -Naur solvers/cadical300/parse.hpp solvers/cdc300/parse.hpp
  #endif
 diff -Naur solvers/cadical300/phases.cpp solvers/cdc300/phases.cpp
 --- solvers/cadical300/phases.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/phases.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/phases.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2458,7 +2463,7 @@ diff -Naur solvers/cadical300/phases.cpp solvers/cdc300/phases.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/phases.hpp solvers/cdc300/phases.hpp
 --- solvers/cadical300/phases.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/phases.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/phases.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _phases_hpp_INCLUDED
 -#define _phases_hpp_INCLUDED
@@ -2482,7 +2487,7 @@ diff -Naur solvers/cadical300/phases.hpp solvers/cdc300/phases.hpp
  #endif
 diff -Naur solvers/cadical300/probe.cpp solvers/cdc300/probe.cpp
 --- solvers/cadical300/probe.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/probe.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/probe.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2508,7 +2513,7 @@ diff -Naur solvers/cadical300/probe.cpp solvers/cdc300/probe.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/profile.cpp solvers/cdc300/profile.cpp
 --- solvers/cadical300/profile.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/profile.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/profile.cpp	2026-05-15 10:44:05
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -2528,7 +2533,7 @@ diff -Naur solvers/cadical300/profile.cpp solvers/cdc300/profile.cpp
  #endif // ifndef QUIET
 diff -Naur solvers/cadical300/profile.hpp solvers/cdc300/profile.hpp
 --- solvers/cadical300/profile.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/profile.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/profile.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _profiles_h_INCLUDED
 -#define _profiles_h_INCLUDED
@@ -2561,7 +2566,7 @@ diff -Naur solvers/cadical300/profile.hpp solvers/cdc300/profile.hpp
 +#endif // ifndef _profiles300_h_INCLUDED
 diff -Naur solvers/cadical300/proof.cpp solvers/cdc300/proof.cpp
 --- solvers/cadical300/proof.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/proof.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/proof.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2578,7 +2583,7 @@ diff -Naur solvers/cadical300/proof.cpp solvers/cdc300/proof.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/proof.hpp solvers/cdc300/proof.hpp
 --- solvers/cadical300/proof.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/proof.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/proof.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _proof_h_INCLUDED
 -#define _proof_h_INCLUDED
@@ -2603,7 +2608,7 @@ diff -Naur solvers/cadical300/proof.hpp solvers/cdc300/proof.hpp
  #endif
 diff -Naur solvers/cadical300/propagate.cpp solvers/cdc300/propagate.cpp
 --- solvers/cadical300/propagate.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/propagate.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/propagate.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2630,7 +2635,7 @@ diff -Naur solvers/cadical300/propagate.cpp solvers/cdc300/propagate.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/queue.cpp solvers/cdc300/queue.cpp
 --- solvers/cadical300/queue.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/queue.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/queue.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2647,7 +2652,7 @@ diff -Naur solvers/cadical300/queue.cpp solvers/cdc300/queue.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/queue.hpp solvers/cdc300/queue.hpp
 --- solvers/cadical300/queue.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/queue.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/queue.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _queue_hpp_INCLUDED
 -#define _queue_hpp_INCLUDED
@@ -2671,7 +2676,7 @@ diff -Naur solvers/cadical300/queue.hpp solvers/cdc300/queue.hpp
  #endif
 diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
 --- solvers/cadical300/radix.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/radix.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/radix.hpp	2026-05-15 10:44:04
 @@ -1,18 +1,18 @@
 -#ifndef _radix_hpp_INCLUDED
 -#define _radix_hpp_INCLUDED
@@ -2705,7 +2710,7 @@ diff -Naur solvers/cadical300/radix.hpp solvers/cdc300/radix.hpp
  #endif
 diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
 --- solvers/cadical300/random.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/random.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/random.cpp	2026-05-15 10:44:04
 @@ -46,7 +46,7 @@
  // does not have any effect.  TODO: add a similar machine identity hashing
  // function for other operating systems (Windows and macOS).
@@ -2838,7 +2843,7 @@ diff -Naur solvers/cadical300/random.cpp solvers/cdc300/random.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/random.h solvers/cdc300/random.h
 --- solvers/cadical300/random.h	2025-12-24 05:25:57
-+++ solvers/cdc300/random.h	2026-05-15 00:11:41
++++ solvers/cdc300/random.h	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _random_h_INCLUDED
 -#define _random_h_INCLUDED
@@ -2849,7 +2854,7 @@ diff -Naur solvers/cadical300/random.h solvers/cdc300/random.h
  #include <stdbool.h>
 diff -Naur solvers/cadical300/random.hpp solvers/cdc300/random.hpp
 --- solvers/cadical300/random.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/random.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/random.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _random_hpp_INCLUDED
 -#define _random_hpp_INCLUDED
@@ -2875,7 +2880,7 @@ diff -Naur solvers/cadical300/random.hpp solvers/cdc300/random.hpp
  #endif
 diff -Naur solvers/cadical300/range.hpp solvers/cdc300/range.hpp
 --- solvers/cadical300/range.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/range.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/range.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _range_hpp_INCLUDED
 -#define _range_hpp_INCLUDED
@@ -2899,7 +2904,7 @@ diff -Naur solvers/cadical300/range.hpp solvers/cdc300/range.hpp
  #endif
 diff -Naur solvers/cadical300/reap.cpp solvers/cdc300/reap.cpp
 --- solvers/cadical300/reap.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/reap.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/reap.cpp	2026-05-15 10:44:04
 @@ -3,6 +3,8 @@
  #include <climits>
  #include <cstring>
@@ -2934,7 +2939,7 @@ diff -Naur solvers/cadical300/reap.cpp solvers/cdc300/reap.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/reap.hpp solvers/cdc300/reap.hpp
 --- solvers/cadical300/reap.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/reap.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/reap.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,11 @@
 -#ifndef _reap_h_INCLUDED
 -#define _reap_h_INCLUDED
@@ -2959,7 +2964,7 @@ diff -Naur solvers/cadical300/reap.hpp solvers/cdc300/reap.hpp
  #endif
 diff -Naur solvers/cadical300/reduce.cpp solvers/cdc300/reduce.cpp
 --- solvers/cadical300/reduce.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/reduce.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/reduce.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -2976,7 +2981,7 @@ diff -Naur solvers/cadical300/reduce.cpp solvers/cdc300/reduce.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/reluctant.hpp solvers/cdc300/reluctant.hpp
 --- solvers/cadical300/reluctant.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/reluctant.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/reluctant.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _reluctant_hpp_INCLUDED
 -#define _reluctant_hpp_INCLUDED
@@ -3001,7 +3006,7 @@ diff -Naur solvers/cadical300/reluctant.hpp solvers/cdc300/reluctant.hpp
  #endif
 diff -Naur solvers/cadical300/rephase.cpp solvers/cdc300/rephase.cpp
 --- solvers/cadical300/rephase.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/rephase.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/rephase.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3018,7 +3023,7 @@ diff -Naur solvers/cadical300/rephase.cpp solvers/cdc300/rephase.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/report.cpp solvers/cdc300/report.cpp
 --- solvers/cadical300/report.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/report.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/report.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3035,7 +3040,7 @@ diff -Naur solvers/cadical300/report.cpp solvers/cdc300/report.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
 --- solvers/cadical300/resources.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/resources.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/resources.cpp	2026-05-15 10:44:05
 @@ -37,7 +37,7 @@
  #include <string.h>
  }
@@ -3053,7 +3058,7 @@ diff -Naur solvers/cadical300/resources.cpp solvers/cdc300/resources.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/resources.hpp solvers/cdc300/resources.hpp
 --- solvers/cadical300/resources.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/resources.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/resources.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _resources_hpp_INCLUDED
 -#define _resources_hpp_INCLUDED
@@ -3078,7 +3083,7 @@ diff -Naur solvers/cadical300/resources.hpp solvers/cdc300/resources.hpp
 +#endif // ifndef _resources300_hpp_INCLUDED
 diff -Naur solvers/cadical300/restart.cpp solvers/cdc300/restart.cpp
 --- solvers/cadical300/restart.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/restart.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/restart.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3095,7 +3100,7 @@ diff -Naur solvers/cadical300/restart.cpp solvers/cdc300/restart.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/restore.cpp solvers/cdc300/restore.cpp
 --- solvers/cadical300/restore.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/restore.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/restore.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3112,7 +3117,7 @@ diff -Naur solvers/cadical300/restore.cpp solvers/cdc300/restore.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/score.cpp solvers/cdc300/score.cpp
 --- solvers/cadical300/score.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/score.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/score.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3129,7 +3134,7 @@ diff -Naur solvers/cadical300/score.cpp solvers/cdc300/score.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/score.hpp solvers/cdc300/score.hpp
 --- solvers/cadical300/score.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/score.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/score.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _score_hpp_INCLUDED
 -#define _score_hpp_INCLUDED
@@ -3151,7 +3156,7 @@ diff -Naur solvers/cadical300/score.hpp solvers/cdc300/score.hpp
  #endif
 diff -Naur solvers/cadical300/shrink.cpp solvers/cdc300/shrink.cpp
 --- solvers/cadical300/shrink.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/shrink.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/shrink.cpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include "reap.hpp"
@@ -3169,7 +3174,7 @@ diff -Naur solvers/cadical300/shrink.cpp solvers/cdc300/shrink.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
 --- solvers/cadical300/signal.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/signal.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/signal.cpp	2026-05-15 10:44:05
 @@ -10,19 +10,23 @@
  /*------------------------------------------------------------------------*/
  
@@ -3249,7 +3254,7 @@ diff -Naur solvers/cadical300/signal.cpp solvers/cdc300/signal.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/signal.hpp solvers/cdc300/signal.hpp
 --- solvers/cadical300/signal.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/signal.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/signal.hpp	2026-05-15 10:44:04
 @@ -1,7 +1,7 @@
 -#ifndef _signal_hpp_INCLUDED
 -#define _signal_hpp_INCLUDED
@@ -3271,7 +3276,7 @@ diff -Naur solvers/cadical300/signal.hpp solvers/cdc300/signal.hpp
  #endif
 diff -Naur solvers/cadical300/solution.cpp solvers/cdc300/solution.cpp
 --- solvers/cadical300/solution.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/solution.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/solution.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3288,7 +3293,7 @@ diff -Naur solvers/cadical300/solution.cpp solvers/cdc300/solution.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/solver.cpp solvers/cdc300/solver.cpp
 --- solvers/cadical300/solver.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/solver.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/solver.cpp	2026-05-15 10:44:05
 @@ -4,7 +4,7 @@
  
  /*------------------------------------------------------------------------*/
@@ -3534,7 +3539,7 @@ diff -Naur solvers/cadical300/solver.cpp solvers/cdc300/solver.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/stable.cpp solvers/cdc300/stable.cpp
 --- solvers/cadical300/stable.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/stable.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/stable.cpp	2026-05-15 10:44:05
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -3555,7 +3560,7 @@ diff -Naur solvers/cadical300/stable.cpp solvers/cdc300/stable.cpp
  int stable_if_not_profile_mode_dummy;
 diff -Naur solvers/cadical300/stack.h solvers/cdc300/stack.h
 --- solvers/cadical300/stack.h	2025-12-24 05:25:57
-+++ solvers/cdc300/stack.h	2026-05-15 00:11:41
++++ solvers/cdc300/stack.h	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _stack_h_INCLUDED
 -#define _stack_h_INCLUDED
@@ -3566,7 +3571,7 @@ diff -Naur solvers/cadical300/stack.h solvers/cdc300/stack.h
  
 diff -Naur solvers/cadical300/stats.cpp solvers/cdc300/stats.cpp
 --- solvers/cadical300/stats.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/stats.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/stats.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  
  #include "internal.hpp"
@@ -3584,7 +3589,7 @@ diff -Naur solvers/cadical300/stats.cpp solvers/cdc300/stats.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/stats.hpp solvers/cdc300/stats.hpp
 --- solvers/cadical300/stats.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/stats.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/stats.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _stats_hpp_INCLUDED
 -#define _stats_hpp_INCLUDED
@@ -3610,7 +3615,7 @@ diff -Naur solvers/cadical300/stats.hpp solvers/cdc300/stats.hpp
  #endif
 diff -Naur solvers/cadical300/subsume.cpp solvers/cdc300/subsume.cpp
 --- solvers/cadical300/subsume.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/subsume.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/subsume.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3627,7 +3632,7 @@ diff -Naur solvers/cadical300/subsume.cpp solvers/cdc300/subsume.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/sweep.cpp solvers/cdc300/sweep.cpp
 --- solvers/cadical300/sweep.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/sweep.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/sweep.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3644,7 +3649,7 @@ diff -Naur solvers/cadical300/sweep.cpp solvers/cdc300/sweep.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/sweep.hpp solvers/cdc300/sweep.hpp
 --- solvers/cadical300/sweep.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/sweep.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/sweep.hpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
 -#ifndef _sweep_hpp_INCLUDED
 -#define _sweep_hpp_INCLUDED
@@ -3666,7 +3671,7 @@ diff -Naur solvers/cadical300/sweep.hpp solvers/cdc300/sweep.hpp
  #endif
 diff -Naur solvers/cadical300/terminal.cpp solvers/cdc300/terminal.cpp
 --- solvers/cadical300/terminal.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/terminal.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/terminal.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3683,7 +3688,7 @@ diff -Naur solvers/cadical300/terminal.cpp solvers/cdc300/terminal.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/terminal.hpp solvers/cdc300/terminal.hpp
 --- solvers/cadical300/terminal.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/terminal.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/terminal.hpp	2026-05-15 10:44:04
 @@ -1,7 +1,7 @@
 -#ifndef _terminal_hpp_INCLUDED
 -#define _terminal_hpp_INCLUDED
@@ -3705,7 +3710,7 @@ diff -Naur solvers/cadical300/terminal.hpp solvers/cdc300/terminal.hpp
  #endif
 diff -Naur solvers/cadical300/ternary.cpp solvers/cdc300/ternary.cpp
 --- solvers/cadical300/ternary.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/ternary.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/ternary.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3722,7 +3727,7 @@ diff -Naur solvers/cadical300/ternary.cpp solvers/cdc300/ternary.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/testing.hpp solvers/cdc300/testing.hpp
 --- solvers/cadical300/testing.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/testing.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/testing.hpp	2026-05-15 10:44:04
 @@ -1,5 +1,5 @@
 -#ifndef _testing_hpp_INCLUDED
 -#define _testing_hpp_INCLUDED
@@ -3750,7 +3755,7 @@ diff -Naur solvers/cadical300/testing.hpp solvers/cdc300/testing.hpp
  #endif
 diff -Naur solvers/cadical300/tier.cpp solvers/cdc300/tier.cpp
 --- solvers/cadical300/tier.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/tier.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/tier.cpp	2026-05-15 10:44:05
 @@ -2,7 +2,7 @@
  #include "util.hpp"
  #include <string>
@@ -3770,7 +3775,7 @@ diff -Naur solvers/cadical300/tier.cpp solvers/cdc300/tier.cpp
 \ No newline at end of file
 diff -Naur solvers/cadical300/tracer.hpp solvers/cdc300/tracer.hpp
 --- solvers/cadical300/tracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/tracer.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/tracer.hpp	2026-05-15 10:44:04
 @@ -1,10 +1,10 @@
 -#ifndef _tracer_hpp_INCLUDED
 -#define _tracer_hpp_INCLUDED
@@ -3795,7 +3800,7 @@ diff -Naur solvers/cadical300/tracer.hpp solvers/cdc300/tracer.hpp
  #endif
 diff -Naur solvers/cadical300/transred.cpp solvers/cdc300/transred.cpp
 --- solvers/cadical300/transred.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/transred.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/transred.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3812,7 +3817,7 @@ diff -Naur solvers/cadical300/transred.cpp solvers/cdc300/transred.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/unstable.cpp solvers/cdc300/unstable.cpp
 --- solvers/cadical300/unstable.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/unstable.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/unstable.cpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
  #ifdef PROFILE_MODE
  #include "internal.hpp"
@@ -3833,7 +3838,7 @@ diff -Naur solvers/cadical300/unstable.cpp solvers/cdc300/unstable.cpp
  #endif
 diff -Naur solvers/cadical300/util.cpp solvers/cdc300/util.cpp
 --- solvers/cadical300/util.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/util.cpp	2026-05-15 00:11:40
++++ solvers/cdc300/util.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3850,7 +3855,7 @@ diff -Naur solvers/cadical300/util.cpp solvers/cdc300/util.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/util.hpp solvers/cdc300/util.hpp
 --- solvers/cadical300/util.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/util.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/util.hpp	2026-05-15 10:44:05
 @@ -1,11 +1,11 @@
 -#ifndef _util_hpp_INCLUDED
 -#define _util_hpp_INCLUDED
@@ -3876,7 +3881,7 @@ diff -Naur solvers/cadical300/util.hpp solvers/cdc300/util.hpp
  #endif
 diff -Naur solvers/cadical300/var.cpp solvers/cdc300/var.cpp
 --- solvers/cadical300/var.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/var.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/var.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3893,7 +3898,7 @@ diff -Naur solvers/cadical300/var.cpp solvers/cdc300/var.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/var.hpp solvers/cdc300/var.hpp
 --- solvers/cadical300/var.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/var.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/var.hpp	2026-05-15 10:44:04
 @@ -1,7 +1,7 @@
 -#ifndef _var_hpp_INCLUDED
 -#define _var_hpp_INCLUDED
@@ -3915,7 +3920,7 @@ diff -Naur solvers/cadical300/var.hpp solvers/cdc300/var.hpp
  #endif
 diff -Naur solvers/cadical300/veripbtracer.cpp solvers/cdc300/veripbtracer.cpp
 --- solvers/cadical300/veripbtracer.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/veripbtracer.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/veripbtracer.cpp	2026-05-15 10:44:04
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -3932,7 +3937,7 @@ diff -Naur solvers/cadical300/veripbtracer.cpp solvers/cdc300/veripbtracer.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/veripbtracer.hpp solvers/cdc300/veripbtracer.hpp
 --- solvers/cadical300/veripbtracer.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/veripbtracer.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/veripbtracer.hpp	2026-05-15 10:44:05
 @@ -1,10 +1,10 @@
 -#ifndef _veripbtracer_h_INCLUDED
 -#define _veripbtracer_h_INCLUDED
@@ -3957,7 +3962,7 @@ diff -Naur solvers/cadical300/veripbtracer.hpp solvers/cdc300/veripbtracer.hpp
  #endif
 diff -Naur solvers/cadical300/version.cpp solvers/cdc300/version.cpp
 --- solvers/cadical300/version.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/version.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/version.cpp	2026-05-15 10:44:04
 @@ -92,7 +92,7 @@
  
  #include "version.hpp"
@@ -3975,7 +3980,7 @@ diff -Naur solvers/cadical300/version.cpp solvers/cdc300/version.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/version.hpp solvers/cdc300/version.hpp
 --- solvers/cadical300/version.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/version.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/version.hpp	2026-05-15 10:44:05
 @@ -1,4 +1,4 @@
 -namespace CaDiCaL {
 +namespace CaDiCaL300 {
@@ -3990,7 +3995,7 @@ diff -Naur solvers/cadical300/version.hpp solvers/cdc300/version.hpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
 --- solvers/cadical300/vivify.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/vivify.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/vivify.cpp	2026-05-15 10:44:05
 @@ -5,7 +5,7 @@
  #include <limits>
  #include <utility>
@@ -4036,7 +4041,7 @@ diff -Naur solvers/cadical300/vivify.cpp solvers/cdc300/vivify.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/vivify.hpp solvers/cdc300/vivify.hpp
 --- solvers/cadical300/vivify.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/vivify.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/vivify.hpp	2026-05-15 10:44:05
 @@ -1,5 +1,5 @@
 -#ifndef _vivify_hpp_INCLUDED
 -#define _vivify_hpp_INCLUDED
@@ -4064,7 +4069,7 @@ diff -Naur solvers/cadical300/vivify.hpp solvers/cdc300/vivify.hpp
  #endif
 diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
 --- solvers/cadical300/walk.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/walk.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/walk.cpp	2026-05-15 10:44:04
 @@ -2,7 +2,7 @@
  #include "internal.hpp"
  #include "random.hpp"
@@ -4092,7 +4097,7 @@ diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/walk.hpp solvers/cdc300/walk.hpp
 --- solvers/cadical300/walk.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/walk.hpp	2026-05-15 00:11:41
++++ solvers/cdc300/walk.hpp	2026-05-15 10:44:05
 @@ -1,9 +1,9 @@
 -#ifndef _walk_hpp_INCLUDED
 -#define _walk_hpp_INCLUDED
@@ -4116,7 +4121,7 @@ diff -Naur solvers/cadical300/walk.hpp solvers/cdc300/walk.hpp
  #endif
 diff -Naur solvers/cadical300/walk_full_occs.cpp solvers/cdc300/walk_full_occs.cpp
 --- solvers/cadical300/walk_full_occs.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/walk_full_occs.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/walk_full_occs.cpp	2026-05-15 10:44:05
 @@ -1,7 +1,7 @@
  #include "internal.hpp"
  #include <cstdint>
@@ -4134,7 +4139,7 @@ diff -Naur solvers/cadical300/walk_full_occs.cpp solvers/cdc300/walk_full_occs.c
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/warmup.cpp solvers/cdc300/warmup.cpp
 --- solvers/cadical300/warmup.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/warmup.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/warmup.cpp	2026-05-15 10:44:04
 @@ -1,7 +1,7 @@
  #include "cadical.hpp"
  #include "internal.hpp"
@@ -4162,7 +4167,7 @@ diff -Naur solvers/cadical300/warmup.cpp solvers/cdc300/warmup.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/watch.cpp solvers/cdc300/watch.cpp
 --- solvers/cadical300/watch.cpp	2025-12-24 05:25:57
-+++ solvers/cdc300/watch.cpp	2026-05-15 00:11:41
++++ solvers/cdc300/watch.cpp	2026-05-15 10:44:05
 @@ -1,6 +1,6 @@
  #include "internal.hpp"
  
@@ -4179,7 +4184,7 @@ diff -Naur solvers/cadical300/watch.cpp solvers/cdc300/watch.cpp
 +} // namespace CaDiCaL300
 diff -Naur solvers/cadical300/watch.hpp solvers/cdc300/watch.hpp
 --- solvers/cadical300/watch.hpp	2025-12-24 05:25:57
-+++ solvers/cdc300/watch.hpp	2026-05-15 00:11:40
++++ solvers/cdc300/watch.hpp	2026-05-15 10:44:04
 @@ -1,12 +1,12 @@
 -#ifndef _watch_hpp_INCLUDED
 -#define _watch_hpp_INCLUDED
