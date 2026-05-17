@@ -4,7 +4,7 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 import pytest
 
-@pytest.mark.parametrize('solver_name', ['cadical195', 'cadical300'])
+@pytest.mark.parametrize('solver_name', ['cadical195', 'cadical300', 'minisatep'])
 def test_propagate(solver_name):
         cnf = CNF()
         leq1 = CardEnc.atmost(list(range(1, 6)), bound=2, encoding=EncType.native)

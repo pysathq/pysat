@@ -36,6 +36,7 @@
         Minicard
         Minisat22
         MinisatGH
+        MinisatEP
 
     ==================
     Module description
@@ -58,6 +59,7 @@
     -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
     -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
     -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)
+    -  Minisat (`with IPASIR-UP support <https://github.com/hchenqide/minisat>`__)
 
     Additionally, PySAT includes the versions of :class:`Glucose3` and
     :class:`Glucose4` that support native cardinality constraints, ported from
@@ -65,6 +67,14 @@
 
     -  Gluecard3
     -  Gluecard4
+
+    Other solvers supporting native cardinality constraints and pseudo-Boolean
+    constraints (via external propagators or natively) are:
+
+    -  :class:`Cadical195`
+    -  :class:`Cadical300`
+    -  :class:`Minicard`
+    -  :class:`MinisatEP`
 
     Finally, PySAT offers rudimentary support of CryptoMiniSat5 [3]_ through
     the interface provided by the ``pycryptosat`` package. The functionality
@@ -90,7 +100,8 @@
     :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
     :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
     :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
-    :class:`Minicard`, :class:`Minisat22`, and :class:`MinisatGH`. However,
+    :class:`Minicard`, :class:`Minisat22`, :class:`MinisatGH`, and
+    :class:`MinisatEP`. However,
     the solvers can also be accessed through the common base class
     :class:`Solver` using the solver ``name`` argument. For example, both of
     the following pieces of code create a copy of the :class:`Glucose3`
@@ -213,7 +224,7 @@ class NoSuchSolverError(Exception):
         `'cadical195'`, `'cadical300'`, `'cryptosat'`, `'gluecard3'`,
         `'gluecard4'`, `'glucose3'`, `'glucose4'`, `glucose42`, `'lingeling'`,
         `'maplechrono'`, `'maplecm'`, `'maplesat'`, `'mergesat3'`,
-        `'minicard'`, `'minisat22'`, and `'minisatgh'`.
+        `'minicard'`, `'minisat22'`, `'minisatgh'`, and `'minisatep'`.
     """
 
     pass
@@ -247,6 +258,7 @@ class SolverNames(object):
             minicard    = ('mc', 'mcard', 'minicard')
             minisat22   = ('m22', 'msat22', 'minisat22')
             minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
+            minisatep   = ('mep', 'msat-ep', 'minisat-ep', 'minisatep')
 
         As a result, in order to select Glucose3, a user can specify the
         solver's name: either ``'g3'``, ``'g30'``, ``'glucose3'``, or
@@ -273,6 +285,7 @@ class SolverNames(object):
     minicard    = ('mc', 'mcard', 'minicard')
     minisat22   = ('m22', 'msat22', 'minisat22')
     minisatgh   = ('mgh', 'msat-gh', 'minisat-gh')
+    minisatep   = ('mep', 'msat-ep', 'minisat-ep', 'minisatep')
 
 
 #
@@ -436,7 +449,9 @@ class Solver(object):
             if name_ not in SolverNames.cadical300:
                 extra.pop('sync_with', None)
 
-            if name_ not in SolverNames.cadical195 and name_ not in SolverNames.cadical300:
+            if name_ not in SolverNames.cadical195 and \
+               name_ not in SolverNames.cadical300 and \
+               name_ not in SolverNames.minisatep:
                 extra.pop('native_card', None)
 
             if name_ in SolverNames.cadical103:
@@ -477,6 +492,8 @@ class Solver(object):
                 self.solver = Minisat22(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.minisatgh:
                 self.solver = MinisatGH(bootstrap_with, use_timer, **extra)
+            elif name_ in SolverNames.minisatep:
+                self.solver = MinisatEP(bootstrap_with, use_timer, **extra)
             else:
                 raise(NoSuchSolverError(name))
 
@@ -602,20 +619,22 @@ class Solver(object):
     def activate_atmost(self):
         """
             Activate native linear (cardinality or pseudo-Boolean) constraint
-            reasoning. This is supported only by :class:`Cadical195` by means
-            of its external propagators functionality and the use of
+            reasoning. This is supported by :class:`Cadical195`,
+            :class:`Cadical300`, and :class:`MinisatEP` by means of their
+            external propagators functionality and the use of
             :class:`BooleanEngine`.
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300`,
+                and :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.activate_atmost()
             else:
-                raise NotImplementedError('Native cardinality constraint activation is supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('Native cardinality constraint activation is supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def connect_propagator(self, propagator):
         """
@@ -625,14 +644,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300`,
+                and :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.connect_propagator(propagator)
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def disconnect_propagator(self):
         """
@@ -642,14 +662,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.disconnect_propagator()
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def enable_propagator(self):
         """
@@ -658,14 +679,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.enable_propagator()
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def disable_propagator(self):
         """
@@ -675,14 +697,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.disable_propagator()
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def propagator_active(self):
         """
@@ -692,14 +715,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 return self.solver.propagator_active()
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def observe(self, var):
         """
@@ -708,14 +732,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.observe(var)
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def ignore(self, var):
         """
@@ -724,14 +749,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 self.solver.ignore(var)
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def reset_observed(self):
         """
@@ -739,14 +765,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 return self.solver.reset_observed()
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def is_decision(self, lit):
         """
@@ -758,14 +785,15 @@ class Solver(object):
 
             .. note::
 
-                IPASIR-UP related. :class:`Cadical195` only.
+                IPASIR-UP related. :class:`Cadical195`, :class:`Cadical300` and
+                :class:`MinisatEP` only.
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
                 return self.solver.is_decision(lit)
             else:
-                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5')
+                raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
 
     def accum_stats(self):
         """
@@ -1439,7 +1467,8 @@ class Solver(object):
             ``k``, where ``lits`` is a list of literals in the sum.
 
             Also, besides *unweighted* AtMostK constraints, some solvers (see
-            :class:`Cadical195`) support their weighted counterparts, i.e.
+            :class:`Cadical195`, :class:`Cadical300`, and :class:`MinisatEP`)
+            support their weighted counterparts, i.e.
             pseudo-Boolean constraints of the form :math:`\\sum_{i=1}^{n}{w_i
             \\cdot x_i}\\leq k`. The weights of the literals can be specified
             using the argument ``weights``.
@@ -7911,6 +7940,481 @@ class MinisatGH(object):
             This method can be called to determine whether the solver supports
             native AtMostK (see :mod:`pysat.card`) constraints.
         """
+
+        return False
+
+
+#
+#==============================================================================
+class MinisatEP(object):
+    """
+        MiniSat SAT solver (with IPASIR-UP support). This class provides
+        access to the MiniSat 2.2 solver with support for external
+        propagators and native cardinality constraints through the
+        IPASIR-UP interface.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 with_proof=False, warm_start=False, native_card=False):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by MinisatEP.')
+
+        if with_proof:
+            raise NotImplementedError('Proof logging is not supported by MinisatEP.')
+
+        self.minisat = None
+        self.pengine = None
+        self.status = None
+
+        self.new(bootstrap_with, use_timer, warm_start, native_card)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False, warm_start=False,
+            native_card=False):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.minisat:
+            self.minisat = pysolvers.minisatep_new()
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    if not native_card:
+                        raise NotImplementedError('To support atmost constraints, use \'native_card\' parameter')
+                    else:
+                        # creating the engine
+                        self.activate_atmost()
+
+                for clause in bootstrap_with:
+                    if isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [])
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+            # time and conflicts budget values
+            self.time_limit = None
+            self.conf_limit = None
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_set_start(self.minisat, int(warm))
+
+    def activate_atmost(self):
+        """
+            This method enable native cardinality mode. Note that it is
+            impossible to disable this mode once it's activated. (This would
+            require the engine to support cleaning constraints and reencoding
+            them to CNF on the fly).
+
+            Note that activating native AtMost constraints support makes it
+            impossible to add another user-defined propagator.
+        """
+
+        if self.minisat:
+            if not self.pengine:
+                # creating the engine
+                pengine = BooleanEngine(adaptive=True)
+
+                # attaching it to the solver
+                self.connect_propagator(pengine)
+
+                self.pengine = pengine
+                self.pengine.setup_observe(self)
+            else:
+                raise Exception('Another propagator is already attached')
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.minisat:
+            if self.pengine:
+                self.disconnect_propagator()
+                self.pengine = None
+
+            pysolvers.minisatep_del(self.minisat)
+            self.minisat = None
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.minisat:
+            if self.use_timer:
+                start_time = process_time()
+
+            self.status = pysolvers.minisatep_solve(self.minisat, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.minisat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.minisatep_solve_lim(self.minisat,
+                    assumptions, int(MainThread.check()), int(expect_interrupt))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_cbudget(self.minisat, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_pbudget(self.minisat, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by MinisatEP.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_interrupt(self.minisat)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_clearint(self.minisat)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagates a given set of assumptions.
+        """
+
+        if self.minisat:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.minisatep_propagate(self.minisat,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_setphases(self.minisat, literals)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.minisat:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.minisat and self.status == True:
+            model = pysolvers.minisatep_model(self.minisat)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.minisat and self.status == False:
+            return pysolvers.minisatep_core(self.minisat)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        raise NotImplementedError('Proof tracing is not supported by MiniSat.')
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.minisat:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.minisat:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatep_nof_vars(self.minisat)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatep_nof_cls(self.minisat)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatep_acc_stats(self.minisat)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.minisat:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.minisat:
+            res = pysolvers.minisatep_add_cl(self.minisat, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            This method is responsible for adding a new *native* AtMostK (see
+            :mod:`pysat.card`) constraint.
+
+            **Note that :class:`MinisatEP` supports this by means of an
+            external propagator :class:`BooleanEngine`.**
+
+            Before calling this method, make sure native cardinality support
+            is activated.
+        """
+
+        if self.minisat:
+            if self.supports_atmost():
+                self.pengine.add_constraint(('linear', [lits, k, weights]))
+
+                if not no_return:
+                    return True  # we don't check satisfiability here;
+                                # returning true to be compatible with the API
+            else:
+                raise NotImplementedError('Native atmost constraints are currently disabled')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.minisat:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                if not self.supports_atmost():
+                    raise NotImplementedError('Native atmost constraints are currently disabled')
+
+            for clause in formula:
+                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1],
+                                          weights=clause[2] if len(clause) == 3 else [],
+                                          no_return=no_return)
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return self.pengine and type(self.pengine) == BooleanEngine
+
+    def connect_propagator(self, propagator):
+        """
+            Connects a given external propagator to the solver.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_pconn(self.minisat, propagator)
+            self.pengine = propagator
+
+    def disconnect_propagator(self):
+        """
+            Disconnects the currently connected external propagator.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_pdisconn(self.minisat)
+            self.pengine = None
+
+    def enable_propagator(self):
+        """
+            Enables the currently connected external propagator.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_penable(self.minisat)
+
+    def disable_propagator(self):
+        """
+            Disables the currently connected external propagator.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_pdisable(self.minisat)
+
+    def propagator_active(self):
+        """
+            Returns True if the external propagator is active.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatep_pactive(self.minisat)
+
+        return False
+
+    def observe(self, variable):
+        """
+            Mark a given variable as 'observed' by the external propagator.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_vobserve(self.minisat, variable)
+
+    def ignore(self, variable):
+        """
+            Removes the 'observed' flag from the given variable.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_vignore(self.minisat, variable)
+
+    def reset_observed(self):
+        """
+            Removes all the 'observed' flags from the variables.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_vreset(self.minisat)
+
+    def is_decision(self, literal):
+        """
+            Checks if a given literal is a decision literal.
+        """
+
+        if self.minisat:
+            return pysolvers.minisatep_isdeclit(self.minisat, literal)
 
         return False
 

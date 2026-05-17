@@ -19,7 +19,8 @@ solvers = ['cadical103',
            'mergesat3',
            'minicard',
            'minisat22',
-           'minisat-gh']
+           'minisat-gh',
+           'minisatep']
 
 # CNF+ formula with native atmost1 constraint
 cnf1 = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.native)

@@ -16,7 +16,8 @@ solvers = ['cadical103',
            'minicard',
            'mergesat3',
            'minisat22',
-           'minisat-gh']
+           'minisat-gh',
+           'minisatep']
 
 def test_solvers():
     cnf = CNF(from_clauses=[[1, 2, 3], [-1, 2], [-2]])

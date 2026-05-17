@@ -8,7 +8,7 @@ from decimal import Decimal
 from pysat.integer import Integer, IntegerEngine, LinearExpr
 from pysat.solvers import Solver
 
-engine_solvers = ['cadical195', 'cadical300']
+engine_solvers = ['cadical195', 'cadical300', 'minisatep']
 
 def _enum_models_engine(eng, vars, solver_name):
     models = set()

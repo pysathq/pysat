@@ -98,6 +98,11 @@ sources = {
         'http://reason.di.fc.ul.pt/~aign/storage/mirror/minisatgh-master.zip',
         'solvers/minisatgh.zip'
     ),
+    'minisatep': (
+        'https://github.com/hchenqide/minisat/archive/master.zip',
+        'https://github.com/hchenqide/minisat/archive/refs/heads/master.zip',
+        'solvers/minisatep.zip'
+    ),
     'kissat404': (
         'https://github.com/arminbiere/kissat/archive/refs/tags/rel-4.0.4.tar.gz',
         'solvers/kissat404.tar.gz'
@@ -124,6 +129,7 @@ to_extract = {
     'minicard': [],
     'minisat22': [],
     'minisatgh': [],
+    'minisatep': [],
     'kissat404': []
 }
 
@@ -716,6 +722,11 @@ to_move = {
         ('minisat/mtl', 'mtl'),
         ('minisat/utils', 'utils')
     ],
+    'minisatep': [
+        ('minisat/core', 'core'),
+        ('minisat/mtl', 'mtl'),
+        ('minisat/utils', 'utils')
+    ],
     'kissat404': [
         ('src', 'src')
     ]
@@ -1013,6 +1024,22 @@ to_remove = {
         'LICENSE',
         'Makefile',
         'README',
+        '.gitignore'
+    ],
+    'minisatep': [
+        'core/Dimacs.h',
+        'core/Main.cc',
+        'minisat',
+        'CMakeLists.txt',
+        'LICENSE',
+        'Makefile',
+        'README',
+        'README-IPASIRUP.md',
+        'cnfuzz.c',
+        'doc',
+        'drup-trim.c',
+        'run_fuzz.sh',
+        'test',
         '.gitignore'
     ],
     'kissat404': [

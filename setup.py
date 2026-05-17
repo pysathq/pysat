@@ -72,7 +72,7 @@ to_install = ['cadical103', 'cadical153', 'cadical195', 'cadical300',
               'gluecard30', 'gluecard41', 'glucose30', 'glucose41',
               'glucose421', 'kissat404', 'lingeling', 'maplechrono',
               'maplecm', 'maplesat', 'mergesat3', 'minicard', 'minisat22',
-              'minisatgh']
+              'minisatgh', 'minisatep']
 
 # example and allies scripts to install as standalone executables
 #==============================================================================

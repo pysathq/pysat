@@ -5,6 +5,7 @@ from pysat.formula import IDPool
 from pysat.solvers import Solver
 from pysat.solvers import Cadical195
 from pysat.solvers import Cadical300
+from pysat.solvers import MinisatEP
 from pysat.engines import Propagator
 
 solvers = ['cadical153',
@@ -21,7 +22,8 @@ solvers = ['cadical153',
            'minicard',
            'mergesat3',
            'minisat22',
-           'minisat-gh']
+           'minisat-gh',
+           'minisatep']
 
 def test_solvers():
     cnf = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.pairwise)
@@ -43,7 +45,7 @@ def test_solvers():
             assert not lits, 'wrong list of propagated literals: {0}'.format(lits)
 
 
-@pytest.mark.parametrize('solver_class', [Cadical195, Cadical300])
+@pytest.mark.parametrize('solver_class', [Cadical195, Cadical300, MinisatEP])
 @pytest.mark.parametrize('bootstrap, action, failing_method, message', [
     ([[1]], lambda solver: solver.observe(1), 'on_assignment', 'boom in on_assignment'),
     ([[1]], lambda solver: solver.solve(), 'propagate', 'boom in propagate'),
