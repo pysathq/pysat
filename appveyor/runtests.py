@@ -22,7 +22,7 @@ def pycall(cmd):
     fullcmd = sys.executable + ' ' + cmd
 
     # trying to handle the issue of 'pysat.examples' module
-    if cmd == '-m pytest':
+    if cmd.startswith('-m pytest'):
         fullcmd = 'cd tests && ' + fullcmd
 
     ret = os.system(fullcmd)
@@ -44,6 +44,9 @@ if __name__ == '__main__':
     for wheel in glob.glob(params.wheels):
         pycall('-m pip install --upgrade {0}'.format(wheel))
 
-    pycall(params.test)
+    # pycall(params.test)
+
+    for tfile in glob.glob('tests/*.py'):
+        pycall(params.test + ' -v ' + os.path.basename(tfile))
 
     sys.exit(0)

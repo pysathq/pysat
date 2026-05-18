@@ -1,4 +1,3 @@
-import platform
 import pytest
 try:
     import pysat.pb
@@ -10,8 +9,6 @@ from pysat.integer import Integer, IntegerEngine, LinearExpr
 from pysat.solvers import Solver
 
 engine_solvers = ['cadical195', 'cadical300', 'minisatep']
-if platform.system() == 'Windows':
-    engine_solvers.pop()  # disabling the test of MinisatEP on Windows for now
 
 def _enum_models_engine(eng, vars, solver_name):
     models = set()
