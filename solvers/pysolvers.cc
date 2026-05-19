@@ -1151,8 +1151,7 @@ static bool pyiter_to_pyitervector(PyObject *obj, vector<PyObject*>& vect)
 			PyErr_SetString(PyExc_TypeError, "list expected");
 			return false;
 		}
-		Py_INCREF(l_obj); // TODO check if we need to do this
-		vect.push_back(l_obj); // we don't decref it because we need to keep the reference to it
+		vect.push_back(l_obj); // PyIter_Next() already returns a new reference
 	}
 
 	Py_DECREF(i_obj);
@@ -3279,7 +3278,6 @@ public:
 				PyObject *plit = PyList_GET_ITEM(sel, 0); // get first item
 				if (!pyint_check(plit)) {
 					PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-					Py_DECREF(plit);
 					Py_DECREF(sel);
 					pycadical195_callback_failed = true;
 					return 0;
@@ -3290,13 +3288,11 @@ public:
 					plit = PyList_GET_ITEM(sel, i); // get item
 					if (!pyint_check(plit)) {
 						PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-						Py_DECREF(plit);
 						Py_DECREF(sel);
 						pycadical195_callback_failed = true;
 						return 0;
 					}
 					provide_reason_queue.push_back(pyint_to_cint(plit)); // push
-					Py_DECREF(plit);
 				}
 				provide_reason_queue.push_back(res);
 			}
@@ -3769,9 +3765,9 @@ static PyObject *py_cadical195_isdeclit(PyObject *self, PyObject *args)
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)pyobj_to_void(s_obj);
 
 	if (s->is_decision(lit))
-		return Py_True;
+		Py_RETURN_TRUE;
 	else
-		return Py_False;
+		Py_RETURN_FALSE;
 }
 #endif  // WITH_CADICAL195
 
@@ -4676,7 +4672,6 @@ public:
 				PyObject *plit = PyList_GET_ITEM(sel, 0); // get first item
 				if (!pyint_check(plit)) {
 					PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-					Py_DECREF(plit);
 					Py_DECREF(sel);
 					pycadical300_callback_failed = true;
 					return 0;
@@ -4687,13 +4682,11 @@ public:
 					plit = PyList_GET_ITEM(sel, i); // get item
 					if (!pyint_check(plit)) {
 						PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-						Py_DECREF(plit);
 						Py_DECREF(sel);
 						pycadical300_callback_failed = true;
 						return 0;
 					}
 					provide_reason_queue.push_back(pyint_to_cint(plit)); // push
-					Py_DECREF(plit);
 				}
 				provide_reason_queue.push_back(res);
 			}
@@ -5174,9 +5167,9 @@ static PyObject *py_cadical300_isdeclit(PyObject *self, PyObject *args)
 		s->resize(abs(lit));
 
 	if (s->is_decision(lit))
-		return Py_True;
+		Py_RETURN_TRUE;
 	else
-		return Py_False;
+		Py_RETURN_FALSE;
 }
 #endif  // WITH_CADICAL300
 
@@ -12584,7 +12577,6 @@ public:
 				PyObject *plit = PyList_GET_ITEM(sel, 0); // get first item
 				if (!pyint_check(plit)) {
 					PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-					Py_DECREF(plit);
 					Py_DECREF(sel);
 					pyminisatep_callback_failed = true;
 					return 0;
@@ -12595,13 +12587,11 @@ public:
 					plit = PyList_GET_ITEM(sel, i); // get item
 					if (!pyint_check(plit)) {
 						PyErr_SetString(PyExc_ValueError, "Propagate has a non-integer in its clauses.");
-						Py_DECREF(plit);
 						Py_DECREF(sel);
 						pyminisatep_callback_failed = true;
 						return 0;
 					}
 					provide_reason_queue.push_back(pyint_to_cint(plit)); // push
-					Py_DECREF(plit);
 				}
 				provide_reason_queue.push_back(res);
 			}
@@ -13426,9 +13416,9 @@ static PyObject *py_minisatep_pactive(PyObject *self, PyObject *args)
 	PyExternalPropagatorEP *cprop = (PyExternalPropagatorEP*)(s->get_external_propagator());
 
 	if (cprop && !cprop->passive)
-		return Py_True;
+		Py_RETURN_TRUE;
 	else
-		return Py_False;
+		Py_RETURN_FALSE;
 }
 
 //
@@ -13519,9 +13509,9 @@ static PyObject *py_minisatep_isdeclit(PyObject *self, PyObject *args)
 	minisatep_declare_vars(s, abs(lit));
 
 	if (s->is_decision(lit))
-		return Py_True;
+		Py_RETURN_TRUE;
 	else
-		return Py_False;
+		Py_RETURN_FALSE;
 }
 #endif  // WITH_MINISATEP
 

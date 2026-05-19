@@ -13,21 +13,19 @@
 import argparse
 import glob
 import os
+import subprocess
 import sys
 
 
 #
 #==============================================================================
 def pycall(cmd):
-    fullcmd = sys.executable + ' ' + cmd
+    fullcmd = [sys.executable] + cmd.split()
+    cwd = 'tests' if cmd.startswith('-m pytest') else None
 
-    # trying to handle the issue of 'pysat.examples' module
-    if cmd.startswith('-m pytest'):
-        fullcmd = 'cd tests && ' + fullcmd
+    ret = subprocess.call(fullcmd, cwd=cwd)
 
-    ret = os.system(fullcmd)
-
-    if ret != 0:
+    if ret not in (0, 5):
         print('{0} returned {1}'.format(cmd, ret))
         raise OSError
 

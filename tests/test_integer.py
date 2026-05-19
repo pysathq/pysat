@@ -1,12 +1,18 @@
 import pytest
-try:
-    import pysat.pb
-except Exception:
-    pytest.skip('pypblib is required for integer module tests', allow_module_level=True)
-
 from decimal import Decimal
-from pysat.integer import Integer, IntegerEngine, LinearExpr
 from pysat.solvers import Solver
+
+try:
+    import pysat.pb  # noqa: F401
+    pypblib_available = True
+except Exception:
+    pypblib_available = False
+
+pytestmark = pytest.mark.skipif(not pypblib_available,
+                                reason='pypblib is required for integer module tests')
+
+if pypblib_available:
+    from pysat.integer import Integer, IntegerEngine, LinearExpr
 
 engine_solvers = ['cadical195', 'cadical300', 'minisatep']
 
