@@ -74,6 +74,21 @@ except ImportError:  # zstandard is introduced in Python 3.14
     zstd_present = False
 
 
+#
+#==============================================================================
+def read_all_text(fp):
+    """
+        Read the entire contents of a file-like object and normalize the
+        result to text.
+    """
+
+    data = fp.read()
+
+    if isinstance(data, bytes):
+        return data.decode('utf-8')
+
+    return data
+
 
 #
 #==============================================================================

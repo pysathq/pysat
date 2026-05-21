@@ -271,7 +271,7 @@ import decimal
 from enum import Enum
 import itertools
 import os
-from pysat._fileio import FileObject
+from pysat._fileio import FileObject, read_all_text
 import sys
 
 # checking whether or not py-aiger-cnf is available and working as expected
@@ -280,6 +280,13 @@ try:
     import aiger_cnf
 except ImportError:
     aiger_present = False
+
+# checking whether or not native formula parser is available
+pyformula_present = True
+try:
+    import pyformula
+except ImportError:
+    pyformula_present = False
 
 try:  # for Python2
     from cStringIO import StringIO
@@ -3286,6 +3293,11 @@ class CNF(Formula, object):
                 ...     cnf2 = CNF(from_fp=fp)
         """
 
+        if pyformula_present:
+            self.nv, self.clauses, self.comments = pyformula.parse_cnf(
+                    read_all_text(file_pointer), comment_lead)
+            return
+
         self.nv = 0
         self.clauses = []
         self.comments = []
@@ -3331,7 +3343,10 @@ class CNF(Formula, object):
                 3
         """
 
-        self.from_fp(StringIO(string), comment_lead)
+        if pyformula_present:
+            self.nv, self.clauses, self.comments = pyformula.parse_cnf(string, comment_lead)
+        else:
+            self.from_fp(StringIO(string), comment_lead)
 
     def from_clauses(self, clauses, by_ref=False):
         """
@@ -4044,6 +4059,18 @@ class WCNF(object):
                 ...     cnf2 = WCNF(from_fp=fp)
         """
 
+        if pyformula_present:
+            self.nv, self.hard, self.soft, self.wght, self.topw, self.comments, negs = \
+                    pyformula.parse_wcnf(read_all_text(file_pointer), comment_lead)
+
+            if negs:
+                self.normalize_negatives(negs)
+
+            if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
+                self.topw = 1 + sum(self.wght)
+
+            return
+
         def parse_wght(string):
             if string == 'h':
                 return None
@@ -4171,7 +4198,17 @@ class WCNF(object):
                 3
         """
 
-        self.from_fp(StringIO(string), comment_lead)
+        if pyformula_present:
+            self.nv, self.hard, self.soft, self.wght, self.topw, self.comments, negs = \
+                    pyformula.parse_wcnf(string, comment_lead)
+
+            if negs:
+                self.normalize_negatives(negs)
+
+            if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
+                self.topw = 1 + sum(self.wght)
+        else:
+            self.from_fp(StringIO(string), comment_lead)
 
     def copy(self):
         """
@@ -4668,6 +4705,16 @@ class CNFPlus(CNF, object):
         s = self.to_dimacs().replace('\n', '\\n')
         return f'CNFPlus(from_string=\'{s}\')'
 
+    def from_string(self, string, comment_lead=['c']):
+        """
+            Read a CNF+ formula from a string.
+        """
+
+        if pyformula_present:
+            self.nv, self.clauses, self.atmosts, self.comments = pyformula.parse_cnfplus(string, comment_lead)
+        else:
+            self.from_fp(StringIO(string), comment_lead)
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a CNF+ formula from a file pointer. A file pointer should be
@@ -4692,6 +4739,11 @@ class CNFPlus(CNF, object):
                 >>> with open('another-file.cnf+', 'r') as fp:
                 ...     cnf2 = CNFPlus(from_fp=fp)
         """
+
+        if pyformula_present:
+            self.nv, self.clauses, self.atmosts, self.comments = pyformula.parse_cnfplus(
+                    read_all_text(file_pointer), comment_lead)
+            return
 
         self.nv = 0
         self.clauses = []
@@ -5196,6 +5248,23 @@ class WCNFPlus(WCNF, object):
         s = self.to_dimacs().replace('\n', '\\n')
         return f'WCNFPlus(from_string=\'{s}\')'
 
+    def from_string(self, string, comment_lead=['c']):
+        """
+            Read a WCNF+ formula from a string.
+        """
+
+        if pyformula_present:
+            self.nv, self.hard, self.soft, self.wght, self.atms, self.topw, self.comments, negs = \
+                    pyformula.parse_wcnfplus(string, comment_lead)
+
+            if negs:
+                self.normalize_negatives(negs)
+
+            if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
+                self.topw = 1 + sum(self.wght)
+        else:
+            self.from_fp(StringIO(string), comment_lead)
+
     def from_fp(self, file_pointer, comment_lead=['c']):
         """
             Read a WCNF+ formula from a file pointer. A file pointer should be
@@ -5220,6 +5289,18 @@ class WCNFPlus(WCNF, object):
                 >>> with open('another-file.wcnf+', 'r') as fp:
                 ...     cnf2 = WCNFPlus(from_fp=fp)
         """
+
+        if pyformula_present:
+            self.nv, self.hard, self.soft, self.wght, self.atms, self.topw, self.comments, negs = \
+                    pyformula.parse_wcnfplus(read_all_text(file_pointer), comment_lead)
+
+            if negs:
+                self.normalize_negatives(negs)
+
+            if type(self.topw) == decimal.Decimal and self.topw.is_infinite():
+                self.topw = 1 + sum(self.wght)
+
+            return
 
         def parse_wght(string):
             if string == 'h':

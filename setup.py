@@ -131,12 +131,24 @@ elif platform.system() == 'Windows':
     cpplib = []
 
 
-# C extensions: pycard and pysolvers
+# C extensions: pycard, pyformula, and pysolvers
 #==============================================================================
 pycard_ext = Extension('pycard',
     sources=['cardenc/pycard.cc'],
     extra_compile_args=compile_flags,
     include_dirs=['cardenc'] ,
+    language='c++',
+    libraries=cpplib,
+    library_dirs=[]
+)
+
+pyformula_ext = Extension('pyformula',
+    sources=['formula/pyformula.cc',
+             'formula/pf_weight.cc',
+             'formula/pf_plus.cc',
+             'formula/pf_parse.cc'],
+    extra_compile_args=compile_flags,
+    include_dirs=['formula'],
     language='c++',
     libraries=cpplib,
     library_dirs=[]
@@ -184,7 +196,7 @@ setup(name='python-sat',
     author='Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado',
     author_email='alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com',
     url='https://github.com/pysathq/pysat',
-    ext_modules=[pycard_ext, pysolvers_ext],
+    ext_modules=[pycard_ext, pyformula_ext, pysolvers_ext],
     scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
             ['allies/{0}.py'.format(s) for s in allies_scripts],
     cmdclass={'build': build},

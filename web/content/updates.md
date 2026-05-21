@@ -19,6 +19,7 @@ then to keep it up-to-date is good idea.
 -   Added support for CaDiCaL 3.0.0.
 -   Added MinisatEP (MiniSat 2.2 with external propagation engines support)
 -   Minor optimisations in cardenc.
+-   Added pyformula C-extension for faster *DIMACS parsing.
 
 ## 5.03.2026 (*1.9.dev2*)
 
