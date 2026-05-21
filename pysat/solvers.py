@@ -184,9 +184,9 @@
     settings. For that reason, :class:`Cadical300`'s BVA is disabled by
     default whenever it is created without a synchronized
     :class:`.pysat.formula.IDPool`. Users who want BVA can either enable it
-    manually with :meth:`.configure` or attach a shared pool with
-    :meth:`.attach_vpool` and keep it synchronized explicitly with
-    :meth:`.sync_vpool`.
+    manually with :meth:`.Solver.configure` or attach a shared pool with
+    :meth:`.Solver.attach_vpool` and keep it synchronized explicitly with
+    :meth:`.Solver.sync_vpool`.
 
     ==============
     Module details
