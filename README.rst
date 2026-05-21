@@ -79,6 +79,7 @@ Minisat-based solvers only *core* versions are integrated):
 -  Minicard (`1.2 <https://github.com/liffiton/minicard>`__)
 -  Minisat (`2.2 release <http://minisat.se/MiniSat.html>`__)
 -  Minisat (`GitHub version <https://github.com/niklasso/minisat>`__)
+-  Minisat (`with IPASIR-UP support <https://github.com/hchenqide/minisat>`__)
 
 In order to make SAT-based prototyping easier, PySAT integrates a variety of
 cardinality encodings. All of them are implemented from scratch in C++. The
