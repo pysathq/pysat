@@ -12,6 +12,7 @@ solvers/._glucose-syrup-4.1
 solvers/cadical103
 solvers/cadical153
 solvers/cadical195
+solvers/cadical300
 solvers/gluecard30
 solvers/gluecard41
 solvers/glucose30
@@ -26,6 +27,7 @@ solvers/mergesat3
 solvers/minicard
 solvers/minisat22
 solvers/minisatgh
+solvers/minisatep
 temp
 web/.hugo_build.lock
 wheelhouse
