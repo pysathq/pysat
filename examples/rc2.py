@@ -131,6 +131,7 @@
 #
 #==============================================================================
 from __future__ import print_function
+import bisect
 import collections
 import getopt
 import itertools
@@ -810,8 +811,8 @@ class RC2(object):
             handled by calling :func:`process_am1`.
         """
 
-        # literal connections
-        conns = collections.defaultdict(lambda: set([]))
+        # literal connections and selectors conflicting on their own
+        conns = collections.defaultdict(list)
         confl = []
 
         # prepare connections
@@ -819,26 +820,29 @@ class RC2(object):
             st, props = self.oracle.propagate(assumptions=[l1], phase_saving=2)
             if st:
                 for l2 in props:
-                    if -l2 in self.sels_set:
-                        conns[l1].add(-l2)
-                        conns[-l2].add(l1)
+                    l2 = -l2
+                    if l2 in self.sels_set:
+                        conns[l1].append(l2)
+                        conns[l2].append(l1)
             else:
                 # propagating this literal results in a conflict
                 confl.append(l1)
 
-        if confl:  # filtering out unnecessary connections
-            ccopy = {}
-            confl = set(confl)
+        # sort (in-place) and deduplicate adjacency lists
+        for l in list(conns):
+            neigh = conns[l]
+            if neigh:
+                neigh.sort()
 
-            for l in conns:
-                if l not in confl:
-                    cc = conns[l].difference(confl)
-                    if cc:
-                        ccopy[l] = cc
+                j = 1
+                for i in range(1, len(neigh)):
+                    if neigh[i] != neigh[j - 1]:
+                        neigh[j] = neigh[i]
+                        j += 1
 
-            conns = ccopy
-            confl = list(confl)
+                del neigh[j:]
 
+        if confl:
             # processing unit size cores
             for l in confl:
                 self.core, self.minw = [l], self.wght[l]
@@ -849,24 +853,47 @@ class RC2(object):
                 print('c unit cores found: {0}; cost: {1}'.format(len(confl),
                     self.cost))
 
+        # the following graph manipulation requires
+        # fast membership checks for confl; making it a set
+        confl = set(confl)
+
+        # current degrees in the remaining graph;
+        # literals disconnected after removing conflicts are ignored
+        degree, lits = {}, set()
+        for l in conns:
+            if l not in confl:
+                d = sum(1 for l2 in conns[l] if l2 not in confl)
+                if d:
+                    degree[l] = d
+                    lits.add(l)
+
+        # detect AM1s on the original formula with conflicting selectors
+        # filtered out, similarly to the previous implementation
         nof_am1 = 0
         len_am1 = []
-        lits = set(conns.keys())
-        while lits:
-            am1 = [min(lits, key=lambda l: len(conns[l]))]
 
-            for l in sorted(conns[am1[0]], key=lambda l: len(conns[l])):
+        while lits:
+            am1 = [min(lits, key=lambda l: degree[l])]
+
+            for l in sorted(conns[am1[0]], key=lambda l: degree.get(l, 0)):
                 if l in lits:
                     for l_added in am1[1:]:
-                        if l_added not in conns[l]:
+                        # adjacency lists are sorted, so we use
+                        # binary search for clique membership tests
+                        i = bisect.bisect_left(conns[l], l_added)
+                        if i == len(conns[l]) or conns[l][i] != l_added:
                             break
                     else:
                         am1.append(l)
 
-            # updating remaining lits and connections
-            lits.difference_update(set(am1))
-            for l in conns:
-                conns[l] = conns[l].difference(set(am1))
+            # updating remaining literals and their degrees
+            am1_set = set(am1)
+            lits.difference_update(am1_set)
+
+            for l in am1:
+                for l2 in conns.get(l, []):
+                    if l2 in lits:
+                        degree[l2] -= 1
 
             if len(am1) > 1:
                 # treat the new atmost1 relation
