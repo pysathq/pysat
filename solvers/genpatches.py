@@ -16,6 +16,7 @@ import contextlib
 import platform
 import shutil
 import glob
+import subprocess
 import prepare
 
 
@@ -41,11 +42,12 @@ def chdir(new_dir):
 #
 #==============================================================================
 def execute(cmd):
-    if platform.system() == 'Windows':
-        cmd = 'wsl ' + cmd
     print(cmd)
 
-    os.system(cmd)
+    if platform.system() == 'Windows':
+        subprocess.run(['wsl', 'bash', '-c', cmd])
+    else:
+        subprocess.run(cmd, shell=True)
 
 
 #
