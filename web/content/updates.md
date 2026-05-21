@@ -10,14 +10,14 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## xx.05.2026 (*1.9.dev3*)
+## 21.05.2026 (*1.9.dev3*)
 
 -   Added support for reification and absolute values in the ``integer``
     module.
 -   Fixed the issue of misleading error messages when external propagation is
     in use. The actual assertions and exceptions shouldn't get lost anymore.
 -   Added support for CaDiCaL 3.0.0.
--   Added MinisatEP (MiniSat 2.2 with external propagation engines support)
+-   Added MinisatEP (MiniSat 2.2 with external propagation engines support).
 -   Minor optimisations in cardenc.
 -   Added pyformula C-extension for faster *DIMACS parsing.
 
