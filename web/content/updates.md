@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 21.05.2026 (*1.9.dev4*)
+
+-   Addressed high memory consumption RC2's `adapt_am1()`.
+
 ## 21.05.2026 (*1.9.dev3*)
 
 -   Added support for reification and absolute values in the ``integer``
