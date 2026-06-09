@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 10.06.2026 (*1.9.dev5*)
+
+-   Added missing header files in the source distribution (thanks to Christoph
+    Jabs).
+
 ## 21.05.2026 (*1.9.dev4*)
 
 -   Addressed high memory consumption RC2's `adapt_am1()`.
