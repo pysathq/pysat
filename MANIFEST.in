@@ -6,3 +6,4 @@ recursive-include cardenc *.hh
 include solvers/prepare.py
 recursive-include solvers *.patch
 recursive-include solvers *.zip *.tar.gz
+recursive-include formula *.hh
