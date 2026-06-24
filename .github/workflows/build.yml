@@ -49,15 +49,15 @@ jobs:
           # - os: ios
           #   runs-on: macos-latest
           #   platform: ios
-          # - os: pyodide
-          #   runs-on: ubuntu-latest
-          #   platform: pyodide
+          - os: pyodide
+            runs-on: ubuntu-latest
+            platform: pyodide
 
     steps:
       - uses: actions/checkout@v5
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.4
+        uses: pypa/cibuildwheel@v4.1.0
         env:
           CIBW_PLATFORM: ${{ matrix.platform || 'auto' }}
           CIBW_ARCHS: ${{ matrix.archs || 'auto' }}
