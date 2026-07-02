@@ -98,6 +98,18 @@ extern "C" {
 
 using namespace std;
 
+// Translate a Minisat-family solver's OutOfMemoryException (thrown from mtl/XAlloc.h
+// when the int32 region/vector allocator overflows) into a Python MemoryError. The
+// macro is parameterized by the solver's (patched) namespace because each solver
+// defines OutOfMemoryException in its own namespace and this file carries no per-solver
+// 'using namespace', so an unqualified catch would not resolve to a single type.
+#define PYSAT_CATCH_OOM(ns) \
+	catch (ns::OutOfMemoryException &) { \
+		PyErr_SetString(PyExc_MemoryError, \
+			"Solver ran out of addressable memory (int32 allocator limit exceeded)"); \
+		return NULL; \
+	}
+
 // docstrings
 //=============================================================================
 static char    module_docstring[] = "This module provides a wrapper interface "
@@ -5277,13 +5289,15 @@ static PyObject *py_gluecard3_add_cl(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5305,13 +5319,15 @@ static PyObject *py_gluecard3_add_am(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5333,26 +5349,28 @@ static PyObject *py_gluecard3_solve(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5376,36 +5394,38 @@ static PyObject *py_gluecard3_solve_lim(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	Gluecard30::lbool res = Gluecard30::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Gluecard30::lbool res = Gluecard30::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Gluecard30::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Gluecard30::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Gluecard30::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Gluecard30::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5429,36 +5449,38 @@ static PyObject *py_gluecard3_propagate(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Gluecard30::vec<Gluecard30::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Gluecard30::vec<Gluecard30::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Gluecard30::var(p[i]) * (Gluecard30::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Gluecard30::var(p[i]) * (Gluecard30::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5479,13 +5501,15 @@ static PyObject *py_gluecard3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Gluecard30)
 }
 
 //
@@ -5878,13 +5902,15 @@ static PyObject *py_gluecard41_add_cl(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -5906,13 +5932,15 @@ static PyObject *py_gluecard41_add_am(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -5934,26 +5962,28 @@ static PyObject *py_gluecard41_solve(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -5977,36 +6007,38 @@ static PyObject *py_gluecard41_solve_lim(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	Gluecard41::lbool res = Gluecard41::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Gluecard41::lbool res = Gluecard41::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Gluecard41::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Gluecard41::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Gluecard41::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Gluecard41::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -6030,36 +6062,38 @@ static PyObject *py_gluecard41_propagate(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Gluecard41::vec<Gluecard41::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Gluecard41::vec<Gluecard41::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Gluecard41::var(p[i]) * (Gluecard41::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Gluecard41::var(p[i]) * (Gluecard41::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -6080,13 +6114,15 @@ static PyObject *py_gluecard41_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Gluecard41)
 }
 
 //
@@ -6479,13 +6515,15 @@ static PyObject *py_glucose3_add_cl(PyObject *self, PyObject *args)
 	if (glucose3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose30)
 }
 
 //
@@ -6507,26 +6545,28 @@ static PyObject *py_glucose3_solve(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose30)
 }
 
 //
@@ -6550,36 +6590,38 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Glucose30::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Glucose30::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Glucose30)
 }
 
 //
@@ -6603,36 +6645,38 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Glucose30::vec<Glucose30::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Glucose30::vec<Glucose30::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Glucose30::var(p[i]) * (Glucose30::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Glucose30::var(p[i]) * (Glucose30::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose30)
 }
 
 //
@@ -6653,13 +6697,15 @@ static PyObject *py_glucose3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose30)
 }
 
 //
@@ -7052,13 +7098,15 @@ static PyObject *py_glucose41_add_cl(PyObject *self, PyObject *args)
 	if (glucose41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose41)
 }
 
 //
@@ -7080,26 +7128,28 @@ static PyObject *py_glucose41_solve(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose41)
 }
 
 //
@@ -7123,36 +7173,38 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Glucose41::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Glucose41::toInt(res)));
-
-	Py_RETURN_NONE; // return Python's None if l_Undef
+		Py_RETURN_NONE; // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Glucose41)
 }
 
 //
@@ -7176,36 +7228,38 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Glucose41::vec<Glucose41::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Glucose41::vec<Glucose41::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Glucose41::var(p[i]) * (Glucose41::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Glucose41::var(p[i]) * (Glucose41::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose41)
 }
 
 //
@@ -7226,13 +7280,15 @@ static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose41)
 }
 
 //
@@ -7625,13 +7681,15 @@ static PyObject *py_glucose421_add_cl(PyObject *self, PyObject *args)
 	if (glucose421_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose421)
 }
 
 //
@@ -7653,26 +7711,28 @@ static PyObject *py_glucose421_solve(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose421)
 }
 
 //
@@ -7696,36 +7756,38 @@ static PyObject *py_glucose421_solve_lim(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	Glucose421::lbool res = Glucose421::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Glucose421::lbool res = Glucose421::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Glucose421::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Glucose421::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Glucose421::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Glucose421::toInt(res)));
-
-	Py_RETURN_NONE; // return Python's None if l_Undef
+		Py_RETURN_NONE; // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Glucose421)
 }
 
 //
@@ -7749,36 +7811,38 @@ static PyObject *py_glucose421_propagate(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Glucose421::vec<Glucose421::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Glucose421::vec<Glucose421::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Glucose421::var(p[i]) * (Glucose421::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Glucose421::var(p[i]) * (Glucose421::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Glucose421)
 }
 
 //
@@ -7799,13 +7863,15 @@ static PyObject *py_glucose421_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose421)
 }
 
 //
@@ -8647,13 +8713,15 @@ static PyObject *py_maplechrono_add_cl(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MapleChrono)
 }
 
 //
@@ -8675,26 +8743,28 @@ static PyObject *py_maplechrono_solve(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MapleChrono)
 }
 
 //
@@ -8718,36 +8788,38 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(MapleChrono::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(MapleChrono::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(MapleChrono)
 }
 
 //
@@ -8771,36 +8843,38 @@ static PyObject *py_maplechrono_propagate(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	MapleChrono::vec<MapleChrono::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		MapleChrono::vec<MapleChrono::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = MapleChrono::var(p[i]) * (MapleChrono::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MapleChrono::var(p[i]) * (MapleChrono::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(MapleChrono)
 }
 
 //
@@ -8821,13 +8895,15 @@ static PyObject *py_maplechrono_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MapleChrono)
 }
 
 //
@@ -9204,13 +9280,15 @@ static PyObject *py_maplesat_add_cl(PyObject *self, PyObject *args)
 	if (maplesat_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Maplesat)
 }
 
 //
@@ -9232,26 +9310,28 @@ static PyObject *py_maplesat_solve(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Maplesat)
 }
 
 //
@@ -9275,36 +9355,38 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Maplesat::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Maplesat::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Maplesat)
 }
 
 //
@@ -9328,36 +9410,38 @@ static PyObject *py_maplesat_propagate(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Maplesat::vec<Maplesat::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Maplesat::vec<Maplesat::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Maplesat::var(p[i]) * (Maplesat::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Maplesat::var(p[i]) * (Maplesat::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Maplesat)
 }
 
 //
@@ -9378,13 +9462,15 @@ static PyObject *py_maplesat_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Maplesat)
 }
 
 //
@@ -9761,13 +9847,15 @@ static PyObject *py_maplecm_add_cl(PyObject *self, PyObject *args)
 	if (maplecm_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MapleCM)
 }
 
 //
@@ -9789,26 +9877,28 @@ static PyObject *py_maplecm_solve(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MapleCM)
 }
 
 //
@@ -9832,36 +9922,38 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(MapleCM::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(MapleCM::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(MapleCM)
 }
 
 //
@@ -9885,36 +9977,38 @@ static PyObject *py_maplecm_propagate(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	MapleCM::vec<MapleCM::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		MapleCM::vec<MapleCM::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = MapleCM::var(p[i]) * (MapleCM::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MapleCM::var(p[i]) * (MapleCM::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(MapleCM)
 }
 
 //
@@ -9935,13 +10029,15 @@ static PyObject *py_maplecm_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MapleCM)
 }
 
 //
@@ -10297,13 +10393,15 @@ static PyObject *py_mergesat3_add_cl(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MergeSat3)
 }
 
 //
@@ -10325,26 +10423,28 @@ static PyObject *py_mergesat3_solve(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MergeSat3)
 }
 
 //
@@ -10368,36 +10468,38 @@ static PyObject *py_mergesat3_solve_lim(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	MergeSat3::lbool res = MergeSat3::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		MergeSat3::lbool res = MergeSat3::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != MergeSat3::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(MergeSat3::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != MergeSat3::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(MergeSat3::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(MergeSat3)
 }
 
 //
@@ -10421,36 +10523,38 @@ static PyObject *py_mergesat3_propagate(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	MergeSat3::vec<MergeSat3::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		MergeSat3::vec<MergeSat3::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = MergeSat3::var(p[i]) * (MergeSat3::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MergeSat3::var(p[i]) * (MergeSat3::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(MergeSat3)
 }
 
 //
@@ -10471,13 +10575,15 @@ static PyObject *py_mergesat3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MergeSat3)
 }
 
 //
@@ -10802,13 +10908,15 @@ static PyObject *py_minicard_add_cl(PyObject *self, PyObject *args)
 	if (minicard_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -10830,13 +10938,15 @@ static PyObject *py_minicard_add_am(PyObject *self, PyObject *args)
 	if (minicard_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -10858,26 +10968,28 @@ static PyObject *py_minicard_solve(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -10901,36 +11013,38 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Minicard::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Minicard::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Minicard::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Minicard::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -10954,36 +11068,38 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Minicard::vec<Minicard::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Minicard::vec<Minicard::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Minicard::var(p[i]) * (Minicard::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Minicard::var(p[i]) * (Minicard::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -11004,13 +11120,15 @@ static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Minicard)
 }
 
 //
@@ -11335,13 +11453,15 @@ static PyObject *py_minisat22_add_cl(PyObject *self, PyObject *args)
 	if (minisat22_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Minisat22)
 }
 
 //
@@ -11363,26 +11483,28 @@ static PyObject *py_minisat22_solve(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(Minisat22)
 }
 
 //
@@ -11406,36 +11528,38 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(Minisat22::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(Minisat22::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(Minisat22)
 }
 
 //
@@ -11459,36 +11583,38 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	Minisat22::vec<Minisat22::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		Minisat22::vec<Minisat22::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = Minisat22::var(p[i]) * (Minisat22::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = Minisat22::var(p[i]) * (Minisat22::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(Minisat22)
 }
 
 //
@@ -11509,13 +11635,15 @@ static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Minisat22)
 }
 
 //
@@ -11840,13 +11968,15 @@ static PyObject *py_minisatgh_add_cl(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatGH)
 }
 
 //
@@ -11868,26 +11998,28 @@ static PyObject *py_minisatgh_solve(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatGH)
 }
 
 //
@@ -11911,36 +12043,38 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(MinisatGH::toInt(res)));
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
-
-	if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(MinisatGH::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(MinisatGH)
 }
 
 //
@@ -11964,36 +12098,38 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	MinisatGH::vec<MinisatGH::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+		MinisatGH::vec<MinisatGH::Lit> p;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = MinisatGH::var(p[i]) * (MinisatGH::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MinisatGH::var(p[i]) * (MinisatGH::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatGH)
 }
 
 //
@@ -12014,13 +12150,15 @@ static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MinisatGH)
 }
 
 //
@@ -12903,13 +13041,15 @@ static PyObject *py_minisatep_add_cl(PyObject *self, PyObject *args)
 	if (minisatep_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatep_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatEP)
 }
 
 //
@@ -12932,29 +13072,31 @@ static PyObject *py_minisatep_solve(PyObject *self, PyObject *args)
 	if (minisatep_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatep_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	bool res = s->solve(a);
+		bool res = s->solve(a);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	if (pyminisatep_callback_failed || PyErr_Occurred())
-		return NULL;
+		if (pyminisatep_callback_failed || PyErr_Occurred())
+			return NULL;
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatEP)
 }
 
 //
@@ -12979,39 +13121,41 @@ static PyObject *py_minisatep_solve_lim(PyObject *self, PyObject *args)
 	if (minisatep_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatep_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
 
-	MinisatEP::lbool res = MinisatEP::lbool((uint8_t)2);  // l_Undef
-	if (expect_interrupt == 0) {
-		PyOS_sighandler_t sig_save;
-		if (main_thread) {
-			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		MinisatEP::lbool res = MinisatEP::lbool((uint8_t)2);  // l_Undef
+		if (expect_interrupt == 0) {
+			PyOS_sighandler_t sig_save;
+			if (main_thread) {
+				sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-			if (setjmp(env) != 0) {
-				PyErr_SetString(SATError, "Caught keyboard interrupt");
-				return NULL;
+				if (setjmp(env) != 0) {
+					PyErr_SetString(SATError, "Caught keyboard interrupt");
+					return NULL;
+				}
 			}
+
+			res = s->solveLimited(a);
+
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+		}
+		else {
+			Py_BEGIN_ALLOW_THREADS
+			res = s->solveLimited(a);
+			Py_END_ALLOW_THREADS
 		}
 
-		res = s->solveLimited(a);
+		if (pyminisatep_callback_failed || PyErr_Occurred())
+			return NULL;
 
-		if (main_thread)
-			PyOS_setsig(SIGINT, sig_save);
-	}
-	else {
-		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
-		Py_END_ALLOW_THREADS
-	}
+		if (res != MinisatEP::lbool((uint8_t)2))  // l_Undef
+			return PyBool_FromLong((long)!(MinisatEP::toInt(res)));
 
-	if (pyminisatep_callback_failed || PyErr_Occurred())
-		return NULL;
-
-	if (res != MinisatEP::lbool((uint8_t)2))  // l_Undef
-		return PyBool_FromLong((long)!(MinisatEP::toInt(res)));
-
-	Py_RETURN_NONE;  // return Python's None if l_Undef
+		Py_RETURN_NONE;  // return Python's None if l_Undef
+	} PYSAT_CATCH_OOM(MinisatEP)
 }
 
 //
@@ -13035,40 +13179,42 @@ static PyObject *py_minisatep_propagate(PyObject *self, PyObject *args)
 	if (minisatep_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatep_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
 
-	PyOS_sighandler_t sig_save;
-	if (main_thread) {
-		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
 
-		if (setjmp(env) != 0) {
-			PyErr_SetString(SATError, "Caught keyboard interrupt");
-			return NULL;
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
 		}
-	}
 
-	MinisatEP::vec<MinisatEP::Lit> p;
-	pyminisatep_callback_failed = false;
-	bool res = s->prop_check(a, p, save_phases);
+		MinisatEP::vec<MinisatEP::Lit> p;
+		pyminisatep_callback_failed = false;
+		bool res = s->prop_check(a, p, save_phases);
 
-	if (main_thread)
-		PyOS_setsig(SIGINT, sig_save);
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
 
-	if (pyminisatep_callback_failed || PyErr_Occurred())
-		return NULL;
+		if (pyminisatep_callback_failed || PyErr_Occurred())
+			return NULL;
 
-	PyObject *propagated = PyList_New(p.size());
-	for (int i = 0; i < p.size(); ++i) {
-		int l = MinisatEP::var(p[i]) * (MinisatEP::sign(p[i]) ? -1 : 1);
-		PyObject *lit = pyint_from_cint(l);
-		PyList_SetItem(propagated, i, lit);
-	}
+		PyObject *propagated = PyList_New(p.size());
+		for (int i = 0; i < p.size(); ++i) {
+			int l = MinisatEP::var(p[i]) * (MinisatEP::sign(p[i]) ? -1 : 1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(propagated, i, lit);
+		}
 
-	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
-	Py_DECREF(propagated);
+		PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+		Py_DECREF(propagated);
 
-	return ret;
+		return ret;
+	} PYSAT_CATCH_OOM(MinisatEP)
 }
 
 //
@@ -13089,13 +13235,15 @@ static PyObject *py_minisatep_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatep_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), MinisatEP::lbool(p[i] < 0));
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), MinisatEP::lbool(p[i] < 0));
 
-	Py_RETURN_NONE;
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MinisatEP)
 }
 
 //
