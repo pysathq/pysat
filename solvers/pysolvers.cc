@@ -165,6 +165,8 @@ static char  set_rnd_first_descent_docstring[] = "Randomize decisions until firs
 
 
 static PyObject *SATError;
+static const char *oom_error_msg =
+	"Solver out of memory: internal allocator limit exceeded";
 static jmp_buf env;
 
 // function declaration for functions available in module
@@ -5178,7 +5180,13 @@ static PyObject *py_cadical300_isdeclit(PyObject *self, PyObject *args)
 #ifdef WITH_GLUECARD30
 static PyObject *py_gluecard3_new(PyObject *self, PyObject *args)
 {
-	Gluecard30::Solver *s = new Gluecard30::Solver();
+	Gluecard30::Solver *s;
+	try {
+		s = new Gluecard30::Solver();
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -5254,7 +5262,12 @@ static PyObject *py_gluecard3_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -5277,13 +5290,18 @@ static PyObject *py_gluecard3_add_cl(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -5305,13 +5323,18 @@ static PyObject *py_gluecard3_add_am(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -5333,8 +5356,13 @@ static PyObject *py_gluecard3_solve(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -5346,7 +5374,15 @@ static PyObject *py_gluecard3_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -5376,8 +5412,13 @@ static PyObject *py_gluecard3_solve_lim(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Gluecard30::lbool res = Gluecard30::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -5391,15 +5432,31 @@ static PyObject *py_gluecard3_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Gluecard30::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Gluecard30::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Gluecard30::lbool((uint8_t)2))  // l_Undef
@@ -5429,8 +5486,13 @@ static PyObject *py_gluecard3_propagate(PyObject *self, PyObject *args)
 	if (gluecard3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -5443,7 +5505,15 @@ static PyObject *py_gluecard3_propagate(PyObject *self, PyObject *args)
 	}
 
 	Gluecard30::vec<Gluecard30::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -5479,11 +5549,16 @@ static PyObject *py_gluecard3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -5576,7 +5651,12 @@ static PyObject *py_gluecard3_setincr(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
 
-	s->setIncrementalMode();
+	try {
+		s->setIncrementalMode();
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -5616,8 +5696,13 @@ static PyObject *py_gluecard3_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->certifiedUNSAT  = true;
-	s->certifiedPyFile = (void *)p_obj;
+	try {
+		s->certifiedUNSAT  = true;
+		s->certifiedPyFile = (void *)p_obj;
+	} catch (Gluecard30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -5779,7 +5864,13 @@ static PyObject *py_gluecard3_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_GLUECARD41
 static PyObject *py_gluecard41_new(PyObject *self, PyObject *args)
 {
-	Gluecard41::Solver *s = new Gluecard41::Solver();
+	Gluecard41::Solver *s;
+	try {
+		s = new Gluecard41::Solver();
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -5855,7 +5946,12 @@ static PyObject *py_gluecard41_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -5878,13 +5974,18 @@ static PyObject *py_gluecard41_add_cl(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -5906,13 +6007,18 @@ static PyObject *py_gluecard41_add_am(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -5934,8 +6040,13 @@ static PyObject *py_gluecard41_solve(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -5947,7 +6058,15 @@ static PyObject *py_gluecard41_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -5977,8 +6096,13 @@ static PyObject *py_gluecard41_solve_lim(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Gluecard41::lbool res = Gluecard41::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -5992,15 +6116,31 @@ static PyObject *py_gluecard41_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Gluecard41::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Gluecard41::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Gluecard41::lbool((uint8_t)2))  // l_Undef
@@ -6030,8 +6170,13 @@ static PyObject *py_gluecard41_propagate(PyObject *self, PyObject *args)
 	if (gluecard41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -6044,7 +6189,15 @@ static PyObject *py_gluecard41_propagate(PyObject *self, PyObject *args)
 	}
 
 	Gluecard41::vec<Gluecard41::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -6080,11 +6233,16 @@ static PyObject *py_gluecard41_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		gluecard41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6177,7 +6335,12 @@ static PyObject *py_gluecard41_setincr(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
 
-	s->setIncrementalMode();
+	try {
+		s->setIncrementalMode();
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6217,8 +6380,13 @@ static PyObject *py_gluecard41_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->certifiedUNSAT  = true;
-	s->certifiedPyFile = (void *)p_obj;
+	try {
+		s->certifiedUNSAT  = true;
+		s->certifiedPyFile = (void *)p_obj;
+	} catch (Gluecard41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6380,7 +6548,13 @@ static PyObject *py_gluecard41_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_GLUCOSE30
 static PyObject *py_glucose3_new(PyObject *self, PyObject *args)
 {
-	Glucose30::Solver *s = new Glucose30::Solver();
+	Glucose30::Solver *s;
+	try {
+		s = new Glucose30::Solver();
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -6456,7 +6630,12 @@ static PyObject *py_glucose3_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6479,13 +6658,18 @@ static PyObject *py_glucose3_add_cl(PyObject *self, PyObject *args)
 	if (glucose3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -6507,8 +6691,13 @@ static PyObject *py_glucose3_solve(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -6520,7 +6709,15 @@ static PyObject *py_glucose3_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Glucose30::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -6550,8 +6747,13 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Glucose30::lbool res = Glucose30::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -6565,15 +6767,31 @@ static PyObject *py_glucose3_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose30::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose30::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Glucose30::lbool((uint8_t)2))  // l_Undef
@@ -6603,8 +6821,13 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	if (glucose3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -6617,7 +6840,15 @@ static PyObject *py_glucose3_propagate(PyObject *self, PyObject *args)
 	}
 
 	Glucose30::vec<Glucose30::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Glucose30::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyObject *propagated = PyList_New(p.size());
 	for (int i = 0; i < p.size(); ++i) {
@@ -6653,11 +6884,16 @@ static PyObject *py_glucose3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6750,7 +6986,12 @@ static PyObject *py_glucose3_setincr(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
 
-	s->setIncrementalMode();
+	try {
+		s->setIncrementalMode();
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6790,8 +7031,13 @@ static PyObject *py_glucose3_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->certifiedUNSAT  = true;
-	s->certifiedPyFile = (void *)p_obj;
+	try {
+		s->certifiedUNSAT  = true;
+		s->certifiedPyFile = (void *)p_obj;
+	} catch (Glucose30::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -6953,7 +7199,13 @@ static PyObject *py_glucose3_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_GLUCOSE41
 static PyObject *py_glucose41_new(PyObject *self, PyObject *args)
 {
-	Glucose41::Solver *s = new Glucose41::Solver();
+	Glucose41::Solver *s;
+	try {
+		s = new Glucose41::Solver();
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -7029,7 +7281,12 @@ static PyObject *py_glucose41_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7052,13 +7309,18 @@ static PyObject *py_glucose41_add_cl(PyObject *self, PyObject *args)
 	if (glucose41_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -7080,8 +7342,13 @@ static PyObject *py_glucose41_solve(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -7093,7 +7360,15 @@ static PyObject *py_glucose41_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Glucose41::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -7123,8 +7398,13 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Glucose41::lbool res = Glucose41::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -7138,15 +7418,31 @@ static PyObject *py_glucose41_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose41::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose41::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Glucose41::lbool((uint8_t)2))  // l_Undef
@@ -7176,8 +7472,13 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 	if (glucose41_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -7190,7 +7491,15 @@ static PyObject *py_glucose41_propagate(PyObject *self, PyObject *args)
 	}
 
 	Glucose41::vec<Glucose41::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Glucose41::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -7226,11 +7535,16 @@ static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose41_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7323,7 +7637,12 @@ static PyObject *py_glucose41_setincr(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
 
-	s->setIncrementalMode();
+	try {
+		s->setIncrementalMode();
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7363,8 +7682,13 @@ static PyObject *py_glucose41_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->certifiedUNSAT  = true;
-	s->certifiedPyFile = (void *)p_obj;
+	try {
+		s->certifiedUNSAT  = true;
+		s->certifiedPyFile = (void *)p_obj;
+	} catch (Glucose41::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7527,7 +7851,13 @@ static PyObject *py_glucose41_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_GLUCOSE421
 static PyObject *py_glucose421_new(PyObject *self, PyObject *args)
 {
-	Glucose421::Solver *s = new Glucose421::Solver();
+	Glucose421::Solver *s;
+	try {
+		s = new Glucose421::Solver();
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -7602,7 +7932,12 @@ static PyObject *py_glucose421_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7625,13 +7960,18 @@ static PyObject *py_glucose421_add_cl(PyObject *self, PyObject *args)
 	if (glucose421_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -7653,8 +7993,13 @@ static PyObject *py_glucose421_solve(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -7666,7 +8011,15 @@ static PyObject *py_glucose421_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Glucose421::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -7696,8 +8049,13 @@ static PyObject *py_glucose421_solve_lim(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Glucose421::lbool res = Glucose421::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -7711,15 +8069,31 @@ static PyObject *py_glucose421_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose421::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Glucose421::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Glucose421::lbool((uint8_t)2))  // l_Undef
@@ -7749,8 +8123,13 @@ static PyObject *py_glucose421_propagate(PyObject *self, PyObject *args)
 	if (glucose421_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -7763,7 +8142,15 @@ static PyObject *py_glucose421_propagate(PyObject *self, PyObject *args)
 	}
 
 	Glucose421::vec<Glucose421::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Glucose421::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -7799,11 +8186,16 @@ static PyObject *py_glucose421_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		glucose421_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -7896,7 +8288,12 @@ static PyObject *py_glucose421_setincr(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
 
-	s->setIncrementalMode();
+	try {
+		s->setIncrementalMode();
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -8026,8 +8423,13 @@ static PyObject *py_glucose421_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->certifiedUNSAT  = true;
-	s->certifiedPyFile = (void *)p_obj;
+	try {
+		s->certifiedUNSAT  = true;
+		s->certifiedPyFile = (void *)p_obj;
+	} catch (Glucose421::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -8563,7 +8965,13 @@ static PyObject *py_lingeling_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MAPLECHRONO
 static PyObject *py_maplechrono_new(PyObject *self, PyObject *args)
 {
-	MapleChrono::Solver *s = new MapleChrono::Solver();
+	MapleChrono::Solver *s;
+	try {
+		s = new MapleChrono::Solver();
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -8647,13 +9055,18 @@ static PyObject *py_maplechrono_add_cl(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -8675,8 +9088,13 @@ static PyObject *py_maplechrono_solve(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -8688,7 +9106,15 @@ static PyObject *py_maplechrono_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -8718,8 +9144,13 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	MapleChrono::lbool res = MapleChrono::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -8733,15 +9164,31 @@ static PyObject *py_maplechrono_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MapleChrono::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MapleChrono::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != MapleChrono::lbool((uint8_t)2))  // l_Undef
@@ -8771,8 +9218,13 @@ static PyObject *py_maplechrono_propagate(PyObject *self, PyObject *args)
 	if (maplechrono_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -8785,7 +9237,15 @@ static PyObject *py_maplechrono_propagate(PyObject *self, PyObject *args)
 	}
 
 	MapleChrono::vec<MapleChrono::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -8821,11 +9281,16 @@ static PyObject *py_maplechrono_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplechrono_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplechrono_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -8941,7 +9406,12 @@ static PyObject *py_maplechrono_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->drup_pyfile = (void *)p_obj;
+	try {
+		s->drup_pyfile = (void *)p_obj;
+	} catch (MapleChrono::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -9102,7 +9572,13 @@ static PyObject *py_maplechrono_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MAPLESAT
 static PyObject *py_maplesat_new(PyObject *self, PyObject *args)
 {
-	Maplesat::Solver *s = new Maplesat::Solver();
+	Maplesat::Solver *s;
+	try {
+		s = new Maplesat::Solver();
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -9181,7 +9657,12 @@ static PyObject *py_maplesat_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Maplesat::Solver *s = (Maplesat::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -9204,13 +9685,18 @@ static PyObject *py_maplesat_add_cl(PyObject *self, PyObject *args)
 	if (maplesat_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -9232,8 +9718,13 @@ static PyObject *py_maplesat_solve(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -9245,7 +9736,15 @@ static PyObject *py_maplesat_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Maplesat::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -9275,8 +9774,13 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Maplesat::lbool res = Maplesat::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -9290,15 +9794,31 @@ static PyObject *py_maplesat_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Maplesat::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Maplesat::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Maplesat::lbool((uint8_t)2))  // l_Undef
@@ -9328,8 +9848,13 @@ static PyObject *py_maplesat_propagate(PyObject *self, PyObject *args)
 	if (maplesat_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -9342,7 +9867,15 @@ static PyObject *py_maplesat_propagate(PyObject *self, PyObject *args)
 	}
 
 	Maplesat::vec<Maplesat::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Maplesat::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -9378,11 +9911,16 @@ static PyObject *py_maplesat_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplesat_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplesat_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -9498,7 +10036,12 @@ static PyObject *py_maplesat_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->drup_pyfile = (void *)p_obj;
+	try {
+		s->drup_pyfile = (void *)p_obj;
+	} catch (Maplesat::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -9659,7 +10202,13 @@ static PyObject *py_maplesat_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MAPLECM
 static PyObject *py_maplecm_new(PyObject *self, PyObject *args)
 {
-	MapleCM::Solver *s = new MapleCM::Solver();
+	MapleCM::Solver *s;
+	try {
+		s = new MapleCM::Solver();
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -9738,7 +10287,12 @@ static PyObject *py_maplecm_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	MapleCM::Solver *s = (MapleCM::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -9761,13 +10315,18 @@ static PyObject *py_maplecm_add_cl(PyObject *self, PyObject *args)
 	if (maplecm_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -9789,8 +10348,13 @@ static PyObject *py_maplecm_solve(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -9802,7 +10366,15 @@ static PyObject *py_maplecm_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (MapleCM::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -9832,8 +10404,13 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	MapleCM::lbool res = MapleCM::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -9847,15 +10424,31 @@ static PyObject *py_maplecm_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MapleCM::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MapleCM::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != MapleCM::lbool((uint8_t)2))  // l_Undef
@@ -9885,8 +10478,13 @@ static PyObject *py_maplecm_propagate(PyObject *self, PyObject *args)
 	if (maplecm_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -9899,7 +10497,15 @@ static PyObject *py_maplecm_propagate(PyObject *self, PyObject *args)
 	}
 
 	MapleCM::vec<MapleCM::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (MapleCM::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -9935,11 +10541,16 @@ static PyObject *py_maplecm_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		maplecm_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			maplecm_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -10055,7 +10666,12 @@ static PyObject *py_maplecm_tracepr(PyObject *self, PyObject *args)
 	Py_INCREF(p_obj);
 #endif
 
-	s->drup_pyfile = (void *)p_obj;
+	try {
+		s->drup_pyfile = (void *)p_obj;
+	} catch (MapleCM::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -10216,7 +10832,13 @@ static PyObject *py_maplecm_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MERGESAT3
 static PyObject *py_mergesat3_new(PyObject *self, PyObject *args)
 {
-	MergeSat3::Solver *s = new MergeSat3::Solver();
+	MergeSat3::Solver *s;
+	try {
+		s = new MergeSat3::Solver();
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -10297,13 +10919,18 @@ static PyObject *py_mergesat3_add_cl(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -10325,8 +10952,13 @@ static PyObject *py_mergesat3_solve(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -10338,7 +10970,15 @@ static PyObject *py_mergesat3_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -10368,8 +11008,13 @@ static PyObject *py_mergesat3_solve_lim(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	MergeSat3::lbool res = MergeSat3::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -10383,15 +11028,31 @@ static PyObject *py_mergesat3_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MergeSat3::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MergeSat3::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != MergeSat3::lbool((uint8_t)2))  // l_Undef
@@ -10421,8 +11082,13 @@ static PyObject *py_mergesat3_propagate(PyObject *self, PyObject *args)
 	if (mergesat3_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -10435,7 +11101,15 @@ static PyObject *py_mergesat3_propagate(PyObject *self, PyObject *args)
 	}
 
 	MergeSat3::vec<MergeSat3::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -10471,11 +11145,16 @@ static PyObject *py_mergesat3_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		mergesat3_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			mergesat3_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (MergeSat3::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -10703,7 +11382,13 @@ static PyObject *py_mergesat3_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MINICARD
 static PyObject *py_minicard_new(PyObject *self, PyObject *args)
 {
-	Minicard::Solver *s = new Minicard::Solver();
+	Minicard::Solver *s;
+	try {
+		s = new Minicard::Solver();
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -10779,7 +11464,12 @@ static PyObject *py_minicard_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -10802,13 +11492,18 @@ static PyObject *py_minicard_add_cl(PyObject *self, PyObject *args)
 	if (minicard_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -10830,13 +11525,18 @@ static PyObject *py_minicard_add_am(PyObject *self, PyObject *args)
 	if (minicard_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	bool res = s->addAtMost(cl, rhs);
+		bool res = s->addAtMost(cl, rhs);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -10858,8 +11558,13 @@ static PyObject *py_minicard_solve(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -10871,7 +11576,15 @@ static PyObject *py_minicard_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Minicard::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -10901,8 +11614,13 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Minicard::lbool res = Minicard::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -10916,15 +11634,31 @@ static PyObject *py_minicard_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Minicard::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Minicard::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Minicard::lbool((uint8_t)2))  // l_Undef
@@ -10954,8 +11688,13 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 	if (minicard_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -10968,7 +11707,15 @@ static PyObject *py_minicard_propagate(PyObject *self, PyObject *args)
 	}
 
 	Minicard::vec<Minicard::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Minicard::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -11004,11 +11751,16 @@ static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minicard_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Minicard::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -11236,7 +11988,13 @@ static PyObject *py_minicard_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MINISAT22
 static PyObject *py_minisat22_new(PyObject *self, PyObject *args)
 {
-	Minisat22::Solver *s = new Minisat22::Solver();
+	Minisat22::Solver *s;
+	try {
+		s = new Minisat22::Solver();
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -11312,7 +12070,12 @@ static PyObject *py_minisat22_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -11335,13 +12098,18 @@ static PyObject *py_minisat22_add_cl(PyObject *self, PyObject *args)
 	if (minisat22_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -11363,8 +12131,13 @@ static PyObject *py_minisat22_solve(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -11376,7 +12149,15 @@ static PyObject *py_minisat22_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (Minisat22::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -11406,8 +12187,13 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Minisat22::lbool res = Minisat22::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -11421,15 +12207,31 @@ static PyObject *py_minisat22_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Minisat22::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (Minisat22::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != Minisat22::lbool((uint8_t)2))  // l_Undef
@@ -11459,8 +12261,13 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 	if (minisat22_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -11473,7 +12280,15 @@ static PyObject *py_minisat22_propagate(PyObject *self, PyObject *args)
 	}
 
 	Minisat22::vec<Minisat22::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (Minisat22::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -11509,11 +12324,16 @@ static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisat22_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), p[i] < 0);
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), p[i] < 0);
+	} catch (Minisat22::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -11741,7 +12561,13 @@ static PyObject *py_minisat22_acc_stats(PyObject *self, PyObject *args)
 #ifdef WITH_MINISATGH
 static PyObject *py_minisatgh_new(PyObject *self, PyObject *args)
 {
-	MinisatGH::Solver *s = new MinisatGH::Solver();
+	MinisatGH::Solver *s;
+	try {
+		s = new MinisatGH::Solver();
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (s == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -11817,7 +12643,12 @@ static PyObject *py_minisatgh_set_start(PyObject *self, PyObject *args)
 	// get pointer to solver
 	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
 
-	s->setStartMode((bool)warm_start);
+	try {
+		s->setStartMode((bool)warm_start);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -11840,13 +12671,18 @@ static PyObject *py_minisatgh_add_cl(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(c_obj, cl, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	bool res = s->addClause(cl);
+		bool res = s->addClause(cl);
 
-	PyObject *ret = PyBool_FromLong((long)res);
-	return ret;
+		PyObject *ret = PyBool_FromLong((long)res);
+		return ret;
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 }
 
 //
@@ -11868,8 +12704,13 @@ static PyObject *py_minisatgh_solve(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -11881,7 +12722,15 @@ static PyObject *py_minisatgh_solve(PyObject *self, PyObject *args)
 		}
 	}
 
-	bool res = s->solve(a);
+	bool res;
+	try {
+		res = s->solve(a);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -11911,8 +12760,13 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	MinisatGH::lbool res = MinisatGH::lbool((uint8_t)2);  // l_Undef
 	if (expect_interrupt == 0) {
@@ -11926,15 +12780,31 @@ static PyObject *py_minisatgh_solve_lim(PyObject *self, PyObject *args)
 			}
 		}
 
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MinisatGH::OutOfMemoryException&) {
+			if (main_thread)
+				PyOS_setsig(SIGINT, sig_save);
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 
 		if (main_thread)
 			PyOS_setsig(SIGINT, sig_save);
 	}
 	else {
+		bool caught_oom = false;
 		Py_BEGIN_ALLOW_THREADS
-		res = s->solveLimited(a);
+		try {
+			res = s->solveLimited(a);
+		} catch (MinisatGH::OutOfMemoryException&) {
+			caught_oom = true;
+		}
 		Py_END_ALLOW_THREADS
+		if (caught_oom) {
+			PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+			return NULL;
+		}
 	}
 
 	if (res != MinisatGH::lbool((uint8_t)2))  // l_Undef
@@ -11964,8 +12834,13 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	if (minisatgh_iterate(a_obj, a, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	PyOS_sighandler_t sig_save;
 	if (main_thread) {
@@ -11978,7 +12853,15 @@ static PyObject *py_minisatgh_propagate(PyObject *self, PyObject *args)
 	}
 
 	MinisatGH::vec<MinisatGH::Lit> p;
-	bool res = s->prop_check(a, p, save_phases);
+	bool res;
+	try {
+		res = s->prop_check(a, p, save_phases);
+	} catch (MinisatGH::OutOfMemoryException&) {
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	if (main_thread)
 		PyOS_setsig(SIGINT, sig_save);
@@ -12014,11 +12897,16 @@ static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	if (max_var > 0)
-		minisatgh_declare_vars(s, max_var);
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
 
-	for (size_t i = 0; i < p.size(); ++i)
-		s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
+		for (size_t i = 0; i < p.size(); ++i)
+			s->setPolarity(abs(p[i]), MinisatGH::lbool(p[i] < 0));
+	} catch (MinisatGH::OutOfMemoryException&) {
+		PyErr_SetString(PyExc_RuntimeError, oom_error_msg);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
