@@ -564,8 +564,11 @@ class Propagator(object):
                 def provide_reason(self, lit: int) -> List[int]:
                     pass      # explain why a given literal was propagated
 
+                def has_clause(self) -> bool:
+                    return False  # optional: report whether an external clause exists
+
                 def add_clause(self) -> List[int]:
-                    return [] # add an(y) external clause to the solver
+                    return [] # if has_clause() is used, may also be the empty clause
     """
 
     def __init__(self):
@@ -687,10 +690,9 @@ class Propagator(object):
 
     def add_clause(self) -> List[int]:
         """
-            The method is called by the solver to add an external clause if
-            there is any. The clause can be arbitrary but if it is
-            root-satisfied or tautological, the solver will ignore it without
-            learning it.
+            The method is called by the solver to obtain an external clause.
+            The clause can be arbitrary but if it is root-satisfied or
+            tautological, the solver will ignore it without learning it.
 
             Root-falsified literals are eagerly removed from the clause.
             Falsified clauses trigger conflict analysis, propagating clauses
@@ -699,6 +701,19 @@ class Propagator(object):
 
             An empty clause (or root falsified clause, see above) makes the
             formula unsatisfiable and stops the search immediately.
+
+            .. note::
+
+                The exact meaning of returning ``[]`` depends on whether the
+                propagator defines method ``has_clause()``.
+
+                - If ``has_clause()`` is defined, the solver first queries it.
+                  Whenever it returns ``True``, the follow-up call of
+                  :meth:`add_clause` is expected to return the clause itself,
+                  and ``[]`` denotes the actual empty clause.
+                - Otherwise, if ``has_clause()`` is undefined, returning
+                  ``[]`` from :meth:`add_clause` is interpreted as saying that
+                  there is no clause to add.
 
             :rtype: iterable(int)
         """
@@ -1283,14 +1298,25 @@ class BooleanEngine(Propagator):
 
         return [lit] + self.origin[lit].justify(lit)
 
-    def add_clause(self):
+    def has_clause(self):
         """
-            Extract a new clause to add to the solver if one exists; return an
-            empty clause ``[]`` otherwise.
+            Check whether the engine currently has an external clause to add.
+            When queried separately by the solver, this lets
+            :meth:`add_clause` return ``[]`` as an actual empty clause.
         """
 
-        if self.falsified is None:
-            return []
+        return self.falsified is not None
+
+    def add_clause(self):
+        """
+            Extract the external clause previously announced by
+            :meth:`has_clause`.
+        """
+
+        # # old behaviour checking if we have a clause to add;
+        # # commenting this out because we have has_clause() now
+        # if self.falsified is None:
+        #     return []
 
         to_add = self.falsified.explain_failure()
 

@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## xx.07.2026 (*1.9.dev6*)
+
+-   Minor changes in RC2 interface.
+-   Fixed an issue in IPASIRUP related to empty external clauses.
+
 ## 10.06.2026 (*1.9.dev5*)
 
 -   Added missing header files in the source distribution (thanks to Christoph

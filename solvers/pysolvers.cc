@@ -3580,6 +3580,18 @@ static PyObject *py_cadical195_pconn(PyObject *self, PyObject *args)
 	// create C class for the external propagator
 	PyExternalPropagator *cprop = new PyExternalPropagator(py_prop);
 
+	// if the propagator exposes callable has_clause(), use it to
+	// distinguish between "no clause" and an actual empty external clause
+	PyObject *has_clause = PyObject_GetAttrString(py_prop, "has_clause");
+	if (has_clause != NULL) {
+		if (PyCallable_Check(has_clause))
+			cprop->combined_has_clause = false;
+		Py_DECREF(has_clause);
+	}
+	else {
+		PyErr_Clear();
+	}
+
 	// attach propagator
 	s->connect_external_propagator(cprop);
 
@@ -4975,6 +4987,18 @@ static PyObject *py_cadical300_pconn(PyObject *self, PyObject *args)
 
 	// create C class for the external propagator
 	PyExternalPropagator300 *cprop = new PyExternalPropagator300(py_prop);
+
+	// if the propagator exposes callable has_clause(), use it to
+	// distinguish between "no clause" and an actual empty external clause
+	PyObject *has_clause = PyObject_GetAttrString(py_prop, "has_clause");
+	if (has_clause != NULL) {
+		if (PyCallable_Check(has_clause))
+			cprop->combined_has_clause = false;
+		Py_DECREF(has_clause);
+	}
+	else {
+		PyErr_Clear();
+	}
 
 	// attach propagator
 	s->connect_external_propagator(cprop);
@@ -13330,6 +13354,18 @@ static PyObject *py_minisatep_pconn(PyObject *self, PyObject *args)
 
 	PyExternalPropagatorEP *cprop = new PyExternalPropagatorEP(p_obj);
 	Py_INCREF(p_obj);
+
+	// if the propagator exposes callable has_clause(), use it to
+	// distinguish between "no clause" and an actual empty external clause
+	PyObject *has_clause = PyObject_GetAttrString(p_obj, "has_clause");
+	if (has_clause != NULL) {
+		if (PyCallable_Check(has_clause))
+			cprop->combined_has_clause = false;
+		Py_DECREF(has_clause);
+	}
+	else {
+		PyErr_Clear();
+	}
 
 	s->connect_external_propagator(cprop);
 

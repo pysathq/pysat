@@ -623,7 +623,7 @@ diff -Naur solvers/minisatep/core/Solver.cc solvers/mep/core/Solver.cc
 -    for (int i = 0; i < nVars(); i++) {
 -        if (value(i) != Minisat::l_Undef) {
 -            res.push_back(Minisat::LitToint(Minisat::mkLit(i, value(i) == Minisat::l_False)));
-+    std::vector<int> res; res.reserve(nVars() - 1);
++    std::vector<int> res; res.reserve(nVars() > 0 ? nVars() - 1 : 0); 
 +    for (int i = 1; i < nVars(); i++) {
 +        if (value(i) != mep_l_Undef) {
 +            res.push_back(i * (value(i) == mep_l_False ? -1 : 1));
