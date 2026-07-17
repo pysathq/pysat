@@ -10,10 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## xx.07.2026 (*1.9.dev6*)
+## 17.07.2026 (*1.9.dev6*)
 
 -   Minor changes in RC2 interface.
 -   Fixed an issue in IPASIRUP related to empty external clauses.
+-   MiniSat's OutOfMemory exception should be now handled in Python.
 
 ## 10.06.2026 (*1.9.dev5*)
 
