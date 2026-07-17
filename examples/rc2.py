@@ -409,6 +409,9 @@ class RC2(object):
             :type clause: iterable(int)
             :type weight: int
 
+            :return: selector literal for a soft clause and ``None`` for a hard one
+            :rtype: int or None
+
             .. code-block:: python
 
                 >>> from pysat.examples.rc2 import RC2
@@ -449,6 +452,8 @@ class RC2(object):
                         '{0} does not support native cardinality constraints. Make sure you use the right type of formula.'.format(self.solver)
 
                 self.oracle.add_atmost(cl, clause[1], weights=clause[2] if len(clause) == 3 else [])
+
+            return None
         else:
             # soft clauses should be augmented with a selector
             selv = cl[0]  # for a unit clause, no selector is needed
@@ -471,6 +476,8 @@ class RC2(object):
 
             self.sall.append(selv)
             self.sels_set.add(selv)
+
+            return selv
 
     def delete(self):
         """
