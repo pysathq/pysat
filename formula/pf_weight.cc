@@ -13,13 +13,14 @@
 // parse only the weighted preamble fields relevant to the native parser
 //=============================================================================
 bool parse_weight_preamble(const char *beg, const char *end,
-		const char *kind, const char *errmsg, PyObject **topw)
+		const char *errmsg, PyObject **topw)
 {
 	const char *p = beg;
 	const char *tbeg, *tend;
 
 	if (!read_span(p, end, tbeg, tend) || !span_eq(tbeg, tend, "p") ||
-			!read_span(p, end, tbeg, tend) || !span_eq(tbeg, tend, kind) ||
+			!read_span(p, end, tbeg, tend) ||
+			!(span_eq(tbeg, tend, "wcnf") || span_eq(tbeg, tend, "wcnf+")) ||
 			!read_span(p, end, tbeg, tend) ||
 			!read_span(p, end, tbeg, tend)) {
 		PyErr_SetString(PyExc_ValueError, errmsg);

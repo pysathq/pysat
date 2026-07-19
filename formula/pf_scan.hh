@@ -83,6 +83,32 @@ static inline bool read_span(const char * &p, const char *end,
 	return true;
 }
 
+// check whether a line starts with the exact DIMACS preamble marker
+//=============================================================================
+static inline bool line_has_p(const char *beg, const char *end)
+{
+	const char *p = beg;
+	const char *tbeg, *tend;
+
+	return read_span(p, end, tbeg, tend) && span_eq(tbeg, tend, "p");
+}
+
+// check whether a line has an exact DIMACS preamble kind token
+//=============================================================================
+static inline bool line_has_kind(const char *beg, const char *end,
+		const char *kind1, const char *kind2 = NULL)
+{
+	const char *p = beg;
+	const char *tbeg, *tend;
+
+	if (!read_span(p, end, tbeg, tend) || !span_eq(tbeg, tend, "p") ||
+			!read_span(p, end, tbeg, tend))
+		return false;
+
+	return span_eq(tbeg, tend, kind1) ||
+		(kind2 != NULL && span_eq(tbeg, tend, kind2));
+}
+
 // check whether a span has the syntax of a signed integer
 //=============================================================================
 static inline bool span_is_integer_like(const char *beg, const char *end)

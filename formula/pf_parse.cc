@@ -47,10 +47,14 @@ PyObject *parse_cnf_impl(PyObject *txt_obj, PyObject *comment_lead)
 			continue;
 
 		if (comment_mask[(unsigned char)beg[0]]) {
-			if (!line_starts(beg, lend, "p cnf ")) {
-				if (!append_comment(comments, beg, lend))
-					goto fail;
+			if (line_has_kind(beg, lend, "cnf"))
+				continue;
+			if (line_has_p(beg, lend)) {
+				PyErr_SetString(PyExc_ValueError, "invalid CNF preamble");
+				goto fail;
 			}
+			if (!append_comment(comments, beg, lend))
+				goto fail;
 			continue;
 		}
 
@@ -143,13 +147,17 @@ PyObject *parse_wcnf_impl(PyObject *txt_obj, PyObject *comment_lead)
 			continue;
 
 		if (comment_mask[(unsigned char)beg[0]]) {
-			if (!line_starts(beg, lend, "p wcnf ")) {
-				if (!append_comment(comments, beg, lend))
+			if (line_has_kind(beg, lend, "wcnf")) {
+				if (!parse_weight_preamble(beg, lend,
+						"invalid WCNF preamble", &topw))
 					goto fail;
 			}
+			else if (line_has_p(beg, lend)) {
+				PyErr_SetString(PyExc_ValueError, "invalid WCNF preamble");
+				goto fail;
+			}
 			else {
-				if (!parse_weight_preamble(beg, lend, "wcnf",
-						"invalid WCNF preamble", &topw))
+				if (!append_comment(comments, beg, lend))
 					goto fail;
 			}
 			continue;
@@ -249,10 +257,15 @@ PyObject *parse_cnfplus_impl(PyObject *txt_obj, PyObject *comment_lead)
 			continue;
 
 		if (comment_mask[(unsigned char)beg[0]]) {
-			if (!line_starts(beg, lend, "p cnf+")) {
-				if (!append_comment(comments, beg, lend))
-					goto fail;
+			if (line_has_kind(beg, lend, "cnf", "cnf+"))
+				continue;
+			if (line_has_p(beg, lend)) {
+				PyErr_SetString(PyExc_ValueError, "invalid CNF/CNF+ preamble");
+				goto fail;
 			}
+
+			if (!append_comment(comments, beg, lend))
+				goto fail;
 			continue;
 		}
 
@@ -366,13 +379,18 @@ PyObject *parse_wcnfplus_impl(PyObject *txt_obj, PyObject *comment_lead)
 			continue;
 
 		if (comment_mask[(unsigned char)beg[0]]) {
-			if (!line_starts(beg, lend, "p wcnf+")) {
-				if (!append_comment(comments, beg, lend))
+			if (line_has_kind(beg, lend, "wcnf", "wcnf+")) {
+				if (!parse_weight_preamble(beg, lend,
+						"invalid WCNF/WCNF+ preamble", &topw))
 					goto fail;
 			}
+			else if (line_has_p(beg, lend)) {
+				PyErr_SetString(PyExc_ValueError,
+						"invalid WCNF/WCNF+ preamble");
+				goto fail;
+			}
 			else {
-				if (!parse_weight_preamble(beg, lend, "wcnf+",
-						"invalid WCNF+ preamble", &topw))
+				if (!append_comment(comments, beg, lend))
 					goto fail;
 			}
 			continue;

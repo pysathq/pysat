@@ -76,7 +76,7 @@ typedef struct {
 	vector<long long> wght;
 } plus_body;
 
-bool parse_weight_preamble(const char *beg, const char *end, const char *kind,
+bool parse_weight_preamble(const char *beg, const char *end,
 		const char *errmsg, PyObject **topw);
 
 bool parse_clause_body(const char *p, const char *end,

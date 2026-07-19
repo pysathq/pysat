@@ -4129,6 +4129,7 @@ class WCNF(object):
         # normalize it, i.e. transform into a set of clauses
         # with a positive weight
         if negs:
+            self.nv = max(self.nv, max(map(lambda cl: max(map(abs, cl[0])), negs)))
             self.normalize_negatives(negs)
 
         # if topw was unspecified and assigned to +infinity,
@@ -5380,6 +5381,7 @@ class WCNFPlus(WCNF, object):
         # normalize it, i.e. transform into a set of clauses
         # with a positive weight
         if negs:
+            self.nv = max(self.nv, max(map(lambda cl: max(map(abs, cl[0])), negs)))
             self.normalize_negatives(negs)
 
         # if topw was unspecified and assigned to +infinity,
