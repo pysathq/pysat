@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 19.07.2026 (*1.9.dev7*)
+
+-   Fixed a few bugs in weighted formula parsing.
+
 ## 17.07.2026 (*1.9.dev6*)
 
 -   Minor changes in RC2 interface.
