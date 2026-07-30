@@ -103,6 +103,7 @@ html_theme_options = {
     "show_nav_level": 2,
     "navbar_start": ["navbar-logo"],
     "navbar_center": ["version"],
+    "navbar_persistent": ["custom-search"],
     "navbar_end": ["navbar-icon-links"],
     "icon_links": [
         {

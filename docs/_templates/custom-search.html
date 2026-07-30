@@ -1,0 +1,12 @@
+{% include "search-button-field.html" %}
+<script>
+    (function() {
+        var btn = document.currentScript.previousElementSibling;
+
+        btn.addEventListener("click", function() {
+            var toggle = document.querySelector(".primary-toggle");
+            if(!toggle.checkVisibility()) return;
+            toggle.click();
+        }, true);
+    })();
+</script>
