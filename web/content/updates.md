@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 8.07.2026 (*1.9.dev10*)
+
+-   Fixed a related issue in the tests.
+
 ## 8.07.2026 (*1.9.dev9*)
 
 -   Fixed a bug in Formula initialiser, to avoid reinitialisation.

@@ -33,9 +33,10 @@ def test_clausification():
                                                                          [1, 5, -6], [6, -1, 5], [6, 1, -5], [6], [7]])
 
     # multiple successive inner/outermost clausification
+    Formula.cleanup()
     f = And(Atom('1'), Atom('2'))
     compare(list(f), [[1], [2]])
 
     # nested conjunctions are inherited directly by the outer conjunction
     g = And(f, Atom('3'))
-    compare(list(g), [[1], [2], [4]])
+    compare(list(g), [[1], [2], [3]])
