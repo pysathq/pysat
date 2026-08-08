@@ -883,11 +883,11 @@ class Formula(object):
     @staticmethod
     def _get_key(*args, **kwargs):
         """
-            The method is used to extract and return a list of attributes to
-            serve as a key associated with the formula requested by a user.
-            The flattened result will contain string, i.e. ``repr()``,
-            representation of all the attributes. The method is meant to be
-            internal and not to be used by formula users.
+            The method is used to extract and return an immutable structural
+            key associated with the formula requested by a user. The key is
+            composed of tuples, frozensets, and scalar values rather than
+            string representations. The method is meant to be internal and
+            not to be used by formula users.
         """
 
         def _hashable(entity):
@@ -918,7 +918,6 @@ class Formula(object):
                     if isinstance(value, Iterable) and value:
                         items.extend(_flatten(value, prefix=new_key, sep=sep))
                     else:
-
                         items.append((new_key, value))
 
             # finally, it is a simple non-empty object
@@ -945,58 +944,121 @@ class Formula(object):
             elif item[0] != 'merge':
                 subfs.append(item)
             else:
-                extra = [('merge', repr(item[1]))]
+                extra = [('merge', item[1])]
 
-        # the ugly part:
-        # reconstructing the key pairs, depending on the type of Formula
-        if ftype[1] == FormulaType.ATOM:
+        def _object_key(obj):
+            """
+                Get a hashable key for an atom object.
+            """
+
+            if type(obj) in (bool, int, float, str, bytes, type(None)):
+                return ('val', type(obj), obj)
+            if type(obj) in (tuple, list):
+                return ('seq', tuple(_object_key(item) for item in obj))
+            if type(obj) in (set, frozenset):
+                return ('set', frozenset(_object_key(item) for item in obj))
+            if isinstance(obj, dict):
+                return ('map', frozenset((_object_key(key), _object_key(val)) for key, val in obj.items()))
+            try:
+                hash(obj)
+            except TypeError:
+                return ('identity', type(obj), id(obj))
+            return ('obj', type(obj), obj)
+
+        def _formula_key(form):
+            """
+                Get a structural key without a formula's merge flag.
+            """
+
+            if not isinstance(form, Formula):
+                return ('identity', type(form), id(form))
+
+            if form.type == FormulaType.CNF:
+                # CNF and CNFPlus are mutable containers and deliberately
+                # bypass Formula's unique-object constructor; using their
+                # object identity as it looks like the cheapest option
+                return ('cnf-object', type(form), id(form))
+
+            if form.type == FormulaType.ATOM:
+                return (FormulaType.ATOM, _object_key(form.object))
+            if form.type == FormulaType.NEG:
+                return (FormulaType.NEG, _formula_key(form.subformula))
+            if form.type == FormulaType.IMPL:
+                return (FormulaType.IMPL, _formula_key(form.left),
+                        _formula_key(form.right))
+            if form.type == FormulaType.ITE:
+                return (FormulaType.ITE, _formula_key(form.cond),
+                        _formula_key(form.cons1),
+                        _formula_key(form.cons2))
+
+            counts = collections.Counter(_formula_key(subform) for subform in form.subformulas)
+            return (form.type, frozenset(counts.items()))
+
+        def _merged_operands(operands, formula_type):
+            """Flatten same-type operands for a merged connective."""
+            result = []
+            for operand in operands:
+                if isinstance(operand, Formula) and operand.type == formula_type:
+                    result.extend(_merged_operands(operand.subformulas,
+                                                   formula_type))
+                else:
+                    result.append(_formula_key(operand))
+            return result
+
+        # Reconstruct a structural key depending on the Formula type.
+        formula_type = ftype[1]
+        if formula_type == FormulaType.ATOM:
             assert len(subfs) == 1, 'A single object is required for an Atom formula'
-            subfs[0] = ('object', repr(subfs[0][1]))
-        elif ftype[1] == FormulaType.NEG:
+            return (formula_type, _object_key(subfs[0][1]))
+
+        if formula_type == FormulaType.NEG:
             assert len(subfs) == 1, 'A single subformula is required for a Neg formula'
-            subfs[0] = ('subformula', id(subfs[0][1]))
-        elif ftype[1] == FormulaType.IMPL:
+            return (formula_type, _formula_key(subfs[0][1]))
+
+        if formula_type == FormulaType.IMPL:
             assert len(subfs) == 2, 'Two subformulas are required for an Implies formula'
             if subfs[0][0] == '' and subfs[1][0] == '':
-                subfs[0] = ('left', id(subfs[0][1]))
-                subfs[1] = ('right', id(subfs[1][1]))
+                operands = [('left', subfs[0][1]), ('right', subfs[1][1])]
             elif subfs[1][0] == 'left':
-                subfs[0] = ('right', id(subfs[0][1]))
+                operands = [('right', subfs[0][1]), subfs[1]]
             elif subfs[1][0] == 'right':
-                subfs[0] = ('left', id(subfs[0][1]))
-        elif ftype[1] == FormulaType.ITE:
+                operands = [('left', subfs[0][1]), subfs[1]]
+            else:
+                operands = subfs
+            role_order = {'left': 0, 'right': 1}
+            return (formula_type, tuple( (label, _formula_key(value)) for \
+                    label, value in sorted(operands,
+                                           key=lambda pair: role_order[pair[0]])))
+
+        if formula_type == FormulaType.ITE:
             assert len(subfs) == 3, 'Three subformulas are required for an ITE formula'
-            if subfs[0][0] == '' and subfs[1][0] == '' and subfs[2][0] == '':
-                subfs[0] = ('cond', id(subfs[0][1]))
-                subfs[1] = ('cons1', id(subfs[1][1]))
-                subfs[2] = ('cons2',  id(subfs[2][1]))
+            if all(item[0] == '' for item in subfs):
+                subfs = [('cond', subfs[0][1]), ('cons1', subfs[1][1]), ('cons2', subfs[2][1])]
             elif subfs[0][0] == subfs[1][0] == '':
-                if subfs[2][0] == 'cond':
-                    subfs[0] = ('cons1', id(subfs[0][1]))
-                    subfs[1] = ('cons2', id(subfs[1][1]))
-                elif subfs[2][0] == 'cons1':
-                    subfs[0] = ('cond',  id(subfs[0][1]))
-                    subfs[1] = ('cons2', id(subfs[1][1]))
-                elif subfs[2][0] == 'cons2':
-                    subfs[0] = ('cond',  id(subfs[0][1]))
-                    subfs[1] = ('cons1', id(subfs[1][1]))
-            elif subfs[0] == '':
-                if 'cond' not in (subfs[1][0], subfs[2][0]):
-                    subfs[0] = ('cond', id(subfs[0][0]))
-                elif 'cons1' not in (subfs[1][0], subfs[2][0]):
-                    subfs[0] = ('cons1', id(subfs[0][0]))
-                elif 'cons2' not in (subfs[1][0], subfs[2][0]):
-                    subfs[0] = ('cons2', id(subfs[0][0]))
+                role = subfs[2][0]
+                missing = [r for r in ('cond', 'cons1', 'cons2') if r != role]
+                subfs = [(missing[0], subfs[0][1]), (missing[1], subfs[1][1]), subfs[2]]
+            elif subfs[0][0] == '':
+                roles = {item[0] for item in subfs[1:]}
+                missing = next(r for r in ('cond', 'cons1', 'cons2') if r not in roles)
+                subfs[0] = (missing, subfs[0][1])
+
+            role_order = {'cond': 0, 'cons1': 1, 'cons2': 2}
+            return (formula_type, tuple((label, _formula_key(value)) for \
+                    label, value in sorted(subfs,
+                                           key=lambda pair: role_order[pair[0]])))
+
+        # these are commutative connectives; representing operands as a
+        # multiset so that argument order is irrelevant while duplicate
+        # operands remain significant; a merged connective also flattens nested operands.
+        assert len(subfs) >= 1, 'At least one subformula is required for an And/Equals/Or/XOr formula'
+        merge = dict(extra).get('merge', False)
+        operands = [value for _, value in subfs]
+        if merge:
+            operands = _merged_operands(operands, formula_type)
         else:
-            # these are commutative connectives; we need to sort the arguments
-            assert len(subfs) >= 1, 'At least one subformula is required for an And/Equals/Or/XOr formula'
-            subfs = sorted(map(lambda p: (p[0], repr(id(p[1]))), subfs))
-
-            if not extra:
-                extra = [('merge', repr(False))]
-
-        # the key is a string combining all the parts
-        return ' '.join([f'{repr(p[0])}:{repr(p[1])}' for p in [ftype] + subfs + extra])
+            operands = [_formula_key(operand) for operand in operands]
+        return (formula_type, frozenset(collections.Counter(operands).items()), merge)
 
     def __hash__(self):
         """
@@ -1708,50 +1770,83 @@ class And(Formula):
 
     def _clausify(self, name_required=True):
         """
-            Conjuction clausification.
+            Conjunction clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
-            the subformulas and populates self's clauses with unit clauses,
-            each containing the auxiliary "name" of the corresponding
-            subformula, thus representing their conjunction.
+            the subformulas expanding self's list of clauses and also
+            populates self's clauses with unit clauses, each containing the
+            auxiliary "name" of the corresponding subformula, thus
+            representing their conjunction. However, nested :class:`And` and
+            :class:`CNF` formulas are expanded without introducing
+            intermediate Boolean names - instead, they contribute their
+            clausal representations to the list of self's clauses unchanged.
 
-            If ``name_required`` is set to ``True``, the method encodes the
-            conjunction using the standard logic: :math:`x \\equiv
-            \\bigwedge{y_i}`, if :math:`x` is the new auxiliary variable
-            encoding ``self`` and :math:`y_i` is the auxiliary variable
-            representing :math:`i`'s subformula.
+            If ``name_required`` is set to ``True``, the method introduces one
+            name for the complete conjunction and encodes the equivalence
+            between that name and the collected clauses.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
 
         if not self.clauses:
-            # first, recursively encoding subformulas
+            # recursively collect a clausal representation; nested `And` and
+            # `CNF` objects are conjunctions already, so they do not need a
+            # Boolean name at this level.
             for sub in self.subformulas:
-                sub._clausify(name_required=True)
+                if type(sub) in (And, CNF):
+                    sub._clausify(name_required=False)
+                    self.clauses.extend(clause.copy() for clause in sub.clauses)
+                else:
+                    sub._clausify(name_required=True)
+                    self.clauses.append([sub.name])
 
-                # adding unit clauses
-                self.clauses.append([sub.name])
-
-        # introducing a new name for this formula if required
+        # introducing a name is needed only when this conjunction is itself
+        # used by another connective; encode each non-unit clause with its own
+        # selector, then encode the conjunction of those selectors with the
+        # single name for this `And` formula
         if name_required and not self.name:
-            if save_clauses:
-                self.encoded = [clause.copy() for clause in self.clauses]
+            self.encoded, enclits = [], []
+
+            for cl in self.clauses:
+                auxv = cl[0]
+                if len(cl) > 1:
+                    auxv = Formula._vpool[Formula._context].id()
+
+                    # direct implication
+                    for l in cl:
+                        self.encoded.append([-l, auxv])
+
+                    # opposite implication
+                    self.encoded.append(cl + [-auxv])
+
+                # literals representing the clauses
+                enclits.append(auxv)
+
+            # encoding the conjunction
+            if len(enclits) > 1:
+                self.name = Formula._vpool[Formula._context].id(self)
+
+                for lit in enclits:
+                    self.encoded.append([lit, -self.name])
+                self.encoded.append([self.name] + [-lit for lit in enclits])
+            elif len(enclits) == 1:  # single clause - nothing left to encode
+                self.name = enclits[0]  # existing variable
+
+                # connecting it to the `And` object as its name
+                Formula._vpool[Formula._context].obj2id[self] = self.name
+                if self.name not in Formula._vpool[Formula._context].id2obj:
+                    Formula._vpool[Formula._context].id2obj[self.name] = self
             else:
-                self.encoded = self.clauses
+                self.name = PYSAT_TRUE.name
+
+            # preserve clauses that existed before this call;
+            # they are still needed if the same formula is later iterated as
+            # an outermost formula
+            if not save_clauses:
                 self.clauses = []
-
-            self.name = Formula._vpool[Formula._context].id(self)
-
-            cl = [self.name]  # final clause (converse implication)
-            for i in range(len(self.encoded)):
-                cl.append(-self.encoded[i][0])      # updating final clause
-                self.encoded[i].append(-self.name)  # updating direct implication
-
-            # adding final clause
-            self.encoded.append(cl)
 
     def _atoms(self, dest):
         """
@@ -1947,18 +2042,18 @@ class Or(Formula):
             Disjunction clausification.
 
             If ``name_required`` is ``False``, the method recursively encodes
-            the subformulas and populates self's clauses with unit clauses,
-            each containing the auxiliary "name" of the corresponding
-            subformula, thus representing their conjunction.
+            the subformulas and populates self's clauses with a unit clause
+            containing the auxiliary "name" of each corresponding subformula,
+            thus representing their disjunction.
 
             If ``name_required`` is set to ``True``, the method encodes the
-            conjunction using the standard logic: :math:`x \\equiv
+            disjunction using the standard logic: :math:`x \\equiv
             \\bigvee{y_i}`, if :math:`x` is the new auxiliary variable
             encoding ``self`` and :math:`y_i` is the auxiliary variable
             representing :math:`i`'s subformula.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
@@ -2136,7 +2231,7 @@ class Neg(Formula):
             is equal to the negation of subformula's name.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         if not self.clauses:
@@ -2307,7 +2402,7 @@ class Implies(Formula):
 
             If ``name_required`` is ``False``, the method recursively encodes
             the left and right subformulas giving them names, say, :math:`x`
-            and :math:`y` respectively and the populates self's clauses with a
+            and :math:`y` respectively, and populates self's clauses with a
             single binary clause :math:`(\\neg{x}\\lor y)`.
 
             If ``name_required`` is set to ``True``, the method removes this
@@ -2315,7 +2410,7 @@ class Implies(Formula):
             Tseitin-encoding it, i.e. :math:`n \\equiv (\\neg{x}\\lor y)`.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
@@ -2407,7 +2502,7 @@ class Equals(Formula):
             >>> from pysat.formula import *
             >>> a1 = Equals(Equals(Atom('x'), Atom('y')), Atom('z'))
             >>> a2 = Equals(Equals(Atom('x'), Atom('y')), Atom('z'), merge=True)
-            >>> a3 = Atom('x') == Atom('y') == Atom('z')
+            >>> a3 = Atom('x') @ Atom('y') @ Atom('z')
             >>>
             >>> print(a1)
             (x @ y) @ z
@@ -2571,7 +2666,7 @@ class Equals(Formula):
             relating it with the names of subformulas.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
@@ -2652,13 +2747,12 @@ class XOr(Formula):
 
         If an additional Boolean keyword argument ``merge`` is provided set to
         ``True``, the toolkit will try to flatten the current :class:`XOr`
-        formula merging its *equivalence* sub-operands into the list of
-        operands. For example, if ``XOr(XOr(x, y), z, merge=True)`` is called,
-        a new Formula object will be created with two operands: ``XOr(x, y)``
-        and ``z``, followed by merging ``x`` and ``y`` into the list of
-        root-level ``XOr``. This will result in a formula ``XOr(x, y, z)``.
-        Merging sub-operands is disabled by default if bitwise operations are
-        used to create ``XOr`` formulas.
+        formula merging its *exclusive-disjunction* sub-operands into the
+        list of operands. For example, if ``XOr(XOr(x, y), z, merge=True)`` is
+        called, a new Formula object will be created with two operands:
+        ``XOr(x, y)`` and ``z``, followed by merging ``x`` and ``y`` into the
+        list of root-level ``XOr``. This will result in a formula
+        ``XOr(x, y, z)``. Bitwise ``^`` operations also enable merging.
 
         Example:
 
@@ -2679,8 +2773,8 @@ class XOr(Formula):
             >>> id(a1) == id(a2)
             False
             >>>
-            >>> id(a1) == id(a3)
-            True  # formulas a1 and a3 refer to the same object
+            >>> id(a2) == id(a3)
+            True  # formulas a2 and a3 refer to the same object
 
         .. note::
 
@@ -2766,7 +2860,7 @@ class XOr(Formula):
                 >>> a = x ^ y ^ z
                 >>>
                 >>> print(a.simplified(assumptions=[y]))
-                ~x ^ z
+                ~(x ^ z)
                 >>> print(a.simplified(assumptions=[~y]))
                 x ^ z
         """
@@ -2817,7 +2911,7 @@ class XOr(Formula):
             variable for each pair of operands.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
@@ -2943,7 +3037,7 @@ class ITE(Formula):
             >>> ite = ITE(x, y, z)
             >>>
             >>> print(ite)
-            >>> (x >> y) & (~x >> z)
+            (x >> y) & (~x >> z)
     """
 
     def __new__(cls, *args, **kwargs):
@@ -3071,17 +3165,17 @@ class ITE(Formula):
 
             If ``name_required`` is ``False``, the method recursively encodes
             the ``cond``, ``cons1``, and ``cons2`` subformulas giving them
-            names, say, :math:`x`, :math:`y`, and :math:`z`, respectivela, and
-            the populates self's clauses with two binary clauses
-            :math:`(\\neg{x}\\lor y)` and :math:`(x \\lor y)`.
+            names, say, :math:`x`, :math:`y`, and :math:`z`, respectively, and
+            populates self's clauses with two binary clauses
+            :math:`(\\neg{x}\\lor y)` and :math:`(x \\lor z)`.
 
             If ``name_required`` is set to ``True``, the method removes these
             clauses and instead gives a name to the ITE by Tseitin-encoding
             it, i.e. encoding :math:`n \\equiv \\left[(\\neg{x}\\lor
-            y)\\land(x\\lor y)\\right]`.
+            y)\\land(x\\lor z)\\right]`.
 
             :param name_required: whether or not a Tseitin variable is needed
-            :param name_required: bool
+            :type name_required: bool
         """
 
         save_clauses = bool(self.clauses)
@@ -3136,7 +3230,7 @@ class ITE(Formula):
         """
             Informal representation of the ``ITE`` formula. Returns a string
             representation of the subformulas as two implications connected
-            with the conjuction symbol ``' & '``
+            with the conjunction symbol ``' & '``
         """
 
         cons1 = '{0} >> {1}'.format(f'{str(self.cond)}' if self.cond.type in (FormulaType.ATOM, FormulaType.NEG) else f'({str(self.cond)})',
@@ -3898,7 +3992,7 @@ class CNF(Formula, object):
                 for lit in enclits:
                     clauses.append([-self.name, lit])
                 clauses.append([self.name] + [-lit for lit in enclits])
-            else:  # single clause - nothing left to encode
+            elif len(enclits) == 1:  # single clause - nothing left to encode
                 self.name = enclits[0]  # existing variable
 
                 # connecting it to the CNF object as its name
@@ -3907,6 +4001,8 @@ class CNF(Formula, object):
 
                 # just in case, marking all ids below self.name as occupied
                 Formula._vpool[Formula._context].occupy(1, self.name)
+            else:
+                self.name = PYSAT_TRUE.name
 
             self.encoded = clauses
             self.auxvars = auxvars

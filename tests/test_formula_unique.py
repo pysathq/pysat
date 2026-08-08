@@ -59,6 +59,27 @@ def test_ite_uniqueness():
 
         assert ITE(*comb) is not a, 'ITE is not commutative'
 
+def test_cnf_as_and_subformula():
+    Formula.cleanup()
+    cnf = CNF(from_clauses=[[-1, 2], [3]])
+    formula = And(And(cnf, Atom(4)), Atom(5))
+
+    assert list(formula) == [[-1, 2], [3], [4], [5]]
+    assert formula.name is None
+    assert cnf.name is None
+    assert cnf.encoded == []
+
+
+def test_ite_call_syntax_uniqueness():
+    x, y, z = Atom('x'), Atom('y'), Atom('z')
+
+    a = ITE(x, y, z)
+
+    assert ITE(cond=x, cons1=y, cons2=z) is a
+    assert ITE(x, cons1=y, cons2=z) is a
+    assert ITE(cons2=z, cond=x, cons1=y) is a
+
+
 def test_xor_uniqueness():
     x, y, z = Atom('x'), Atom('y'), Atom('z')
 
@@ -71,6 +92,17 @@ def test_xor_uniqueness():
     for comb in permutations([x, y, z]):
         assert XOr(*comb, merge=False) is b, 'All 3-xor\'s should be the same object'
         assert XOr(*comb) is b, 'All 3-xor\'s should be the same object'
+
+def test_nested_merge_uniqueness():
+    x, y, z = Atom('x'), Atom('y'), Atom('z')
+
+    a = Equals(Equals(x, y), z, merge=True)
+    assert Equals(Equals(y, z), x, merge=True) is a
+    assert x @ y @ z is a
+
+    unmerged = Equals(Equals(x, y), z, merge=False)
+    assert unmerged is not a
+
 
 def test_equals_uniqueness():
     x, y, z = Atom('x'), Atom('y'), Atom('z')

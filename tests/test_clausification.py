@@ -34,8 +34,8 @@ def test_clausification():
 
     # multiple successive inner/outermost clausification
     f = And(Atom('1'), Atom('2'))
+    compare(list(f), [[1], [2]])
+
+    # nested conjunctions are inherited directly by the outer conjunction
     g = And(f, Atom('3'))
-    compare(list(f), [[1], [2]])
-    compare(list(g), [[1, -3], [2, -3], [3, -1, -2], [3], [4]])
-    compare(list(f), [[1], [2]])
-    compare(list(g), [[1, -3], [2, -3], [3, -1, -2], [3], [4]])
+    compare(list(g), [[1], [2], [4]])
