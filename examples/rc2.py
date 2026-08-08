@@ -134,7 +134,6 @@ from __future__ import print_function
 import bisect
 import collections
 import getopt
-import itertools
 from math import copysign
 import os
 from pysat.formula import CNFPlus, WCNFPlus, IDPool
@@ -740,9 +739,12 @@ class RC2(object):
             self.minw = min(map(lambda l: self.wght[l], self.core))
 
             # dividing the core into two parts
-            iter1, iter2 = itertools.tee(self.core)
-            self.core_sels = list(l for l in iter1 if l in self.sels_set)
-            self.core_sums = list(l for l in iter2 if l not in self.sels_set)
+            self.core_sels, self.core_sums = [], []
+            for l in self.core:
+                if l in self.sels_set:
+                    self.core_sels.append(l)
+                else:
+                    self.core_sums.append(l)
 
     def process_core(self):
         """
