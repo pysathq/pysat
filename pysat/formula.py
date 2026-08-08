@@ -810,6 +810,13 @@ class Formula(object):
             :type type: :class:`FormulaType`
         """
 
+        # Formula.__new__ may return an existing structurally identical
+        # formula; by default, Python still invokes __init__ in that case,
+        # which is harmful; if an identical object exists, we should
+        # immediately return
+        if hasattr(self, 'type'):
+            return
+
         assert 'type' in kwargs, 'No \'type\' of the formula is provided'
         self.type = kwargs['type']
 
