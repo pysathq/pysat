@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 8.07.2026 (*1.9.dev8*)
+
+-   A few corrections in the key computation for arbitrary formulas.
+-   A few improvements in nested conjunction handling.
+-   Minor changes in RC2.
+
 ## 19.07.2026 (*1.9.dev7*)
 
 -   Fixed a few bugs in weighted formula parsing.
