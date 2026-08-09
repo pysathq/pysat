@@ -972,7 +972,7 @@ class Formula(object):
                 return ('identity', type(obj), id(obj))
             return ('obj', type(obj), obj)
 
-        def _formula_key(form):
+        def _formula_key_uncached(form):
             """
                 Get a structural key without a formula's merge flag.
             """
@@ -1000,6 +1000,21 @@ class Formula(object):
 
             counts = collections.Counter(_formula_key(subform) for subform in form.subformulas)
             return (form.type, frozenset(counts.items()))
+
+        def _formula_key(form):
+            """
+                Get a cached structural key for an immutable formula.
+            """
+
+            if isinstance(form, Formula):
+                key = getattr(form, '_key_cache', None)
+                if key is None:
+                    key = _formula_key_uncached(form)
+                    form._key_cache = key
+
+                return key
+
+            return _formula_key_uncached(form)
 
         def _merged_operands(operands, formula_type):
             """Flatten same-type operands for a merged connective."""
