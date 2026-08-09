@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 9.07.2026 (*1.9.dev11*)
+
+-   An attempt to speed up `Formula` key computation by caching the keys.
+
 ## 8.07.2026 (*1.9.dev10*)
 
 -   Fixed a related issue in the tests.
