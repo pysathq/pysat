@@ -1,4 +1,4 @@
-from pysat.formula import Atom, Formula, And, Or, Neg, XOr
+from pysat.formula import Atom, Formula, And, CNF, Or, Neg, XOr
 
 
 def compare(a, b):
@@ -37,6 +37,11 @@ def test_clausification():
     f = And(Atom('1'), Atom('2'))
     compare(list(f), [[1], [2]])
 
-    # nested conjunctions are inherited directly by the outer conjunction
+    # nested conjunctions retain their own auxiliary name
     g = And(f, Atom('3'))
-    compare(list(g), [[1], [2], [3]])
+    compare(list(g), [[1, -3], [2, -3], [3, -1, -2], [3], [4]])
+
+    # CNF operands are inherited directly by the outer conjunction
+    Formula.cleanup()
+    h = And(CNF(from_clauses=[[1, 2], [-1, 3]]), Atom('4'))
+    compare(list(h), [[1, 2], [-1, 3], [4]])

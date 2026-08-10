@@ -1798,10 +1798,10 @@ class And(Formula):
             the subformulas expanding self's list of clauses and also
             populates self's clauses with unit clauses, each containing the
             auxiliary "name" of the corresponding subformula, thus
-            representing their conjunction. However, nested :class:`And` and
-            :class:`CNF` formulas are expanded without introducing
-            intermediate Boolean names - instead, they contribute their
-            clausal representations to the list of self's clauses unchanged.
+            representing their conjunction. However, :class:`CNF` formulas
+            are expanded without introducing an intermediate Boolean name -
+            instead, they contribute their clausal representations to the
+            list of self's clauses unchanged.
 
             If ``name_required`` is set to ``True``, the method introduces one
             name for the complete conjunction and encodes the equivalence
@@ -1814,13 +1814,13 @@ class And(Formula):
         save_clauses = bool(self.clauses)
 
         if not self.clauses:
-            # recursively collect a clausal representation; nested `And` and
-            # `CNF` objects are conjunctions already, so they do not need a
-            # Boolean name at this level.
+            # recursively collect a clausal representation; CNF objects are
+            # already clausal, so they do not need a Boolean name at this
+            # level
             for sub in self.subformulas:
-                if type(sub) in (And, CNF):
+                if type(sub) is CNF:
                     sub._clausify(name_required=False)
-                    self.clauses.extend(clause.copy() for clause in sub.clauses)
+                    self.clauses.extend(cl.copy() for cl in sub.clauses)
                 else:
                     sub._clausify(name_required=True)
                     self.clauses.append([sub.name])

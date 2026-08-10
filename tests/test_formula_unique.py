@@ -62,10 +62,34 @@ def test_ite_uniqueness():
 def test_cnf_as_and_subformula():
     Formula.cleanup()
     cnf = CNF(from_clauses=[[-1, 2], [3]])
-    formula = And(And(cnf, Atom(4)), Atom(5))
+    subf = And(cnf, Atom(4))
+    form = And(subf, Atom(5))
 
-    assert list(formula) == [[-1, 2], [3], [4], [5]]
-    assert formula.name is None
+    # the CNF is flattened into its immediate And operand, while the
+    # unmerged nested And retains its own auxiliary name
+    assert list(form) == [[1, 6], [-2, 6], [-1, 2, -6],
+                             [6, -7], [3, -7], [4, -7],
+                             [7, -6, -3, -4], [7], [5]]
+    assert form.name is None
+    assert subf.name == 7
+    assert cnf.name is None
+    assert cnf.encoded == []
+
+
+def test_merged_and_with_cnf_subformula():
+    Formula.cleanup()
+    cnf = CNF(from_clauses=[[-1, 2], [3]])
+    subf = And(cnf, Atom(4))
+    form = And(subf, Atom(5), merge=True)
+
+    # Merging removes the nested And boundary. When the merged formula is
+    # used as a subformula, it therefore gets exactly one gate name.
+    assert list(Or(form, Atom(6))) == [[1, 7], [-2, 7], [-1, 2, -7],
+                                       [7, -8], [3, -8], [4, -8],
+                                       [5, -8], [8, -7, -3, -4, -5],
+                                       [8, 6]]
+    assert form.name == 8
+    assert subf.name is None
     assert cnf.name is None
     assert cnf.encoded == []
 
