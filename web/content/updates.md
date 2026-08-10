@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 10.07.2026 (*1.9.dev12*)
+
+-   A few changes in the clausification of nested conjunctions. It now solely
+    depends on the use of parameter `merge=True`.
+
 ## 9.07.2026 (*1.9.dev11*)
 
 -   An attempt to speed up `Formula` key computation by caching the keys.
