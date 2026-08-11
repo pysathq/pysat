@@ -2994,8 +2994,10 @@ class XOr(Formula):
                 f2 = Formula._vpool[Formula._context].obj(n2)
                 final = XOr(f1, f2)
 
-                final.name = Formula._vpool[Formula._context].id(final)
-                self.name = final.name
+                # the new name will be shared between the n-ary XOr and the
+                # final binary XOr
+                self.name = Formula._vpool[Formula._context].id(self)
+                final.name = self.name
             else:
                 self.name = Formula._vpool[Formula._context].id(self)
                 final = None

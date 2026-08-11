@@ -45,3 +45,15 @@ def test_clausification():
     Formula.cleanup()
     h = And(CNF(from_clauses=[[1, 2], [-1, 3]]), Atom('4'))
     compare(list(h), [[1, 2], [-1, 3], [4]])
+
+
+def test_nary_xor_name_is_registered():
+    Formula.cleanup()
+    x, y, z = Atom('x'), Atom('y'), Atom('z')
+    xor = XOr(x, y, z)
+    formula = And(xor, Atom('w'))
+    formula.clausify()
+
+    vpool = Formula.export_vpool()
+    assert vpool.id(xor) == xor.name
+    assert vpool.obj(xor.name) is xor
