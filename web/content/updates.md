@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 11.07.2026 (*1.9.dev13*)
+
+-   Fixed a bug in n-ary XOr clausification when the auxiliary variable could
+    be lost.
+
 ## 10.07.2026 (*1.9.dev12*)
 
 -   A few changes in the clausification of nested conjunctions. It now solely
