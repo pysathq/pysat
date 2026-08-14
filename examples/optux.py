@@ -174,6 +174,16 @@ class OptUx(object):
         whose integer value signifies the number of processing rounds to be
         applied. The number of rounds is set to 0 by default.
 
+        Since the algorithm builds on implicit hitting set dualization,
+        correction sets computed along the way can be minimized
+        *heuristically*, by limiting the budget on the number of conflicts a
+        SAT solver can collect during the minimization process. Parameter
+        ``reduce`` is responsible for this behaviour. By default, the budget
+        is set to ``0``, meaning that no reduction of correction sets is
+        performed. Setting it to ``-1`` forces the solver to compute an exact
+        MCS. Otherwise, any positive value of this parameter will indicate the
+        upper bound on the number of conflicts.
+
         Finally, one more optional input parameter ``cover`` is to be used
         when exhaustive enumeration of MUSes is not necessary and the tool can
         stop as soon as a given formula is covered by the set of currently
@@ -206,6 +216,7 @@ class OptUx(object):
         :param nodisj: do not enumerate disjoint MCSes
         :param process: apply formula preprocessing this many times
         :param puresat: use pure SAT-based hitting set enumeration
+        :param reduce: minimize correction sets using this budget on the number of conflicts
         :param unsorted: apply unsorted MUS enumeration
         :param trim: do core trimming at most this number of times
         :param verbose: verbosity level
@@ -220,6 +231,7 @@ class OptUx(object):
         :type nodisj: bool
         :type process: int
         :type puresat: str
+        :type reduce: int
         :type unsorted: bool
         :type trim: int
         :type verbose: int
@@ -227,7 +239,7 @@ class OptUx(object):
 
     def __init__(self, formula, solver='g3', adapt=False, cover=None,
             dcalls=False, exhaust=False, minz=False, nodisj=False, process=0,
-            puresat=False, unsorted=False, trim=False, verbose=0):
+            puresat=False, reduce=0, unsorted=False, trim=False, verbose=0):
         """
             Constructor.
         """
@@ -236,6 +248,9 @@ class OptUx(object):
 
         # verbosity level
         self.verbose = verbose
+
+        # budget on the number of conflicts when reducing corrections sets
+        self.reduce_budget = reduce
 
         # constructing a local copy of the formula
         self.formula = WCNFPlus()
@@ -497,9 +512,12 @@ class OptUx(object):
         # correctly computed cost of the unit-mcs component
         units_cost = sum(map(lambda l: self.weights[l], self.units))
 
+        it = 0
         while True:
             # computing a new optimal hitting set
             hs = self.hitman.get()
+            if self.verbose > 3:
+                self.cost = sum(map(lambda l: self.weights[l], hs)) + units_cost
 
             if hs is None:
                 # no more hitting sets exist
@@ -530,8 +548,25 @@ class OptUx(object):
                 model = self.oracle.get_model()
                 cs = [l for l in self.sels if model[abs(l) - 1] == -l]
 
+                # naive MCS extraction with a budget on the conflict count
+                if self.reduce_budget:
+                    ss = [l for l in self.sels if model[abs(l) - 1] == +l]
+                    self.oracle.conf_budget(self.reduce_budget)
+
+                    # probing all the literals of the correction set
+                    for l in cs:
+                        if self.oracle.solve_limited(assumptions=[l] + ss) is True:
+                            ss.append(l)
+
+                    cs = sorted(set(cs) - set(ss))
+                    self.oracle.conf_budget(budget=-1)
+
                 # hitting the new correction subset
                 self.hitman.hit(cs, weights=self.weights)
+
+            it += 1
+            if self.verbose > 3:
+                print(f'c iter: {it}, cost: {self.cost}; cs sz: {len(cs)}')
 
     def enumerate(self):
         """
@@ -571,11 +606,11 @@ def parse_options():
     """
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmnp:P:s:t:uvx',
+        opts, args = getopt.getopt(sys.argv[1:], 'ac:de:hmnp:P:r:s:t:uvx',
                                    ['adapt', 'cover=', 'dcalls', 'enum=',
                                     'exhaust', 'help', 'minimize', 'no-disj',
                                     'solver=', 'puresat=', 'process=',
-                                    'unsorted', 'trim=', 'verbose'])
+                                    'reduce=', 'unsorted', 'trim=', 'verbose'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize() + '\n')
         usage()
@@ -591,6 +626,7 @@ def parse_options():
     solver = 'g3'
     process = 0
     puresat = False
+    reduce = 0
     unsorted = False
     trim = 0
     verbose = 1
@@ -619,6 +655,8 @@ def parse_options():
             puresat = str(arg)
         elif opt in ('-P', '--process'):
             process = int(arg)
+        elif opt in ('-r', '--reduce'):
+            reduce = int(arg)
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-u', '--unsorted'):
@@ -633,7 +671,7 @@ def parse_options():
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
     return adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, \
-            solver, process, puresat, unsorted, verbose, args
+            solver, process, puresat, reduce, unsorted, verbose, args
 
 
 #
@@ -659,6 +697,8 @@ def usage():
     print('                                  Requires: unsorted mode, i.e. \'-u\'')
     print('        -P, --process=<int>       Number of processing rounds')
     print('                                  Available values: [0 .. INT_MAX] (default = 0)')
+    print('        -r, --reduce=<int>        Conflict budget when reducing correction sets')
+    print('                                  Available values: [0 .. INT_MAX], -1 (default = 0, meaning no reduction)')
     print('        -s, --solver              SAT solver to use')
     print('                                  Available values: cd15, cd19, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -t, --trim=<int>          How many times to trim unsatisfiable cores')
@@ -672,7 +712,7 @@ def usage():
 #==============================================================================
 if __name__ == '__main__':
     adapt, cover, dcalls, exhaust, minz, no_disj, trim, to_enum, solver, \
-            process, puresat, unsorted, verbose, files = parse_options()
+            process, puresat, reduce, unsorted, verbose, files = parse_options()
 
     if files:
         # reading standard CNF, WCNF, or (W)CNF+
@@ -689,8 +729,8 @@ if __name__ == '__main__':
         # creating an object of OptUx
         with OptUx(formula, solver=solver, adapt=adapt, cover=cover,
                    dcalls=dcalls, exhaust=exhaust, minz=minz, nodisj=no_disj,
-                   process=process, puresat=puresat, unsorted=unsorted,
-                   trim=trim, verbose=verbose) as optux:
+                   process=process, puresat=puresat, reduce=reduce,
+                   unsorted=unsorted, trim=trim, verbose=verbose) as optux:
 
             # iterating over the necessary number of optimal MUSes
             for i, mus in enumerate(optux.enumerate()):

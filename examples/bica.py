@@ -231,6 +231,7 @@ class Bica:
         :param ominz: do heuristic core reduction
         :param onodisj: do not enumerate disjoint MCSes with OptUx
         :param opuresat: use pure SAT-based hitting set enumeration
+        :param oreduce: minimize correction sets with this budget on the conflict count
         :param ounsorted: apply unsorted MUS enumeration
         :param otrim: do core trimming at most this number of times
         :param weighted: get a minimal cover wrt. the total number of literals
@@ -255,6 +256,7 @@ class Bica:
         :type ominz: bool
         :type onodisj: bool
         :type opuresat: str
+        :type oreduce: int
         :type ounsorted: bool
         :type otrim: int
         :type weighted: bool
@@ -265,8 +267,8 @@ class Bica:
                  padapt=False, pdcalls=False, pexhaust=False, pminz=False,
                  ppuresat=False, psearch='lin', punsorted=False, ptrim=False,
                  osolver='mgh', oadapt=False, odcalls=False, oexhaust=False,
-                 ominz=False, onodisj=False, opuresat=False, ounsorted=False,
-                 otrim=False, weighted=False, verbose=0):
+                 ominz=False, onodisj=False, opuresat=False, oreduce=0,
+                 ounsorted=False, otrim=False, weighted=False, verbose=0):
         """
             Initialiser.
         """
@@ -297,6 +299,7 @@ class Bica:
         self.ominz = ominz
         self.onodisj = onodisj
         self.opuresat = opuresat
+        self.oreduce = oreduce
         self.ounsorted = ounsorted
         self.otrim = otrim
 
@@ -425,8 +428,9 @@ class Bica:
                                adapt=self.oadapt, cover=None,
                                dcalls=self.odcalls, exhaust=self.oexhaust,
                                minz=self.ominz, nodisj=self.onodisj,
-                               puresat=self.opuresat, unsorted=self.ounsorted,
-                               trim=self.otrim, verbose=self.verbose)
+                               puresat=self.opuresat, reduce=self.oreduce,
+                               unsorted=self.ounsorted, trim=self.otrim,
+                               verbose=self.verbose)
 
         return self.optux.compute()
 
@@ -510,12 +514,13 @@ def parse_options():
         opts, args = getopt.getopt(sys.argv[1:],
                                    'aAdDe:hmMnp:P:r:R:s:S:t:T:uUvwxX',
                                    ['padapt', 'oadapt', 'pdcalls', 'odcalls',
-                                    'enum=', 'help', 'pminimize', 'ominimize',
-                                    'no-disj', 'ppuresat=', 'opuresat=',
-                                    'reduce=', 'repr=', 'psolver=',
-                                    'osolver=', 'ptrim=', 'otrim=',
-                                    'punsorted', 'ounsorted', 'verbose',
-                                    'weighted', 'pexhaust', 'oexhaust'])
+                                    'enum=', 'help', 'mincs=', 'pminimize',
+                                    'ominimize', 'no-disj', 'ppuresat=',
+                                    'opuresat=', 'reduce=', 'repr=',
+                                    'psolver=', 'osolver=', 'ptrim=',
+                                    'otrim=', 'punsorted', 'ounsorted',
+                                    'verbose', 'weighted', 'pexhaust',
+                                    'oexhaust'])
     except getopt.GetoptError as err:
         sys.stderr.write(str(err).capitalize())
         usage()
@@ -540,6 +545,7 @@ def parse_options():
     osolver = 'mgh'
     ppuresat = False
     opuresat = False
+    oreduce = 0
     punsorted = False
     ounsorted = False
     ptrim = 0
@@ -561,6 +567,8 @@ def parse_options():
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
+        elif opt == '--mincs':
+            oreduce = int(arg)
         elif opt in ('-m', '--pminimize'):
             pminz = True
         elif opt in ('-M', '--ominimize'):
@@ -601,8 +609,8 @@ def parse_options():
 
     return to_enum, mode, padapt, oadapt, pdcalls, odcalls, pexhaust, \
             oexhaust, pminz, ominz, nodisj, ptrim, otrim, search, psolver, \
-            osolver, ppuresat, opuresat, punsorted, ounsorted, verbose, \
-            weighted, args
+            osolver, ppuresat, opuresat, oreduce, punsorted, ounsorted, \
+            verbose, weighted, args
 
 
 #
@@ -621,6 +629,8 @@ def usage():
     print('        -e, --enum=<int>           Enumerate this many "top-k" solutions')
     print('                                   Available values: [1 .. INT_MAX], all (default = 1)')
     print('        -h, --help                 Print this help message')
+    print('        --mincs=<int>              Budget on conflicts number when applying heuristic correction set minimization [OptUx]')
+    print('                                   Available values: [0 .. INT_MAX], -1 (default = 0, meaning no minimization)')
     print('        -m, --pminimize            Use a heuristic unsatisfiable core minimizer [Primer]')
     print('        -M, --ominimize            Use a heuristic unsatisfiable core minimizer [OptUx]')
     print('        -n, --no-disj              Do not enumerate disjoint MCSes [OptUx]')
@@ -656,8 +666,8 @@ if __name__ == '__main__':
     # parse command-line options
     to_enum, mode, padapt, oadapt, pdcalls, odcalls, pexhaust, oexhaust, \
             pminz, ominz, nodisj, ptrim, otrim, search, psolver, osolver, \
-            ppuresat, opuresat, punsorted, ounsorted, verbose, weighted, \
-            files = parse_options()
+            ppuresat, opuresat, oreduce, punsorted, ounsorted, verbose, \
+            weighted, files = parse_options()
 
     if files:
         # read CNF from file
@@ -671,8 +681,8 @@ if __name__ == '__main__':
                   punsorted=punsorted, ptrim=ptrim, osolver=osolver,
                   oadapt=oadapt, odcalls=odcalls, oexhaust=oexhaust,
                   ominz=ominz, onodisj=nodisj, opuresat=opuresat,
-                  ounsorted=ounsorted, otrim=otrim, weighted=weighted,
-                  verbose=verbose) as bica:
+                  oreduce=oreduce, ounsorted=ounsorted, otrim=otrim,
+                  weighted=weighted, verbose=verbose) as bica:
 
             for i, minf in enumerate(bica.enumerate()):
                 if verbose > 1:
