@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 16.07.2026 (*1.9.dev15*)
+
+-   Minor modification of `lsu.py` due to the use of `filter()`.
+-   A couple of subtle bugs in `hitman.py`: one was related to `filter()` and
+    the other one was related to arbitrary atoms.
+
 ## 14.07.2026 (*1.9.dev14*)
 
 -   Added optional and heuristic correction set reduction to OptUx.

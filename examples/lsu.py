@@ -235,7 +235,7 @@ class LSU:
             self._assert_lt(self.cost)
 
         if is_sat:
-            self.model = filter(lambda l: abs(l) <= self.formula.nv, self.model)
+            self.model = list(filter(lambda l: abs(l) <= self.formula.nv, self.model))
             if self.verbose:
                 if self.found_optimum():
                     print('s OPTIMUM FOUND')

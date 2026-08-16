@@ -476,24 +476,19 @@ class Hitman(object):
 
             if no_obj is False:
                 # a soft clause should be added for each new object
-                new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause)
+                new_obj = sorted(set(abs(vid) for vid in clause if abs(vid) not in self.oracle.vmap.e2i))
         else:
             # this is a native AtMostK constraint
             clause = [list(map(lambda a: self.idpool.id(a.obj) * (2 * a.sign - 1), clause[0])), clause[1]]
 
             if no_obj is False:
                 # a soft clause should be added for each new object
-                new_obj = filter(lambda vid: abs(vid) not in self.oracle.vmap.e2i, clause[0])
-
-                # there may be duplicate literals if the constraint is weighted
-                new_obj = list(set(new_obj))
+                new_obj = sorted(set(abs(vid) for vid in clause[0] if abs(vid) not in self.oracle.vmap.e2i))
 
         # adding the hard clause
         self.oracle.add_clause(clause)
 
         if no_obj is False:
-            # some of the literals may also have the opposite polarity
-            new_obj = [l if l in self.idpool.obj2id else -l for l in new_obj]
 
             if self.htype != 'sat':
                 # new soft clauses
