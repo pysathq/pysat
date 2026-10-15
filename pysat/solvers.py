@@ -28,6 +28,7 @@
         Glucose3
         Glucose4
         Glucose42
+        Kissat404
         Lingeling
         MapleChrono
         MapleCM
@@ -51,6 +52,7 @@
     -  Glucose (`3.0 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
     -  Glucose (`4.2.1 <http://www.labri.fr/perso/lsimon/glucose/>`__)
+    -  Kissat (`4.0.4 <https://github.com/arminbiere/kissat/releases/tag/rel-4.0.4>`__)
     -  Lingeling (`bbc-9230380-160707 <http://fmv.jku.at/lingeling/>`__)
     -  MapleLCMDistChronoBT (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
     -  MapleCM (`SAT competition 2018 version <http://sat2018.forsyte.tuwien.ac.at/solvers/main_and_glucose_hack/>`__)
@@ -98,14 +100,13 @@
     corresponding classes :class:`Cadical103`, :class:`Cadical153`,
     :class:`Cadical195`, :class:`Cadical300`, :class:`CryptoMinisat`,
     :class:`Gluecard3`, :class:`Gluecard4`, :class:`Glucose3`,
-    :class:`Glucose4`, :class:`Lingeling`, :class:`MapleChrono`,
-    :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
-    :class:`Minicard`, :class:`Minisat22`, :class:`MinisatGH`, and
-    :class:`MinisatEP`. However,
-    the solvers can also be accessed through the common base class
-    :class:`Solver` using the solver ``name`` argument. For example, both of
-    the following pieces of code create a copy of the :class:`Glucose3`
-    solver:
+    :class:`Glucose4`, :class:`Kissat404`, :class:`Lingeling`,
+    :class:`MapleChrono`, :class:`MapleCM`, :class:`Maplesat`,
+    :class:`Mergesat3`, :class:`Minicard`, :class:`Minisat22`,
+    :class:`MinisatGH`, and :class:`MinisatEP`. However, the solvers can also
+    be accessed through the common base class :class:`Solver` using the solver
+    ``name`` argument. For example, both of the following pieces of code
+    create a copy of the :class:`Glucose3` solver:
 
     .. code-block:: python
 
@@ -171,11 +172,11 @@
     :class:`Cadical153`, :class:`Cadical195`, :class:`Cadical300`,
     :class:`CryptoMinisat`, :class:`Gluecard3`, :class:`Gluecard4`,
     :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
-    :class:`Lingeling`, :class:`MapleChrono`, :class:`MapleCM`,
-    :class:`Maplesat`, :class:`Mergesat3`, :class:`Minicard`,
-    :class:`Minisat22`, and :class:`MinisatGH`, are **omitted**. They
-    replicate the interface of the base class :class:`Solver` and, thus, can
-    be used the same exact way.
+    :class:`Kissat404`, :class:`Lingeling`, :class:`MapleChrono`,
+    :class:`MapleCM`, :class:`Maplesat`, :class:`Mergesat3`,
+    :class:`Minicard`, :class:`Minisat22`, and :class:`MinisatGH`, are
+    **omitted**. They replicate the interface of the base class
+    :class:`Solver` and, thus, can be used the same exact way.
 
     PySAT's :class:`Cadical300` wrapper supports CaDiCaL 3's bounded variable
     addition (BVA, option ``factor``), which may let the solver create
@@ -183,10 +184,15 @@
     This can clash with user-managed variable ID pools in incremental
     settings. For that reason, :class:`Cadical300`'s BVA is disabled by
     default whenever it is created without a synchronized
-    :class:`.pysat.formula.IDPool`. Users who want BVA can either enable it
-    manually with :meth:`.Solver.configure` or attach a shared pool with
-    :meth:`.Solver.attach_vpool` and keep it synchronized explicitly with
-    :meth:`.Solver.sync_vpool`.
+    :class:`.pysat.formula.IDPool`. Users who want it can either enable it
+    manually with :meth:`.Solver.configure` or attach a shared
+    :class:`.pysat.formula.IDPool` with :meth:`.Solver.attach_vpool`, which
+    then keeps the two synchronized both ways: :meth:`.Solver.sync_vars`
+    declares the pool's identifiers in the solver, so that they are out of
+    reach of BVA, while :meth:`.Solver.sync_vpool` marks whatever variable IDs
+    the solver minted on its own as occupied in the pool. Both are applied
+    automatically around every solving call and may also be invoked
+    explicitly.
 
     ==============
     Module details
@@ -212,6 +218,9 @@ try:  # trying to get access to CryptoMinisat
     cms_present = True
 except ImportError:
     cms_present = False
+
+# ergo is not built on Windows, where MSVC cannot compile its sources
+ergo_present = hasattr(pysolvers, 'ergo_new')
 
 
 #
@@ -251,6 +260,7 @@ class SolverNames(object):
             glucose4    = ('g4', 'g41', 'glucose4', 'glucose41')
             glucose42   = ('g42', 'g421', 'glucose42', 'glucose421')
             lingeling   = ('lgl', 'lingeling')
+            kissat404   = ('ks', 'ks4', 'kissat', 'kissat4', 'kissat404')
             maplechrono = ('mcb', 'chrono', 'maplechrono')
             maplecm     = ('mcm', 'maplecm')
             maplesat    = ('mpl', 'maple', 'maplesat')
@@ -271,6 +281,7 @@ class SolverNames(object):
     cadical195  = ('cd19', 'cd195', 'cdl19', 'cdl195', 'cadical195')
     cadical300  = ('cd30', 'cd300', 'cdl30', 'cdl300', 'cadical300')
     cryptosat   = ('cms', 'cms5', 'crypto', 'crypto5', 'cryptominisat', 'cryptominisat5')
+    ergo        = ('ergo',)
     gluecard3   = ('gc3', 'gc30', 'gluecard3', 'gluecard30')
     gluecard4   = ('gc4', 'gc41', 'gluecard4', 'gluecard41')
     glucose3    = ('g3', 'g30', 'glucose3', 'glucose30')
@@ -446,12 +457,14 @@ class Solver(object):
             name_ = name.lower()
             extra = dict(kwargs)
 
-            if name_ not in SolverNames.cadical300:
+            if name_ not in SolverNames.cadical300 and \
+               name_ not in SolverNames.ergo:
                 extra.pop('sync_with', None)
 
             if name_ not in SolverNames.cadical195 and \
                name_ not in SolverNames.cadical300 and \
-               name_ not in SolverNames.minisatep:
+               name_ not in SolverNames.minisatep and \
+               name_ not in SolverNames.ergo:
                 extra.pop('native_card', None)
 
             if name_ in SolverNames.cadical103:
@@ -464,6 +477,8 @@ class Solver(object):
                 self.solver = Cadical300(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.cryptosat:
                 self.solver = CryptoMinisat(bootstrap_with, use_timer, **extra)
+            elif name_ in SolverNames.ergo:
+                self.solver = Ergo(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.gluecard3:
                 self.solver = Gluecard3(bootstrap_with, use_timer, **extra)
             elif name_ in SolverNames.gluecard4:
@@ -575,7 +590,7 @@ class Solver(object):
             :type parameters: dict
         """
 
-        if self.solver and type(self.solver) in (Cadical153, Cadical195, Cadical300, Glucose42):
+        if self.solver and type(self.solver) in (Cadical153, Cadical195, Cadical300, Ergo, Glucose42):
             self.solver.configure(parameters)
 
     def attach_vpool(self, vpool=None):
@@ -592,8 +607,27 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) is Cadical300:
+            if type(self.solver) in (Cadical300, Ergo):
                 self.solver.attach_vpool(vpool=vpool)
+            else:
+                raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
+
+    def sync_vars(self):
+        """
+            Synchronize the variables of the solver with a user-provided
+            :class:`IDPool`, i.e. declare in the solver every identifier the
+            pool has already handed out. Together with :meth:`sync_vpool`,
+            this keeps bounded variable addition (BVA) from reusing an
+            identifier the pool has reserved but not used in a clause yet.
+
+            .. note::
+
+                Supported only by :class:`Cadical300`.
+        """
+
+        if self.solver:
+            if type(self.solver) in (Cadical300, Ergo):
+                self.solver.sync_vars()
             else:
                 raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
 
@@ -611,10 +645,132 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) is Cadical300:
+            if type(self.solver) in (Cadical300, Ergo):
                 self.solver.sync_vpool()
             else:
                 raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
+
+    def set_activities(self, activities={}):
+        """
+            Replace the solver's variable ordering with a user-given one: each
+            variable in ``activities`` takes the activity it maps to and every
+            other variable drops to ``0.0``. As variables are decided in
+            decreasing order of activity, this influences which decisions are
+            made, where :meth:`set_phases` influences how they are made.
+
+            The call also resets the solver's activity bump increment, so the
+            given values are on the same scale as what the search adds next.
+
+
+            .. note::
+
+                The ordering is a starting point rather than a constraint. It
+                is reshaped by the solver's VSIDS heuristic as conflicts come
+                in.
+
+            .. note::
+
+                An activity of ``0.0`` deprioritises a variable; it does not
+                stop the solver branching on it.
+
+            :param activities: variables mapped to their activities
+            :type activities: dict(int, float)
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.set_activities(activities)
+            else:
+                raise NotImplementedError('Setting variable activities is unsupported by this solver')
+
+    def set_xscope(self, add=[], remove=[]):
+        """
+            Adjust the scope of extension-variable mining: a pair of
+            literals is only ever mined if both their variables are in
+            scope. Variables in ``add`` join the scope, variables in
+            ``remove`` leave it, and the two must not overlap. Calling the
+            method with neither puts every variable back in scope.
+
+            .. note::
+
+                A variable the solver introduces from two in-scope literals
+                joins the scope itself, so a scoped family can grow on its
+                own. The argument ``remove`` takes such a variable back out
+                once *both* of its defining literals have gone, recursively.
+
+            :param add: variables joining the mining scope
+            :param remove: variables leaving it
+            :type add: iterable(int)
+            :type remove: iterable(int)
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.set_xscope(add, remove)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xpairs(self):
+        """
+            Return the literal pairs the extension-variable miner is currently
+            tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
+            has already been "extended" carries the identifier of the
+            extension variable standing for ``la | lb`` in ``z``, and a
+            ``count`` of ``0``; a pair still under consideration has ``z ==
+            0`` and a ``count`` saying how reliably it has recurred so far.
+            Promoted pairs come first.
+
+            The result is valid until the next call to :meth:`solve`,
+            :meth:`solve_limited` or :meth:`propagate`, like a model or an
+            unsatisfiable core. Adopting a ``z`` beyond that point requires
+            :meth:`xpin`.
+
+            :rtype: list(tuple(int, int, int, float))
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                return self.solver.xpairs()
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xpin(self, variables):
+        """
+            Instruct the solver to keep the given extension variables alive.
+            An extension variable is retired once nothing references it any
+            more and its identifier is recycled for a later potential pair of
+            literals. Pinning an extension variable prevents that from
+            happening, indicating the variable is now used externally.
+
+            .. note::
+
+                Identifiers that are not live extension variables are ignored.
+
+            :param variables: extension variables to pin
+            :type variables: iterable(int)
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.xpin(variables)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xunpin(self, variables):
+        """
+            Releases a pin taken by :meth:`xpin`, handing the variable
+            back to the solver's retirement: if nothing else references
+            it, it is retired at once and its identifier becomes reusable.
+
+            :param variables: variables to unpin
+            :type variables: iterable(int)
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.xunpin(variables)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
 
     def activate_atmost(self):
         """
@@ -631,7 +787,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.activate_atmost()
             else:
                 raise NotImplementedError('Native cardinality constraint activation is supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -649,7 +805,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.connect_propagator(propagator)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -667,7 +823,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.disconnect_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -684,7 +840,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.enable_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -702,7 +858,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.disable_propagator()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -720,7 +876,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 return self.solver.propagator_active()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -737,7 +893,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.observe(var)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -754,7 +910,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 self.solver.ignore(var)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -770,7 +926,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 return self.solver.reset_observed()
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -790,7 +946,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical195, Cadical300, MinisatEP):
+            if type(self.solver) in (Cadical195, Cadical300, MinisatEP, Ergo):
                 return self.solver.is_decision(lit)
             else:
                 raise NotImplementedError('External propagators are supported only by CaDiCaL 1.9.5, 3.0.0 and MinisatEP')
@@ -1653,6 +1809,7 @@ class Cadical103(object):
         self.cadical = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -1687,7 +1844,7 @@ class Cadical103(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.cadical103_tracepr(self.cadical, self.prfile)
+                self.prfp = pysolvers.cadical103_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -1843,6 +2000,7 @@ class Cadical103(object):
         """
 
         if self.cadical and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
 
             # stripping may cause issues here!
@@ -1985,6 +2143,7 @@ class Cadical153(object):
         self.cadical = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -2019,7 +2178,7 @@ class Cadical153(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.cadical153_tracepr(self.cadical, self.prfile)
+                self.prfp = pysolvers.cadical153_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -2237,6 +2396,7 @@ class Cadical153(object):
         """
 
         if self.cadical and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
 
             # stripping may cause issues here!
@@ -2380,6 +2540,7 @@ class Cadical195(object):
         self.pengine = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof, native_card)
 
@@ -2415,7 +2576,7 @@ class Cadical195(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.cadical195_tracepr(self.cadical, self.prfile)
+                self.prfp = pysolvers.cadical195_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -2426,7 +2587,7 @@ class Cadical195(object):
                         self.activate_atmost()
 
                 for clause in bootstrap_with:
-                    if isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         self.add_clause(clause)
                     else:
                         self.add_atmost(clause[0], clause[1],
@@ -2669,6 +2830,7 @@ class Cadical195(object):
         """
 
         if self.cadical and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
 
             # stripping may cause issues here!
@@ -2781,7 +2943,7 @@ class Cadical195(object):
                     raise NotImplementedError('Native atmost constraints are currently disabled')
 
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],
@@ -2901,6 +3063,7 @@ class Cadical300(object):
         self.pengine = None
         self.status = None
         self.prfile = None
+        self.prfp = None
         self.sync_with = None
 
         self.new(bootstrap_with, use_timer, with_proof, native_card, sync_with)
@@ -2937,7 +3100,7 @@ class Cadical300(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.cadical300_tracepr(self.cadical, self.prfile)
+                self.prfp = pysolvers.cadical300_tracepr(self.cadical, self.prfile)
 
             if bootstrap_with:
                 if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
@@ -2948,7 +3111,7 @@ class Cadical300(object):
                         self.activate_atmost()
 
                 for clause in bootstrap_with:
-                    if isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         self.add_clause(clause)
                     else:
                         self.add_atmost(clause[0], clause[1],
@@ -2969,7 +3132,9 @@ class Cadical300(object):
     def sync_vpool(self):
         """
             Synchronize a user-provided IDPool with the variables already
-            known to CaDiCaL.
+            known to CaDiCaL, i.e. occupy in the pool every identifier the
+            solver minted on its own (through BVA). This is the solver to
+            pool direction; see :meth:`.sync_vars` for the other one.
         """
 
         if self.cadical and self.sync_with is not None:
@@ -2978,6 +3143,25 @@ class Cadical300(object):
             if top > self.sync_with.top:
                 self.sync_with.occupy(self.sync_with.top + 1, top)
                 self.sync_with.top = top
+
+    def sync_vars(self):
+        """
+            Synchronize the variables of CaDiCaL with a user-provided IDPool,
+            i.e. declare in the solver every identifier the pool has already
+            handed out. This is the pool to solver direction of
+            :meth:`.sync_vpool`.
+
+            Declared variables are protected from being grabbed by BVA, which
+            otherwise mints them right above its own maximum variable and so
+            may collide with pool identifiers that are reserved but not used
+            in any clause yet.
+
+            Note that this resets the solver to its steady state and so it is
+            applied right *before* solving and preprocessing, not after them.
+        """
+
+        if self.cadical and self.sync_with is not None:
+            pysolvers.cadical300_dec_vars(self.cadical, self.sync_with.top)
 
     def attach_vpool(self, vpool=None):
         """
@@ -2992,6 +3176,7 @@ class Cadical300(object):
             raise TypeError('Cadical300 expects \'sync_with\' to be an IDPool object or None')
 
         self.sync_with = vpool
+        self.sync_vars()
         self.sync_vpool()
 
     def activate_atmost(self):
@@ -3058,6 +3243,8 @@ class Cadical300(object):
         """
 
         if self.cadical:
+            self.sync_vars()
+
             if self.use_timer:
                 start_time = process_time()
 
@@ -3080,6 +3267,8 @@ class Cadical300(object):
         """
 
         if self.cadical:
+            self.sync_vars()
+
             if self.use_timer:
                  start_time = process_time()
 
@@ -3122,6 +3311,8 @@ class Cadical300(object):
         """
 
         if self.cadical:
+            self.sync_vars()
+
             result = pysolvers.cadical300_process(self.cadical, rounds,
                                                   int(block), int(cover),
                                                   int(condition),
@@ -3235,6 +3426,7 @@ class Cadical300(object):
         """
 
         if self.cadical and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
 
             # stripping may cause issues here!
@@ -3347,7 +3539,7 @@ class Cadical300(object):
                     raise NotImplementedError('Native atmost constraints are currently disabled')
 
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],
@@ -3445,6 +3637,742 @@ class Cadical300(object):
 
 #
 #==============================================================================
+class Ergo(object):
+    """
+        Ergo SAT solver.
+    """
+
+    def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
+                 with_proof=False, warm_start=False, native_card=False,
+                 sync_with=None):
+        """
+            Basic constructor.
+        """
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by this solver.')
+
+        self.ergo = None
+        self.pengine = None
+        self.status = None
+        self.prfile = None
+        self.prfp = None
+        self.sync_with = None
+
+        # checked here, so that __del__ finds the attributes above in place
+        assert ergo_present, 'Solver \'ergo\' is unavailable in this build of PySAT.'
+
+        self.new(bootstrap_with, use_timer, with_proof, warm_start, native_card,
+                 sync_with)
+
+    def __del__(self):
+        """
+            Standard destructor.
+        """
+
+        self.delete()
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
+            warm_start=False, native_card=False, sync_with=None):
+        """
+            Actual constructor of the solver.
+        """
+
+        if not self.ergo:
+            self.ergo = pysolvers.ergo_new()
+            self.pengine = None
+
+            if with_proof:
+                self.prfile = tempfile.TemporaryFile()
+                self.prfp = pysolvers.ergo_tracepr(self.ergo, self.prfile)
+
+            if bootstrap_with:
+                if type(bootstrap_with) == CNFPlus and bootstrap_with.atmosts:
+                    if not native_card:
+                        raise NotImplementedError('To support atmost constraints, use \'native_card\' parameter')
+                    else:
+                        # creating the engine
+                        self.activate_atmost()
+
+                for clause in bootstrap_with:
+                    if not clause or isinstance(clause[0], int):  # it is a clause
+                        self.add_clause(clause)
+                    else:
+                        self.add_atmost(clause[0], clause[1],
+                                        weights=clause[2] if len(clause) == 3 else [])
+
+            if warm_start:
+                self.start_mode(warm=True)
+
+            # if the user wants extension variables to coexist with their
+            # own IDPool, the two have to be kept synchronized both ways
+            self.attach_vpool(sync_with)
+
+            self.use_timer = use_timer
+            self.call_time = 0.0  # time spent for the last call to oracle
+            self.accu_time = 0.0  # time accumulated for all calls to oracle
+
+    def sync_vpool(self):
+        """
+            Synchronize a user-provided IDPool with the variables already
+            known to Ergo, i.e. occupy in the pool every identifier the
+            solver minted on its own (as an extension variable). This is the
+            solver to pool direction; see :meth:`.sync_vars` for the other
+            one.
+        """
+
+        if self.ergo and self.sync_with is not None:
+            top = pysolvers.ergo_nof_vars(self.ergo)
+
+            if top > self.sync_with.top:
+                self.sync_with.occupy(self.sync_with.top + 1, top)
+                self.sync_with.top = top
+
+    def sync_vars(self):
+        """
+            Synchronize the variables of Ergo with a user-provided IDPool,
+            i.e. declare in the solver every identifier the pool has already
+            handed out. This is the pool to solver direction of
+            :meth:`.sync_vpool`.
+        """
+
+        if self.ergo and self.sync_with is not None:
+            pysolvers.ergo_dec_vars(self.ergo, self.sync_with.top)
+
+    def attach_vpool(self, vpool=None):
+        """
+            Set a shared variable pool to keep synchronized with the solver.
+        """
+
+        if vpool is not None and not isinstance(vpool, IDPool):
+            raise TypeError('This solver expects \'sync_with\' to be an IDPool object or None')
+
+        self.sync_with = vpool
+        self.sync_vars()
+        self.sync_vpool()
+
+    def activate_atmost(self):
+        """
+            This method enables native cardinality mode. Note that it is
+            impossible to disable this mode once it's activated. (This would
+            require the engine to support cleaning constraints and reencoding
+            them to CNF on the fly).
+
+            Note that activating native AtMost constraints support makes it
+            impossible to add another user-defined propagator.
+        """
+
+        if self.ergo:
+            if not self.pengine:
+                # creating the engine
+                pengine = BooleanEngine(adaptive=True)
+
+                # attaching it to the solver
+                self.connect_propagator(pengine)
+
+                self.pengine = pengine
+                self.pengine.setup_observe(self)
+            else:
+                raise Exception('Another propagator is already attached')
+
+    def start_mode(self, warm=False):
+        """
+            Set start mode: either warm or standard.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_set_start(self.ergo, int(warm))
+
+    def delete(self):
+        """
+            Destructor.
+        """
+
+        if self.ergo:
+            if self.pengine:
+                self.disconnect_propagator()
+                self.pengine = None
+
+            pysolvers.ergo_del(self.ergo, self.prfile)
+            self.ergo = None
+
+            if self.prfile:
+                self.prfile.close()
+
+    def solve(self, assumptions=[]):
+        """
+            Solve internal formula.
+        """
+
+        if self.ergo:
+            self.sync_vars()
+
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.ergo_solve(self.ergo, assumptions,
+                    int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.sync_vpool()
+
+            return self.status
+
+    def solve_limited(self, assumptions=[], expect_interrupt=False):
+        """
+            Solve internal formula using given budgets for conflicts and
+            propagations.
+        """
+
+        if self.ergo:
+            self.sync_vars()
+
+            if self.use_timer:
+                 start_time = process_time()
+
+            self.status = pysolvers.ergo_solve_lim(self.ergo,
+                    assumptions, int(MainThread.check()), int(expect_interrupt))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            self.sync_vpool()
+
+            return self.status
+
+    def conf_budget(self, budget):
+        """
+            Set limit on the number of conflicts.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_cbudget(self.ergo, budget)
+
+    def prop_budget(self, budget):
+        """
+            Set limit on the number of propagations.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_pbudget(self.ergo, budget)
+
+    def dec_budget(self, budget):
+        """
+            Set limit on the number of decisions.
+        """
+
+        raise NotImplementedError('Limit on decisions is unsupported by this solver.')
+
+    def interrupt(self):
+        """
+            Interrupt solver execution.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_interrupt(self.ergo)
+
+    def clear_interrupt(self):
+        """
+            Clears an interruption.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_clearint(self.ergo)
+
+    def propagate(self, assumptions=[], phase_saving=0):
+        """
+            Propagate a given set of assumption literals.
+        """
+
+        if self.ergo:
+            if self.use_timer:
+                 start_time = process_time()
+
+            st, props = pysolvers.ergo_propagate(self.ergo,
+                    assumptions, phase_saving, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            return bool(st), props if props != None else []
+
+    def set_phases(self, literals=[]):
+        """
+            Sets polarities of a given list of variables.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_setphases(self.ergo, literals)
+
+    def set_activities(self, activities={}):
+        """
+            Replaces Ergo's variable ordering with a user-given one: each
+            variable in ``activities`` takes the activity it maps to, and
+            every other variable's activity drops to ``0.0``. Variables are
+            decided in decreasing order of activity, so this says which
+            decisions the solver should make first, where :meth:`set_phases`
+            says which way it should decide them.
+
+            .. note::
+
+                An activity of ``0.0`` deprioritises a variable; it does not
+                stop the solver branching on it once the preferred ones are
+                exhausted.
+
+            :param activities: variables mapped to their activities
+            :type activities: dict(int, float)
+
+            Example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Ergo
+                >>> s = Ergo(bootstrap_with=[[-1, 2], [-3, -2]])
+                >>> s.set_phases([1, 2, 3])
+                >>> s.set_activities({1: 2.0, 3: 1.0})
+                >>> s.solve()
+                True
+                >>> s.get_model()
+                [1, 2, -3]
+                >>> s.set_activities({3: 2.0, 1: 1.0})
+                >>> s.solve()
+                True
+                >>> s.get_model()
+                [-1, -2, 3]
+        """
+
+        if self.ergo:
+            pysolvers.ergo_setacts(self.ergo, dict(activities))
+
+    def configure(self, parameters):
+        """
+            Configure Ergo by setting some of its own parameters to selected
+            values. These are exactly the options Ergo's own command-line
+            tool exposes, applied directly to the running solver instead of
+            parsed from argv. Note that this call must follow the creation
+            of the new solver object; otherwise, an exception may be
+            thrown. Also note that ``emulate``, if present, is always
+            applied first, so any other parameter given in the same call
+            overrides the emulated preset.
+
+            The list of available options:
+
+                * ``emulate``: emulate another solver's tuning -- one of
+                  ``m2.0``, ``m2.2``, ``g3``, ``g4.2`` (MiniSat 2.0/2.2,
+                  Glucose 3, Glucose 4.2)
+
+                * ``cla-decay``: clause activity decay factor, in ``(0, 1]``
+
+                * ``var-decay``: variable activity decay factor, in ``(0, 1]``
+
+                * ``restart-policy``: restart sequence strategy -- one of
+                  ``geom``, ``luby``, ``arif``, ``gluc``
+
+                * ``restart-first``: base restart interval (int)
+
+                * ``restart-inc``: restart interval increase factor, used
+                  by the geometric progression only (float)
+
+                * ``min-learnts``: minimum learnt clause limit (int)
+
+                * ``ccmin-mode``: conflict clause minimization mode --
+                  ``0``, ``1``, or ``2``
+
+                * ``phase-saving``: level of phase saving -- ``0``, ``1``,
+                  or ``2``
+
+                * ``jw-mode``: activity/polarity strategy based on the
+                  Jeroslow-Wang heuristic -- one of ``none``, ``act``,
+                  ``pol-soft``, ``pol-hard``, ``full-soft``, ``full-hard``
+
+                * ``keep-bin``: try to keep binary clauses when cleaning
+                  learnt clauses (bool)
+
+                * ``lcm``: vivify learnt clauses at each return to decision
+                  level 0 (bool)
+
+                * ``reducedb-policy``: clause database reduction strategy
+                  -- one of ``standard``, ``aggressive``
+
+                * ``reduce-by``: fraction of learnt clauses to remove on a
+                  reduction, in ``[0, 1]`` (float)
+
+                * ``glucose-bump``: turn on Glucose-like variable bumping
+                  (bool)
+
+                * ``adapt-at``: conflict count at which to (once) evaluate
+                  switching solver strategies (int), or ``never``
+
+                * ``ext``: enable automatic extension-variable mining (bool)
+
+                * ``ext-threshold``: co-occurrences a mined pair needs
+                  before it is turned into a new variable (float)
+
+                * ``ext-warmup``: conflicts to let pass, unmined, before
+                  ``ext`` starts tracking candidate pairs (int)
+
+                * ``ext-escalate``: how quickly ``ext-threshold`` grows
+                  with the number of variables already introduced (float)
+
+            :param parameters: parameter names mapped to their values
+            :type parameters: dict
+        """
+
+        if self.ergo:
+            # a preset, so it has to be applied before anything overriding it
+            if 'emulate' in parameters:
+                pysolvers.ergo_set(self.ergo, 'emulate', parameters['emulate'])
+
+            for name, value in parameters.items():
+                if name != 'emulate':
+                    pysolvers.ergo_set(self.ergo, name, value)
+
+    def set_xscope(self, add=[], remove=[]):
+        """
+            Adjust the scope of extension-variable mining: a pair of
+            literals is only ever mined if both their variables are in
+            scope. Variables in ``add`` join the scope, variables in
+            ``remove`` leave it, and the two must not overlap. Calling the
+            method with neither puts every variable back in scope.
+
+            .. note::
+
+                A variable the solver introduces from two in-scope literals
+                joins the scope itself, so a scoped family can grow on its
+                own. The argument ``remove`` takes such a variable back out
+                once *both* of its defining literals have gone, recursively.
+
+            :param add: variables joining the mining scope
+            :param remove: variables leaving it
+            :type add: iterable(int)
+            :type remove: iterable(int)
+        """
+
+        if self.ergo:
+            pysolvers.ergo_setxscope(self.ergo, add, remove)
+
+    def xpairs(self):
+        """
+            Return the literal pairs the extension-variable miner is currently
+            tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
+            has already been "extended" carries the identifier of the
+            extension variable standing for ``la | lb`` in ``z``, and a
+            ``count`` of ``0``; a pair still under consideration has ``z ==
+            0`` and a ``count`` saying how reliably it has recurred so far.
+            Promoted pairs come first.
+
+            The result is valid until the next call to :meth:`solve`,
+            :meth:`solve_limited` or :meth:`propagate`, like a model or an
+            unsatisfiable core. Adopting a ``z`` beyond that point requires
+            :meth:`xpin`.
+
+            :rtype: list(tuple(int, int, int, float))
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_xpairs(self.ergo)
+
+    def xpin(self, variables):
+        """
+            Keeps the given extension variables alive. Ergo retires an
+            extension variable once nothing references it any more and
+            recycles its identifier for a later pair, which would
+            silently change what an adopted ``z`` means; pinning holds a
+            reference of its own so that never happens.
+
+            Identifiers that are not live extension variables are
+            ignored. Each pin has to be matched by at most one
+            :meth:`xunpin`.
+
+            :param variables: variables to pin, as reported by :meth:`xpairs`
+            :type variables: iterable(int)
+        """
+
+        if self.ergo:
+            pysolvers.ergo_xpin(self.ergo, variables)
+
+    def xunpin(self, variables):
+        """
+            Releases a pin taken by :meth:`xpin`, handing the variable
+            back to Ergo's own retirement: if nothing else references it,
+            it is retired at once and its identifier becomes reusable.
+
+            :param variables: variables to unpin
+            :type variables: iterable(int)
+        """
+
+        if self.ergo:
+            pysolvers.ergo_xunpin(self.ergo, variables)
+
+    def get_status(self):
+        """
+            Returns solver's status.
+        """
+
+        if self.ergo:
+            return self.status
+
+    def get_model(self):
+        """
+            Get a model if the formula was previously satisfied.
+        """
+
+        if self.ergo and self.status == True:
+            model = pysolvers.ergo_model(self.ergo)
+            return model if model != None else []
+
+    def get_core(self):
+        """
+            Get an unsatisfiable core if the formula was previously
+            unsatisfied.
+        """
+
+        if self.ergo and self.status == False:
+            return pysolvers.ergo_core(self.ergo)
+
+    def get_proof(self):
+        """
+            Get a proof produced while deciding the formula.
+        """
+
+        if self.ergo and self.prfile:
+            pysolvers.flushpr(self.prfp)
+            self.prfile.seek(0)
+            return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
+
+    def time(self):
+        """
+            Get time spent for the last call to oracle.
+        """
+
+        if self.ergo:
+            return self.call_time
+
+    def time_accum(self):
+        """
+            Get time accumulated for all calls to oracle.
+        """
+
+        if self.ergo:
+            return self.accu_time
+
+    def nof_vars(self):
+        """
+            Get number of variables currently used by the solver.
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_nof_vars(self.ergo)
+
+    def nof_clauses(self):
+        """
+            Get number of clauses currently used by the solver.
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_nof_cls(self.ergo)
+
+    def accum_stats(self):
+        """
+            Get accumulated low-level stats from the solver. This includes
+            the number of restarts, conflicts, decisions and propagations.
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_acc_stats(self.ergo)
+
+    def enum_models(self, assumptions=[]):
+        """
+            Iterate over models of the internal formula.
+        """
+
+        if self.ergo:
+            done = False
+            while not done:
+                self.status = self.solve(assumptions=assumptions)
+                model = self.get_model()
+
+                if model is not None:
+                    self.add_clause([-l for l in model])  # blocking model
+                    yield model
+                else:
+                    done = True
+
+    def add_clause(self, clause, no_return=True):
+        """
+            Add a new clause to solver's internal formula.
+        """
+
+        if self.ergo:
+            res = pysolvers.ergo_add_cl(self.ergo, clause)
+
+            if res == False:
+                self.status = False
+
+            if not no_return:
+                return res
+
+    def add_atmost(self, lits, k, weights=[], no_return=True):
+        """
+            This method is responsible for adding a new *native* AtMostK (see
+            :mod:`pysat.card`) constraint.
+
+            **Note that :class:`Ergo` supports this by means of an external
+            propagator :class:`BooleanEngine`.**
+
+            Before calling this method, make sure native cardinality support
+            is activated.
+        """
+
+        if self.ergo:
+            if self.supports_atmost():
+                self.pengine.add_constraint(('linear', [lits, k, weights]))
+
+                if not no_return:
+                    return True  # we don't check satisfiability here;
+                                # returning true to be compatible with the API
+            else:
+                raise NotImplementedError('Native atmost constraints are currently disabled')
+
+    def add_xor_clause(self, lits, value=True):
+        """
+            Add a new XOR clause to solver's internal formula. Not supported.
+        """
+
+        raise NotImplementedError('XOR clauses are supported only by CryptoMinisat')
+
+    def append_formula(self, formula, no_return=True):
+        """
+            Appends list of clauses to solver's internal formula.
+        """
+
+        if self.ergo:
+            res = None
+
+            if type(formula) == CNFPlus and formula.atmosts:
+                if not self.supports_atmost():
+                    raise NotImplementedError('Native atmost constraints are currently disabled')
+
+            for clause in formula:
+                if not clause or isinstance(clause[0], int):  # it is a clause
+                    res = self.add_clause(clause, no_return)
+                else:
+                    res = self.add_atmost(clause[0], clause[1],
+                                          weights=clause[2] if len(clause) == 3 else [],
+                                          no_return=no_return)
+
+                if not no_return and res == False:
+                    return res
+
+            if not no_return:
+                return res
+
+    def supports_atmost(self):
+        """
+            This method can be called to determine whether the solver supports
+            native AtMostK (see :mod:`pysat.card`) constraints.
+        """
+
+        return self.pengine and type(self.pengine) == BooleanEngine
+
+    def connect_propagator(self, propagator):
+        """
+            Connects a given external propagator to the solver.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_pconn(self.ergo, propagator)
+            self.pengine = propagator
+
+    def disconnect_propagator(self):
+        """
+            Disconnects the currently connected external propagator.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_pdisconn(self.ergo)
+            self.pengine = None
+
+    def enable_propagator(self):
+        """
+            Enables the currently connected external propagator.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_penable(self.ergo)
+
+    def disable_propagator(self):
+        """
+            Disables the currently connected external propagator.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_pdisable(self.ergo)
+
+    def propagator_active(self):
+        """
+            Returns True if the external propagator is active.
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_pactive(self.ergo)
+
+        return False
+
+    def observe(self, variable):
+        """
+            Mark a given variable as 'observed' by the external propagator.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_vobserve(self.ergo, variable)
+
+    def ignore(self, variable):
+        """
+            Removes the 'observed' flag from the given variable.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_vignore(self.ergo, variable)
+
+    def reset_observed(self):
+        """
+            Removes all the 'observed' flags from the variables.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_vreset(self.ergo)
+
+    def is_decision(self, literal):
+        """
+            Checks if a given literal is a decision literal.
+        """
+
+        if self.ergo:
+            return pysolvers.ergo_isdeclit(self.ergo, literal)
+
+
+#
+#==============================================================================
 class Gluecard3(object):
     """
         Gluecard 3 SAT solver.
@@ -3459,6 +4387,7 @@ class Gluecard3(object):
         self.gluecard = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
@@ -3496,7 +4425,7 @@ class Gluecard3(object):
 
             if bootstrap_with:
                 for clause in bootstrap_with:
-                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         res = self.add_clause(clause)
                     else:
                         res = self.add_atmost(clause[0], clause[1],
@@ -3512,7 +4441,7 @@ class Gluecard3(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.gluecard3_tracepr(self.gluecard, self.prfile)
+                self.prfp = pysolvers.gluecard3_tracepr(self.gluecard, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -3671,6 +4600,7 @@ class Gluecard3(object):
         """
 
         if self.gluecard and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -3779,7 +4709,7 @@ class Gluecard3(object):
 
             # this loop should work for a list of clauses, CNF, and CNFPlus
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],
@@ -3817,6 +4747,7 @@ class Gluecard4(object):
         self.gluecard = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
@@ -3854,7 +4785,7 @@ class Gluecard4(object):
 
             if bootstrap_with:
                 for clause in bootstrap_with:
-                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         res = self.add_clause(clause)
                     else:
                         res = self.add_atmost(clause[0], clause[1],
@@ -3870,7 +4801,7 @@ class Gluecard4(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.gluecard41_tracepr(self.gluecard, self.prfile)
+                self.prfp = pysolvers.gluecard41_tracepr(self.gluecard, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -4029,6 +4960,7 @@ class Gluecard4(object):
         """
 
         if self.gluecard and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -4137,7 +5069,7 @@ class Gluecard4(object):
 
             # this loop should work for a list of clauses, CNF, and CNFPlus
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],
@@ -4175,6 +5107,7 @@ class Glucose3(object):
         self.glucose = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
@@ -4226,7 +5159,7 @@ class Glucose3(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.glucose3_tracepr(self.glucose, self.prfile)
+                self.prfp = pysolvers.glucose3_tracepr(self.glucose, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -4385,6 +5318,7 @@ class Glucose3(object):
         """
 
         if self.glucose and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -4519,6 +5453,7 @@ class Glucose4(object):
         self.glucose = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
@@ -4570,7 +5505,7 @@ class Glucose4(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.glucose41_tracepr(self.glucose, self.prfile)
+                self.prfp = pysolvers.glucose41_tracepr(self.glucose, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -4729,6 +5664,7 @@ class Glucose4(object):
         """
 
         if self.glucose and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -4863,6 +5799,7 @@ class Glucose42(object):
         self.glucose = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, incr, with_proof, warm_start)
 
@@ -4914,7 +5851,7 @@ class Glucose42(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.glucose421_tracepr(self.glucose, self.prfile)
+                self.prfp = pysolvers.glucose421_tracepr(self.glucose, self.prfile)
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -5161,6 +6098,7 @@ class Glucose42(object):
         """
 
         if self.glucose and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -5302,6 +6240,7 @@ class Lingeling(object):
         self.lingeling = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -5347,7 +6286,7 @@ class Lingeling(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.lingeling_tracepr(self.lingeling, self.prfile)
+                self.prfp = pysolvers.lingeling_tracepr(self.lingeling, self.prfile)
 
     def delete(self):
         """
@@ -5477,6 +6416,7 @@ class Lingeling(object):
         """
 
         if self.lingeling and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -5603,6 +6543,7 @@ class MapleChrono(object):
         self.maplesat = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -5648,7 +6589,7 @@ class MapleChrono(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.maplechrono_tracepr(self.maplesat, self.prfile)
+                self.prfp = pysolvers.maplechrono_tracepr(self.maplesat, self.prfile)
 
     def start_mode(self, warm=False):
         """
@@ -5803,6 +6744,7 @@ class MapleChrono(object):
         """
 
         if self.maplesat and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -5940,6 +6882,7 @@ class MapleCM(object):
         self.maplesat = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
@@ -5989,7 +6932,7 @@ class MapleCM(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.maplecm_tracepr(self.maplesat, self.prfile)
+                self.prfp = pysolvers.maplecm_tracepr(self.maplesat, self.prfile)
 
     def start_mode(self, warm=False):
         """
@@ -6145,6 +7088,7 @@ class MapleCM(object):
         """
 
         if self.maplesat and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -6282,6 +7226,7 @@ class Maplesat(object):
         self.maplesat = None
         self.status = None
         self.prfile = None
+        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
@@ -6331,7 +7276,7 @@ class Maplesat(object):
 
             if with_proof:
                 self.prfile = tempfile.TemporaryFile()
-                pysolvers.maplesat_tracepr(self.maplesat, self.prfile)
+                self.prfp = pysolvers.maplesat_tracepr(self.maplesat, self.prfile)
 
     def start_mode(self, warm=False):
         """
@@ -6487,6 +7432,7 @@ class Maplesat(object):
         """
 
         if self.maplesat and self.prfile:
+            pysolvers.flushpr(self.prfp)
             self.prfile.seek(0)
             return [line.rstrip().decode('ascii') for line in self.prfile.readlines()]
 
@@ -6983,7 +7929,7 @@ class Minicard(object):
 
             if bootstrap_with:
                 for clause in bootstrap_with:
-                    if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         res = self.add_clause(clause)
                     else:
                         res = self.add_atmost(clause[0], clause[1],
@@ -7254,7 +8200,7 @@ class Minicard(object):
 
             # this loop should work for a list of clauses, CNF, and CNFPlus
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],
@@ -8011,7 +8957,7 @@ class MinisatEP(object):
                         self.activate_atmost()
 
                 for clause in bootstrap_with:
-                    if isinstance(clause[0], int):  # it is a clause
+                    if not clause or isinstance(clause[0], int):  # it is a clause
                         self.add_clause(clause)
                     else:
                         self.add_atmost(clause[0], clause[1],
@@ -8322,7 +9268,7 @@ class MinisatEP(object):
                     raise NotImplementedError('Native atmost constraints are currently disabled')
 
             for clause in formula:
-                if len(clause) != 2 or isinstance(clause[0], int):  # it is a clause
+                if not clause or isinstance(clause[0], int):  # it is a clause
                     res = self.add_clause(clause, no_return)
                 else:
                     res = self.add_atmost(clause[0], clause[1],

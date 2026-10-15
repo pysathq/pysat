@@ -3029,7 +3029,7 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +
 +  // propagate each assumption at a new decision level
 +  for (size_t i = 0; st && noconfl && i < assump.size(); ++i) {
-+    int p = assump[i];
++    int p = external->internalize(assump[i]);
 +
 +    // deciding
 +    const signed char tmp = internal->val(p);
@@ -3066,13 +3066,13 @@ diff -Naur solvers/cadical195/solver.cpp solvers/cdc195/solver.cpp
 +  // copy results
 +  if (internal->level > level) {
 +    for (size_t i = internal->control[level + 1].trail; i < internal->trail.size(); ++i) {
-+      prop.push_back(internal->trail[i]);
++      prop.push_back(internal->externalize(internal->trail[i]));
 +    }
 +    // if there is a conflict, push
 +    // the conflicting literal as well
 +    if (!noconfl) {
 +      literal_iterator conflict_ptr = internal->conflict->begin();
-+      int conflict_val = *conflict_ptr;
++      int conflict_val = internal->externalize(*conflict_ptr);
 +      prop.push_back(conflict_val);
 +    }
 +    // backtrack

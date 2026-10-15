@@ -12,6 +12,7 @@
 #define PY_SSIZE_T_CLEAN
 
 #include <algorithm>
+#include <climits>
 #include <Python.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -32,6 +33,12 @@
 
 #ifdef WITH_CADICAL300
 #include "cadical300/cadical.hpp"
+#endif
+
+#ifdef WITH_ERGO
+extern "C" {
+#include "ergo/pysat_shim.h"
+}
 #endif
 
 #ifdef WITH_GLUECARD30
@@ -115,8 +122,7 @@ using namespace std;
 static char    module_docstring[] = "This module provides a wrapper interface "
                                     "for several SAT solvers.";
 static char       new_docstring[] = "Create a new solver object.";
-static char       set_docstring[] = "Set a value of a solver's parameter "
-                                    "(for CaDiCaL 153 only).";
+static char       set_docstring[] = "Set a value of a solver's parameter.";
 static char     addcl_docstring[] = "Add a clause to formula.";
 static char     addam_docstring[] = "Add an atmost constraint to formula "
                                     "(for Minicard only).";
@@ -137,9 +143,17 @@ static char interrupt_docstring[] = "Interrupt SAT solver execution "
 static char  clearint_docstring[] = "Clear interrupt indicator flag.";
 static char   setincr_docstring[] = "Set incremental mode (for Glucose3 only).";
 static char   tracepr_docstring[] = "Trace resolution proof.";
+static char   flushpr_docstring[] = "Flush the proof trace stream.";
 static char      core_docstring[] = "Get an unsatisfiable core if formula is UNSAT.";
 static char     model_docstring[] = "Get a model if formula is SAT.";
 static char     nvars_docstring[] = "Get number of variables used by the solver.";
+static char     dvars_docstring[] = "Declare variables of the solver, protecting "
+                                    "them from internal use (CaDiCaL 3.0.0, Ergo).";
+static char    xpairs_docstring[] = "Get the literal pairs the extension-variable "
+                                    "miner is tracking (Ergo only).";
+static char      xpin_docstring[] = "Pin extension variables, keeping them from "
+                                    "being retired (Ergo only).";
+static char    xunpin_docstring[] = "Release a pin taken by 'ergo_xpin' (Ergo only).";
 static char      ncls_docstring[] = "Get number of clauses used by the solver.";
 static char       del_docstring[] = "Delete a previously created solver object.";
 static char  acc_stat_docstring[] = "Get accumulated stats from the solver.";
@@ -166,14 +180,12 @@ static char  set_rnd_seed_docstring[] =          "Set PNRG seed "
                                                  "(Glucose 4.2.1 only).";
 static char  set_rnd_freq_docstring[] =          "Set frequency of random decisions "
                                                  "(Glucose 4.2.1 only).";
-static char  set_rnd_pol_docstring[] =           "Randomize polarities on branching "
+static char  set_rnd_pol_docstring[]  =          "Randomize polarities on branching "
                                                  "(Glucose 4.2.1 only).";
 static char  set_rnd_init_act_docstring[] =      "Randomize initial activities "
                                                  "(Glucose 4.2.1 only).";
 static char  set_rnd_first_descent_docstring[] = "Randomize decisions until first conflict "
                                                  "(Glucose 4.2.1 only).";
-
-
 
 
 static PyObject *SATError;
@@ -182,6 +194,9 @@ static jmp_buf env;
 // function declaration for functions available in module
 //=============================================================================
 extern "C" {
+	// solver-independent
+	static PyObject *py_flushpr              (PyObject *, PyObject *);
+
 #ifdef WITH_CADICAL103
 	static PyObject *py_cadical103_new       (PyObject *, PyObject *);
 	static PyObject *py_cadical103_add_cl    (PyObject *, PyObject *);
@@ -261,6 +276,7 @@ extern "C" {
 	static PyObject *py_cadical300_tracepr   (PyObject *, PyObject *);
 	static PyObject *py_cadical300_core      (PyObject *, PyObject *);
 	static PyObject *py_cadical300_model     (PyObject *, PyObject *);
+	static PyObject *py_cadical300_dec_vars  (PyObject *, PyObject *);
 	static PyObject *py_cadical300_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_cadical300_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_cadical300_del       (PyObject *, PyObject *);
@@ -274,6 +290,42 @@ extern "C" {
 	static PyObject *py_cadical300_vignore   (PyObject *, PyObject *);
 	static PyObject *py_cadical300_vreset    (PyObject *, PyObject *);
 	static PyObject *py_cadical300_isdeclit  (PyObject *, PyObject *);
+#endif
+#ifdef WITH_ERGO
+	static PyObject *py_ergo_new       (PyObject *, PyObject *);
+	static PyObject *py_ergo_set_start (PyObject *, PyObject *);
+	static PyObject *py_ergo_add_cl    (PyObject *, PyObject *);
+	static PyObject *py_ergo_solve     (PyObject *, PyObject *);
+	static PyObject *py_ergo_solve_lim (PyObject *, PyObject *);
+	static PyObject *py_ergo_propagate (PyObject *, PyObject *);
+	static PyObject *py_ergo_setphases (PyObject *, PyObject *);
+	static PyObject *py_ergo_cbudget   (PyObject *, PyObject *);
+	static PyObject *py_ergo_pbudget   (PyObject *, PyObject *);
+	static PyObject *py_ergo_interrupt (PyObject *, PyObject *);
+	static PyObject *py_ergo_clearint  (PyObject *, PyObject *);
+	static PyObject *py_ergo_core      (PyObject *, PyObject *);
+	static PyObject *py_ergo_model     (PyObject *, PyObject *);
+	static PyObject *py_ergo_dec_vars  (PyObject *, PyObject *);
+	static PyObject *py_ergo_nof_vars  (PyObject *, PyObject *);
+	static PyObject *py_ergo_nof_cls   (PyObject *, PyObject *);
+	static PyObject *py_ergo_del       (PyObject *, PyObject *);
+	static PyObject *py_ergo_tracepr   (PyObject *, PyObject *);
+	static PyObject *py_ergo_acc_stats (PyObject *, PyObject *);
+	static PyObject *py_ergo_set       (PyObject *, PyObject *);
+	static PyObject *py_ergo_setacts   (PyObject *, PyObject *);
+	static PyObject *py_ergo_setxscope (PyObject *, PyObject *);
+	static PyObject *py_ergo_xpairs    (PyObject *, PyObject *);
+	static PyObject *py_ergo_xpin      (PyObject *, PyObject *);
+	static PyObject *py_ergo_xunpin    (PyObject *, PyObject *);
+	static PyObject *py_ergo_pconn     (PyObject *, PyObject *);
+	static PyObject *py_ergo_pdisconn  (PyObject *, PyObject *);
+	static PyObject *py_ergo_penable   (PyObject *, PyObject *);
+	static PyObject *py_ergo_pdisable  (PyObject *, PyObject *);
+	static PyObject *py_ergo_pactive   (PyObject *, PyObject *);
+	static PyObject *py_ergo_vobserve  (PyObject *, PyObject *);
+	static PyObject *py_ergo_vignore   (PyObject *, PyObject *);
+	static PyObject *py_ergo_vreset    (PyObject *, PyObject *);
+	static PyObject *py_ergo_isdeclit  (PyObject *, PyObject *);
 #endif
 #ifdef WITH_GLUECARD30
 	static PyObject *py_gluecard3_new       (PyObject *, PyObject *);
@@ -562,9 +614,8 @@ extern "C" {
 	static PyObject *py_minisatep_vignore   (PyObject *, PyObject *);
 	static PyObject *py_minisatep_vreset    (PyObject *, PyObject *);
 	static PyObject *py_minisatep_isdeclit  (PyObject *, PyObject *);
-	#endif
-	#ifdef WITH_KISSAT404
-
+#endif
+#ifdef WITH_KISSAT404
 	static PyObject *py_kissat404_new       (PyObject *, PyObject *);
 	static PyObject *py_kissat404_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_kissat404_solve     (PyObject *, PyObject *);
@@ -580,6 +631,7 @@ extern "C" {
 // module specification
 //=============================================================================
 static PyMethodDef module_methods[] = {
+	{ "flushpr", py_flushpr, METH_VARARGS, flushpr_docstring }, // solver-independent
 #ifdef WITH_CADICAL103
 	{ "cadical103_new",       py_cadical103_new,       METH_VARARGS,      new_docstring },
 	{ "cadical103_add_cl",    py_cadical103_add_cl,    METH_VARARGS,    addcl_docstring },
@@ -659,6 +711,7 @@ static PyMethodDef module_methods[] = {
 	{ "cadical300_tracepr",   py_cadical300_tracepr,   METH_VARARGS,  tracepr_docstring },
 	{ "cadical300_core",      py_cadical300_core,      METH_VARARGS,     core_docstring },
 	{ "cadical300_model",     py_cadical300_model,     METH_VARARGS,    model_docstring },
+	{ "cadical300_dec_vars",  py_cadical300_dec_vars,  METH_VARARGS,    dvars_docstring },
 	{ "cadical300_nof_vars",  py_cadical300_nof_vars,  METH_VARARGS,    nvars_docstring },
 	{ "cadical300_nof_cls",   py_cadical300_nof_cls,   METH_VARARGS,     ncls_docstring },
 	{ "cadical300_del",       py_cadical300_del,       METH_VARARGS,      del_docstring },
@@ -672,6 +725,42 @@ static PyMethodDef module_methods[] = {
 	{ "cadical300_vignore",   py_cadical300_vignore,   METH_VARARGS,  vignore_docstring },
 	{ "cadical300_vreset",    py_cadical300_vreset,    METH_VARARGS,   vreset_docstring },
 	{ "cadical300_isdeclit",  py_cadical300_isdeclit,  METH_VARARGS, isdeclit_docstring },
+#endif
+#ifdef WITH_ERGO
+	{ "ergo_new",       py_ergo_new,       METH_VARARGS,       new_docstring },
+	{ "ergo_set_start", py_ergo_set_start, METH_VARARGS,  setstart_docstring },
+	{ "ergo_add_cl",    py_ergo_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "ergo_solve",     py_ergo_solve,     METH_VARARGS,     solve_docstring },
+	{ "ergo_solve_lim", py_ergo_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "ergo_propagate", py_ergo_propagate, METH_VARARGS,      prop_docstring },
+	{ "ergo_setphases", py_ergo_setphases, METH_VARARGS,    phases_docstring },
+	{ "ergo_cbudget",   py_ergo_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "ergo_pbudget",   py_ergo_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "ergo_interrupt", py_ergo_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "ergo_clearint",  py_ergo_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "ergo_core",      py_ergo_core,      METH_VARARGS,      core_docstring },
+	{ "ergo_model",     py_ergo_model,     METH_VARARGS,     model_docstring },
+	{ "ergo_dec_vars",  py_ergo_dec_vars,  METH_VARARGS,     dvars_docstring },
+	{ "ergo_nof_vars",  py_ergo_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "ergo_nof_cls",   py_ergo_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "ergo_del",       py_ergo_del,       METH_VARARGS,       del_docstring },
+	{ "ergo_tracepr",   py_ergo_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "ergo_acc_stats", py_ergo_acc_stats, METH_VARARGS,  acc_stat_docstring },
+	{ "ergo_set",       py_ergo_set,       METH_VARARGS,       set_docstring },
+	{ "ergo_setacts",   py_ergo_setacts,   METH_VARARGS,    phases_docstring },
+	{ "ergo_setxscope", py_ergo_setxscope, METH_VARARGS,       set_docstring },
+	{ "ergo_xpairs",    py_ergo_xpairs,    METH_VARARGS,    xpairs_docstring },
+	{ "ergo_xpin",      py_ergo_xpin,      METH_VARARGS,      xpin_docstring },
+	{ "ergo_xunpin",    py_ergo_xunpin,    METH_VARARGS,    xunpin_docstring },
+	{ "ergo_pconn",     py_ergo_pconn,     METH_VARARGS,     pconn_docstring },
+	{ "ergo_pdisconn",  py_ergo_pdisconn,  METH_VARARGS,  pdisconn_docstring },
+	{ "ergo_penable",   py_ergo_penable,   METH_VARARGS,   penable_docstring },
+	{ "ergo_pdisable",  py_ergo_pdisable,  METH_VARARGS,  pdisable_docstring },
+	{ "ergo_pactive",   py_ergo_pactive,   METH_VARARGS,   pactive_docstring },
+	{ "ergo_vobserve",  py_ergo_vobserve,  METH_VARARGS,  vobserve_docstring },
+	{ "ergo_vignore",   py_ergo_vignore,   METH_VARARGS,   vignore_docstring },
+	{ "ergo_vreset",    py_ergo_vreset,    METH_VARARGS,    vreset_docstring },
+	{ "ergo_isdeclit",  py_ergo_isdeclit,  METH_VARARGS,  isdeclit_docstring },
 #endif
 #ifdef WITH_GLUECARD30
 	{ "gluecard3_new",       py_gluecard3_new,       METH_VARARGS,       new_docstring },
@@ -1196,6 +1285,31 @@ PyObject *vector_to_pylist(const std::vector<int> &vec) {
 	return pylist;
 }
 
+// flushing a proof stream
+//=============================================================================
+static PyObject *py_flushpr(PyObject *self, PyObject *args)
+{
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &p_obj))
+		return NULL;
+
+	// the solver writes the proof through a FILE* of its own layered over
+	// the descriptor Python passed to it; whatever is still sitting in
+	// that stream's buffer has not reached the descriptor yet, so reading
+	// the file from Python without a flush can return a truncated proof
+	if (p_obj != Py_None) {
+		FILE *fp = (FILE *)pyobj_to_void(p_obj);
+
+		if (fp == NULL)
+			return NULL;
+
+		fflush(fp);
+	}
+
+	Py_RETURN_NONE;
+}
+
 // API for CaDiCaL 1.0.3
 //=============================================================================
 #ifdef WITH_CADICAL103
@@ -1275,7 +1389,9 @@ static PyObject *py_cadical103_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
+	FILE *cd_trace_fp = PyFile_AsFile(p_obj);
+
+	s->trace_proof(cd_trace_fp, "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	CaDiCaL103::Solver *s = (CaDiCaL103::Solver *)PyCapsule_GetPointer(s_obj, NULL);
@@ -1298,7 +1414,9 @@ static PyObject *py_cadical103_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->set("binary", 0);
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)cd_trace_fp);
 }
 
 //
@@ -1732,7 +1850,9 @@ static PyObject *py_cadical153_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
+	FILE *cd_trace_fp = PyFile_AsFile(p_obj);
+
+	s->trace_proof(cd_trace_fp, "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	CaDiCaL153::Solver *s = (CaDiCaL153::Solver *)PyCapsule_GetPointer(s_obj, NULL);
@@ -1755,7 +1875,9 @@ static PyObject *py_cadical153_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->set("binary", 0);
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)cd_trace_fp);
 }
 
 //
@@ -2424,7 +2546,9 @@ static PyObject *py_cadical195_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
+	FILE *cd_trace_fp = PyFile_AsFile(p_obj);
+
+	s->trace_proof(cd_trace_fp, "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	CaDiCaL195::Solver *s = (CaDiCaL195::Solver *)PyCapsule_GetPointer(s_obj, NULL);
@@ -2447,7 +2571,9 @@ static PyObject *py_cadical195_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->set("binary", 0);
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)cd_trace_fp);
 }
 
 //
@@ -3877,7 +4003,9 @@ static PyObject *py_cadical300_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	CaDiCaL300::Solver *s = (CaDiCaL300::Solver *)PyCObject_AsVoidPtr(s_obj);
 
-	s->trace_proof(PyFile_AsFile(p_obj), "<py_fobj>");
+	FILE *cd_trace_fp = PyFile_AsFile(p_obj);
+
+	s->trace_proof(cd_trace_fp, "<py_fobj>");
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	CaDiCaL300::Solver *s = (CaDiCaL300::Solver *)PyCapsule_GetPointer(s_obj, NULL);
@@ -3900,7 +4028,9 @@ static PyObject *py_cadical300_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->set("binary", 0);
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)cd_trace_fp);
 }
 
 //
@@ -4339,6 +4469,28 @@ static PyObject *py_cadical300_model(PyObject *self, PyObject *args)
 		Py_DECREF(model);
 		return ret;
 	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_cadical300_dec_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int top;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &top))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL300::Solver *s = (CaDiCaL300::Solver *)pyobj_to_void(s_obj);
+
+	// declaring a variable also protects it from being grabbed by BVA;
+	// note that this resets the solver to its steady state, i.e. it must
+	// not be called while a model or an unsatisfiable core is still needed
+	if (top > s->vars())
+		s->declare_more_variables(top - s->vars());
 
 	Py_RETURN_NONE;
 }
@@ -5209,6 +5361,1260 @@ static PyObject *py_cadical300_isdeclit(PyObject *self, PyObject *args)
 }
 #endif  // WITH_CADICAL300
 
+// API for Ergo
+//=============================================================================
+#ifdef WITH_ERGO
+static bool pyergo_callback_failed = false;
+
+//
+//=============================================================================
+static inline bool ergo_iterate(PyObject *obj, vector<int>& v, int& max_var)
+{
+	// iterator object
+	PyObject *i_obj = PyObject_GetIter(obj);
+	if (i_obj == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Object does not seem to be an iterable.");
+		return false;
+	}
+
+	PyObject *l_obj;
+	while ((l_obj = PyIter_Next(i_obj)) != NULL) {
+		if (!pyint_check(l_obj)) {
+			Py_DECREF(l_obj);
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_TypeError, "integer expected");
+			return false;
+		}
+
+		int l = pyint_to_cint(l_obj);
+		Py_DECREF(l_obj);
+
+		if (l == 0) {
+			Py_DECREF(i_obj);
+			PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+			return false;
+		}
+
+		v.push_back(ergo_shim_lit(l));
+
+		if (abs(l) > max_var)
+			max_var = abs(l);
+	}
+
+	Py_DECREF(i_obj);
+	return true;
+}
+
+static PyObject *py_ergo_new(PyObject *self, PyObject *args)
+{
+	struct ergo *s = ergo_new();
+
+	if (s == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Cannot create a new solver.");
+		return NULL;
+	}
+
+	return void_to_pyobj((void *)s);
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_set_start(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int warm_start;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &warm_start))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	ergo_set_start(s, (bool)warm_start);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_add_cl(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *c_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &c_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	vector<int> c;
+	int max_var = -1;
+
+	if (ergo_iterate(c_obj, c, max_var) == false)
+		return NULL;
+
+	int res = ergo_shim_add_cl(s, c.empty() ? NULL : &c[0], (int)c.size(), max_var);
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_solve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOi", &s_obj, &a_obj, &main_thread))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> a;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	pyergo_callback_failed = false;
+	int res = ergo_shim_solve(s, a.empty() ? NULL : &a[0], (int)a.size());
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	if (pyergo_callback_failed || PyErr_Occurred())
+		return NULL;
+
+	PyObject *ret = PyBool_FromLong((long)res);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_solve_lim(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int main_thread;
+	int expect_interrupt;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &main_thread,
+				&expect_interrupt))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> a;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+
+	if (expect_interrupt && ergo_get_propagator(s) != NULL) {
+		PyErr_SetString(PyExc_NotImplementedError,
+				"Interruptible solving with an external propagator is unsupported");
+		return NULL;
+	}
+
+	pyergo_callback_failed = false;
+	int res = 0;
+
+	if (expect_interrupt == 0) {
+		PyOS_sighandler_t sig_save;
+		if (main_thread) {
+			sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+			if (setjmp(env) != 0) {
+				PyErr_SetString(SATError, "Caught keyboard interrupt");
+				return NULL;
+			}
+		}
+
+		res = ergo_shim_solve_lim(s, a.empty() ? NULL : &a[0], (int)a.size());
+
+		if (main_thread)
+			PyOS_setsig(SIGINT, sig_save);
+	}
+	else {
+		Py_BEGIN_ALLOW_THREADS
+		res = ergo_shim_solve_lim(s, a.empty() ? NULL : &a[0], (int)a.size());
+		Py_END_ALLOW_THREADS
+	}
+
+	if (pyergo_callback_failed || PyErr_Occurred())
+		return NULL;
+
+	if (res)
+		return PyBool_FromLong((long)(res == 1));
+
+	Py_RETURN_NONE;  // return Python's None if lundef
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_propagate(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	int save_phases;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOii", &s_obj, &a_obj, &save_phases,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> a;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(SATError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	pyergo_callback_failed = false;
+	int *prop = NULL;
+	int prop_n = 0;
+	int res = ergo_shim_prop_check(s, a.empty() ? NULL : &a[0], (int)a.size(),
+			save_phases, &prop, &prop_n);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	if (pyergo_callback_failed || PyErr_Occurred()) {
+		free(prop);
+		return NULL;
+	}
+
+	PyObject *propagated = PyList_New(prop_n);
+	for (int i = 0; i < prop_n; ++i) {
+		PyObject *lit = pyint_from_cint(prop[i]);
+		PyList_SetItem(propagated, i, lit);
+	}
+	free(prop);
+
+	PyObject *ret = Py_BuildValue("nO", (Py_ssize_t)res, propagated);
+	Py_DECREF(propagated);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_setphases(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // polarities given as a list of integer literals
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	ergo_shim_setphases(s, p.empty() ? NULL : &p[0], (int)p.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_cbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		ergo_set_cbudget(s, budget);
+	else
+		ergo_budget_off(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_pbudget(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int64_t budget;
+
+	if (!PyArg_ParseTuple(args, "Ol", &s_obj, &budget))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	if (budget != 0 && budget != -1)  // it is 0 by default
+		ergo_set_pbudget(s, budget);
+	else
+		ergo_budget_off(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_interrupt(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	ergo_interrupt(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_clearint(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	ergo_clear_interrupt(s);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_core(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	int n = ergo_shim_nconflict(s);
+
+	PyObject *core = PyList_New(n);
+	for (int i = 0; i < n; ++i) {
+		PyObject *lit = pyint_from_cint(ergo_shim_conflict_at(s, i));
+		PyList_SetItem(core, i, lit);
+	}
+
+	if (n) {
+		PyObject *ret = Py_BuildValue("O", core);
+		Py_DECREF(core);
+		return ret;
+	}
+
+	Py_DECREF(core);
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_model(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	// ergo's model is 0-based (unlike MiniSat, there's no dummy variable 0)
+	int nvars = ergo_nvars(s);
+
+	if (nvars) {
+		PyObject *model = PyList_New(nvars);
+		for (int i = 0; i < nvars; ++i) {
+			int v = ergo_shim_model_at(s, i);
+			int l = (i + 1) * (v == 1 ? 1 : -1);
+			PyObject *lit = pyint_from_cint(l);
+			PyList_SetItem(model, i, lit);
+		}
+
+		PyObject *ret = Py_BuildValue("O", model);
+		Py_DECREF(model);
+		return ret;
+	}
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_dec_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int top;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &top))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	// reserving a variable protects it from ever being minted as an
+	// extension variable, as ergo_extend() only ever takes a fresh ID
+	// from the top of the variable range
+	ergo_shim_declare(s, top);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_nof_vars(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	int nof_vars = ergo_nvars(s);
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_vars);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_nof_cls(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	size_t nof_cls = ergo_nclauses(s);
+
+	PyObject *ret = Py_BuildValue("n", (Py_ssize_t)nof_cls);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_tracepr(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+#if PY_MAJOR_VERSION < 3
+	struct ergo *s = (struct ergo *)PyCObject_AsVoidPtr(s_obj);
+
+	FILE *ergo_trace_fp = PyFile_AsFile(p_obj);
+
+	ergo_set_proof(s, ergo_trace_fp);
+	PyFile_IncUseCount((PyFileObject *)p_obj);
+#else
+	struct ergo *s = (struct ergo *)PyCapsule_GetPointer(s_obj, NULL);
+
+	int fd = PyObject_AsFileDescriptor(p_obj);
+	if (fd == -1) {
+		PyErr_SetString(SATError, "Cannot create proof file descriptor!");
+		return NULL;
+	}
+
+	FILE *ergo_trace_fp = fdopen(fd, "w+");
+	if (ergo_trace_fp == NULL) {
+		PyErr_SetString(SATError, "Cannot create proof file pointer!");
+		return NULL;
+	}
+
+	setlinebuf(ergo_trace_fp);
+	ergo_set_proof(s, ergo_trace_fp);
+	Py_INCREF(p_obj);
+#endif
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)ergo_trace_fp);
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_del(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	// the proof stream belongs to python, which closes it; ergo_delete()
+	// deliberately leaves it alone
+	if (p_obj != Py_None) {
+#if PY_MAJOR_VERSION < 3
+		PyFile_DecUseCount((PyFileObject *)p_obj);
+#else
+		Py_DECREF(p_obj);
+#endif
+	}
+
+	ergo_delete(s);
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_acc_stats(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	return Py_BuildValue("{s:n,s:n,s:n,s:n}",
+		"restarts", (Py_ssize_t)ergo_nstarts(s),
+		"conflicts", (Py_ssize_t)ergo_nconflicts(s),
+		"decisions", (Py_ssize_t)ergo_ndecisions(s),
+		"propagations", (Py_ssize_t)ergo_npropagations(s)
+	);
+}
+
+// ergo's parameters
+//=============================================================================
+#define ERGO_OPTS(type) \
+	const struct { const char *name; void (*set)(struct ergo *, type); }
+
+static ERGO_OPTS(double) ergo_opts_d[] = {
+	{ "cla-decay",       ergo_shim_set_cla_decay       },
+	{ "var-decay",       ergo_shim_set_var_decay       },
+	{ "restart-inc",     ergo_shim_set_restart_inc     },
+	{ "reduce-by",       ergo_shim_set_reduce_by       },
+	{ "ext-threshold",   ergo_setxthreshold            },
+	{ "ext-escalate",    ergo_setxescalate             }
+};
+
+static ERGO_OPTS(int) ergo_opts_i[] = {
+	{ "restart-first",   ergo_shim_set_restart_first   },
+	{ "min-learnts",     ergo_shim_set_min_learnts     },
+	{ "ccmin-mode",      ergo_shim_set_ccmin_mode      },
+	{ "phase-saving",    ergo_shim_set_phase_saving    }
+};
+
+static ERGO_OPTS(bool) ergo_opts_b[] = {
+	{ "keep-bin",        ergo_shim_set_keep_bin        },
+	{ "lcm",             ergo_shim_set_lcm             },
+	{ "glucose-bump",    ergo_shim_set_glucose_bump    },
+	{ "ext",             ergo_xenable                  }
+};
+
+static ERGO_OPTS(int64_t) ergo_opts_l[] = {
+	{ "adapt-at",        ergo_shim_set_adapt_at        },
+	{ "ext-warmup",      ergo_setxwarmup               }
+};
+
+static ERGO_OPTS(const char *) ergo_opts_s[] = {
+	{ "restart-policy",  ergo_shim_set_restart_policy  },
+	{ "jw-mode",         ergo_shim_set_jw_mode         },
+	{ "reducedb-policy", ergo_shim_set_reducedb_policy },
+	{ "emulate",         ergo_shim_set_emulate         }
+};
+
+//
+//=============================================================================
+#define ERGO_SET(opts, fmt, ctype) \
+	for (size_t i = 0; i < sizeof(opts) / sizeof(*opts); ++i) \
+		if (!strcmp(name, opts[i].name)) { \
+			ctype val; \
+			if (!PyArg_Parse(v_obj, fmt, &val)) \
+				return NULL; \
+			opts[i].set(s, val); \
+			Py_RETURN_NONE; \
+		}
+
+//
+//=============================================================================
+static PyObject *py_ergo_set(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;
+	const char *name;
+
+	if (!PyArg_ParseTuple(args, "OsO", &s_obj, &name, &v_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	// 'adapt-at' takes a conflict count or the string "never", the way
+	// ergo's own --adapt-at does; everything else is a plain value
+	if (!strcmp(name, "adapt-at") && PyUnicode_Check(v_obj)) {
+		const char *val = PyUnicode_AsUTF8(v_obj);
+
+		if (val == NULL)
+			return NULL;
+
+		if (strcmp(val, "never")) {
+			PyErr_Format(SATError, "Unknown value for 'adapt-at': '%s'", val);
+			return NULL;
+		}
+
+		ergo_shim_set_adapt_at(s, -1);
+		Py_RETURN_NONE;
+	}
+
+	ERGO_SET(ergo_opts_d, "d", double)
+	ERGO_SET(ergo_opts_i, "i", int)
+	ERGO_SET(ergo_opts_b, "i", int)
+	ERGO_SET(ergo_opts_l, "L", long long)
+	ERGO_SET(ergo_opts_s, "s", const char *)
+
+	PyErr_Format(SATError, "Unknown parameter: '%s'", name);
+	return NULL;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	if (!PyDict_Check(a_obj)) {
+		PyErr_SetString(SATError, "Activities must be given as a dictionary");
+		return NULL;
+	}
+
+	vector<int>    vars;
+	vector<double> acts;
+	PyObject      *key, *val;
+	Py_ssize_t     pos = 0;
+
+	while (PyDict_Next(a_obj, &pos, &key, &val)) {
+		long   v = PyLong_AsLong(key);
+		double a = PyFloat_AsDouble(val);
+
+		if (PyErr_Occurred())
+			return NULL;
+
+		if (v <= 0 || v > INT_MAX) {
+			PyErr_SetString(SATError, "Activities are set for variables, not literals");
+			return NULL;
+		}
+
+		// the solver rescales its own activities below this ceiling;
+		// a value above it would break the heap's ordering
+		if (!(a <= 1e100)) {
+			PyErr_SetString(SATError, "Activity is NaN or above 1e100");
+			return NULL;
+		}
+
+		vars.push_back((int)v);
+		acts.push_back(a);
+	}
+
+	ergo_shim_setacts(s, vars.empty() ? NULL : &vars[0],
+	                     acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_setxscope(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // variables joining the scope
+	PyObject *r_obj;  // variables leaving it
+
+	if (!PyArg_ParseTuple(args, "OOO", &s_obj, &a_obj, &r_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> a, r;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+	if (pyiter_to_vector(r_obj, r, max_var) == false)
+		return NULL;
+
+	ergo_shim_setxscope(s, a.empty() ? NULL : &a[0], (int)a.size(),
+	                       r.empty() ? NULL : &r[0], (int)r.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xpairs(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	struct ergo_xpair *pairs = NULL;
+	int n = ergo_shim_xpairs(s, &pairs);
+
+	PyObject *lst = PyList_New(n);
+
+	if (lst == NULL) {
+		free(pairs);
+		return NULL;
+	}
+
+	for (int i = 0; i < n; ++i) {
+		PyObject *tup = Py_BuildValue("iiid", pairs[i].la, pairs[i].lb,
+				pairs[i].z, pairs[i].count);
+
+		if (tup == NULL) {
+			Py_DECREF(lst);
+			free(pairs);
+			return NULL;
+		}
+
+		PyList_SET_ITEM(lst, i, tup);
+	}
+
+	free(pairs);
+
+	return lst;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xpin(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // the variables to pin
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> v;
+	int max_var = -1;
+
+	if (pyiter_to_vector(v_obj, v, max_var) == false)
+		return NULL;
+
+	ergo_shim_xpin(s, v.empty() ? NULL : &v[0], (int)v.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xunpin(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // the variables to unpin
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> v;
+	int max_var = -1;
+
+	if (pyiter_to_vector(v_obj, v, max_var) == false)
+		return NULL;
+
+	ergo_shim_xunpin(s, v.empty() ? NULL : &v[0], (int)v.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+class PyExternalPropagatorErgo {
+private:
+	PyObject *py_prop;
+	std::vector<int> propagate_queue; // reversed: pop_back() drains front-to-back
+	std::vector<int> reason_queue;
+	int  reason_lit_for;              // which propagated_lit reason_queue answers; 0 = stale
+	std::vector<int> clause_queue;
+
+public:
+	bool passive;
+	bool enable;
+	bool disable;
+	bool zero_level;
+	bool combined_has_clause; // true iff the propagator has no has_clause() method
+
+	PyExternalPropagatorErgo(PyObject *p) :
+			py_prop(p), reason_lit_for(0), passive(false), enable(false),
+			disable(false), zero_level(true), combined_has_clause(true) {}
+
+	~PyExternalPropagatorErgo() {
+		Py_XDECREF(py_prop);
+	}
+
+	static void notify_assignment(void *ctx, const int *lits, int n) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return; }
+		if (!p->zero_level && p->passive) return;
+
+		for (int i = 0; i < n; ++i) {
+			PyObject *status = PyObject_CallMethod(p->py_prop, "on_assignment",
+					"(ii)", lits[i], p->zero_level ? 1 : 0, NULL);
+			if (status == NULL) { pyergo_callback_failed = true; return; }
+			Py_DECREF(status);
+		}
+	}
+
+	static void notify_new_decision_level(void *ctx) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return; }
+
+		if (p->enable && p->zero_level) {
+			// enabling only takes effect at decision level 0
+			p->passive = false;
+			p->enable  = false;
+		}
+		p->zero_level = false;
+		if (p->passive) return;
+
+		PyObject *status = PyObject_CallMethod(p->py_prop, "on_new_level", "()", NULL);
+		if (status == NULL) { pyergo_callback_failed = true; return; }
+		Py_DECREF(status);
+	}
+
+	static void notify_backtrack(void *ctx, int new_level) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return; }
+
+		// stale queues from before the backtrack must never leak forward
+		p->propagate_queue.clear();
+		p->reason_lit_for = 0;
+
+		if (!p->passive) {
+			PyObject *status = PyObject_CallMethod(p->py_prop, "on_backtrack",
+					"(i)", new_level, NULL);
+			if (status == NULL) { pyergo_callback_failed = true; return; }
+			Py_DECREF(status);
+		}
+
+		p->zero_level = (new_level == 0);
+		if (p->disable && p->zero_level) {
+			// disabling only takes effect at decision level 0
+			p->passive = true;
+			p->disable = false;
+		}
+	}
+
+	static int cb_decide(void *ctx) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return 0;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return 0; }
+		if (p->passive) return 0;
+
+		PyObject *status = PyObject_CallMethod(p->py_prop, "decide", "()", NULL);
+		if (status == NULL) { pyergo_callback_failed = true; return 0; }
+		int res = pyint_to_cint(status);
+		Py_DECREF(status);
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return 0; }
+		return res;
+	}
+
+	static int cb_propagate(void *ctx) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return 0;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return 0; }
+		if (!p->zero_level && p->passive) return 0;
+
+		if (p->propagate_queue.empty()) {
+			PyObject *status = PyObject_CallMethod(p->py_prop, "propagate", "()", NULL);
+			if (status == NULL) { pyergo_callback_failed = true; return 0; }
+
+			int max_var = 0;
+			bool ok = pyiter_to_vector(status, p->propagate_queue, max_var);
+			Py_DECREF(status);
+			if (!ok) { pyergo_callback_failed = true; return 0; }
+
+			reverse(p->propagate_queue.begin(), p->propagate_queue.end());
+		}
+		if (p->propagate_queue.empty())
+			return 0;
+
+		int res = *p->propagate_queue.rbegin();
+		p->propagate_queue.pop_back();
+		return res;
+	}
+
+	static int cb_add_reason_clause_lit(void *ctx, int propagated_lit) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return 0;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return 0; }
+
+		if (p->reason_lit_for != propagated_lit) {
+			p->reason_lit_for = propagated_lit;
+			p->reason_queue.clear();
+
+			PyObject *status = PyObject_CallMethod(p->py_prop, "provide_reason",
+					"(i)", propagated_lit, NULL);
+			if (status == NULL) { pyergo_callback_failed = true; return 0; }
+
+			int max_var = 0;
+			bool ok = pyiter_to_vector(status, p->reason_queue, max_var);
+			Py_DECREF(status);
+			if (!ok) { pyergo_callback_failed = true; return 0; }
+
+			reverse(p->reason_queue.begin(), p->reason_queue.end());
+		}
+		if (p->reason_queue.empty())
+			return 0;
+
+		int res = *p->reason_queue.rbegin();
+		p->reason_queue.pop_back();
+		return res;
+	}
+
+	// fills clause_queue (reversed) from a Python iterable of ints and
+	// returns whether the conversion succeeded -- shared by both branches
+	// of cb_has_external_clause() below
+	bool fill_clause_from(PyObject *status) {
+		clause_queue.clear();
+		int max_var = 0;
+		bool ok = pyiter_to_vector(status, clause_queue, max_var);
+		if (ok)
+			reverse(clause_queue.begin(), clause_queue.end());
+		return ok;
+	}
+
+	static bool cb_has_external_clause(void *ctx, bool *is_forgettable) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		*is_forgettable = true;
+		if (pyergo_callback_failed) return false;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return false; }
+
+		if (p->combined_has_clause) {
+			// no has_clause() method: add_clause() alone must serve
+			// double duty, per Propagator.add_clause()'s own doc --- []
+			// here means "nothing to add", not "the empty clause"
+			PyObject *status = PyObject_CallMethod(p->py_prop, "add_clause", "()", NULL);
+			if (status == NULL) { pyergo_callback_failed = true; return false; }
+			bool ok = p->fill_clause_from(status);
+			Py_DECREF(status);
+			if (!ok) { pyergo_callback_failed = true; return false; }
+			return !p->clause_queue.empty();
+		}
+
+		PyObject *status = PyObject_CallMethod(p->py_prop, "has_clause", "()", NULL);
+		if (status == NULL) { pyergo_callback_failed = true; return false; }
+		int has = PyObject_IsTrue(status);
+		Py_DECREF(status);
+		if (has == -1) { pyergo_callback_failed = true; return false; }
+		if (has == 0)
+			return false;
+
+		// has_clause() said yes -- add_clause() now means the actual
+		// clause, [] included (the genuine empty clause, i.e. UNSAT)
+		PyObject *cl = PyObject_CallMethod(p->py_prop, "add_clause", "()", NULL);
+		if (cl == NULL) { pyergo_callback_failed = true; return false; }
+		bool ok = p->fill_clause_from(cl);
+		Py_DECREF(cl);
+		if (!ok) { pyergo_callback_failed = true; return false; }
+		return true;
+	}
+
+	static int cb_add_external_clause_lit(void *ctx) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (p->clause_queue.empty())
+			return 0;
+
+		int res = *p->clause_queue.rbegin();
+		p->clause_queue.pop_back();
+		return res;
+	}
+
+	static bool cb_check_found_model(void *ctx, const int *model, int n) {
+		PyExternalPropagatorErgo *p = (PyExternalPropagatorErgo *)ctx;
+		if (pyergo_callback_failed) return true;
+		if (PyErr_Occurred()) { pyergo_callback_failed = true; return true; }
+
+		std::vector<int> v(model, model + n);
+		PyObject *pylist = vector_to_pylist(v);
+		if (pylist == NULL) { pyergo_callback_failed = true; return true; }
+
+		PyObject *status = PyObject_CallMethod(p->py_prop, "check_model", "(O)", pylist, NULL);
+		Py_DECREF(pylist);
+		if (status == NULL) { pyergo_callback_failed = true; return true; }
+
+		int res = PyObject_IsTrue(status);
+		Py_DECREF(status);
+		if (res == -1) { pyergo_callback_failed = true; return true; }
+		return res == 1;
+	}
+};
+
+//
+//=============================================================================
+static PyObject *py_ergo_pconn(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+
+	Py_INCREF(p_obj);
+	PyExternalPropagatorErgo *cprop = new PyExternalPropagatorErgo(p_obj);
+
+	// if the propagator exposes callable has_clause(), use it to
+	// distinguish between "no clause" and an actual empty external clause
+	PyObject *has_clause = PyObject_GetAttrString(p_obj, "has_clause");
+	if (has_clause != NULL) {
+		if (PyCallable_Check(has_clause))
+			cprop->combined_has_clause = false;
+		Py_DECREF(has_clause);
+	} else {
+		PyErr_Clear();
+	}
+
+	bool is_lazy = false;
+	PyObject *is_lazy_obj = PyObject_GetAttrString(p_obj, "is_lazy");
+	if (is_lazy_obj != NULL) {
+		is_lazy = (PyObject_IsTrue(is_lazy_obj) == 1);
+		Py_DECREF(is_lazy_obj);
+	} else {
+		PyErr_Clear();
+	}
+
+	struct ergo_propagator *ep = new ergo_propagator();
+	ep->ctx                        = cprop;
+	ep->is_lazy                    = is_lazy;
+	ep->notify_assignment          = PyExternalPropagatorErgo::notify_assignment;
+	ep->notify_new_decision_level  = PyExternalPropagatorErgo::notify_new_decision_level;
+	ep->notify_backtrack           = PyExternalPropagatorErgo::notify_backtrack;
+	ep->cb_decide                  = PyExternalPropagatorErgo::cb_decide;
+	ep->cb_propagate               = PyExternalPropagatorErgo::cb_propagate;
+	ep->cb_add_reason_clause_lit   = PyExternalPropagatorErgo::cb_add_reason_clause_lit;
+	ep->cb_has_external_clause     = PyExternalPropagatorErgo::cb_has_external_clause;
+	ep->cb_add_external_clause_lit = PyExternalPropagatorErgo::cb_add_external_clause_lit;
+	ep->cb_check_found_model       = PyExternalPropagatorErgo::cb_check_found_model;
+
+	pyergo_callback_failed = false;
+	ergo_connect_propagator(s, ep);
+
+	if (pyergo_callback_failed || PyErr_Occurred())
+		return NULL;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_pdisconn(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	struct ergo_propagator *ep = ergo_get_propagator(s);
+
+	pyergo_callback_failed = false;
+	ergo_disconnect_propagator(s);
+
+	if (ep != NULL) {
+		delete (PyExternalPropagatorErgo *)ep->ctx;
+		delete ep;
+	}
+
+	if (pyergo_callback_failed || PyErr_Occurred())
+		return NULL;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_penable(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	struct ergo_propagator *ep = ergo_get_propagator(s);
+
+	if (ep != NULL)
+		((PyExternalPropagatorErgo *)ep->ctx)->enable = true;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_pdisable(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	struct ergo_propagator *ep = ergo_get_propagator(s);
+
+	if (ep != NULL)
+		((PyExternalPropagatorErgo *)ep->ctx)->disable = true;
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_pactive(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	struct ergo_propagator *ep = ergo_get_propagator(s);
+
+	if (ep != NULL && !((PyExternalPropagatorErgo *)ep->ctx)->passive)
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_vobserve(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int var;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &var))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	ergo_shim_observe_var(s, var);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_vignore(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int var;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &var))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	ergo_shim_unobserve_var(s, var);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_vreset(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	int n = ergo_nvars(s);
+	for (int v = 1; v <= n; ++v)
+		ergo_shim_unobserve_var(s, v);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_isdeclit(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	int lit;
+
+	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &lit))
+		return NULL;
+
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	bool res = ergo_is_decision(s, lit);
+
+	return PyBool_FromLong((long)res);
+}
+#endif  // WITH_ERGO
+
 // API for Gluecard 3.0
 //=============================================================================
 #ifdef WITH_GLUECARD30
@@ -5667,7 +7073,8 @@ static PyObject *py_gluecard3_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->certifiedOutput);
 }
 
 //
@@ -6280,7 +7687,8 @@ static PyObject *py_gluecard41_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->certifiedOutput);
 }
 
 //
@@ -6863,7 +8271,8 @@ static PyObject *py_glucose3_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->certifiedOutput);
 }
 
 //
@@ -7446,7 +8855,8 @@ static PyObject *py_glucose41_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->certifiedOutput);
 }
 
 //
@@ -8119,7 +9529,8 @@ static PyObject *py_glucose421_tracepr(PyObject *self, PyObject *args)
 	s->certifiedUNSAT  = true;
 	s->certifiedPyFile = (void *)p_obj;
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->certifiedOutput);
 }
 
 //
@@ -8356,7 +9767,9 @@ static PyObject *py_lingeling_tracepr(PyObject *self, PyObject *args)
 #if PY_MAJOR_VERSION < 3
 	LGL *s = (LGL *)PyCObject_AsVoidPtr(s_obj);
 
-	lglsetrace(s, PyFile_AsFile(p_obj));
+	FILE *lgl_trace_fp = PyFile_AsFile(p_obj);
+
+	lglsetrace(s, lgl_trace_fp);
 	PyFile_IncUseCount((PyFileObject *)p_obj);
 #else
 	LGL *s = (LGL *)PyCapsule_GetPointer(s_obj, NULL);
@@ -8381,7 +9794,8 @@ static PyObject *py_lingeling_tracepr(PyObject *self, PyObject *args)
 	lglsetopt (s, "druplig", 1);
 	lglsetopt (s, "drupligtrace", 2);
 
-	Py_RETURN_NONE;
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)lgl_trace_fp);
 }
 
 //
@@ -9042,7 +10456,9 @@ static PyObject *py_maplechrono_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->drup_file);
 }
 
 //
@@ -9609,7 +11025,9 @@ static PyObject *py_maplesat_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->drup_file);
 }
 
 //
@@ -10176,7 +11594,9 @@ static PyObject *py_maplecm_tracepr(PyObject *self, PyObject *args)
 #endif
 
 	s->drup_pyfile = (void *)p_obj;
-	Py_RETURN_NONE;
+
+	// handing the stream back so that get_proof() can flush it
+	return void_to_pyobj((void *)s->drup_file);
 }
 
 //
@@ -13148,6 +14568,12 @@ static PyObject *py_minisatep_solve_lim(PyObject *self, PyObject *args)
 	try {
 		if (max_var > 0)
 			minisatep_declare_vars(s, max_var);
+
+		if (expect_interrupt && s->get_external_propagator() != NULL) {
+			PyErr_SetString(PyExc_NotImplementedError,
+					"Interruptible solving with an external propagator is unsupported");
+			return NULL;
+		}
 
 		MinisatEP::lbool res = MinisatEP::lbool((uint8_t)2);  // l_Undef
 		if (expect_interrupt == 0) {

@@ -13,6 +13,7 @@ solvers/cadical103
 solvers/cadical153
 solvers/cadical195
 solvers/cadical300
+solvers/ergo
 solvers/gluecard30
 solvers/gluecard41
 solvers/glucose30

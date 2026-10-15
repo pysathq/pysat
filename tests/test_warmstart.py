@@ -1,12 +1,13 @@
 from pysat.card import CardEnc
 from pysat.solvers import Solver
+from pysat.solvers import ergo_present
 
 def test_warmstart():
     n, b = 5, 3
 
     cnf = CardEnc.atmost(range(1, n + 1), b)
 
-    for name in ['m22', 'mgh', 'mep', 'mpl', 'mcm', 'mc', 'g30', 'g41', 'gc30', 'gc41', 'g42']:
+    for name in ['m22', 'mgh', 'mep', 'mpl', 'mcm', 'mc', 'g30', 'g41', 'gc30', 'gc41', 'g42'] + (['ergo'] if ergo_present else []):
         models1 = []
         with Solver(name=name, bootstrap_with=cnf, warm_start=False) as solver:
             models1 = [model for model in solver.enum_models()]

@@ -106,6 +106,10 @@ sources = {
     'kissat404': (
         'https://github.com/arminbiere/kissat/archive/refs/tags/rel-4.0.4.tar.gz',
         'solvers/kissat404.tar.gz'
+    ),
+    'ergo': (
+        # no upstream URL
+        'solvers/ergo.tar.gz',
     )
 }
 
@@ -130,7 +134,8 @@ to_extract = {
     'minisat22': [],
     'minisatgh': [],
     'minisatep': [],
-    'kissat404': []
+    'kissat404': [],
+    'ergo': []
 }
 
 #
@@ -729,7 +734,8 @@ to_move = {
     ],
     'kissat404': [
         ('src', 'src')
-    ]
+    ],
+    'ergo': []
 }
 
 #
@@ -1059,6 +1065,15 @@ to_remove = {
         'CONTRIBUTING',
         'LICENSE',
         'VERSION'
+    ],
+    'ergo': [
+        'cli.c',
+        'ergodbg.c',
+        'options.h',
+        'iread.h',
+        'owrite.h',
+        'pstat.h',
+        'uniqfn.h'
     ]
 }
 

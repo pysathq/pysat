@@ -1,9 +1,11 @@
 from pysat.solvers import Solver
+from pysat.solvers import ergo_present
 from pysat.formula import CNF
 
 solvers = ['cadical103',
            'cadical153',
            'cadical300',
+           'ergo',
            'gluecard30',
            'gluecard41',
            'glucose30',
@@ -17,6 +19,9 @@ solvers = ['cadical103',
            'minisat22',
            'minisat-gh',
            'minisatep']
+
+if not ergo_present:  # not built on every platform
+    solvers.remove('ergo')
 
 def test_solvers():
     cnf = CNF(from_clauses=[[1, 2, 3], [-1, 2], [-2]])
