@@ -1,0 +1,628 @@
+diff -Naur solvers/ergo_prepatch_ref/Makefile solvers/ergo/Makefile
+--- solvers/ergo_prepatch_ref/Makefile	1970-01-01 10:00:00
++++ solvers/ergo/Makefile	2026-10-15 14:29:20
+@@ -0,0 +1,39 @@
++### Makefile ---
++
++## Author: aign
++## Keywords:
++
++# main parameters
++CC       := cc
++CFLAGS   := -std=c23 -fPIC -Wall -fno-strict-aliasing
++COPT     := -O3 -DNDEBUG
++CDEBUG   := -O0 -g3
++CPROF    := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
++INCLUDES := -I..
++LIBS     := -L.
++SOURCES  := ergo.c ext.c pysat_shim.c
++OBJECTS  := $(SOURCES:.c=.o)
++TRGT     := ergo
++
++# gather compiler options
++CARGS := $(CFLAGS) $(INCLUDES) $(COPT)
++
++# targets
++.PHONY: all clean lib
++
++all: lib
++
++lib: $(OBJECTS)
++	@-ar cr lib$(TRGT).a $(OBJECTS)
++
++%.o: %.c
++	$(CC) $(CARGS) -c $< -o $@
++
++clean:
++	@-rm $(OBJECTS)
++
++allclean:
++	@-find . -name '*.o' -delete
++	@-find . -name '*.a' -delete
++
++#-------------------------------------------------------------------------------
+diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
+--- solvers/ergo_prepatch_ref/pysat_shim.c	1970-01-01 10:00:00
++++ solvers/ergo/pysat_shim.c	2026-10-15 14:29:20
+@@ -0,0 +1,449 @@
++/*
++ * pysat_shim.c
++ *
++ */
++
++#include <stdlib.h>
++#include <string.h>
++#include "ergo.h"
++#include "ext.h"
++#include "pysat_shim.h"
++
++//
++//=============================================================================
++static int ergo_shim_dimacs_max(const int *lits, int n)
++{
++	int max_id = 0;
++
++	for (int i = 0; i < n; ++i) {
++		int v = lits[i] < 0 ? -lits[i] : lits[i];
++		if (v > max_id)
++			max_id = v;
++	}
++
++	return max_id;
++}
++
++// builds a vect in Ergo's internal literal encoding from DIMACS literals
++//=============================================================================
++static struct vect ergo_shim_encode(const int *lits, int n)
++{
++	struct vect v = vect_new(int);
++	vect_reserve(&v, n);
++
++	for (int i = 0; i < n; ++i) {
++		int d = lits[i];
++		int enc = (d > 0) ? lit_of(d - 1) : lit_neg(lit_of(-d - 1));
++		vect_append(&v, enc);
++	}
++
++	return v;
++}
++
++//
++//=============================================================================
++int ergo_shim_add_cl(struct ergo *s, const int *lits, int n, int max_var)
++{
++	// ergo_add_cl() treats the clause as scratch, so one buffer serves
++	// every call; safe to share because no Python runs below this point
++	static struct clause *cl = NULL;
++	static int cap = -1;   // -1, so that the n == 0 first call allocates
++
++	if (n > cap) {
++		cl  = realloc(cl, sizeof(struct clause) + n * sizeof(int));
++		cap = n;
++	}
++
++	ergo_shim_declare(s, max_var);
++
++	memcpy(cl->lits, lits, n * sizeof(int));
++	cl_init_hdr(cl, n, false);
++
++	return ergo_add_cl(s, cl);
++}
++
++//
++//=============================================================================
++int ergo_shim_solve(struct ergo *s, const int *assumps, int n)
++{
++	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
++
++	struct vect a = ergo_shim_encode(assumps, n);
++	int res = ergo_solve(s, &a);
++	vect_destroy(&a);
++
++	return res;
++}
++
++//
++//=============================================================================
++int ergo_shim_solve_lim(struct ergo *s, const int *assumps, int n)
++{
++	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
++
++	struct vect a = ergo_shim_encode(assumps, n);
++	lbool res = ergo_solve_lim(s, &a);
++	vect_destroy(&a);
++
++	return res == ltrue ? 1 : (res == lfalse ? -1 : 0);
++}
++
++//
++//=============================================================================
++void ergo_shim_setphases(struct ergo *s, const int *lits, int n)
++{
++	ergo_shim_declare(s, ergo_shim_dimacs_max(lits, n));
++
++	struct vect p = ergo_shim_encode(lits, n);
++	ergo_set_polar(s, &p, false);
++	vect_destroy(&p);
++}
++
++//
++//=============================================================================
++int ergo_shim_prop_check(
++	struct ergo *s,
++	const int *assumps,
++	int n,
++	int psaving,
++	int **prop_out,
++	int *prop_n
++)
++{
++	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
++
++	struct vect a = ergo_shim_encode(assumps, n);
++	struct vect p = vect_new(int);
++
++	int res = ergo_prop_check(s, &a, &p, psaving);
++
++	int *out = malloc(p.nmemb * sizeof(int));
++	for (size_t i = 0; i < p.nmemb; ++i) {
++		int enc = ((int *)p.ptr)[i];
++		out[i] = (lit_var(enc) + 1) * (lit_sign(enc) ? -1 : 1);
++	}
++
++	*prop_out = out;
++	*prop_n   = (int)p.nmemb;
++
++	vect_destroy(&a);
++	vect_destroy(&p);
++
++	return res;
++}
++
++// copies Ergo's records into a malloc'd array
++//=============================================================================
++int ergo_shim_xpairs(struct ergo *s, struct ergo_xpair **out)
++{
++	struct vect pairs = vect_new(struct ergo_xpair);
++
++	ergo_xpairs(s, &pairs);
++
++	int                n = (int)vect_size(&pairs);
++	struct ergo_xpair *o = malloc((size_t)n * sizeof(*o));
++
++	memcpy(o, vect_begin(&pairs), (size_t)n * sizeof(*o));
++	vect_destroy(&pairs);
++	*out = o;
++
++	return n;
++}
++
++// collects 'vars' as 0-based ids
++//=============================================================================
++static struct vect ergo_shim_xvars(struct ergo *s, const int *vars, int n)
++{
++	struct vect v = vect_new(int);
++
++	for (int i = 0; i < n; ++i)
++		if (vars[i] >= 1 && vars[i] <= ergo_nvars(s))
++			vect_append(&v, vars[i] - 1);
++
++	return v;
++}
++
++//
++//=============================================================================
++void ergo_shim_xpin(struct ergo *s, const int *vars, int n)
++{
++	struct vect v = ergo_shim_xvars(s, vars, n);
++
++	ergo_xpin(s, &v);
++	vect_destroy(&v);
++}
++
++//
++//=============================================================================
++void ergo_shim_xunpin(struct ergo *s, const int *vars, int n)
++{
++	struct vect v = ergo_shim_xvars(s, vars, n);
++
++	ergo_xunpin(s, &v);
++	vect_destroy(&v);
++}
++
++//
++//=============================================================================
++int ergo_shim_model_at(struct ergo *s, int var0)
++{
++	lbool v = ((lbool *)s->model.ptr)[var0];
++
++	return v == ltrue ? 1 : (v == lfalse ? -1 : 0);
++}
++
++//
++//=============================================================================
++int ergo_shim_nconflict(struct ergo *s)
++{
++	return (int)s->conflict.nmemb;
++}
++
++//
++//=============================================================================
++int ergo_shim_conflict_at(struct ergo *s, int i)
++{
++	int enc = ((int *)s->conflict.ptr)[i];
++
++	// ergo_analyze_final() stores the negation of each falsified
++	// assumption, but PySAT get_core()'s core must be usable as
++	// 'assumptions' again, so invert once more
++	return (lit_var(enc) + 1) * (lit_sign(enc) ? 1 : -1);
++}
++
++//
++//=============================================================================
++void ergo_shim_set_cla_decay(struct ergo *s, double decay)
++{
++	s->cla_decay = 1 / decay;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_var_decay(struct ergo *s, double decay)
++{
++	s->var_decay = 1 / decay;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_restart_policy(struct ergo *s, const char *policy)
++{
++	s->restart_luby = !strcmp(policy, "luby");
++	s->restart_arif = !strcmp(policy, "arif");
++	s->restart_gluc = !strcmp(policy, "gluc");
++	// anything else (including "geom") leaves all three off
++}
++
++//
++//=============================================================================
++void ergo_shim_set_restart_first(struct ergo *s, int val)
++{
++	s->restart_first = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_restart_inc(struct ergo *s, double val)
++{
++	s->restart_inc = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_min_learnts(struct ergo *s, int val)
++{
++	s->min_learnts_lim = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_ccmin_mode(struct ergo *s, int val)
++{
++	s->ccmin_mode = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_phase_saving(struct ergo *s, int val)
++{
++	s->phase_saving = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_jw_mode(struct ergo *s, const char *mode)
++{
++	// as in cli.c: "none" leaves the current jw_* flags untouched
++	if (!strcmp(mode, "act"))
++		s->jw_acty = true;
++	else if (!strcmp(mode, "pol-soft"))
++		s->jw_polar = true;
++	else if (!strcmp(mode, "pol-hard"))
++		s->jw_polar = s->jw_hard = true;
++	else if (!strcmp(mode, "full-soft"))
++		s->jw_acty = s->jw_polar = true;
++	else if (!strcmp(mode, "full-hard"))
++		s->jw_acty = s->jw_polar = s->jw_hard = true;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_keep_bin(struct ergo *s, bool val)
++{
++	s->keep_bin = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_lcm(struct ergo *s, bool val)
++{
++	s->lcm = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_reducedb_policy(struct ergo *s, const char *policy)
++{
++	s->reducedb_gluc = !strcmp(policy, "aggressive");
++}
++
++//
++//=============================================================================
++void ergo_shim_set_reduce_by(struct ergo *s, double val)
++{
++	s->reduce_by = (float)val;
++}
++
++//
++//=============================================================================
++void ergo_shim_set_glucose_bump(struct ergo *s, bool val)
++{
++	s->glucose_bump = val;
++}
++
++//
++//=============================================================================
++void ergo_shim_setacts(struct ergo *s, const int *vars, const double *acts, int n)
++{
++	// every variable has to exist before ergo_set_acts() indexes it
++	ergo_shim_declare(s, ergo_shim_dimacs_max(vars, n));
++
++	struct vect v = vect_new(int), a = vect_new(double);
++	vect_reserve(&v, n);
++	vect_reserve(&a, n);
++
++	for (int i = 0; i < n; ++i) {
++		vect_append(&v, vars[i] - 1);
++		vect_append(&a, acts[i]);
++	}
++
++	ergo_set_acts(s, &v, &a);
++	vect_destroy(&v);
++	vect_destroy(&a);
++}
++
++//
++//=============================================================================
++void ergo_shim_setxscope(
++	struct ergo *s,
++	const int *add,
++	int nadd,
++	const int *rem,
++	int nrem
++)
++{
++	struct vect a = vect_new(int), r = vect_new(int);
++
++	// every variable has to exist before ergo_setxscope() indexes it
++	for (int i = 0; i < nadd; ++i) {
++		ergo_shim_declare(s, add[i]);
++		vect_append(&a, add[i] - 1);
++	}
++	for (int i = 0; i < nrem; ++i) {
++		ergo_shim_declare(s, rem[i]);
++		vect_append(&r, rem[i] - 1);
++	}
++
++	ergo_setxscope(s, &a, &r);
++	vect_destroy(&a);
++	vect_destroy(&r);
++}
++
++//
++//=============================================================================
++void ergo_shim_set_adapt_at(struct ergo *s, int64_t at)
++{
++	// a negative count is --adapt-at=never, i.e. no strategy switch at all
++	if (at < 0) {
++		s->adapt = false;
++		return;
++	}
++
++	s->adapt    = true;
++	s->adapt_at = (uint64_t)at;
++}
++
++// mirrors cli.c's set_emulation_mode(), via the setters above
++//=============================================================================
++void ergo_shim_set_emulate(struct ergo *s, const char *target)
++{
++	if (!strcmp(target, "m2.0")) {
++		ergo_shim_set_cla_decay(s, 0.999);
++		ergo_shim_set_var_decay(s, 0.95);
++		ergo_shim_set_restart_inc(s, 1.5);
++		ergo_shim_set_restart_policy(s, "geom");
++		ergo_shim_set_ccmin_mode(s, 2);
++		ergo_shim_set_phase_saving(s, 0);
++		ergo_shim_set_keep_bin(s, true);
++	}
++	else if (!strcmp(target, "m2.2")) {
++		ergo_shim_set_cla_decay(s, 0.999);
++		ergo_shim_set_var_decay(s, 0.95);
++		ergo_shim_set_restart_inc(s, 2.0);
++		ergo_shim_set_restart_policy(s, "luby");
++		ergo_shim_set_ccmin_mode(s, 2);
++		ergo_shim_set_phase_saving(s, 2);
++		ergo_shim_set_keep_bin(s, true);
++	}
++	else if (!strcmp(target, "g3")) {
++		ergo_shim_set_cla_decay(s, 0.999);
++		ergo_shim_set_var_decay(s, 0.8);
++		ergo_shim_set_restart_inc(s, 2.0);
++		ergo_shim_set_restart_policy(s, "gluc");
++		ergo_shim_set_reducedb_policy(s, "aggressive");
++		ergo_shim_set_ccmin_mode(s, 2);
++		ergo_shim_set_phase_saving(s, 2);
++		ergo_shim_set_glucose_bump(s, true);
++	}
++	else if (!strcmp(target, "g4.2")) {
++		ergo_shim_set_cla_decay(s, 0.999);
++		ergo_shim_set_var_decay(s, 0.8);
++		ergo_shim_set_restart_inc(s, 2.0);
++		ergo_shim_set_restart_policy(s, "gluc");
++		ergo_shim_set_reducedb_policy(s, "aggressive");
++		ergo_shim_set_ccmin_mode(s, 2);
++		ergo_shim_set_phase_saving(s, 2);
++		ergo_shim_set_glucose_bump(s, true);
++		ergo_shim_set_lcm(s, true);
++		// glucose 4.2.1 evaluates its strategy switch at 100000
++		// conflicts (glucose421/core/Solver.cc:117)
++		ergo_shim_set_adapt_at(s, 100000);
++	}
++	// anything else (including "none") is a no-op
++}
++
++//
++//=============================================================================
++void ergo_shim_observe_var(struct ergo *s, int dimacs_var)
++{
++	ergo_shim_declare(s, dimacs_var);
++	ergo_observe_var(s, dimacs_var - 1);
++}
++
++//
++//=============================================================================
++void ergo_shim_unobserve_var(struct ergo *s, int dimacs_var)
++{
++	ergo_unobserve_var(s, dimacs_var - 1);
++}
+diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
+--- solvers/ergo_prepatch_ref/pysat_shim.h	1970-01-01 10:00:00
++++ solvers/ergo/pysat_shim.h	2026-10-15 14:29:20
+@@ -0,0 +1,128 @@
++/*
++ * pysat_shim.h
++ *
++ * C++-safe API for Ergo, for the PySAT integration only.
++ */
++
++#ifndef PYSAT_SHIM_H_
++#define PYSAT_SHIM_H_
++
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <stdio.h>  // FILE, for ergo_set_proof()
++#include "lit.h"    // lit_of()/lit_neg(), C++-safe and the only C-clean header
++
++struct ergo;  // opaque
++
++// Ergo's entry points, already C++-safe, so pysolvers.cc calls them directly;
++extern struct ergo *ergo_new             (void);
++extern void         ergo_delete          (struct ergo *);
++
++extern void         ergo_set_start       (struct ergo *, bool);
++extern void         ergo_set_cbudget     (struct ergo *, int64_t);
++extern void         ergo_set_pbudget     (struct ergo *, int64_t);
++extern void         ergo_budget_off      (struct ergo *);
++extern void         ergo_interrupt       (struct ergo *);
++extern void         ergo_clear_interrupt (struct ergo *);
++
++extern int          ergo_nvars           (struct ergo *);
++extern size_t       ergo_nclauses        (struct ergo *);
++extern uint64_t     ergo_nstarts         (struct ergo *);
++extern uint64_t     ergo_nconflicts      (struct ergo *);
++extern uint64_t     ergo_ndecisions      (struct ergo *);
++extern uint64_t     ergo_npropagations   (struct ergo *);
++
++extern void         ergo_setnvars        (struct ergo *, int);
++extern void         ergo_set_dvars_all   (struct ergo *);
++
++extern void         ergo_set_proof       (struct ergo *, FILE *);
++extern void         ergo_xenable         (struct ergo *, bool);
++extern void         ergo_setxthreshold   (struct ergo *, double);
++extern void         ergo_setxwarmup      (struct ergo *, int64_t);
++extern void         ergo_setxescalate    (struct ergo *, double);
++
++// extra shim on top
++extern int  ergo_shim_add_cl             (struct ergo *, const int *, int, int);
++extern int  ergo_shim_solve              (struct ergo *, const int *, int);
++extern int  ergo_shim_solve_lim          (struct ergo *, const int *, int);
++extern void ergo_shim_setphases          (struct ergo *, const int *, int);
++extern void ergo_shim_setacts            (struct ergo *, const int *, const double *, int);
++extern int  ergo_shim_prop_check         (struct ergo *, const int *, int, int, int **, int *);
++extern int  ergo_shim_model_at           (struct ergo *, int);
++extern int  ergo_shim_nconflict          (struct ergo *);
++extern int  ergo_shim_conflict_at        (struct ergo *, int);
++extern void ergo_shim_set_cla_decay      (struct ergo *, double);
++extern void ergo_shim_set_var_decay      (struct ergo *, double);
++extern void ergo_shim_set_restart_policy (struct ergo *, const char *);
++extern void ergo_shim_set_restart_first  (struct ergo *, int);
++extern void ergo_shim_set_restart_inc    (struct ergo *, double);
++extern void ergo_shim_set_min_learnts    (struct ergo *, int);
++extern void ergo_shim_set_ccmin_mode     (struct ergo *, int);
++extern void ergo_shim_set_phase_saving   (struct ergo *, int);
++extern void ergo_shim_set_jw_mode        (struct ergo *, const char *);
++extern void ergo_shim_set_keep_bin       (struct ergo *, bool);
++extern void ergo_shim_set_lcm            (struct ergo *, bool);
++extern void ergo_shim_set_reducedb_policy(struct ergo *, const char *);
++extern void ergo_shim_set_reduce_by      (struct ergo *, double);
++extern void ergo_shim_set_glucose_bump   (struct ergo *, bool);
++extern void ergo_shim_set_adapt_at       (struct ergo *, int64_t);
++extern void ergo_shim_setxscope          (struct ergo *, const int *, int, const int *, int);
++extern void ergo_shim_set_emulate        (struct ergo *, const char *);
++
++// declares variables and marks them decision variables
++//=============================================================================
++static inline void ergo_shim_declare(struct ergo *s, int nvars)
++{
++	if (ergo_nvars(s) < nvars) {
++		ergo_setnvars(s, nvars);
++		ergo_set_dvars_all(s);
++	}
++}
++
++// DIMACS to Ergo literal encoding
++//=============================================================================
++static inline int ergo_shim_lit(int d)
++{
++	return d > 0 ? lit_of(d - 1) : lit_neg(lit_of(-d - 1));
++}
++
++// a copy of ergo's struct
++struct ergo_xpair {
++	int    la, lb;
++	int    z;
++	double count;
++};
++
++extern int  ergo_shim_xpairs             (struct ergo *, struct ergo_xpair **);
++extern void ergo_shim_xpin               (struct ergo *, const int *, int);
++extern void ergo_shim_xunpin             (struct ergo *, const int *, int);
++
++// IPASIR-UP
++struct ergo_propagator {
++	void *ctx;
++	bool  is_lazy;
++
++	void (*notify_assignment)          (void *ctx, const int *, int);
++	void (*notify_new_decision_level)  (void *ctx);
++	void (*notify_backtrack)           (void *ctx, int);
++
++	int  (*cb_decide)                  (void *ctx);
++	int  (*cb_propagate)               (void *ctx);
++	int  (*cb_add_reason_clause_lit)   (void *ctx, int);
++
++	bool (*cb_has_external_clause)     (void *ctx, bool *);
++	int  (*cb_add_external_clause_lit) (void *ctx);
++
++	bool (*cb_check_found_model)       (void *ctx, const int *, int);
++};
++
++extern void                    ergo_connect_propagator    (struct ergo *, struct ergo_propagator *);
++extern void                    ergo_disconnect_propagator (struct ergo *);
++extern struct ergo_propagator *ergo_get_propagator        (struct ergo *);
++extern bool                    ergo_is_decision           (struct ergo *, int);
++extern void                    ergo_force_backtrack       (struct ergo *, int);
++extern void                    ergo_shim_observe_var      (struct ergo *, int);
++extern void                    ergo_shim_unobserve_var    (struct ergo *, int);
++
++#endif // PYSAT_SHIM_H_

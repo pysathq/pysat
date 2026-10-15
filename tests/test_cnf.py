@@ -2,11 +2,13 @@ import pytest
 from pysat.card import *
 from pysat.formula import CNFPlus
 from pysat.solvers import Solver, SolverNames
+from pysat.solvers import ergo_present
 
 # all available solvers
 solvers = ['cadical103',
            'cadical153',
            'cadical300',
+           'ergo',
            'gluecard30',
            'gluecard41',
            'glucose30',
@@ -21,6 +23,9 @@ solvers = ['cadical103',
            'minisat22',
            'minisat-gh',
            'minisatep']
+
+if not ergo_present:  # not built on every platform
+    solvers.remove('ergo')
 
 # CNF+ formula with native atmost1 constraint
 cnf1 = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.native)

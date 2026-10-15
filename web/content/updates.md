@@ -10,39 +10,47 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## 16.07.2026 (*1.9.dev15*)
+## 15.10.2026 (*1.9.dev16*)
+
+-   Fixed a bug in proofs being cut.
+-   Fixed a bug related to Cadical's external propagation.
+-   Fixed a few more issues here and there.
+-   Minor changes in RC2 for future internal prototyping.
+-   Added another SAT solver for future internal prototyping (UNSTABLE / UNUSABLE).
+
+## 16.08.2026 (*1.9.dev15*)
 
 -   Minor modification of `lsu.py` due to the use of `filter()`.
 -   A couple of subtle bugs in `hitman.py`: one was related to `filter()` and
     the other one was related to arbitrary atoms.
 
-## 14.07.2026 (*1.9.dev14*)
+## 14.08.2026 (*1.9.dev14*)
 
 -   Added optional and heuristic correction set reduction to OptUx.
 
-## 11.07.2026 (*1.9.dev13*)
+## 11.08.2026 (*1.9.dev13*)
 
 -   Fixed a bug in n-ary XOr clausification when the auxiliary variable could
     be lost.
 
-## 10.07.2026 (*1.9.dev12*)
+## 10.08.2026 (*1.9.dev12*)
 
 -   A few changes in the clausification of nested conjunctions. It now solely
     depends on the use of parameter `merge=True`.
 
-## 9.07.2026 (*1.9.dev11*)
+## 9.08.2026 (*1.9.dev11*)
 
 -   An attempt to speed up `Formula` key computation by caching the keys.
 
-## 8.07.2026 (*1.9.dev10*)
+## 8.08.2026 (*1.9.dev10*)
 
 -   Fixed a related issue in the tests.
 
-## 8.07.2026 (*1.9.dev9*)
+## 8.08.2026 (*1.9.dev9*)
 
 -   Fixed a bug in Formula initialiser, to avoid reinitialisation.
 
-## 8.07.2026 (*1.9.dev8*)
+## 8.08.2026 (*1.9.dev8*)
 
 -   A few corrections in the key computation for arbitrary formulas.
 -   A few improvements in nested conjunction handling.

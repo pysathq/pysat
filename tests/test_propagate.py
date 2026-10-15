@@ -3,14 +3,17 @@ import pytest
 from pysat.card import *
 from pysat.formula import IDPool
 from pysat.solvers import Solver
+from pysat.solvers import ergo_present
 from pysat.solvers import Cadical195
 from pysat.solvers import Cadical300
+from pysat.solvers import Ergo
 from pysat.solvers import MinisatEP
 from pysat.engines import Propagator
 
 solvers = ['cadical153',
            'cadical195',
            'cadical300',
+           'ergo',
            'gluecard30',
            'gluecard41',
            'glucose30',
@@ -24,6 +27,9 @@ solvers = ['cadical153',
            'minisat22',
            'minisat-gh',
            'minisatep']
+
+if not ergo_present:  # not built on every platform
+    solvers.remove('ergo')
 
 def test_solvers():
     cnf = CardEnc.atmost(lits=range(1, 6), bound=1, encoding=EncType.pairwise)
@@ -79,16 +85,56 @@ def test_cadical_callback_exceptions(solver_class, bootstrap, action, failing_me
             action(solver)
 
 
-def test_cadical300_sync_with_idpool():
+@pytest.mark.skipif(not ergo_present, reason='ergo is not built on this platform')
+@pytest.mark.parametrize('failing_method', ['on_assignment', 'propagate'])
+def test_ergo_callback_exceptions(failing_method):
+    class BoomPropagator(Propagator):
+        def on_assignment(self, lit, fixed=False):
+            if failing_method == 'on_assignment':
+                raise AssertionError('boom in on_assignment')
+
+        def propagate(self):
+            if failing_method == 'propagate':
+                raise AssertionError('boom in propagate')
+            return []
+
+        def check_model(self, model):
+            return True
+
+        def add_clause(self):
+            return []
+
+    with Ergo(bootstrap_with=[[1, 2]]) as solver:
+        solver.connect_propagator(BoomPropagator())
+        solver.observe(1)
+        solver.observe(2)
+
+        with pytest.raises(AssertionError, match='boom in {0}'.format(failing_method)):
+            solver.solve()
+
+
+@pytest.mark.parametrize('solver_class', [MinisatEP] +
+                         ([Ergo] if ergo_present else []))
+def test_interruptible_solve_with_propagator(solver_class):
+    with solver_class() as solver:
+        solver.connect_propagator(Propagator())
+
+        with pytest.raises(NotImplementedError, match='external propagator'):
+            solver.solve_limited(expect_interrupt=True)
+
+
+@pytest.mark.parametrize('solver_class', [Cadical300] +
+                         ([Ergo] if ergo_present else []))
+def test_sync_with_idpool(solver_class):
     pool1 = IDPool()
     pool2 = IDPool()
 
-    with Cadical300(bootstrap_with=[[5]], sync_with=pool1) as solver:
+    with solver_class(bootstrap_with=[[5]], sync_with=pool1) as solver:
         assert solver.nof_vars() == 5
         assert pool1.top == 5
         assert pool1.id() == 6
 
-    with Cadical300(bootstrap_with=[[5]]) as solver:
+    with solver_class(bootstrap_with=[[5]]) as solver:
         solver.attach_vpool(pool2)
 
         assert solver.nof_vars() == 5
@@ -103,7 +149,7 @@ def test_solver_kwargs_compatibility(name):
     with Solver(name=name, bootstrap_with=[[1]], sync_with=pool, native_card=True) as solver:
         assert solver.solve() is True
 
-        if name == 'cadical300':
+        if name in ('cadical300', 'ergo'):
             assert pool.top >= 1
         else:
             assert pool.top == 0

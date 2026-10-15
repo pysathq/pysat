@@ -237,6 +237,7 @@ class RC2(object):
         self.bnds = {}  # a mapping from sum assumptions to totalizer bounds
         self.tobj = {}  # a mapping from sum assumptions to totalizer objects
         self.swgt = {}  # a mapping from sum assumptions to their core weights
+        self.filt = []   # contextual assumptions (useless in RC2)
         self.cost = 0
 
         # mappings between internal and external variables
@@ -440,7 +441,7 @@ class RC2(object):
         # introduce new variables if necessary
         cl = list(map(lambda l: self._map_extlit(l), clause if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set) else clause[0]))
 
-        if not weight:
+        if weight is None:
             if not len(clause) == 2 or not type(clause[0]) in (list, tuple, set):
                 # the clause is hard, and so we simply add it to the SAT oracle
                 self.oracle.add_clause(cl)
@@ -464,17 +465,18 @@ class RC2(object):
                 cl.append(-selv)
                 self.oracle.add_clause(cl)
 
-            if selv not in self.wght:
-                # record selector and its weight
-                self.sels.append(selv)
-                self.wght[selv] = weight
-                self.smap[selv] = len(self.sels) - 1
-            else:
-                # selector is not new; increment its weight
-                self.wght[selv] += weight
+            if weight:
+                if selv not in self.wght:
+                    # record selector and its weight
+                    self.sels.append(selv)
+                    self.wght[selv] = weight
+                    self.smap[selv] = len(self.sels) - 1
+                else:
+                    # selector is not new; increment its weight
+                    self.wght[selv] += weight
 
-            self.sall.append(selv)
-            self.sels_set.add(selv)
+                self.sall.append(selv)
+                self.sels_set.add(selv)
 
             return selv
 
@@ -658,6 +660,13 @@ class RC2(object):
             else:
                 done = True
 
+    def active_assumps(self):
+        """
+            Get the assumptions for the main core-guided loop.
+        """
+
+        return self.sels + self.sums
+
     def compute_(self):
         """
             Main core-guided loop, which iteratively calls a SAT
@@ -679,7 +688,7 @@ class RC2(object):
         self.interrupted = False
 
         # main solving loop
-        while not self._call_oracle(assumptions=self.sels + self.sums,
+        while not self._call_oracle(assumptions=self.active_assumps(),
                                     expect_interrupt=self.expect_interrupt):
 
             # even if the call has been interrupted, we
@@ -1055,7 +1064,7 @@ class RC2(object):
         """
 
         # the first case is simpler
-        if self._call_oracle(assumptions=[-tobj.rhs[1]]):
+        if self._call_oracle(assumptions=self.filt + [-tobj.rhs[1]]):
             return 1
         else:
             self.cost += self.minw
@@ -1068,7 +1077,7 @@ class RC2(object):
             # increasing the bound
             self.update_sum(-tobj.rhs[i - 1])
 
-            if self._call_oracle(assumptions=[-tobj.rhs[i]]):
+            if self._call_oracle(assumptions=self.filt + [-tobj.rhs[i]]):
                 # the bound should be equal to i
                 return i
 
@@ -1244,10 +1253,9 @@ class RC2(object):
             # right-hand side is always equal to the number of input literals
             rhs = len(t.lits)
 
-            if b < rhs:
+            if b < rhs and not t.rhs[b]:
                 # creating an additional bound
-                if not t.rhs[b]:
-                    t.rhs[b] = self.pool.id()
+                t.rhs[b] = self.pool.id()
 
                 # a new at-most-b constraint
                 amb = [[-t.rhs[b]] * (rhs - b) + t.lits, rhs]
