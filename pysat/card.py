@@ -195,46 +195,38 @@ class CardEnc(object):
     """
 
     @classmethod
-    def _update_vids(cls, cnf, inp, vpool):
+    def _update_vids(cls, cnf, top, vpool):
         """
-            Update variable ids in the given formula and id pool. The literals
-            serving as the input to the cardinality constraint are not
-            updated.
+            Update the id pool to account for the auxiliary variables of the
+            given formula, i.e. all variables larger than ``top``. If these
+            overlap with the ranges marked as occupied in the pool, they are
+            renumbered to free ids. Variables up to ``top``, e.g. the input
+            literals of the constraint, are not updated.
 
-            :param cnf: a list of literals in the sum.
-            :param inp: the list of input literals
-            :param vpool: the value of bound :math:`k`.
+            :param cnf: the encoding of the constraint
+            :param top: the largest variable id of the input
+            :param vpool: variable pool to update
 
             :type cnf: :class:`.formula.CNFPlus`
-            :type inp: list(int)
+            :type top: int
             :type vpool: :class:`.formula.IDPool`
         """
 
-        top, vmap = max(inp + [vpool.top]), {}  # current top and variable mapping
+        # the pool must not hand out the input ids, nor the rest of an
+        # occupied range that the input ids reach into
+        vpool.top = top
+        while vpool._occupied and vpool._occupied[0][0] <= vpool.top:
+            vpool.top = max(vpool.top, vpool._occupied[0][1])
+            vpool._occupied.pop(0)
 
-        # we are going to use this to check if literals are input
-        inp = set([abs(l) for l in inp])
+        if vpool.top == top and not (vpool._occupied and vpool._occupied[0][0] <= cnf.nv):
+            # the auxiliary variables already have free ids
+            vpool.top = max(vpool.top, cnf.nv)
+            return
 
-        # creating a new variable mapping, taking into
-        # account variables marked as "occupied"
-        while top < cnf.nv:
-            top += 1
-
-            # skipping the input literals
-            if top in inp:
-                vmap[top] = top
-                continue
-
-            vpool.top += 1
-
-            while vpool._occupied and vpool.top >= vpool._occupied[0][0]:
-                if vpool.top <= vpool._occupied[0][1] + 1:
-                    vpool.top = vpool._occupied[0][1] + 1
-
-                vpool._occupied.pop(0)
-
-            # mapping this literal to a free one
-            vmap[top] = vpool.top
+        # mapping each auxiliary variable to a free id,
+        # taking into account variables marked as "occupied"
+        vmap = {var: vpool._next() for var in range(top + 1, cnf.nv + 1)}
 
         # updating the clauses
         for cl in cnf.clauses:
@@ -296,12 +288,7 @@ class CardEnc(object):
 
             # updating vpool if necessary
             if vpool:
-                if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                    cls._update_vids(ret, lits, vpool)
-                else:
-                    # here, ret.nv id is assumed to be larger than the top id
-                    vpool.top = ret.nv - 1
-                    vpool._next()
+                cls._update_vids(ret, top_id, vpool)
 
         return ret
 
@@ -397,12 +384,7 @@ class CardEnc(object):
 
             # updating vpool if necessary
             if vpool:
-                if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                    cls._update_vids(ret, lits, vpool)
-                else:
-                    # here, ret.nv id is assumed to be larger than the top id
-                    vpool.top = ret.nv - 1
-                    vpool._next()
+                cls._update_vids(ret, top_id, vpool)
 
         return ret
 

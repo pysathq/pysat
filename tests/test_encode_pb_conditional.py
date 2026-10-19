@@ -1,8 +1,11 @@
 from pysat.formula import IDPool
 from pysat.card import CardEnc
+import itertools
 import pytest
+from pysat.solvers import Solver
 
-@pytest.mark.skip(reason="PBLIB not installed in CI")
+pytest.importorskip("pindakaas")
+
 def test_pbenc_conditional():
     from pysat.pb import PBEnc, EncType
     L = 3
@@ -24,7 +27,7 @@ def test_pbenc_conditional():
         conditionals=CONDS
     )
 
-    assert cnf.clauses == [[-4]] # without PR to pblib this will be [[3, -4], [1, -4], [2, -4], [-4]]
+    assert cnf.clauses == [[-4]]
 
     bound = 2
 
@@ -37,7 +40,12 @@ def test_pbenc_conditional():
         conditionals=CONDS
     )
 
-    assert cnf.clauses == [[5], [-5, 6], [3, 6], [-5, 3, 7], [2, 6], [-5, 2, 7], [3, 2, 7], [-5, 3, 2, 8], [1, 9], [-7, 9], [1, -7, 10], [-10, -4]]
+    # the constraint must hold whenever the condition is true
+    with Solver(bootstrap_with=cnf.clauses) as solver:
+        for vals in itertools.product([False, True], repeat=L + 1):
+            assumps = [l if v else -l for l, v in zip(LITS + CONDS, vals)]
+            holds = sum(w for w, v in zip(WEIGHTS, vals) if v) >= bound
+            assert solver.solve(assumptions=assumps) == (holds or not vals[-1])
 
     bound = 0
 

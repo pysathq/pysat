@@ -228,7 +228,9 @@ import numbers
 from pysat.card import CardEnc, EncType as CardEncType
 from pysat.engines import BooleanEngine
 from pysat.formula import CNF, Formula
-from pysat.pb import PBEnc, EncType as PBEncType
+from pysat.pb import PBEnc, EncType as PBEncType, NoSuchEncodingError, \
+        _pindakaas_db, _pindakaas_cnf
+import pindakaas  # after pysat.pb, which checks that it is installed
 
 
 # importable components
@@ -577,7 +579,8 @@ class Integer:
         """
 
         def is_satisfied(lit):
-            return model[abs(lit) - 1] == lit
+            # a literal beyond the model occurs in no clause, so it is free
+            return abs(lit) <= len(model) and model[abs(lit) - 1] == lit
 
         if self.encoding == 'direct':
             for value in self.domain:
@@ -751,6 +754,45 @@ class Integer:
                 wmap[self.equals(v)] += coeff * v + shift
 
         return wmap, shift
+
+    def _linear_term(self, kind, wmap):
+        """
+            Inverse of :meth:`linearize` for one kind of literal. Given a map
+            from domain values ``v`` to pairs ``(lit, weight)``, where ``lit``
+            is the literal of :math:`x \\geq v` (``kind == 'ge'``) or of
+            :math:`x = v` (``kind == 'eq'``), possibly negated, return
+            ``(coeff, const)`` such that the weighted sum of the literals
+            equals ``coeff * X + const``. Return ``None`` if the map does not
+            have this form.
+
+            :param kind: ``'ge'`` or ``'eq'``
+            :param wmap: literals and their weights by domain value
+            :type kind: str
+            :type wmap: dict
+
+            :rtype: tuple or None
+        """
+
+        if kind == 'ge':
+            # x = lb + sum_k [x >= k] and ub - x = sum_k -[x >= k]
+            signs = {lit > 0 for lit, _ in wmap.values()}
+            wvals = {wght for _, wght in wmap.values()}
+            if len(wmap) != self.ub - self.lb or len(signs) != 1 or len(wvals) != 1:
+                return None
+
+            wght = wvals.pop()
+            return (wght, -wght * self.lb) if signs.pop() else (-wght, wght * self.ub)
+
+        # direct literals, the weights must be affine in the values
+        if any(lit < 0 for lit, _ in wmap.values()):
+            return None
+
+        wvals = [wmap[v][1] if v in wmap else 0 for v in self.domain]
+        coeff = wvals[1] - wvals[0] if len(wvals) > 1 else 0
+        if any(w != wvals[0] + coeff * i for i, w in enumerate(wvals)):
+            return None
+
+        return coeff, wvals[0] - coeff * self.lb
 
     def _add_channeling(self):
         """
@@ -2142,25 +2184,44 @@ class IntegerEngine(BooleanEngine):
         self._add_clause([s1, s2], selv=selv)
         return selv
 
-    def clausify(self, cardenc=CardEncType.seqcounter, pbenc=PBEncType.best):
+    def clausify(self, cardenc=CardEncType.seqcounter, pbenc=PBEncType.best,
+                 intenc=PBEncType.best):
         """
-            Clausify all constraints and return a CNF encoding. All linear
-            constraints are converted using the user-specified cardinality and
-            pseudo-Boolean encoding. The former are utilized for unweighted
-            constraints, while the latter are utilized for weighted
-            constraints.
+            Clausify all constraints and return a CNF encoding.
 
-            Note that parameters ``cardenc`` and ``pbenc`` default to
-            :attr:`.card.EncType.seqcounter` and
-            :class:`pysat.pb.EncType.best`, respectively.
+            Linear constraints over :class:`Integer` variables are encoded by
+            Pindakaas as *integer* linear constraints, using the encoding
+            ``intenc``. The literals of each :class:`Integer` are passed to
+            Pindakaas as an integer variable, which lets it use integer
+            encodings, e.g. the mixed radix encoding.
+
+            The remaining linear constraints, and all of them if ``intenc``
+            is ``None``, are converted using the user-specified cardinality
+            and pseudo-Boolean encoding. The former are utilized for
+            unweighted constraints, while the latter are utilized for
+            weighted constraints.
+
+            Note that parameters ``cardenc``, ``pbenc`` and ``intenc``
+            default to :attr:`.card.EncType.seqcounter`,
+            :class:`pysat.pb.EncType.best` and
+            :class:`pysat.pb.EncType.best`, respectively. The *native*
+            encodings produce no clauses and raise :class:`ValueError`.
 
             :param cardenc: cardinality encoding for unweighted constraints
             :param pbenc: PB encoding for weighted constraints
+            :param intenc: encoding for integer linear constraints, or ``None``
             :type cardenc: int
             :type pbenc: int
+            :type intenc: int or None
 
             :rtype: :class:`pysat.formula.CNF`
         """
+
+        # native constraints are not clauses, and would be lost
+        if cardenc == CardEncType.native or PBEncType.native in (pbenc, intenc):
+            raise ValueError('Native encodings cannot be clausified')
+        if intenc is not None and intenc not in PBEncType._to_encoder:
+            raise NoSuchEncodingError(intenc)
 
         # we are going to store the resulting formula here
         res = CNF()
@@ -2184,8 +2245,19 @@ class IntegerEngine(BooleanEngine):
         # (e.g. reified disjunctions) already cached in the engine
         res.extend(self.clauses)
 
+        # separating integer linear constraints from Boolean ones
+        lcons, iconss = self._lcons, []
+        if intenc is not None:
+            lcons = []
+            for cs in self._lcons:
+                icons = self._integer_terms(cs, vpool)
+                if icons:
+                    iconss.append(icons)
+                else:
+                    lcons.append(cs)
+
         # the main part is to encode all linear constraints
-        for cs in self._lcons:
+        for cs in lcons:
             lits, bound = cs[1][0], cs[1][1]
             weights = {} if len(cs[1]) == 2 else cs[1][2]
 
@@ -2200,13 +2272,11 @@ class IntegerEngine(BooleanEngine):
 
             # we have a common weight wght => cardinality constraint
             if wght is not None:
-                new_bound = bound // wght
-                if isinstance(new_bound, Decimal):
-                    new_bound = int(new_bound)
-                elif isinstance(new_bound, float):
-                    new_bound = int(math.floor(new_bound))
+                if isinstance(bound, Decimal):
+                    # Decimal's // rounds towards zero, not down
+                    new_bound = math.floor(bound / wght)
                 else:
-                    new_bound = int(new_bound)
+                    new_bound = int(math.floor(bound // wght))
 
                 if new_bound < 0:
                     # the bound is negative => constraint is unsatisfiable
@@ -2235,11 +2305,103 @@ class IntegerEngine(BooleanEngine):
             wlist = [int(w) if not isinstance(w, Decimal) else int(w)
                             for w in wlist]
 
+            if bound_int < 0:
+                # the weights are non-negative => unsatisfiable
+                res.append([])
+                continue
+
             enc = PBEnc.atmost(lits=lits, weights=wlist, bound=bound_int,
                                vpool=vpool, encoding=pbenc)
             res.extend(enc.clauses)
 
+        # integer linear constraints go last, as they share one encoding
+        if iconss:
+            res.extend(self._clausify_integer(iconss, vpool, intenc))
+
         return res
+
+    def _integer_terms(self, cs, vpool):
+        """
+            Recover the integer structure of a linear constraint. The
+            literals of each :class:`Integer` recognized by
+            :meth:`Integer._linear_term` become a single integer term.
+            Return a triple ``(terms, rest, bound)``, where ``terms`` is a
+            list of ``(var, kind, coeff)``, ``rest`` is a list of the
+            remaining weighted literals, and the constraint is ``terms +
+            rest <= bound``. Return ``None`` if there are no integer terms or
+            if the numbers are not integers.
+        """
+
+        _, _, bound, lits, weights = self._linear_key(cs)
+
+        if not self._intlike(bound) or not all(self._intlike(weights[l]) for l in lits):
+            return None
+
+        # grouping the literals by their integer variable and kind
+        groups, rest = defaultdict(dict), []
+        for l in lits:
+            obj, wght = vpool.obj(abs(l)), int(weights[l])
+            if isinstance(obj, tuple) and len(obj) == 3 and isinstance(obj[0], Integer):
+                group = groups[obj[0], obj[1]]
+                if obj[2] not in group:
+                    group[obj[2]] = (l, wght)
+                    continue
+
+            # a Boolean literal, or the negation of one already in its group
+            rest.append((l, wght))
+
+        terms, bound = [], int(bound)
+        for (var, kind), wmap in groups.items():
+            term = var._linear_term(kind, wmap)
+            if term is None:
+                rest.extend(wmap.values())
+            else:
+                coeff, const = term
+                if coeff:
+                    terms.append((var, kind, coeff))
+                bound -= const
+
+        return (terms, rest, bound) if terms else None
+
+    def _clausify_integer(self, iconss, vpool, intenc):
+        """
+            Encode integer linear constraints, as returned by
+            :meth:`_integer_terms`, with Pindakaas. Return the list of
+            clauses.
+        """
+
+        encoder, options = PBEncType._to_encoder[intenc]
+        Lit = pindakaas.Lit.from_raw
+
+        # new variables must also avoid literals that are not in the pool
+        top_id = max([vpool.top] + [abs(l) for _, rest, _ in iconss for l, _ in rest])
+        db = _pindakaas_db(top_id)
+        ivars = {}  # integer variables, created lazily
+
+        def ivar(var, kind):
+            if (var, kind) not in ivars:
+                if kind == 'ge':
+                    lits = [var.ge(k) for k in range(var.lb + 1, var.ub + 1)]
+                    make = db.int_var_from_order_literals
+                else:
+                    lits = [var.equals(v) for v in var.domain]
+                    make = db.int_var_from_direct_literals
+                ivars[var, kind] = make(var.domain, [Lit(l) for l in lits])
+            return ivars[var, kind]
+
+        try:
+            for terms, rest, bound in iconss:
+                lhs = 0
+                for var, kind, coeff in terms:
+                    lhs += coeff * ivar(var, kind)
+                for l, w in rest:
+                    lhs += w * Lit(l)
+
+                db.add_encoding(lhs <= bound, encoder, **options)
+        except pindakaas.Unsatisfiable:
+            return [[]]
+
+        return _pindakaas_cnf(db, top_id, vpool=vpool).clauses
 
     @staticmethod
     def _intlike(value):
@@ -2247,8 +2409,8 @@ class IntegerEngine(BooleanEngine):
             Checking if the value can be converted to integer.
         """
 
-        # yes, nothing to do
-        if isinstance(value, numbers.Integral):
+        # yes, nothing to do (plain ints first, as the ABC check is slow)
+        if type(value) is int or isinstance(value, numbers.Integral):
             return True
 
         # yes, it's a convertable decimal

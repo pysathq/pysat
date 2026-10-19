@@ -128,18 +128,19 @@ list of cardinality encodings included is the following:
 
 Furthermore, PySAT supports a number of encodings of pseudo-Boolean
 constraints listed below. This is done by exploiting a third-party library
-`PyPBLib <https://pypi.org/project/pypblib/>`__  developed by the `Logic
-Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
-(PyPBLib is a wrapper over the known PBLib library [10]_.)
+`Pindakaas <https://pypi.org/project/pindakaas/>`__ [10]_.
 
 -  binary decision diagrams (BDD) [11]_ [12]_
 -  sequential weight counters [13]_
 -  sorting networks [11]_
 -  adder networks [11]_
--  and binary merge [14]_
+-  binary merge [14]_
+-  the watchdog encoding [15]_
+-  the generalized totalizer [16]_
+-  and the mixed radix encoding [17]_
 
-.. [10] Tobias Philipp, Peter Steinke. *PBLib - A Library for Encoding
-    Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
+.. [10] Hendrik Bierlee, Jip J. Dekker. *Pindakaas*. Software.
+    https://doi.org/10.5281/zenodo.10851855
 
 .. [11] Niklas Eén, Niklas Sörensson. *Translating Pseudo-Boolean
     Constraints into SAT*. JSAT. vol. 2(1-4). 2006. pp. 1-26
@@ -156,19 +157,29 @@ Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
     Translation of Pseudo-Boolean Constraints into CNF Such That
     Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
-Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
-clausification [21]_ and provides (pre-)processing functionality [22]_ by
-exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
-external user-defined engines following the IPASIR-UP interface [23]_.
+.. [15] Olivier Bailleux, Yacine Boufkhad, Olivier Roussel. *New Encodings
+    of Pseudo-Boolean Constraints into CNF*. SAT 2009. pp. 181-194
 
-.. [21] G. S. Tseitin. *On the complexity of derivations in the propositional
+.. [16] Saurabh Joshi, Ruben Martins, Vasco Manquinho. *Generalized Totalizer
+    Encoding for Pseudo-Boolean Constraints*. CP 2015. pp. 200-209
+
+.. [17] Anpeng Zha, Miyuki Koshimura, Hiroshi Fujita. *N-level Modulo-based
+    CNF Encodings of Pseudo-Boolean Constraints for MaxSAT*. Constraints
+    24(2). 2019. pp. 133-161
+
+Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
+clausification [24]_ and provides (pre-)processing functionality [25]_ by
+exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
+external user-defined engines following the IPASIR-UP interface [26]_.
+
+.. [24] G. S. Tseitin. *On the complexity of derivations in the propositional
    calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
    115–125, 1968
 
-.. [22] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+.. [25] Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
    Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
 
-.. [23] Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
+.. [26] Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
    Stefan Szeider, Armin Biere. *IPASIR-UP: User Propagators for CDCL*. SAT.
    2023. pp. 8:1-8:13
 
@@ -234,29 +245,29 @@ PySAT usage is detailed in the `provided examples
 <https://github.com/pysathq/pysat/tree/master/examples>`__. For instance, one
 can find simple PySAT-based implementations of
 
--  Fu&Malik algorithm for MaxSAT [15]_
--  RC2/OLLITI algorithm for MaxSAT [19]_ [20]_
--  CLD-like algorithm for MCS extraction and enumeration [17]_
--  LBX-like algorithm for MCS extraction and enumeration [18]_
--  Deletion-based MUS extraction [16]_
+-  Fu&Malik algorithm for MaxSAT [18]_
+-  RC2/OLLITI algorithm for MaxSAT [22]_ [23]_
+-  CLD-like algorithm for MCS extraction and enumeration [20]_
+-  LBX-like algorithm for MCS extraction and enumeration [21]_
+-  Deletion-based MUS extraction [19]_
 
-.. [15] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
+.. [18] Zhaohui Fu, Sharad Malik. *On Solving the Partial MAX-SAT Problem*.
    SAT 2006. pp. 252-265
 
-.. [16] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
+.. [19] Joao Marques Silva. *Minimal Unsatisfiability: Models, Algorithms and
    Applications*. ISMVL 2010. pp. 9-14
 
-.. [17] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
+.. [20] Joao Marques-Silva, Federico Heras, Mikolas Janota, Alessandro Previti,
    Anton Belov. *On Computing Minimal Correction Subsets*. IJCAI 2013. pp.
    615-622
 
-.. [18] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
+.. [21] Carlos Mencia, Alessandro Previti, Joao Marques-Silva. *Literal-Based
    MCS Extraction*. IJCAI 2015. pp. 1973-1979
 
-.. [19] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
+.. [22] António Morgado, Carmine Dodaro, Joao Marques-Silva. *Core-Guided
    MaxSAT with Soft Cardinality Constraints*. CP 2014. pp. 564-573
 
-.. [20] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
+.. [23] António Morgado, Alexey Ignatiev, Joao Marques-Silva. *MSCG: Robust
    Core-Guided MaxSAT Solving. System Description*. JSAT 2015. vol. 9,
    pp. 129-134
 
@@ -313,12 +324,12 @@ using PySAT is to install the latest stable release of the toolkit from `PyPI
 
 ::
 
-    $ pip install python-sat[aiger,approxmc,cryptosat,pblib]
+    $ pip install python-sat[aiger,approxmc,cryptosat,pb]
 
-We encourage you to install the *optional* dependencies `pblib`, `aiger`,
+We encourage you to install the *optional* dependencies `pb`, `aiger`,
 `approxmc`, and `cryptosat` as in the previous command. However, if it cannot
 be done (e.g. if their installation fails), you can install PySAT with the
-functionality of `aiger`, `approxmc`, `cryptosat`, and `pblib` disabled:
+functionality of `aiger`, `approxmc`, `cryptosat`, and `pb` disabled:
 
 ::
 
@@ -334,7 +345,7 @@ following way:
 .. note::
 
     For some shells, e.g. *zsh*, you may need to put the package names into
-    single quotes, i.e. use ``pip install 'python-sat[aiger,approxmc,pblib]'``.
+    single quotes, i.e. use ``pip install 'python-sat[aiger,approxmc,pb]'``.
 
 Alternatively, one can clone `the repository
 <https://github.com/pysathq/pysat>`__ and execute the following command in the
