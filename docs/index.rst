@@ -16,9 +16,9 @@ and :mod:`.solvers`) are Python wrappers for the code originally implemented
 in the C/C++ languages while the :mod:`.engines`, :mod:`.formula` and
 :mod:`.integer` modules are *pure* Python modules. Version
 *0.1.4.dev0* of PySAT brings a new module called :mod:`.pb`, which is a wrapper
-for the basic functionality of a third-party library `PyPBLib
-<https://pypi.org/project/pypblib/>`__ developed by the `Logic Optimization
-Group <http://ulog.udl.cat/>`__ of the University of Lleida.
+for the pseudo-Boolean encodings of a third-party library `Pindakaas
+<https://pypi.org/project/pindakaas/>`__ (originally using `PyPBLib
+<https://pypi.org/project/pypblib/>`__).
 
 A supplementary sixth module :mod:`.examples` presents a list of scripts,
 which are supposed to demonstrate how the toolkit can be used for practical

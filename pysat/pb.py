@@ -25,28 +25,23 @@
 
     .. note::
 
-        Functionality of this module is available only if the `PyPBLib`
+        Functionality of this module is available only if the `Pindakaas`
         package is installed, e.g. from PyPI:
 
         .. code-block::
 
-            $ pip install pypblib
+            $ pip install python-sat[pb]
 
-    This module provides access to the basic functionality of the `PyPBLib
-    library <https://pypi.org/project/pypblib/>`__ developed by the `Logic
-    Optimization Group <http://ulog.udl.cat/>`__ of the University of Lleida.
-    PyPBLib provides a user with an extensive Python API to the well-known
-    `PBLib library <http://tools.computational-logic.org/content/pblib.php>`__
-    [1]_. Note the PyPBLib has a number of `additional features
-    <http://hardlog.udl.cat/static/doc/pypblib/html/index.html>`__ that cannot
-    be accessed through PySAT *at this point*. (One concrete example is a
-    range of cardinality encodings, which clash with the internal
-    :mod:`pysat.card` module.) If a user needs some functionality of PyPBLib
-    missing in this module, he/she may apply PyPBLib as a standalone library,
-    when working with PySAT.
+    This module provides access to the pseudo-Boolean encodings of the
+    `Pindakaas library <https://pypi.org/project/pindakaas/>`__ [1]_, a Rust
+    library for encoding pseudo-Boolean and integer constraints into CNF.
+    Pindakaas has a number of additional features (e.g. integer variables
+    and further encodings) that are not accessible through this module. If
+    a user needs any of them, Pindakaas can be used as a standalone library
+    alongside PySAT.
 
-    .. [1] Tobias Philipp, Peter Steinke. *PBLib - A Library for Encoding
-        Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
+    .. [1] Hendrik Bierlee, Jip J. Dekker. *Pindakaas*. Software.
+        https://doi.org/10.5281/zenodo.10851855
 
     A *pseudo-Boolean constraint* is a constraint of the form:
     :math:`\\left(\\sum_{i=1}^n{a_i\\cdot x_i}\\right)\\circ k`, where
@@ -56,7 +51,9 @@
     applications. Thus, several *encodings* of pseudo-Boolean constraints into
     CNF formulas are known [2]_. The list of pseudo-Boolean encodings
     supported by this module include BDD [3]_ [4]_, sequential weight counters
-    [5]_, sorting networks [3]_, adder networks [3]_, and binary merge [6]_.
+    [5]_, sorting networks [3]_, adder networks [3]_, binary merge [6]_, the
+    watchdog encoding [7]_, the generalized totalizer [8]_, and the mixed
+    radix encoding [9]_.
     Access to all cardinality encodings can be made through the main class of
     this module, which is :class:`.PBEnc`.
 
@@ -79,6 +76,17 @@
         Translation of Pseudo-Boolean Constraints into CNF Such That
         Generalized Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
+    .. [7] Olivier Bailleux, Yacine Boufkhad, Olivier Roussel. *New
+        Encodings of Pseudo-Boolean Constraints into CNF*. SAT 2009.
+        pp. 181-194
+
+    .. [8] Saurabh Joshi, Ruben Martins, Vasco Manquinho. *Generalized Totalizer
+        Encoding for Pseudo-Boolean Constraints*. CP 2015. pp. 200-209
+
+    .. [9] Anpeng Zha, Miyuki Koshimura, Hiroshi Fujita. *N-level Modulo-based
+        CNF Encodings of Pseudo-Boolean Constraints for MaxSAT*. Constraints
+        24(2). 2019. pp. 133-161
+
     ==============
     Module details
     ==============
@@ -86,15 +94,16 @@
 
 #
 #==============================================================================
-import math
+import operator
+from pysat.card import CardEnc
 from pysat.formula import CNFPlus
 
-# checking whether or not pypblib is available and working as expected
-pblib_present = True
+# checking whether or not pindakaas is available
+pindakaas_present = True
 try:
-    from pypblib import pblib
+    import pindakaas
 except ImportError:
-    pblib_present = False
+    pindakaas_present = False
 
 
 #
@@ -124,6 +133,9 @@ class EncType(object):
             adder      = 4
             binmerge   = 5
             native     = 6
+            watchdog   = 7
+            totalizer  = 8
+            mixedradix = 9
 
         The desired encoding can be selected either directly by its integer
         identifier, e.g. ``2``, or by its alphabetical name, e.g.
@@ -132,12 +144,16 @@ class EncType(object):
         All the encodings are produced and returned as a list of clauses in
         the :class:`pysat.formula.CNFPlus` format.
 
-        Note that the encoding type can be set to ``best``, in which case the
-        encoder selects one of the other encodings from the list (in most
-        cases, this invokes the ``bdd`` encoder).
+        Note that the encoding type can be set to ``best``, in which case
+        Pindakaas uses its default encoder for the shape of the constraint
+        (e.g. the totalizer for PB and cardinality constraints). Any other
+        encoding is applied to *every* shape of constraint, including
+        cardinality and AtMostOne constraints. Finally, ``binmerge`` is the
+        ``watchdog`` encoding of Pindakaas, counting with sorting networks
+        rather than totalizers.
     """
 
-    assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
+    assert pindakaas_present, 'Package \'pindakaas\' is unavailable. Install it with \'pip install python-sat[pb]\'.'
 
     best       = 0
     bdd        = 1
@@ -146,23 +162,61 @@ class EncType(object):
     adder      = 4
     binmerge   = 5
     native     = 6
+    watchdog   = 7
+    totalizer  = 8
+    mixedradix = 9
 
-    # mapping from internal encoding identifiers to the ones of PyPBLib
-    _to_pbenc = {
-            best:       pblib.PB_BEST,
-            bdd:        pblib.PB_BDD,
-            seqcounter: pblib.PB_SWC,
-            sortnetwrk: pblib.PB_SORTINGNETWORKS,
-            adder:      pblib.PB_ADDER,
-            binmerge:   pblib.PB_BINARY_MERGE
+    # mapping from internal encoding identifiers to Pindakaas encoders and
+    # their options
+    _to_encoder = {
+            best:       (None, {}),
+            bdd:        (pindakaas.Encoder.DECISION_DIAGRAM, {}),
+            seqcounter: (pindakaas.Encoder.SEQUENTIAL_COUNTER, {}),
+            sortnetwrk: (pindakaas.Encoder.SORTING_NETWORK, {}),
+            adder:      (pindakaas.Encoder.ADDER, {}),
+            binmerge:   (pindakaas.Encoder.WATCHDOG, {'sorting_networks': True}),
+            watchdog:   (pindakaas.Encoder.WATCHDOG, {}),
+            totalizer:  (pindakaas.Encoder.TOTALIZER, {}),
+            mixedradix: (pindakaas.Encoder.MIXED_RADIX, {})
         }
 
-    # mapping from internal comparator identifiers to the ones of PyPBLib
-    _to_pbcmp = {
-            '<': pblib.LEQ,
-            '>': pblib.GEQ,
-            '=': pblib.BOTH
-        }
+    # mapping from internal comparator identifiers to operators
+    _to_cmp = {'<': operator.le, '>': operator.ge, '=': operator.eq}
+
+
+#
+#==============================================================================
+def _pindakaas_db(top_id):
+    """
+        Create an empty ``pindakaas.CNF``, in which all new (auxiliary)
+        variables are larger than ``top_id``.
+    """
+
+    db = pindakaas.CNF()
+    db.new_vars(top_id)
+
+    return db
+
+
+#
+#==============================================================================
+def _pindakaas_cnf(db, top_id, vpool=None):
+    """
+        Convert the clauses of a ``pindakaas.CNF`` created by
+        :func:`_pindakaas_db` into a :class:`pysat.formula.CNFPlus`. If
+        ``vpool`` is given, it is updated to account for the auxiliary
+        variables, i.e. those larger than ``top_id``.
+    """
+
+    ret = CNFPlus()
+    ret.clauses = db._clauses_as_int()
+    ret.nv = len(db.variables())
+
+    # updating vpool if necessary
+    if vpool:
+        CardEnc._update_vids(ret, top_id, vpool)
+
+    return ret
 
 
 #
@@ -187,66 +241,17 @@ class PBEnc(object):
             >>> from pysat.pb import *
             >>> cnf = PBEnc.atmost(lits=[1, 2, 3], weights=[1, 2, 3], bound=3)
             >>> print(cnf.clauses)
-            [[4], [-1, -5], [-2, -5], [5, -3, -6], [6]]
+            [[-5, 4], [-6, 5], [-2, 5], [-1, 4], [-1, -2, 6], [-4, -3]]
             >>> cnf = PBEnc.equals(lits=[1, 2, 3], weights=[1, 2, 3], bound=3, encoding=EncType.bdd)
             >>> print(cnf.clauses)
-            [[4], [-5, -2], [-5, 2, -1], [-5, -1], [-6, 1], [-7, -2, 6], [-7, 2], [-7, 6], [-8, -3, 5], [-8, 3, 7], [-8, 5, 7], [8]]
+            [[-1, 5], [1, -5], [-2, 4], [-5, 4], [2, -4], [5, -4], [-4, -3], [4, 3]]
     """
-
-    @classmethod
-    def _update_vids(cls, cnf, inp, vpool):
-        """
-            Update variable ids in the given formula and id pool. The literals
-            serving as the input to the cardinality constraint are not
-            updated.
-
-            :param cnf: a list of literals in the sum.
-            :param inp: the list of input literals
-            :param vpool: the value of bound :math:`k`.
-
-            :type cnf: :class:`.formula.CNFPlus`
-            :type inp: list(int)
-            :type vpool: :class:`.formula.IDPool`
-        """
-
-        top, vmap = max(inp + [vpool.top]), {}  # current top and variable mapping
-
-        # we are going to use this to check if literals are input
-        inp = set([abs(l) for l in inp])
-
-        # creating a new variable mapping, taking into
-        # account variables marked as "occupied"
-        while top < cnf.nv:
-            top += 1
-
-            # skipping the input literals
-            if top in inp:
-                vmap[top] = top
-                continue
-
-            vpool.top += 1
-
-            while vpool._occupied and vpool.top >= vpool._occupied[0][0]:
-                if vpool.top <= vpool._occupied[0][1] + 1:
-                    vpool.top = vpool._occupied[0][1] + 1
-
-                vpool._occupied.pop(0)
-
-            # mapping this literal to a free one
-            vmap[top] = vpool.top
-
-        # updating the clauses
-        for cl in cnf.clauses:
-            cl[:] = map(lambda l: int(math.copysign(vmap[abs(l)], l)) if abs(l) in vmap else l, cl)
-
-        # updating the number of variables
-        cnf.nv = vpool.top
 
     @classmethod
     def _encode(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best, comparator='<', conditionals=None):
         """
-            This is the method that wraps the encoder of PyPBLib. Although the
+            This is the method that wraps the encoders of Pindakaas. Although the
             method can be invoked directly, a user is expected to call one of
             the following methods instead: :meth:`atmost`, :meth:`atleast`, or
             :meth:`equals`.
@@ -275,7 +280,7 @@ class PBEnc(object):
             :rtype: :class:`pysat.formula.CNFPlus`
         """
 
-        if encoding < 0 or encoding > 6:
+        if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
         # checking if the bound is meaningless for any encoding
@@ -295,15 +300,14 @@ class PBEnc(object):
         # preparing weighted literals
         if weights:
             assert len(lits) == len(weights), 'Same number of literals and weights is expected.'
-            wlits = [(l, w) for l, w in zip(lits, weights)]
+            lits, weights = list(lits), list(weights)
         else:
             if all(map(lambda lw: (type(lw) in (list, tuple)) and len(lw) == 2, lits)):
                 # literals are already weighted
-                lits, weight = zip(*lits)  # unweighted literals for getting top_id
+                lits, weights = map(list, zip(*lits))
             elif all(map(lambda l: type(l) is int, lits)):
                 # no weights are provided => all weights are units
-                wlits = [(l, 1) for l in lits]
-                weights = [1 for l in lits]
+                lits, weights = list(lits), [1 for l in lits]
             else:
                 assert 0, 'Incorrect literals given.'
 
@@ -330,40 +334,27 @@ class PBEnc(object):
 
             return ret
 
-        assert pblib_present, 'Package \'pypblib\' is unavailable. Check your installation.'
+        Lit = pindakaas.Lit.from_raw
 
-        # pseudo-Boolean constraint and variable manager
-        constr = pblib.PBConstraint([pblib.WeightedLit(*wl) for wl in wlits],
-                EncType._to_pbcmp[comparator], bound)
+        # the weighted sum (in place, as `+` copies the sum)
+        lhs = 0
+        for l, w in zip(lits, weights):
+            lhs += w * Lit(l)
 
-        varmgr = pblib.AuxVarManager(top_id + 1)
+        constr = EncType._to_cmp[comparator](lhs, bound)
+        encoder, options = EncType._to_encoder[encoding]
 
-        # add optional conditionals
-        if len(conditionals) > 0:
-            constr.add_conditionals(conditionals)
+        db = _pindakaas_db(top_id)
+        try:
+            db.add_encoding(constr, encoder,
+                            conditions=[Lit(l) for l in conditionals], **options)
+        except pindakaas.Unsatisfiable:
+            # the constraint cannot hold, so neither can all conditionals
+            ret = _pindakaas_cnf(db, top_id, vpool=vpool)
+            ret.clauses = [[-l for l in conditionals]]
+            return ret
 
-        # encoder configuration
-        config = pblib.PBConfig()
-        config.set_PB_Encoder(EncType._to_pbenc[encoding])
-
-        # encoding
-        result = pblib.VectorClauseDatabase(config)
-        pb2cnf = pblib.Pb2cnf(config)
-        pb2cnf.encode(constr, result, varmgr)
-
-        # extracting clauses
-        ret.clauses = result.get_clauses()
-        ret.nv = max(ret.nv, top_id, varmgr.get_biggest_returned_auxvar())  # needed if no auxiliary variable is used
-
-        # updating vpool if necessary
-        if vpool:
-            if vpool._occupied and vpool.top <= vpool._occupied[0][0] <= ret.nv:
-                cls._update_vids(ret, vpool, lits)
-            else:
-                vpool.top = ret.nv - 1
-                vpool._next()
-
-        return ret
+        return _pindakaas_cnf(db, top_id, vpool=vpool)
 
     @classmethod
     def leq(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
@@ -373,14 +364,14 @@ class PBEnc(object):
             (weighted AtMostK) constraint, i.e. of
             :math:`\\sum_{i=1}^{n}{a_i\\cdot x_i}\\leq k`. The resulting set
             of clauses is returned as an object of class
-            :class:`.formula.CNF`.
+            :class:`.formula.CNFPlus`.
 
             The input list of literals can contain either integers or pairs
             ``(l, w)``, where ``l`` is an integer literal and ``w`` is an
             integer weight. The latter can be done only if no ``weights`` are
             specified separately. The type of encoding to use can be specified
             using the ``encoding`` parameter. By default, it is set to
-            ``EncType.best``, i.e. it is up to the PBLib encoder to choose the
+            ``EncType.best``, i.e. it is up to Pindakaas to choose the
             encoding type.
 
             The final optional argument is ``conditionals``, where a list of
@@ -415,7 +406,7 @@ class PBEnc(object):
     def atmost(cls, lits, weights=None, bound=1, top_id=None, vpool=None,
             encoding=EncType.best, conditionals=None):
         """
-            A synonim for :meth:`PBEnc.leq`.
+            A synonym for :meth:`PBEnc.leq`.
         """
 
         return cls.leq(lits, weights=weights, bound=bound, top_id=top_id,

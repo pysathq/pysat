@@ -1,18 +1,14 @@
+import itertools
 import pytest
+import random
 from decimal import Decimal
+from pysat.formula import IDPool
 from pysat.solvers import Solver
 
-try:
-    import pysat.pb  # noqa: F401
-    pypblib_available = True
-except Exception:
-    pypblib_available = False
+pytest.importorskip('pindakaas', reason='pindakaas is required for integer module tests')
 
-pytestmark = pytest.mark.skipif(not pypblib_available,
-                                reason='pypblib is required for integer module tests')
-
-if pypblib_available:
-    from pysat.integer import Integer, IntegerEngine, LinearExpr
+from pysat.integer import Integer, IntegerEngine, LinearExpr
+from pysat.pb import NoSuchEncodingError
 
 engine_solvers = ['cadical195', 'cadical300', 'minisatep']
 
@@ -47,16 +43,21 @@ def _enum_models_engine_assuming(eng, vars, assumptions, solver_name):
 
 
 def _enum_models_cnf(eng, vars):
-    models = set()
-    with Solver(name='glucose30', bootstrap_with=eng.clausify()) as solver:
-        while solver.solve():
-            model = solver.get_model()
-            vals = eng.decode_model(model, vars=vars)
-            key = tuple(vals[var] for var in vars)
-            models.add(key)
-            blits = eng.encode_model(vals, vars=vars)
-            solver.add_clause([-l for l in blits])
-    return models
+    # the Boolean (cardinality / PB) and the integer clausification must agree
+    results = []
+    for intenc in (None, 0):
+        models = set()
+        with Solver(name='glucose30', bootstrap_with=eng.clausify(intenc=intenc)) as solver:
+            while solver.solve():
+                model = solver.get_model()
+                vals = eng.decode_model(model, vars=vars)
+                key = tuple(vals[var] for var in vars)
+                models.add(key)
+                blits = eng.encode_model(vals, vars=vars)
+                solver.add_clause([-l for l in blits])
+        results.append(models)
+    assert results[0] == results[1]
+    return results[0]
 
 
 def _is_true(model, lit):
@@ -448,7 +449,6 @@ def test_linear_expr_not_equal(solver_name):
 
 
 def test_linear_expr_not_equal_reif_vpool_cache():
-    from pysat.formula import IDPool
 
     vpool = IDPool()
     x = Integer('x', 0, 2, vpool=vpool)
@@ -624,3 +624,74 @@ def test_coupled_channeling(solver_name):
         status, lits = solver.propagate(assumptions=[x.ge(2)])
         assert status is True, 'Channeling propagate failed for ge(2)'
         assert x.equals(2) in lits, 'Channeling propagate missing equals(2) from ge(2)'
+
+
+@pytest.mark.parametrize('intenc', [0, 1, 2, 3, 4, 5, 7, 8, 9])
+def test_clausify_intenc_brute_force(intenc):
+    rng = random.Random(intenc)
+    for _ in range(10):
+        encs = [rng.choice(['direct', 'order', 'coupled']) for _ in range(3)]
+        xs = [Integer(f'x{i}', rng.randint(-2, 0), rng.randint(1, 3), encoding=e)
+              for i, e in enumerate(encs)]
+        coeffs = [rng.choice([-3, -2, -1, 1, 2, 3]) for _ in xs]
+        bound = rng.randint(-4, 4)
+        expr = sum(c * x for c, x in zip(coeffs, xs))
+        eng = IntegerEngine(xs, [expr <= bound])
+
+        expected = {vals for vals in itertools.product(*(x.domain for x in xs))
+                    if sum(c * v for c, v in zip(coeffs, vals)) <= bound}
+        models = set()
+        with Solver(name='glucose30', bootstrap_with=eng.clausify(intenc=intenc)) as solver:
+            while solver.solve():
+                vals = eng.decode_model(solver.get_model(), vars=xs)
+                models.add(tuple(vals[x] for x in xs))
+                solver.add_clause([-l for l in eng.encode_model(vals, vars=xs)])
+        assert models == expected
+
+
+def test_clausify_avoids_literals_outside_the_pool():
+    vpool = IDPool()
+    x = Integer('x', 0, 3, encoding='order', vpool=vpool)
+    y = Integer('y', 0, 3, encoding='order', vpool=vpool)
+    eng = IntegerEngine([x, y], [])
+    raw = vpool.top + 2  # a literal the pool does not know
+    weights = {x.ge(k): 1 for k in range(1, 4)}
+    weights.update({y.ge(k): 1 for k in range(1, 4)})
+    weights[raw] = 2
+    eng.add_linear(('linear', [sorted(weights), 4, weights]))
+    cnf = eng.clausify()
+    with Solver(name='glucose30', bootstrap_with=cnf) as solver:
+        for xv, yv, r in itertools.product(range(4), range(4), (0, 1)):
+            assumps = x.encode(xv) + y.encode(yv) + [raw if r else -raw]
+            assert solver.solve(assumptions=assumps) == (xv + yv + 2 * r <= 4)
+
+
+def test_clausify_refuses_native_encodings():
+    x = Integer('x', 0, 3, encoding='order')
+    eng = IntegerEngine([x], [2 * x <= 3])
+    for kwargs in ({'pbenc': 6}, {'intenc': 6}, {'cardenc': 9}):
+        with pytest.raises(ValueError):
+            eng.clausify(**kwargs)
+    with pytest.raises(NoSuchEncodingError):
+        eng.clausify(intenc=42)
+
+
+def test_decode_treats_unseen_literals_as_false():
+    x = Integer('x', 0, 1, encoding='order')
+    assert x.decode([]) == 0
+
+
+def test_clausify_keeps_a_literal_and_its_negation():
+    vpool = IDPool()
+    x = Integer('x', 0, 2, encoding='order', vpool=vpool)
+    y = Integer('y', 0, 1, encoding='order', vpool=vpool)
+    g1, g2, h1 = x.ge(1), x.ge(2), y.ge(1)
+    eng = IntegerEngine([x, y], [])
+    eng.add_linear(('linear', [[g1, g2, -g2, h1], 1, {g1: 1, g2: 1, -g2: 1, h1: 1}]))
+    assert _enum_models_cnf(eng, [x, y]) == {(0, 0)}
+
+
+def test_clausify_rounds_decimal_bounds_down():
+    x = Integer('x', 0, 3, encoding='order', numeric='decimal')
+    eng = IntegerEngine([x], [3 * x <= Decimal(-2)])
+    assert _enum_models_cnf(eng, [x]) == set()

@@ -47,15 +47,16 @@ list of cardinality encodings included is the following:
 
 Furthermore, PySAT supports a number of encodings of pseudo-Boolean
 constraints listed below. This is done by exploiting a third-party library
-[PyPBLib](https://pypi.org/project/pypblib/) developed by the [Logic
-Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
-(PyPBLib is a wrapper over the known PBLib library[^10].)
+[Pindakaas](https://pypi.org/project/pindakaas/)[^10].
 
 -   binary decision diagrams (BDD)[^11] [^12]
 -   sequential weight counters[^13]
 -   sorting networks[^11]
 -   adder networks[^11]
--   and binary merge[^14]
+-   binary merge[^14]
+-   the watchdog encoding[^15]
+-   the generalized totalizer[^16]
+-   and the mixed radix encoding[^17]
 
 [^1]: Carlos Ansótegui, Felip Manyà. *Mapping Problems with Finite-Domain
     Variables to Problems with Boolean Variables*. SAT (Selected Papers) 2004.
@@ -88,8 +89,8 @@ Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
 [^9]: Carsten Sinz. *Towards an Optimal CNF Encoding of Boolean Cardinality
     Constraints*. CP 2005. pp. 827-831
 
-[^10]: Tobias Philipp, Peter Steinke. *PBLib - A Library for Encoding
-    Pseudo-Boolean Constraints into CNF*. SAT 2015. pp. 9-16
+[^10]: Hendrik Bierlee, Jip J. Dekker. *Pindakaas*. Software.
+    https://doi.org/10.5281/zenodo.10851855
 
 [^11]: Niklas Eén, Niklas Sörensson. *Translating Pseudo-Boolean Constraints
     into SAT*. JSAT. vol. 2(1-4). 2006. pp. 1-26
@@ -105,18 +106,28 @@ Optimization Group](http://ulog.udl.cat/) of the University of Lleida.
     Translation of Pseudo-Boolean Constraints into CNF Such That Generalized
     Arc Consistency Is Maintained*. KI. 2014. pp. 123-134
 
-Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
-clausification [^15] and provides (pre-)processing functionality [^16] by
-exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
-external user-defined engines following the IPASIR-UP interface [^17].
+[^15]: Olivier Bailleux, Yacine Boufkhad, Olivier Roussel. *New
+    Encodings of Pseudo-Boolean Constraints into CNF*. SAT 2009. pp. 181-194
 
-[^15]: G. S. Tseitin. *On the complexity of derivations in the propositional
+[^16]: Saurabh Joshi, Ruben Martins, Vasco Manquinho. *Generalized Totalizer
+    Encoding for Pseudo-Boolean Constraints*. CP 2015. pp. 200-209
+
+[^17]: Anpeng Zha, Miyuki Koshimura, Hiroshi Fujita. *N-level Modulo-based
+    CNF Encodings of Pseudo-Boolean Constraints for MaxSAT*. Constraints
+    24(2). 2019. pp. 133-161
+
+Finally, PySAT now supports arbitrary Boolean formulas with on-the-fly
+clausification [^18] and provides (pre-)processing functionality [^19] by
+exposing an interface to CaDiCaL's (version 1.5.3) preprocessor as well as
+external user-defined engines following the IPASIR-UP interface [^20].
+
+[^18]: G. S. Tseitin. *On the complexity of derivations in the propositional
     calculus*.  Studies in Mathematics and Mathematical Logic, Part II. pp.
     115–125, 1968
 
-[^16]: Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
+[^19]: Armin Biere, Matti Järvisalo, Benjamin Kiesl. *Preprocessing in SAT
     Solving*. In *Handbook of Satisfiability - Second Edition*. pp. 391-435
 
-[^17]: Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
+[^20]: Katalin Fazekas, Aina Niemetz, Mathias Preiner, Markus Kirchweger,
     Stefan Szeider, Armin Biere. *IPASIR-UP: User Propagators for CDCL*. SAT.
     2023. pp. 8:1-8:13

@@ -208,7 +208,8 @@ setup(name='python-sat',
         'aiger': ['py-aiger-cnf>=2.0.0'],
         'approxmc': ['pyapproxmc>=4.1.8'],
         'cryptosat': ['pycryptosat>=5.11.18'],
-        'pblib': ['pypblib>=0.0.3'],
+        'pb': ['pindakaas>=0.6.1'],
+        'pblib': ['pindakaas>=0.6.1'],  # deprecated alias of 'pb'
         'unigen': ['pyunigen>=4.1.20']
     }
 )
