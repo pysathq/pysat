@@ -8,6 +8,7 @@
 build
 _build
 dist
+pysat/examples
 solvers/._glucose-syrup-4.1
 solvers/cadical103
 solvers/cadical153

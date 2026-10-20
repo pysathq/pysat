@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 15.10.2026 (*1.9.dev17*)
+
+-   Replaced pypblib with Pindakaas as the PB library (thanks for the effort
+    to [Jip Dekker](https://github.com/Dekker1)!).
+
 ## 15.10.2026 (*1.9.dev16*)
 
 -   Fixed a bug in proofs being cut.
