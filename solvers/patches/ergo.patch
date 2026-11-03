@@ -1,6 +1,5 @@
-diff -Naur solvers/ergo_prepatch_ref/Makefile solvers/ergo/Makefile
---- solvers/ergo_prepatch_ref/Makefile	1970-01-01 10:00:00
-+++ solvers/ergo/Makefile	2026-10-15 16:17:56
+--- solvers/ergo_prepatch_ref/Makefile
++++ solvers/ergo/Makefile
 @@ -0,0 +1,39 @@
 +### Makefile ---
 +
@@ -9,7 +8,7 @@ diff -Naur solvers/ergo_prepatch_ref/Makefile solvers/ergo/Makefile
 +
 +# main parameters
 +CC       := cc
-+CFLAGS   := -std=gnu99 -fPIC -Wall -fno-strict-aliasing
++CFLAGS   := -std=gnu2x -fPIC -Wall -fno-strict-aliasing
 +COPT     := -O3 -DNDEBUG
 +CDEBUG   := -O0 -g3
 +CPROF    := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
@@ -30,7 +29,7 @@ diff -Naur solvers/ergo_prepatch_ref/Makefile solvers/ergo/Makefile
 +lib: $(OBJECTS)
 +	@-ar cr lib$(TRGT).a $(OBJECTS)
 +
-+%.o: %.c
++%.o: %.c $(wildcard *.h)
 +	$(CC) $(CARGS) -c $< -o $@
 +
 +clean:
@@ -41,22 +40,9 @@ diff -Naur solvers/ergo_prepatch_ref/Makefile solvers/ergo/Makefile
 +	@-find . -name '*.a' -delete
 +
 +#-------------------------------------------------------------------------------
-diff -Naur solvers/ergo_prepatch_ref/ergo.c solvers/ergo/ergo.c
---- solvers/ergo_prepatch_ref/ergo.c	1970-01-01 10:00:00
-+++ solvers/ergo/ergo.c	2026-10-15 16:17:56
-@@ -950,7 +950,7 @@
- 			c = arena_deref(&s->arena, cr);
- 		}
- 		else {
--finish_p:
-+finish_p:;
- 			// finished with current element 'p' and reason 'c'
- 			int v = lit_var(p);
- 			if (s->tags[v] == tag_undef) {
-diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
---- solvers/ergo_prepatch_ref/pysat_shim.c	1970-01-01 10:00:00
-+++ solvers/ergo/pysat_shim.c	2026-10-15 16:17:56
-@@ -0,0 +1,451 @@
+--- solvers/ergo_prepatch_ref/pysat_shim.c
++++ solvers/ergo/pysat_shim.c
+@@ -0,0 +1,505 @@
 +/*
 + * pysat_shim.c
 + *
@@ -87,9 +73,9 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +
 +// builds a vect in Ergo's internal literal encoding from DIMACS literals
 +//=============================================================================
-+static struct vect ergo_shim_encode(const int *lits, int n)
++static struct int_vect ergo_shim_encode(const int *lits, int n)
 +{
-+	struct vect v = vect_new(int);
++	struct int_vect v = vect_new(int_vect);
 +	vect_reserve(&v, n);
 +
 +	for (int i = 0; i < n; ++i) {
@@ -129,7 +115,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +{
 +	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
 +
-+	struct vect a = ergo_shim_encode(assumps, n);
++	struct int_vect a = ergo_shim_encode(assumps, n);
 +	int res = ergo_solve(s, &a);
 +	vect_destroy(&a);
 +
@@ -142,7 +128,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +{
 +	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
 +
-+	struct vect a = ergo_shim_encode(assumps, n);
++	struct int_vect a = ergo_shim_encode(assumps, n);
 +	lbool res = ergo_solve_lim(s, &a);
 +	vect_destroy(&a);
 +
@@ -151,12 +137,16 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +
 +//
 +//=============================================================================
-+void ergo_shim_setphases(struct ergo *s, const int *lits, int n)
++void ergo_shim_setphases(struct ergo *s, const int *lits, int n, bool hard)
 +{
 +	ergo_shim_declare(s, ergo_shim_dimacs_max(lits, n));
 +
-+	struct vect p = ergo_shim_encode(lits, n);
-+	ergo_set_polar(s, &p, false);
++	struct int_vect p = ergo_shim_encode(lits, n);
++	if (!hard)
++		for (int *l = vect_begin(&p); l < (int *)vect_end(&p); ++l)
++			s->user_pol[lit_var(*l)] = lit_undef;
++
++	ergo_set_polar(s, &p, hard);
 +	vect_destroy(&p);
 +}
 +
@@ -173,8 +163,8 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +{
 +	ergo_shim_declare(s, ergo_shim_dimacs_max(assumps, n));
 +
-+	struct vect a = ergo_shim_encode(assumps, n);
-+	struct vect p = vect_new(int);
++	struct int_vect a = ergo_shim_encode(assumps, n);
++	struct int_vect p = vect_new(int_vect);
 +
 +	int res = ergo_prop_check(s, &a, &p, psaving);
 +
@@ -193,13 +183,20 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +	return res;
 +}
 +
-+// copies Ergo's records into a malloc'd array
++// copies Ergo's records into a malloc'd array; 'of' is the literals to ask
++// about (DIMACS, no repeats), 'nof' < 0 asking about every pair tracked
 +//=============================================================================
-+int ergo_shim_xpairs(struct ergo *s, struct ergo_xpair **out)
++int ergo_shim_xpairs(struct ergo *s, struct ergo_xpair **out,
++		const int *of, int nof)
 +{
-+	struct vect pairs = vect_new(struct ergo_xpair);
++	struct xpair_vect pairs = vect_new(xpair_vect);
++	struct int_vect lits  = vect_new(int_vect);
 +
-+	ergo_xpairs(s, &pairs);
++	for (int i = 0; i < nof; ++i)
++		vect_append(&lits, of[i]);
++
++	ergo_xpairs(s, &pairs, nof < 0 ? NULL : &lits);
++	vect_destroy(&lits);
 +
 +	int                n = (int)vect_size(&pairs);
 +	struct ergo_xpair *o = malloc((size_t)n * sizeof(*o));
@@ -211,11 +208,40 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +	return n;
 +}
 +
++// 'triples' is a flat (la, lb, z) * n array, DIMACS
++//=============================================================================
++void ergo_shim_xname(struct ergo *s, const int *triples, int n)
++{
++	struct xpair_vect v = vect_new(xpair_vect);
++
++	for (int i = 0; i < n; ++i)
++		vect_append(&v, ((struct ergo_xpair){ .la = triples[3 * i],
++					.lb = triples[3 * i + 1],
++					.z  = triples[3 * i + 2] }));
++
++	ergo_xname(s, &v);
++	vect_destroy(&v);
++}
++
++// 'pairs' is a flat (la, lb) * n array, DIMACS
++//=============================================================================
++void ergo_shim_xblock(struct ergo *s, const int *pairs, int n)
++{
++	struct xpair_vect v = vect_new(xpair_vect);
++
++	for (int i = 0; i < n; ++i)
++		vect_append(&v, ((struct ergo_xpair){ .la = pairs[2 * i],
++					.lb = pairs[2 * i + 1] }));
++
++	ergo_xblock(s, &v);
++	vect_destroy(&v);
++}
++
 +// collects 'vars' as 0-based ids
 +//=============================================================================
-+static struct vect ergo_shim_xvars(struct ergo *s, const int *vars, int n)
++static struct int_vect ergo_shim_xvars(struct ergo *s, const int *vars, int n)
 +{
-+	struct vect v = vect_new(int);
++	struct int_vect v = vect_new(int_vect);
 +
 +	for (int i = 0; i < n; ++i)
 +		if (vars[i] >= 1 && vars[i] <= ergo_nvars(s))
@@ -228,7 +254,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +//=============================================================================
 +void ergo_shim_xpin(struct ergo *s, const int *vars, int n)
 +{
-+	struct vect v = ergo_shim_xvars(s, vars, n);
++	struct int_vect v = ergo_shim_xvars(s, vars, n);
 +
 +	ergo_xpin(s, &v);
 +	vect_destroy(&v);
@@ -238,7 +264,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +//=============================================================================
 +void ergo_shim_xunpin(struct ergo *s, const int *vars, int n)
 +{
-+	struct vect v = ergo_shim_xvars(s, vars, n);
++	struct int_vect v = ergo_shim_xvars(s, vars, n);
 +
 +	ergo_xunpin(s, &v);
 +	vect_destroy(&v);
@@ -335,17 +361,17 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +//=============================================================================
 +void ergo_shim_set_jw_mode(struct ergo *s, const char *mode)
 +{
-+	// as in cli.c: "none" leaves the current jw_* flags untouched
-+	if (!strcmp(mode, "act"))
-+		s->jw_acty = true;
-+	else if (!strcmp(mode, "pol-soft"))
-+		s->jw_polar = true;
-+	else if (!strcmp(mode, "pol-hard"))
-+		s->jw_polar = s->jw_hard = true;
-+	else if (!strcmp(mode, "full-soft"))
-+		s->jw_acty = s->jw_polar = true;
-+	else if (!strcmp(mode, "full-hard"))
-+		s->jw_acty = s->jw_polar = s->jw_hard = true;
++	bool act = !strcmp(mode, "act") || !strcmp(mode, "full-soft") ||
++		!strcmp(mode, "full-hard");
++	bool polar = !strcmp(mode, "pol-soft") || !strcmp(mode, "pol-hard") ||
++		!strcmp(mode, "full-soft") || !strcmp(mode, "full-hard");
++	bool hard = !strcmp(mode, "pol-hard") || !strcmp(mode, "full-hard");
++	if (!act && !polar && strcmp(mode, "none"))
++		return;
++	s->jw_acty = act;
++	s->jw_polar = polar;
++	s->jw_hard = hard;
++
 +}
 +
 +//
@@ -390,7 +416,8 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +	// every variable has to exist before ergo_set_acts() indexes it
 +	ergo_shim_declare(s, ergo_shim_dimacs_max(vars, n));
 +
-+	struct vect v = vect_new(int), a = vect_new(double);
++	struct int_vect v = vect_new(int_vect);
++	struct double_vect a = vect_new(double_vect);
 +	vect_reserve(&v, n);
 +	vect_reserve(&a, n);
 +
@@ -414,7 +441,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +	int nrem
 +)
 +{
-+	struct vect a = vect_new(int), r = vect_new(int);
++	struct int_vect a = vect_new(int_vect), r = vect_new(int_vect);
 +
 +	// every variable has to exist before ergo_setxscope() indexes it
 +	for (int i = 0; i < nadd; ++i) {
@@ -508,9 +535,21 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.c solvers/ergo/pysat_shim.c
 +{
 +	ergo_unobserve_var(s, dimacs_var - 1);
 +}
-diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
---- solvers/ergo_prepatch_ref/pysat_shim.h	1970-01-01 10:00:00
-+++ solvers/ergo/pysat_shim.h	2026-10-15 16:17:56
++
++// declare only new decision variables; preserve the existing heap
++void ergo_shim_declare(struct ergo *s, int nvars)
++{
++    int first = ergo_nvars(s);
++    if (first < nvars) {
++        ergo_setnvars(s, nvars);
++        for (int var = first; var < nvars; ++var) {
++            ergo_set_dvar(s, var);
++            order_unassign(s, var);
++        }
++    }
++}
+--- solvers/ergo_prepatch_ref/pysat_shim.h
++++ solvers/ergo/pysat_shim.h
 @@ -0,0 +1,132 @@
 +/*
 + * pysat_shim.h
@@ -528,6 +567,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
 +#include "lit.h"    // lit_of()/lit_neg(), C++-safe and the only C-clean header
 +
 +struct ergo;  // opaque
++extern void ergo_set_jwmode(struct ergo *);
 +
 +// Ergo's entry points, already C++-safe, so pysolvers.cc calls them directly;
 +extern struct ergo *ergo_new             (void);
@@ -555,12 +595,14 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
 +extern void         ergo_setxthreshold   (struct ergo *, double);
 +extern void         ergo_setxwarmup      (struct ergo *, int64_t);
 +extern void         ergo_setxescalate    (struct ergo *, double);
++extern void         ergo_setxrewrite     (struct ergo *, bool);
++extern void         ergo_setxequiv       (struct ergo *, bool);
 +
 +// extra shim on top
 +extern int  ergo_shim_add_cl             (struct ergo *, const int *, int, int);
 +extern int  ergo_shim_solve              (struct ergo *, const int *, int);
 +extern int  ergo_shim_solve_lim          (struct ergo *, const int *, int);
-+extern void ergo_shim_setphases          (struct ergo *, const int *, int);
++extern void ergo_shim_setphases          (struct ergo *, const int *, int, bool);
 +extern void ergo_shim_setacts            (struct ergo *, const int *, const double *, int);
 +extern int  ergo_shim_prop_check         (struct ergo *, const int *, int, int, int **, int *);
 +extern int  ergo_shim_model_at           (struct ergo *, int);
@@ -586,13 +628,7 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
 +
 +// declares variables and marks them decision variables
 +//=============================================================================
-+static inline void ergo_shim_declare(struct ergo *s, int nvars)
-+{
-+	if (ergo_nvars(s) < nvars) {
-+		ergo_setnvars(s, nvars);
-+		ergo_set_dvars_all(s);
-+	}
-+}
++extern void ergo_shim_declare(struct ergo *s, int nvars);
 +
 +// DIMACS to Ergo literal encoding
 +//=============================================================================
@@ -610,7 +646,10 @@ diff -Naur solvers/ergo_prepatch_ref/pysat_shim.h solvers/ergo/pysat_shim.h
 +};
 +#endif
 +
-+extern int  ergo_shim_xpairs             (struct ergo *, struct ergo_xpair **);
++extern int  ergo_shim_xpairs             (struct ergo *, struct ergo_xpair **,
++                                          const int *, int);
++extern void ergo_shim_xname              (struct ergo *, const int *, int);
++extern void ergo_shim_xblock             (struct ergo *, const int *, int);
 +extern void ergo_shim_xpin               (struct ergo *, const int *, int);
 +extern void ergo_shim_xunpin             (struct ergo *, const int *, int);
 +

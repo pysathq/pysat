@@ -149,8 +149,15 @@ static char     model_docstring[] = "Get a model if formula is SAT.";
 static char     nvars_docstring[] = "Get number of variables used by the solver.";
 static char     dvars_docstring[] = "Declare variables of the solver, protecting "
                                     "them from internal use (CaDiCaL 3.0.0, Ergo).";
+static char  shxscope_docstring[] = "Move the mining scope from the variables of "
+                                    "one literal list to those of another (Ergo only).";
 static char    xpairs_docstring[] = "Get the literal pairs the extension-variable "
                                     "miner is tracking (Ergo only).";
+static chat   applyjw_docstring[] = "Compute and apply Ergo JW scores now.";
+static char     xname_docstring[] = "Adopt a caller-owned variable as the name "
+                                    "of a literal pair (Ergo only).";
+static char    xblock_docstring[] = "Keep the miner off literal pairs the caller "
+                                    "encodes itself (Ergo only).";
 static char      xpin_docstring[] = "Pin extension variables, keeping them from "
                                     "being retired (Ergo only).";
 static char    xunpin_docstring[] = "Release a pin taken by 'ergo_xpin' (Ergo only).";
@@ -298,6 +305,7 @@ extern "C" {
 	static PyObject *py_ergo_solve     (PyObject *, PyObject *);
 	static PyObject *py_ergo_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_ergo_propagate (PyObject *, PyObject *);
+	static PyObject *py_ergo_apply_jw  (PyObject *, PyObject *);
 	static PyObject *py_ergo_setphases (PyObject *, PyObject *);
 	static PyObject *py_ergo_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_ergo_pbudget   (PyObject *, PyObject *);
@@ -314,7 +322,10 @@ extern "C" {
 	static PyObject *py_ergo_set       (PyObject *, PyObject *);
 	static PyObject *py_ergo_setacts   (PyObject *, PyObject *);
 	static PyObject *py_ergo_setxscope (PyObject *, PyObject *);
+	static PyObject *py_ergo_shxscope  (PyObject *, PyObject *);
 	static PyObject *py_ergo_xpairs    (PyObject *, PyObject *);
+	static PyObject *py_ergo_xname     (PyObject *, PyObject *);
+	static PyObject *py_ergo_xblock    (PyObject *, PyObject *);
 	static PyObject *py_ergo_xpin      (PyObject *, PyObject *);
 	static PyObject *py_ergo_xunpin    (PyObject *, PyObject *);
 	static PyObject *py_ergo_pconn     (PyObject *, PyObject *);
@@ -727,40 +738,44 @@ static PyMethodDef module_methods[] = {
 	{ "cadical300_isdeclit",  py_cadical300_isdeclit,  METH_VARARGS, isdeclit_docstring },
 #endif
 #ifdef WITH_ERGO
-	{ "ergo_new",       py_ergo_new,       METH_VARARGS,       new_docstring },
-	{ "ergo_set_start", py_ergo_set_start, METH_VARARGS,  setstart_docstring },
-	{ "ergo_add_cl",    py_ergo_add_cl,    METH_VARARGS,     addcl_docstring },
-	{ "ergo_solve",     py_ergo_solve,     METH_VARARGS,     solve_docstring },
-	{ "ergo_solve_lim", py_ergo_solve_lim, METH_VARARGS,       lim_docstring },
-	{ "ergo_propagate", py_ergo_propagate, METH_VARARGS,      prop_docstring },
-	{ "ergo_setphases", py_ergo_setphases, METH_VARARGS,    phases_docstring },
-	{ "ergo_cbudget",   py_ergo_cbudget,   METH_VARARGS,   cbudget_docstring },
-	{ "ergo_pbudget",   py_ergo_pbudget,   METH_VARARGS,   pbudget_docstring },
-	{ "ergo_interrupt", py_ergo_interrupt, METH_VARARGS, interrupt_docstring },
-	{ "ergo_clearint",  py_ergo_clearint,  METH_VARARGS,  clearint_docstring },
-	{ "ergo_core",      py_ergo_core,      METH_VARARGS,      core_docstring },
-	{ "ergo_model",     py_ergo_model,     METH_VARARGS,     model_docstring },
-	{ "ergo_dec_vars",  py_ergo_dec_vars,  METH_VARARGS,     dvars_docstring },
-	{ "ergo_nof_vars",  py_ergo_nof_vars,  METH_VARARGS,     nvars_docstring },
-	{ "ergo_nof_cls",   py_ergo_nof_cls,   METH_VARARGS,      ncls_docstring },
-	{ "ergo_del",       py_ergo_del,       METH_VARARGS,       del_docstring },
-	{ "ergo_tracepr",   py_ergo_tracepr,   METH_VARARGS,   tracepr_docstring },
-	{ "ergo_acc_stats", py_ergo_acc_stats, METH_VARARGS,  acc_stat_docstring },
-	{ "ergo_set",       py_ergo_set,       METH_VARARGS,       set_docstring },
-	{ "ergo_setacts",   py_ergo_setacts,   METH_VARARGS,    phases_docstring },
-	{ "ergo_setxscope", py_ergo_setxscope, METH_VARARGS,       set_docstring },
-	{ "ergo_xpairs",    py_ergo_xpairs,    METH_VARARGS,    xpairs_docstring },
-	{ "ergo_xpin",      py_ergo_xpin,      METH_VARARGS,      xpin_docstring },
-	{ "ergo_xunpin",    py_ergo_xunpin,    METH_VARARGS,    xunpin_docstring },
-	{ "ergo_pconn",     py_ergo_pconn,     METH_VARARGS,     pconn_docstring },
-	{ "ergo_pdisconn",  py_ergo_pdisconn,  METH_VARARGS,  pdisconn_docstring },
-	{ "ergo_penable",   py_ergo_penable,   METH_VARARGS,   penable_docstring },
-	{ "ergo_pdisable",  py_ergo_pdisable,  METH_VARARGS,  pdisable_docstring },
-	{ "ergo_pactive",   py_ergo_pactive,   METH_VARARGS,   pactive_docstring },
-	{ "ergo_vobserve",  py_ergo_vobserve,  METH_VARARGS,  vobserve_docstring },
-	{ "ergo_vignore",   py_ergo_vignore,   METH_VARARGS,   vignore_docstring },
-	{ "ergo_vreset",    py_ergo_vreset,    METH_VARARGS,    vreset_docstring },
-	{ "ergo_isdeclit",  py_ergo_isdeclit,  METH_VARARGS,  isdeclit_docstring },
+	{ "ergo_new",         py_ergo_new,       METH_VARARGS,       new_docstring },
+	{ "ergo_set_start",   py_ergo_set_start, METH_VARARGS,  setstart_docstring },
+	{ "ergo_add_cl",      py_ergo_add_cl,    METH_VARARGS,     addcl_docstring },
+	{ "ergo_solve",       py_ergo_solve,     METH_VARARGS,     solve_docstring },
+	{ "ergo_solve_lim",   py_ergo_solve_lim, METH_VARARGS,       lim_docstring },
+	{ "ergo_propagate",   py_ergo_propagate, METH_VARARGS,      prop_docstring },
+	{ "ergo_apply_jw",    py_ergo_apply_jw,  METH_VARARGS,   applyjw_docstring },
+	{ "ergo_setphases",   py_ergo_setphases, METH_VARARGS,    phases_docstring },
+	{ "ergo_cbudget",     py_ergo_cbudget,   METH_VARARGS,   cbudget_docstring },
+	{ "ergo_pbudget",     py_ergo_pbudget,   METH_VARARGS,   pbudget_docstring },
+	{ "ergo_interrupt",   py_ergo_interrupt, METH_VARARGS, interrupt_docstring },
+	{ "ergo_clearint",    py_ergo_clearint,  METH_VARARGS,  clearint_docstring },
+	{ "ergo_core",        py_ergo_core,      METH_VARARGS,      core_docstring },
+	{ "ergo_model",       py_ergo_model,     METH_VARARGS,     model_docstring },
+	{ "ergo_dec_vars",    py_ergo_dec_vars,  METH_VARARGS,     dvars_docstring },
+	{ "ergo_nof_vars",    py_ergo_nof_vars,  METH_VARARGS,     nvars_docstring },
+	{ "ergo_nof_cls",     py_ergo_nof_cls,   METH_VARARGS,      ncls_docstring },
+	{ "ergo_del",         py_ergo_del,       METH_VARARGS,       del_docstring },
+	{ "ergo_tracepr",     py_ergo_tracepr,   METH_VARARGS,   tracepr_docstring },
+	{ "ergo_acc_stats",   py_ergo_acc_stats, METH_VARARGS,  acc_stat_docstring },
+	{ "ergo_set",         py_ergo_set,       METH_VARARGS,       set_docstring },
+	{ "ergo_setacts",     py_ergo_setacts,   METH_VARARGS,    phases_docstring },
+	{ "ergo_setxscope",   py_ergo_setxscope, METH_VARARGS,       set_docstring },
+	{ "ergo_shiftxscope", py_ergo_shxscope,  METH_VARARGS,  shxscope_docstring },
+	{ "ergo_xpairs",      py_ergo_xpairs,    METH_VARARGS,    xpairs_docstring },
+	{ "ergo_xname",       py_ergo_xname,     METH_VARARGS,     xname_docstring },
+	{ "ergo_xblock",      py_ergo_xblock,    METH_VARARGS,    xblock_docstring },
+	{ "ergo_xpin",        py_ergo_xpin,      METH_VARARGS,      xpin_docstring },
+	{ "ergo_xunpin",      py_ergo_xunpin,    METH_VARARGS,    xunpin_docstring },
+	{ "ergo_pconn",       py_ergo_pconn,     METH_VARARGS,     pconn_docstring },
+	{ "ergo_pdisconn",    py_ergo_pdisconn,  METH_VARARGS,  pdisconn_docstring },
+	{ "ergo_penable",     py_ergo_penable,   METH_VARARGS,   penable_docstring },
+	{ "ergo_pdisable",    py_ergo_pdisable,  METH_VARARGS,  pdisable_docstring },
+	{ "ergo_pactive",     py_ergo_pactive,   METH_VARARGS,   pactive_docstring },
+	{ "ergo_vobserve",    py_ergo_vobserve,  METH_VARARGS,  vobserve_docstring },
+	{ "ergo_vignore",     py_ergo_vignore,   METH_VARARGS,   vignore_docstring },
+	{ "ergo_vreset",      py_ergo_vreset,    METH_VARARGS,    vreset_docstring },
+	{ "ergo_isdeclit",    py_ergo_isdeclit,  METH_VARARGS,  isdeclit_docstring },
 #endif
 #ifdef WITH_GLUECARD30
 	{ "gluecard3_new",       py_gluecard3_new,       METH_VARARGS,       new_docstring },
@@ -5451,6 +5466,7 @@ static PyObject *py_ergo_add_cl(PyObject *self, PyObject *args)
 	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
 
 	vector<int> c;
+	c.reserve(4); // most SAT clauses fit without repeated vector growth
 	int max_var = -1;
 
 	if (ergo_iterate(c_obj, c, max_var) == false)
@@ -5625,12 +5641,27 @@ static PyObject *py_ergo_propagate(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_ergo_apply_jw(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &s_obj))
+		return NULL;
+
+	ergo_set_jwmode((struct ergo *)pyobj_to_void(s_obj));
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
 static PyObject *py_ergo_setphases(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	PyObject *p_obj;  // polarities given as a list of integer literals
+	int hard = 0;
 
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+	if (!PyArg_ParseTuple(args, "OO|p", &s_obj, &p_obj, &hard))
 		return NULL;
 
 	// get pointer to solver
@@ -5641,7 +5672,7 @@ static PyObject *py_ergo_setphases(PyObject *self, PyObject *args)
 	if (pyiter_to_vector(p_obj, p, max_var) == false)
 		return NULL;
 
-	ergo_shim_setphases(s, p.empty() ? NULL : &p[0], (int)p.size());
+	ergo_shim_setphases(s, p.empty() ? NULL : &p[0], (int)p.size(), hard != 0);
 
 	Py_RETURN_NONE;
 }
@@ -5955,7 +5986,9 @@ static ERGO_OPTS(bool) ergo_opts_b[] = {
 	{ "keep-bin",        ergo_shim_set_keep_bin        },
 	{ "lcm",             ergo_shim_set_lcm             },
 	{ "glucose-bump",    ergo_shim_set_glucose_bump    },
-	{ "ext",             ergo_xenable                  }
+	{ "ext",             ergo_xenable                  },
+	{ "ext-rewrite",     ergo_setxrewrite              },
+	{ "ext-equiv",       ergo_setxequiv                }
 };
 
 static ERGO_OPTS(int64_t) ergo_opts_l[] = {
@@ -6103,18 +6136,62 @@ static PyObject *py_ergo_setxscope(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_ergo_xpairs(PyObject *self, PyObject *args)
+static PyObject *py_ergo_shxscope(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
+	PyObject *o_obj;  // literals whose variables are in scope now
+	PyObject *n_obj;  // literals whose variables should be instead
 
-	if (!PyArg_ParseTuple(args, "O", &s_obj))
+	if (!PyArg_ParseTuple(args, "OOO", &s_obj, &o_obj, &n_obj))
 		return NULL;
 
 	// get pointer to solver
 	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> o, n, add, rem;
+	int max_var = -1;
+
+	if (pyiter_to_vector(o_obj, o, max_var) == false)
+		return NULL;
+	if (pyiter_to_vector(n_obj, n, max_var) == false)
+		return NULL;
+
+	// bit 1: in the old scope, bit 2: in the new one
+	vector<unsigned char> mark((size_t)max_var + 1, 0);
+	for (int l : o) mark[abs(l)] |= 1;
+	for (int l : n) mark[abs(l)] |= 2;
+
+	for (int l : o) if (mark[abs(l)] == 1) { rem.push_back(abs(l)); mark[abs(l)] = 0; }
+	for (int l : n) if (mark[abs(l)] == 2) { add.push_back(abs(l)); mark[abs(l)] = 0; }
+
+	// both empty would reset the scope to every variable
+	if (!add.empty() || !rem.empty())
+		ergo_shim_setxscope(s, add.empty() ? NULL : &add[0], (int)add.size(),
+		                       rem.empty() ? NULL : &rem[0], (int)rem.size());
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xpairs(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *l_obj;  // the literals to ask about, or None for all of them
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &l_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> of;
+	int max_var = -1;
+
+	if (l_obj != Py_None && pyiter_to_vector(l_obj, of, max_var) == false)
+		return NULL;
 
 	struct ergo_xpair *pairs = NULL;
-	int n = ergo_shim_xpairs(s, &pairs);
+	int n = ergo_shim_xpairs(s, &pairs, of.empty() ? NULL : &of[0],
+			l_obj == Py_None ? -1 : (int)of.size());
 
 	PyObject *lst = PyList_New(n);
 
@@ -6139,6 +6216,65 @@ static PyObject *py_ergo_xpairs(PyObject *self, PyObject *args)
 	free(pairs);
 
 	return lst;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xname(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *t_obj;  // the (la, lb, z) triples to register
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &t_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> t;
+	int max_var = -1;
+
+	if (pyiter_to_vector(t_obj, t, max_var) == false)
+		return NULL;
+
+	if (t.size() % 3) {
+		PyErr_SetString(PyExc_ValueError, "xname expects flat (la, lb, z) triples");
+		return NULL;
+	}
+
+	if (max_var > 0)
+		ergo_shim_declare(s, max_var);
+
+	ergo_shim_xname(s, t.empty() ? NULL : &t[0], (int)t.size() / 3);
+
+	Py_RETURN_NONE;
+}
+
+//
+//=============================================================================
+static PyObject *py_ergo_xblock(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *p_obj;  // the (la, lb) pairs to keep the miner off
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
+		return NULL;
+
+	// get pointer to solver
+	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
+	vector<int> p;
+	int max_var = -1;
+
+	if (pyiter_to_vector(p_obj, p, max_var) == false)
+		return NULL;
+
+	if (p.size() % 2) {
+		PyErr_SetString(PyExc_ValueError, "xblock expects flat (la, lb) pairs");
+		return NULL;
+	}
+
+	ergo_shim_xblock(s, p.empty() ? NULL : &p[0], (int)p.size() / 2);
+
+	Py_RETURN_NONE;
 }
 
 //

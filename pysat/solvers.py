@@ -710,7 +710,26 @@ class Solver(object):
             else:
                 raise NotImplementedError('Extension-variable mining is unsupported by this solver')
 
-    def xpairs(self):
+    def shift_xscope(self, old, new):
+        """
+            Move the scope of extension-variable mining from the variables
+            of the literals in ``old`` to those of the literals in ``new``,
+            e.g. from one call's assumptions to the next one's. Only the
+            difference is passed on, so a scope that stays put costs nothing.
+
+            :param old: literals whose variables are in scope now
+            :param new: literals whose variables should be in scope instead
+            :type old: iterable(int)
+            :type new: iterable(int)
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.shift_xscope(old, new)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xpairs(self, lits=None):
         """
             Return the literal pairs the extension-variable miner is currently
             tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
@@ -720,17 +739,64 @@ class Solver(object):
             0`` and a ``count`` saying how reliably it has recurred so far.
             Promoted pairs come first.
 
+            If parameter ``lits`` is given, only the pairs over those literals
+            are reported, which is normally what a caller wants: the literals
+            it is about to encode. The literals must be distinct.
+
             The result is valid until the next call to :meth:`solve`,
             :meth:`solve_limited` or :meth:`propagate`, like a model or an
             unsatisfiable core. Adopting a ``z`` beyond that point requires
             :meth:`xpin`.
+
+            :param lits: literals to ask about, or ``None`` for every pair
+            :type lits: iterable(int)
 
             :rtype: list(tuple(int, int, int, float))
         """
 
         if self.solver:
             if type(self.solver) in (Ergo,):
-                return self.solver.xpairs()
+                return self.solver.xpairs(lits)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xname(self, pairs):
+        """
+            Tell the solver about the names of the literal pairs given
+            externally. The solver adds the definition clauses, stops its
+            miner from introducing other names for the same pairs, and
+            rewrites its learnt clauses accordingly. Pair names adopted this
+            way are never retired.
+
+            .. note::
+
+                A pair that already has a name, and a ``z`` that already
+                names another pair, are both ignored.
+
+            :param pairs: the pairs to name
+            :type pairs: iterable(tuple(int, int, int))
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.xname(pairs)
+            else:
+                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+
+    def xblock(self, pairs):
+        """
+            Tell the solver that the given literal pairs are encoded
+            externally, so its miner must never consider them again. Unlike
+            :meth:`xname`, nothing is defined, recorded or rewritten: the
+            caller's own names for the pairs stay ordinary variables.
+
+            :param pairs: the pairs to keep the miner off
+            :type pairs: iterable(tuple(int, int))
+        """
+
+        if self.solver:
+            if type(self.solver) in (Ergo,):
+                self.solver.xblock(pairs)
             else:
                 raise NotImplementedError('Extension-variable mining is unsupported by this solver')
 
@@ -1293,7 +1359,18 @@ class Solver(object):
         if self.solver:
             return self.solver.propagate(assumptions, phase_saving)
 
-    def set_phases(self, literals=[]):
+    def apply_jw(self):
+        """
+            Recompute and apply JW scores to the current formula.
+        """
+
+        if self.solver:
+            if not isinstance(self.solver, Ergo):
+                raise NotImplementedError('Applying JW scores is unsupported by this solver')
+
+            self.solver.apply_jw()
+
+    def set_phases(self, literals=[], hard=False):
         """
             The method takes a list of literals as an argument and sets
             *phases* (or MiniSat-like *polarities*) of the corresponding
@@ -1312,6 +1389,11 @@ class Solver(object):
             Also **note** that :class:`Cadical103`, :class:`Cadical153`, and
             :class:`Cadical195` do not support this functionality.
 
+            Experimental default parameter ``hard=True`` is not currently
+            supported and is ignored.
+
+            :param hard: persistent branching preferences (Ergo only).
+            :type hard: bool
             :param literals: a list of literals.
             :type literals: iterable(int)
 
@@ -1334,6 +1416,11 @@ class Solver(object):
         """
 
         if self.solver:
+            if hard:
+                if not isinstance(self.solver, Ergo):
+                    raise NotImplementedError('Setting persistent phases is unsupported by this solver')
+                return self.solver.set_phases(literals, hard=True)
+
             return self.solver.set_phases(literals)
 
     def get_status(self):
@@ -3708,12 +3795,21 @@ class Ergo(object):
                         # creating the engine
                         self.activate_atmost()
 
-                for clause in bootstrap_with:
-                    if not clause or isinstance(clause[0], int):  # it is a clause
-                        self.add_clause(clause)
-                    else:
-                        self.add_atmost(clause[0], clause[1],
-                                        weights=clause[2] if len(clause) == 3 else [])
+                if not self.supports_atmost() and getattr(self.add_clause, '__func__', None) is Ergo.add_clause:
+                    for clause in bootstrap_with:
+                        try:
+                            self.add_clause(clause)
+                        except TypeError:
+                            if not clause or isinstance(clause[0], int):
+                                raise
+                            self.add_atmost(clause[0], clause[1], weights=clause[2] if len(clause) == 3 else [])
+                else:
+                    for clause in bootstrap_with:
+                        if not clause or isinstance(clause[0], int):  # it is a clause
+                            self.add_clause(clause)
+                        else:
+                            self.add_atmost(clause[0], clause[1],
+                                            weights=clause[2] if len(clause) == 3 else [])
 
             if warm_start:
                 self.start_mode(warm=True)
@@ -3915,13 +4011,22 @@ class Ergo(object):
 
             return bool(st), props if props != None else []
 
-    def set_phases(self, literals=[]):
+    def apply_jw(self):
         """
-            Sets polarities of a given list of variables.
+            Apply the selected JW mode now; repeat after adding clauses if needed.
         """
 
         if self.ergo:
-            pysolvers.ergo_setphases(self.ergo, literals)
+            pysolvers.ergo_apply_jw(self.ergo)
+
+    def set_phases(self, literals=[], hard=False):
+        """
+            Set branching polarities; ``hard=True`` overrides phase saving.
+            ``hard=False`` releases persistent preferences for these variables.
+        """
+
+        if self.ergo:
+            pysolvers.ergo_setphases(self.ergo, literals, bool(hard))
 
     def set_activities(self, activities={}):
         """
@@ -3973,6 +4078,13 @@ class Ergo(object):
             thrown. Also note that ``emulate``, if present, is always
             applied first, so any other parameter given in the same call
             overrides the emulated preset.
+
+            .. note::
+
+                A JW mode, if requested, is applied (after all parameters) to
+                the formula loaded at this call. Use ``apply_jw()`` directly
+                to recompute after adding clauses. Mode 'none' performs no
+                scoring and preserves existing phases.
 
             The list of available options:
 
@@ -4033,6 +4145,18 @@ class Ergo(object):
                 * ``ext-escalate``: how quickly ``ext-threshold`` grows
                   with the number of variables already introduced (float)
 
+                * ``ext-rewrite``: whether a promoted or named pair may
+                  be substituted into the clause database (default
+                  ``True``); switching it off also stops mining from
+                  promoting, since a variable nothing references retires
+                  the moment it is created
+
+                * ``ext-equiv``: whether an extension variable gets the
+                  ``la | lb -> z`` half of its definition (default
+                  ``True``); without it ``z`` is only the upper bound a
+                  totalizer would have encoded itself, which a rewrite
+                  cannot use, so it forces ``ext-rewrite`` off
+
             :param parameters: parameter names mapped to their values
             :type parameters: dict
         """
@@ -4045,6 +4169,10 @@ class Ergo(object):
             for name, value in parameters.items():
                 if name != 'emulate':
                     pysolvers.ergo_set(self.ergo, name, value)
+
+            # setting JW mode if not 'none'
+            if parameters.get('jw-mode', 'none') != 'none':
+                self.apply_jw()
 
     def set_xscope(self, add=[], remove=[]):
         """
@@ -4070,7 +4198,21 @@ class Ergo(object):
         if self.ergo:
             pysolvers.ergo_setxscope(self.ergo, add, remove)
 
-    def xpairs(self):
+    def shift_xscope(self, old, new):
+        """
+            Move the mining scope from the variables of ``old`` to those of
+            ``new``; only the difference reaches Ergo.
+
+            :param old: literals whose variables are in scope now
+            :param new: literals whose variables should be in scope instead
+            :type old: iterable(int)
+            :type new: iterable(int)
+        """
+
+        if self.ergo:
+            pysolvers.ergo_shiftxscope(self.ergo, old, new)
+
+    def xpairs(self, lits=None):
         """
             Return the literal pairs the extension-variable miner is currently
             tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
@@ -4080,16 +4222,57 @@ class Ergo(object):
             0`` and a ``count`` saying how reliably it has recurred so far.
             Promoted pairs come first.
 
+            If ``lits`` is given, only the pairs over those literals are
+            reported, which is normally what a caller wants: the literals it
+            is about to encode. Asking narrowly is also much cheaper than
+            taking the whole database home and sifting it there. The
+            literals must be distinct.
+
             The result is valid until the next call to :meth:`solve`,
             :meth:`solve_limited` or :meth:`propagate`, like a model or an
             unsatisfiable core. Adopting a ``z`` beyond that point requires
             :meth:`xpin`.
 
+            :param lits: literals to ask about, or ``None`` for every pair
+            :type lits: iterable(int)
+
             :rtype: list(tuple(int, int, int, float))
         """
 
         if self.ergo:
-            return pysolvers.ergo_xpairs(self.ergo)
+            return pysolvers.ergo_xpairs(self.ergo, lits)
+
+    def xname(self, pairs):
+        """
+            Adopt variables of the caller's own as names for literal pairs,
+            i.e. register ``z <-> la | lb`` for a pair the caller has encoded
+            itself. Ergo adds ``z``'s definition clauses, records the pair so
+            its miner never mints a second name for it, and rewrites its
+            learnt clauses onto ``z``. An adopted name is pinned on arrival
+            and never retires.
+
+            A pair that already has a name, and a ``z`` that already names
+            another pair, are both ignored.
+
+            :param pairs: the pairs to name
+            :type pairs: iterable(tuple(int, int, int))
+        """
+
+        if self.ergo:
+            pysolvers.ergo_xname(self.ergo, [l for p in pairs for l in p])
+
+    def xblock(self, pairs):
+        """
+            Keep the miner off literal pairs the caller encodes itself, for
+            good. Nothing is defined, recorded or rewritten, and the
+            caller's own variable for a pair is none of Ergo's business.
+
+            :param pairs: the pairs to keep the miner off
+            :type pairs: iterable(tuple(int, int))
+        """
+
+        if self.ergo:
+            pysolvers.ergo_xblock(self.ergo, [l for p in pairs for l in p[:2]])
 
     def xpin(self, variables):
         """
@@ -4272,16 +4455,30 @@ class Ergo(object):
                 if not self.supports_atmost():
                     raise NotImplementedError('Native atmost constraints are currently disabled')
 
-            for clause in formula:
-                if not clause or isinstance(clause[0], int):  # it is a clause
-                    res = self.add_clause(clause, no_return)
-                else:
-                    res = self.add_atmost(clause[0], clause[1],
-                                          weights=clause[2] if len(clause) == 3 else [],
-                                          no_return=no_return)
+            if not self.supports_atmost() and getattr(self.add_clause, '__func__', None) is Ergo.add_clause:
+                for clause in formula:
+                    try:
+                        res = self.add_clause(clause, no_return)
+                    except TypeError:
+                        if not clause or isinstance(clause[0], int):
+                            raise
+                        res = self.add_atmost(clause[0], clause[1],
+                                              weights=clause[2] if len(clause) == 3 else [],
+                                              no_return=no_return)
 
-                if not no_return and res == False:
-                    return res
+                    if not no_return and res == False:
+                        return res
+            else:
+                for clause in formula:
+                    if not clause or isinstance(clause[0], int):  # it is a clause
+                        res = self.add_clause(clause, no_return)
+                    else:
+                        res = self.add_atmost(clause[0], clause[1],
+                                              weights=clause[2] if len(clause) == 3 else [],
+                                              no_return=no_return)
+
+                    if not no_return and res == False:
+                        return res
 
             if not no_return:
                 return res

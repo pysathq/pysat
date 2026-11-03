@@ -1259,7 +1259,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
      return confl;
  }
  
-@@ -891,48 +1243,48 @@
+@@ -891,48 +1243,50 @@
  /*_________________________________________________________________________________________________
  |
  |  reduceDB : ()  ->  [void]
@@ -1307,6 +1307,8 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  {
 - 
 +
++  if (!learnts.size()) return;
++
    int     i, j;
    nbReduceDB++;
    sort(learnts, reduceDB_lt(ca));
@@ -1324,7 +1326,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
    // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
    // Keep clauses which seem to be usefull (their lbd was reduce during this sequence)
  
-@@ -940,6 +1292,7 @@
+@@ -940,6 +1294,7 @@
  
    for (i = j = 0; i < learnts.size(); i++){
      Clause& c = ca[learnts[i]];
@@ -1332,7 +1334,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
      if (c.lbd()>2 && c.size() > 2 && c.canBeDel() &&  !locked(c) && (i < limit)) {
        removeClause(learnts[i]);
        nbRemovedClauses++;
-@@ -957,13 +1310,13 @@
+@@ -957,13 +1312,13 @@
  
  void Solver::removeSatisfied(vec<CRef>& cs)
  {
@@ -1348,7 +1350,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
              removeClause(cs[i]);
          else
              cs[j++] = cs[i];
-@@ -976,7 +1329,7 @@
+@@ -976,7 +1331,7 @@
  {
      vec<Var> vs;
      for (Var v = 0; v < nVars(); v++)
@@ -1357,7 +1359,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
              vs.push(v);
      order_heap.build(vs);
  }
-@@ -985,7 +1338,7 @@
+@@ -985,7 +1340,7 @@
  /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -1366,7 +1368,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  |  Description:
  |    Simplify the clause database according to the current top-level assigment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-@@ -1017,15 +1370,15 @@
+@@ -1017,15 +1372,15 @@
  /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1388,7 +1390,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  |________________________________________________________________________________________________@*/
  lbool Solver::search(int nof_conflicts)
  {
-@@ -1045,16 +1398,16 @@
+@@ -1045,16 +1400,16 @@
              var_decay += 0.01;
  
  	  if (verbosity >= 1 && conflicts%verbEveryConflicts==0){
@@ -1411,7 +1413,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  	  trailQueue.push(trail.size());
  	  // BLOCK RESTART (CP 2012 paper)
  	  if( conflictsRestarts>LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid()  && trail.size()>R*trailQueue.getavg()) {
-@@ -1069,13 +1422,13 @@
+@@ -1069,13 +1424,13 @@
  
  	    lbdQueue.push(nblevels);
  	    sumLBD += nblevels;
@@ -1427,7 +1429,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
                              (-2 * sign(learnt_clause[i]) + 1) );
                fprintf(certifiedOutput, "0\n");
              }
-@@ -1084,7 +1437,7 @@
+@@ -1084,7 +1439,7 @@
  	      uncheckedEnqueue(learnt_clause[0]);nbUn++;
              }else{
                  CRef cr = ca.alloc(learnt_clause, true);
@@ -1436,7 +1438,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  		ca[cr].setSizeWithoutSelectors(szWoutSelectors);
  		if(nblevels<=2) nbDL2++; // stats
  		if(ca[cr].size()==2) nbBin++; // stats
-@@ -1097,9 +1450,9 @@
+@@ -1097,9 +1452,9 @@
              varDecayActivity();
              claDecayActivity();
  
@@ -1448,7 +1450,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  	  if (
  	      ( lbdQueue.isvalid() && ((lbdQueue.getavg()*K) > (sumLBD / conflictsRestarts)))) {
  	    lbdQueue.fastclear();
-@@ -1109,33 +1462,33 @@
+@@ -1109,33 +1464,32 @@
  	      bt = (decisionLevel()<assumptions.size()) ? decisionLevel() : assumptions.size();
  	    }
  	    cancelUntil(bt);
@@ -1467,7 +1469,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  	      {
 -	
 +
- 		assert(learnts.size()>0);
+-		assert(learnts.size()>0);
  		curRestart = (conflicts/ nbclausesbeforereduce)+1;
  		reduceDB();
  		nbclausesbeforereduce += incReduceDB;
@@ -1490,7 +1492,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
                  }else{
                      next = p;
                      break;
-@@ -1148,9 +1501,9 @@
+@@ -1148,9 +1502,9 @@
                  next = pickBranchLit();
  
                  if (next == lit_Undef){
@@ -1502,7 +1504,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  		}
              }
  
-@@ -1179,25 +1532,67 @@
+@@ -1179,25 +1533,67 @@
  void Solver::printIncrementalStats() {
  
    printf("c---------- Glucose Stats -------------------------\n");
@@ -1580,7 +1582,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  // NOTE: assumptions passed in member-variable 'assumptions'.
  lbool Solver::solve_()
  {
-@@ -1208,29 +1603,31 @@
+@@ -1208,29 +1604,31 @@
    }
      model.clear();
      conflict.clear();
@@ -1620,7 +1622,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  
        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              | Progress |\n");
        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |          |\n");
-@@ -1239,7 +1636,7 @@
+@@ -1239,7 +1637,7 @@
  
      // Search:
      int curr_restarts = 0;
@@ -1629,7 +1631,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
        status = search(0); // the parameter is useless in glucose, kept to allow modifications
  
          if (!withinBudget()) break;
-@@ -1251,30 +1648,37 @@
+@@ -1251,30 +1649,37 @@
  
  
      if (certifiedUNSAT){ // Want certified output
@@ -1679,7 +1681,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
        totalTime4Unsat +=(finalTime-curTime);
      }
  
-@@ -1283,8 +1687,150 @@
+@@ -1283,8 +1688,150 @@
  }
  
  //=================================================================================================
@@ -1831,7 +1833,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
  // FIXME: this needs to be rewritten completely.
  
  static Var mapVar(Var x, vec<Var>& map, Var& max)
-@@ -1302,7 +1848,7 @@
+@@ -1302,7 +1849,7 @@
      if (satisfied(c)) return;
  
      for (int i = 0; i < c.size(); i++)
@@ -1840,7 +1842,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
              fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max)+1);
      fprintf(f, "0\n");
  }
-@@ -1333,12 +1879,12 @@
+@@ -1333,12 +1880,12 @@
      for (int i = 0; i < clauses.size(); i++)
          if (!satisfied(ca[clauses[i]]))
              cnt++;
@@ -1855,7 +1857,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
                      mapVar(var(c[j]), map, max);
          }
  
-@@ -1348,7 +1894,7 @@
+@@ -1348,7 +1895,7 @@
      fprintf(f, "p cnf %d %d\n", max, cnt);
  
      for (int i = 0; i < assumptions.size(); i++){
@@ -1864,7 +1866,7 @@ diff -Naur solvers/gluecard30/core/Solver.cc solvers/gc30/core/Solver.cc
          fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max)+1);
      }
  
-@@ -1407,11 +1953,11 @@
+@@ -1407,11 +1954,11 @@
  {
      // Initialize the next region to a size corresponding to the estimated utilization degree. This
      // is not precise but should avoid some unnecessary reallocations for the new region:
