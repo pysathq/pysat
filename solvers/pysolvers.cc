@@ -153,7 +153,7 @@ static char  shxscope_docstring[] = "Move the mining scope from the variables of
                                     "one literal list to those of another (Ergo only).";
 static char    xpairs_docstring[] = "Get the literal pairs the extension-variable "
                                     "miner is tracking (Ergo only).";
-static chat   applyjw_docstring[] = "Compute and apply Ergo JW scores now.";
+static char   applyjw_docstring[] = "Compute and apply Ergo JW scores now.";
 static char     xname_docstring[] = "Adopt a caller-owned variable as the name "
                                     "of a literal pair (Ergo only).";
 static char    xblock_docstring[] = "Keep the miner off literal pairs the caller "
