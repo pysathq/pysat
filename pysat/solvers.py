@@ -1392,9 +1392,9 @@ class Solver(object):
             Experimental default parameter ``hard=True`` is not currently
             supported and is ignored.
 
-            :param hard: persistent branching preferences (Ergo only).
+            :param hard: persistent branching preferences
             :type hard: bool
-            :param literals: a list of literals.
+            :param literals: a list of literals
             :type literals: iterable(int)
 
             Usage example:

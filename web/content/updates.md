@@ -10,6 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 3.11.2026 (*1.9.dev18*)
+
+-   Fixed a bug in Glucose3 related to reducing an empty learnt clause
+    database.
+
 ## 15.10.2026 (*1.9.dev17*)
 
 -   Replaced pypblib with Pindakaas as the PB library (thanks for the effort
