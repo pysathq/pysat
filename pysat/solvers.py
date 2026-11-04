@@ -1416,9 +1416,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if hard:
-                if not isinstance(self.solver, Ergo):
-                    raise NotImplementedError('Setting persistent phases is unsupported by this solver')
+            if hard and isinstance(self.solver, Ergo):
                 return self.solver.set_phases(literals, hard=True)
 
             return self.solver.set_phases(literals)

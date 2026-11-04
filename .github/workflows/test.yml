@@ -2,18 +2,31 @@ name: PySAT Tests
 on: [push]
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: Python 3.15 on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.13', '3.14', '3.15']
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Python ${{ matrix.python-version }}
+      # prepare.py applies solver patches through WSL on Windows.
+      - name: Set up WSL for Windows solver patches
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-22.04
+          wsl-version: '1'
+          set-as-default: 'true'
+          additional-packages: patch
+
+      - name: Set up Python 3.15
         uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.15'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
