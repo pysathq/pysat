@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## xx.11.2026 (*1.9.dev21*)
+
+-   Removed AppVeyor CI integration.
+
 ## 4.11.2026 (*1.9.dev20*)
 
 -   Updated GitHub actions.
