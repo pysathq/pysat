@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 4.11.2026 (*1.9.dev20*)
+
+-   Updated GitHub actions.
+
 ## 4.11.2026 (*1.9.dev19*)
 
 -   Fixed a memory leak in modular totalizer.
