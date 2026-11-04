@@ -27,8 +27,9 @@ jobs:
             runs-on: ubuntu-latest
           - os: manylinux_aarch64
             runs-on: ubuntu-24.04-arm
-          # - os: windows-intel
-          #   runs-on: windows-latest
+          - os: windows-intel
+            runs-on: windows-latest
+            archs: AMD64
           # - os: windows-arm
           #   runs-on: windows-11-arm
           - os: macos-intel
@@ -56,11 +57,27 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # prepare.py uses WSL only to apply patches; compilation stays native.
+      - name: Set up WSL for Windows solver patches
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-22.04
+          wsl-version: '1'
+          set-as-default: 'true'
+          additional-packages: patch
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.5
         env:
           CIBW_PLATFORM: ${{ matrix.platform || 'auto' }}
           CIBW_ARCHS: ${{ matrix.archs || 'auto' }}
+          CIBW_TEST_COMMAND_WINDOWS: >-
+            python -c "import pycard, pyformula, pysolvers;
+            from pysat.solvers import Solver;
+            s = Solver(name='g3', bootstrap_with=[[1]]);
+            assert s.solve();
+            s.delete()"
         # Can also be configured directly, using `with:`
         # with:
         #   package-dir: .
