@@ -116,6 +116,16 @@ inline void to_TO(
 
 		to_UA(top_id, clset, *olst, *outfsthalf, *outsndhalf);
 
+		// leaf vectors are not queued
+		if (half < 2) {
+			delete fsthalf;
+			delete outfsthalf;
+		}
+		if (n - half < 2) {
+			delete sndhalf;
+			delete outsndhalf;
+		}
+
 		delete ilst;
 		delete olst;
 	}
@@ -386,6 +396,18 @@ inline void mto_MTO_A(
 
 		mto_MUA_A(top_id, clset, *ulst, *llst, *ufsthalf, *lfsthalf,
 				*usndhalf, *lsndhalf, p);
+
+		// leaf vectors are not queued
+		if (half < p) {
+			delete fsthalf;
+			delete ufsthalf;
+			delete lfsthalf;
+		}
+		if (ni - half < p) {
+			delete sndhalf;
+			delete usndhalf;
+			delete lsndhalf;
+		}
 
 		delete ilst;
 		delete ulst;

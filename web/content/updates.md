@@ -10,6 +10,12 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 4.11.2026 (*1.9.dev19*)
+
+-   Fixed a memory leak in modular totalizer.
+-   Updated GitHub actions and AppVeyor build.
+-   Added `ISeqCounter` (ported from [Jesse Looney's fork](https://github.com/jesselooney/pysat/tree/8d3449e8d1845cc9e0f682a45beb888bbac8be0c)).
+
 ## 3.11.2026 (*1.9.dev18*)
 
 -   Fixed a bug in Glucose3 related to reducing an empty learnt clause

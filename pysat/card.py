@@ -19,6 +19,7 @@
         EncType
         CardEnc
         ITotalizer
+        ISeqCounter
 
     ==================
     Module description
@@ -79,9 +80,10 @@
     Additionally, to the standard cardinality encodings that are basically
     "static" CNF formulas, the module is designed to able to construct
     *incremental* cardinality encodings, i.e. those that can be incrementally
-    extended at a later stage. At this point only the *iterative totalizer*
-    [11]_ encoding is supported. Iterative totalizer can be accessed with the
-    use of the :class:`.ITotalizer` class.
+    extended at a later stage. The *iterative totalizer* [11]_ is available
+    through :class:`.ITotalizer`. An iterative sequential counter is available
+    through :class:`.ISeqCounter`; it supports increasing the bound and
+    obtaining constraint literals for prefixes of the input.
 
     .. [11] Ruben Martins, Saurabh Joshi, Vasco M. Manquinho, Inês Lynce.
         *Incremental Cardinality Constraints for MaxSAT*. CP 2014. pp. 531-548
@@ -782,3 +784,241 @@ class ITotalizer(object):
 
         # memory deallocation should not be done for the merged tree
         another._merged = True
+
+
+# Incremental sequential counter taken almost verbatim from jesselooney/pysat,
+# commit 8d3449e8d1845cc9e0f682a45beb888bbac8be0c
+#==============================================================================
+class ISeqCounter(object):
+    """
+        This class implements an iterative sequential-counter encoding. Like
+        :class:`ITotalizer`, this class is not abstract and its objects once
+        created can be reused several times: the bound can be increased, and
+        the internal state can be read out as standalone constraint literals
+        via :meth:`get_constraint`. The interface intentionally mirrors
+        :class:`ITotalizer`'s.
+
+        The constructor of the class object takes 3 default arguments.
+
+        :param lits: a list of literals to sum.
+        :param ubound: the largest potential bound to use.
+        :param top_id: top variable identifier used so far.
+
+        :type lits: iterable(int)
+        :type ubound: int
+        :type top_id: integer or None
+
+        The encoding of the current counter can be accessed with the use of
+        :class:`.CNF` variable stored as ``self.cnf``. Potential bounds **are
+        not** imposed by default but can be added as unit clauses in the final
+        CNF formula. The bounds are stored in the list of Boolean variables as
+        ``self.rhs``. A concrete bound :math:`k` can be enforced by
+        considering a unit clause ``-self.rhs[k]``. **Note** that
+        ``-self.rhs[0]`` enforces all literals of the sum to be *false*.
+
+        An :class:`ISeqCounter` object should be deleted if it is not needed
+        anymore.
+
+        Possible usage of the class is shown below:
+
+        .. code-block:: python
+
+            >>> from pysat.card import ISeqCounter
+            >>> t = ISeqCounter(lits=[1, 2, 3], ubound=1)
+            >>> print(t.cnf.clauses)
+            [[-1, 4], [-4, 5], [-2, 5], [-5, 6], [-3, 6], [-4, -2, 7], [-7, 8], [-5, -3, 8]]
+            >>> print(t.rhs)
+            [6, 8]
+            >>> t.delete()
+    """
+
+    def __init__(self, lits=[], ubound=1, top_id=None):
+        """
+            Constructor.
+        """
+
+        # internal totalizer object
+        self.tobj = None
+
+        # its characteristics
+        self.lits = []
+        self.ubound = 0
+        self.top_id = 0
+
+        # encoding result
+        self.cnf = CNF()  # CNF formula encoding the totalizer object
+        self.rhs = []     # upper bounds on the number of literals (rhs)
+
+        # number of new clauses
+        self.nof_new = 0
+
+        # this newly created totalizer object is not yet merged in any other
+        self._merged = False
+
+        if lits:
+            self.new(lits=lits, ubound=ubound, top_id=top_id)
+
+    def new(self, lits=[], ubound=1, top_id=None):
+        """
+            The actual constructor of :class:`ISeqCounter`. Invoked from
+            ``self.__init__()``. Creates an object of :class:`ISeqCounter`
+            given a list of literals in the sum, the largest potential bound
+            to consider, as well as the top variable identifier used so far.
+            See the description of :class:`ISeqCounter` for details.
+
+        """
+
+        self.lits = list(lits)
+        self.top_id = max(map(lambda x: abs(x), self.lits + [top_id if top_id != None else 0]))
+
+        # Fail if the bound is negative. ITotalizer does not do this, but I am
+        # not sure how or if it is handling it lower down the chain, so I will
+        # stop it here.
+        if ubound < 0:
+            raise ValueError("`ubound` cannot be negative")
+        else:
+            self.ubound = ubound
+
+        # creating the object
+        self.tobj, clauses, self.rhs, self.top_id = pycard.iseq_new(self.lits,
+                self.ubound, self.top_id, int(MainThread.check()))
+
+        # saving the result
+        self.cnf.clauses = clauses
+        self.cnf.nv = self.top_id
+
+        # for convenience, keeping the number of clauses
+        self.nof_new = len(clauses)
+
+    def delete(self):
+        """
+            Destroys a previously constructed :class:`ISeqCounter` object.
+            Internal variables ``self.cnf`` and ``self.rhs`` get cleaned.
+        """
+
+        if self.tobj:
+            if not self._merged:
+                pycard.iseq_del(self.tobj)
+
+                # otherwise, this totalizer object is merged into a larger one
+                # therefore, this memory should be freed in its destructor
+
+            self.tobj = None
+
+        self.lits = []
+        self.ubound = 0
+        self.top_id = 0
+
+        self.cnf = CNF()
+        self.rhs = []
+
+        self.nof_new = 0
+
+    def __enter__(self):
+        """
+            'with' constructor.
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+            'with' destructor.
+        """
+
+        self.delete()
+
+    def __del__(self):
+        """
+            Destructor.
+        """
+
+        self.delete()
+
+    def increase(self, ubound=1, top_id=None):
+        """
+            Increases a potential upper bound that can be imposed on the
+            literals in the sum of an existing :class:`ISeqCounter` object to
+            a new value.
+
+            :param ubound: a new upper bound.
+            :param top_id: a new top variable identifier.
+
+            :type ubound: int
+            :type top_id: integer or None
+
+            The top identifier ``top_id`` applied only if it is greater than
+            the one used in ``self``.
+
+            This method creates additional clauses encoding the existing
+            counter up to the new upper bound given and appends them to
+            the list of clauses of :class:`.CNF` ``self.cnf``. The number of
+            newly created clauses is stored in variable ``self.nof_new``.
+
+            Also, a list of bounds ``self.rhs`` gets increased and its length
+            becomes ``ubound+1``.
+
+            The method can be used in the following way:
+
+            .. code-block:: python
+
+                >>> from pysat.card import ISeqCounter
+                >>> t = ISeqCounter(lits=[1, 2, 3], ubound=1)
+                >>> print(t.cnf.clauses)
+                [[-1, 4], [-4, 5], [-2, 5], [-5, 6], [-3, 6], [-4, -2, 7], [-7, 8], [-5, -3, 8]]
+                >>> print(t.rhs)
+                [6, 8]
+                >>>
+                >>> t.increase(ubound=2)
+                >>> print(t.cnf.clauses)
+                [[-1, 4], [-4, 5], [-2, 5], [-5, 6], [-3, 6], [-4, -2, 7], [-7, 8], [-5, -3, 8], [-7, -3, 9]]
+                >>> print(t.cnf.clauses[-t.nof_new:])
+                [[-7, -3, 9]]
+                >>> print(t.rhs)
+                [6, 8, 9]
+                >>> t.delete()
+        """
+
+        self.top_id = max(self.top_id, top_id if top_id != None else 0)
+
+        # do nothing if the bound is set incorrectly
+        if ubound <= self.ubound or self.ubound >= len(self.lits):
+            self.nof_new = 0
+            return
+        else:
+            self.ubound = ubound
+
+        # updating the object and adding more variables and clauses
+        clauses, self.rhs, self.top_id = pycard.iseq_inc(self.tobj,
+                self.ubound, self.top_id, int(MainThread.check()))
+
+        # saving the result
+        self.cnf.clauses.extend(clauses)
+        self.cnf.nv = self.top_id
+
+        # keeping the number of newly added clauses
+        self.nof_new = len(clauses)
+
+    def get_constraint(self, prefix_len, bound):
+        """
+            Get the literal whose negation requires that the sum of the first
+            ``prefix_len`` literals of ``self.lits`` is at most ``bound``.
+            This lets a caller reuse the internal state of a partially-built
+            counter as a standalone constraint, rather than only ever
+            asserting the counter's own top-level bound in ``self.rhs``.
+
+            :param prefix_len: length of the prefix of ``self.lits`` to sum.
+            :param bound: an upper bound already covered by the counter, i.e.
+                ``bound < len(self.rhs)``.
+
+            :type prefix_len: int
+            :type bound: int
+
+            :returns: the requested literal, or ``None`` if ``prefix_len`` and
+                ``bound`` do not satisfy ``0 <= bound < len(self.rhs)`` and
+                ``bound < prefix_len <= len(self.lits)``.
+            :rtype: int or None
+        """
+
+        if 0 <= bound < len(self.rhs) and bound < prefix_len <= len(self.lits):
+            return pycard.iseq_get(self.tobj, prefix_len, bound, int(MainThread.check()))

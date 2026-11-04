@@ -22,8 +22,7 @@ environment:
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install --upgrade pip setuptools wheel requests pytest"
-  - "%PYTHON%\\python.exe appveyor\\instdep.py"
+  - "%PYTHON%\\python.exe -m pip install --upgrade pip setuptools wheel pytest"
 
 build: off
 

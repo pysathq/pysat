@@ -16,6 +16,7 @@
 
 #include "card.hh"
 #include "itot.hh"
+#include "iseq.hh"
 
 using namespace std;
 
@@ -38,6 +39,13 @@ static char itot_ext_docstring[] = "Extends the set of inputs in an iterative"
 				   " totalizer object.";
 static char itot_mrg_docstring[] = "Merge two totalizer objects into one.";
 static char itot_del_docstring[] = "Delete an iterative totalizer object";
+
+static char iseq_new_docstring[] = "Create an iterative sequential counter"
+                                   "object for an AtMost(k) constraint.";
+static char iseq_inc_docstring[] = "Increase bound in an iterative sequential"
+                                   "counter object";
+static char iseq_del_docstring[] = "Delete an iterative sequential counter";
+static char iseq_get_docstring[] = "Get a constraint for an iterative sequential counter";
 
 static PyObject *CardError;
 static jmp_buf env;
@@ -124,6 +132,10 @@ extern "C" {
 	static PyObject *py_itot_ext       (PyObject *, PyObject *);
 	static PyObject *py_itot_mrg       (PyObject *, PyObject *);
 	static PyObject *py_itot_del       (PyObject *, PyObject *);
+	static PyObject *py_iseq_new       (PyObject *, PyObject *);
+	static PyObject *py_iseq_inc       (PyObject *, PyObject *);
+	static PyObject *py_iseq_del       (PyObject *, PyObject *);
+	static PyObject *py_iseq_get       (PyObject *, PyObject *);
 }
 
 // module specification
@@ -136,6 +148,11 @@ static PyMethodDef module_methods[] = {
 	{ "itot_ext",       py_itot_ext,       METH_VARARGS, itot_ext_docstring },
 	{ "itot_mrg",       py_itot_mrg,       METH_VARARGS, itot_mrg_docstring },
 	{ "itot_del",       py_itot_del,       METH_VARARGS, itot_del_docstring },
+
+	{ "iseq_new",       py_iseq_new,        METH_VARARGS, iseq_new_docstring },
+	{ "iseq_inc",       py_iseq_inc,        METH_VARARGS, iseq_inc_docstring },
+	{ "iseq_del",       py_iseq_del,        METH_VARARGS, iseq_del_docstring },
+	{ "iseq_get",       py_iseq_get,        METH_VARARGS, iseq_get_docstring },
 
 	{ NULL, NULL, 0, NULL }
 };
@@ -855,6 +872,205 @@ static PyObject *py_itot_del(PyObject *self, PyObject *args)
 
 	// delete
 	itot_destroy(tree);
+
+	PyObject *ret = Py_BuildValue("");
+	return ret;
+}
+
+// Incremental sequential counter contributed by Jesse Looney.
+// From jesselooney/pysat, commit 8d3449e8d1845cc9e0f682a45beb888bbac8be0c.
+//
+//=============================================================================
+static PyObject *py_iseq_new(PyObject *self, PyObject *args)
+{
+	PyObject *lhs_obj;
+	int rhs;
+	int top;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oiii", &lhs_obj, &rhs, &top, &main_thread))
+		return NULL;
+
+	vector<int> lhs;
+	if (pyiter_to_vector(lhs_obj, lhs) == false)
+		return NULL;
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	// calling encoder
+	ClauseSet dest;
+	SeqState *state = iseq_new(dest, lhs, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyIntCache cache = {};
+	PyObject *dest_obj = clauseset_to_pylist(dest, &cache);
+	pyint_cache_clear(&cache);
+	if (dest_obj == NULL) {
+		iseq_destroy(state);
+		return NULL;
+	}
+
+	PyObject *ubs_obj = vector_to_pylist(state->rhs);
+	if (ubs_obj == NULL) {
+		Py_DECREF(dest_obj);
+		iseq_destroy(state);
+		return NULL;
+	}
+	PyObject *state_obj = void_to_pyobj((void *)state);
+	if (state_obj == NULL) {
+		Py_DECREF(dest_obj);
+		Py_DECREF(ubs_obj);
+		iseq_destroy(state);
+		return NULL;
+	}
+	PyObject *top_obj = pyint_from_cint(top);
+	if (top_obj == NULL) {
+		Py_DECREF(dest_obj);
+		Py_DECREF(ubs_obj);
+		Py_DECREF(state_obj);
+		iseq_destroy(state);
+		return NULL;
+	}
+
+	PyObject *ret = PyTuple_New(4);
+	if (ret == NULL) {
+		Py_DECREF(dest_obj);
+		Py_DECREF(ubs_obj);
+		Py_DECREF(state_obj);
+		Py_DECREF(top_obj);
+		iseq_destroy(state);
+		return NULL;
+	}
+	PyTuple_SET_ITEM(ret, 0, state_obj);
+	PyTuple_SET_ITEM(ret, 1, dest_obj);
+	PyTuple_SET_ITEM(ret, 2, ubs_obj);
+	PyTuple_SET_ITEM(ret, 3, top_obj);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_iseq_inc(PyObject *self, PyObject *args)
+{
+	PyObject *t_obj;
+	int rhs;
+	int top;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oiii", &t_obj, &rhs, &top, &main_thread))
+		return NULL;
+
+	// get pointer to state
+	SeqState *state = (SeqState *)pyobj_to_void(t_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	// calling encoder
+	ClauseSet dest;
+	iseq_increase(state, dest, rhs, top);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyIntCache cache = {};
+	PyObject *dest_obj = clauseset_to_pylist(dest, &cache);
+	pyint_cache_clear(&cache);
+	if (dest_obj == NULL)
+		return NULL;
+
+	PyObject *ubs_obj = vector_to_pylist(state->rhs);
+	if (ubs_obj == NULL) {
+		Py_DECREF(dest_obj);
+		return NULL;
+	}
+	PyObject *top_obj = pyint_from_cint(top);
+	if (top_obj == NULL) {
+		Py_DECREF(dest_obj);
+		Py_DECREF(ubs_obj);
+		return NULL;
+	}
+
+	PyObject *ret = PyTuple_New(3);
+	if (ret == NULL) {
+		Py_DECREF(dest_obj);
+		Py_DECREF(ubs_obj);
+		Py_DECREF(top_obj);
+		return NULL;
+	}
+	PyTuple_SET_ITEM(ret, 0, dest_obj);
+	PyTuple_SET_ITEM(ret, 1, ubs_obj);
+	PyTuple_SET_ITEM(ret, 2, top_obj);
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_iseq_get(PyObject *self, PyObject *args)
+{
+	PyObject *t_obj;
+	int prefix_len;
+	int bound;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "Oiii", &t_obj, &prefix_len, &bound, &main_thread))
+		return NULL;
+
+	// get pointer to state
+	SeqState *state = (SeqState *)pyobj_to_void(t_obj);
+
+	PyOS_sighandler_t sig_save;
+	if (main_thread) {
+		sig_save = PyOS_setsig(SIGINT, sigint_handler);
+
+		if (setjmp(env) != 0) {
+			PyErr_SetString(CardError, "Caught keyboard interrupt");
+			return NULL;
+		}
+	}
+
+	// calling encoder
+	int lit = iseq_get(state, prefix_len, bound);
+
+	if (main_thread)
+		PyOS_setsig(SIGINT, sig_save);
+
+	PyObject *ret = Py_BuildValue("i", lit);
+
+	return ret;
+}
+
+//
+//=============================================================================
+static PyObject *py_iseq_del(PyObject *self, PyObject *args)
+{
+	PyObject *t_obj;
+
+	if (!PyArg_ParseTuple(args, "O", &t_obj))
+		return NULL;
+
+	// get pointer to state
+	SeqState *state = (SeqState *)pyobj_to_void(t_obj);
+
+	// delete
+	iseq_destroy(state);
 
 	PyObject *ret = Py_BuildValue("");
 	return ret;
