@@ -10,9 +10,11 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## xx.11.2026 (*1.9.dev21*)
+## 5.11.2026 (*1.9.dev21*)
 
 -   Removed AppVeyor CI integration.
+-   Fixed a few issues with `pysat.process`.
+-   Playing with bit flipping in `Cadical300`, using an LLM.
 
 ## 4.11.2026 (*1.9.dev20*)
 
