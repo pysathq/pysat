@@ -1359,6 +1359,64 @@ class Solver(object):
         if self.solver:
             return self.solver.propagate(assumptions, phase_saving)
 
+    def flip_bits(self, assumptions=[], preferences=None, budget=100000):
+        """
+            Run a "bit flipper" a.k.a. local search (based on CaDiCaL's
+            ProbSAT-like walker) aiming at a model of the formula that
+            minimizes its *cost* with respect to a set of weighted literal
+            preferences, i.e. the sum of the weights of the preferred literals
+            falsified by the model. The method returns a pair of a model and
+            its cost, or ``(None, None)`` if no model is found.
+
+            Preferences are given as a dictionary mapping literals to their
+            non-negative integer weights (both polarities of a variable can
+            be preferred). The preferences are kept between the calls unless
+            new ones are provided. The search is limited by a ``budget``
+            given in CaDiCaL's local search *ticks* (a measure of memory
+            accesses).
+
+            **Note** that all the clauses removed by preprocessing (see
+            :meth:`Cadical300.process`) are restored by the method.
+
+            **Note** that only :class:`Cadical300` supports this
+            functionality, without external propagators (and so without
+            native cardinality constraints).
+
+            .. warning::
+
+                This prototype implementation has been written by an LLM. So
+                use at your own risk!
+
+            :param assumptions: a list of assumption literals.
+            :param preferences: weighted preferred literals.
+            :param budget: limit on the number of ticks.
+
+            :type assumptions: iterable(int)
+            :type preferences: dict(int, int)
+            :type budget: int
+
+            :rtype: tuple(list(int), int) or tuple(None, None).
+
+            Usage example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Solver
+                >>>
+                >>> with Solver(name='cd30', bootstrap_with=[[1, 2], [-1, -2]]) as s:
+                ...     print(s.solve())
+                ...     print(s.flip_bits(preferences={1: 5, 2: 3}))
+                ...
+                True
+                ([1, -2], 3)
+        """
+
+        if self.solver:
+            if isinstance(self.solver, Cadical300):
+                return self.solver.flip_bits(assumptions, preferences, budget)
+            else:
+                raise NotImplementedError('Local search is supported only by CaDiCaL 3.0.0')
+
     def apply_jw(self):
         """
             Recompute and apply JW scores to the current formula.
@@ -2363,9 +2421,10 @@ class Cadical153(object):
         if self.cadical:
             pysolvers.cadical153_dbudget(self.cadical, budget)
 
-    def process(self, rounds=1, block=False, cover=False, condition=False,
+    def process(self, rounds=1, block=False, condition=False, cover=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True, freeze=[]):
+                subsume=True, ternary=True, transred=True, vivify=True,
+                freeze=[]):
         """
             Apply the preprocessor for the internal formula. See the
             documentation for the ``process`` module for details.
@@ -2377,7 +2436,8 @@ class Cadical153(object):
                                                 int(condition),
                                                 int(decompose), int(elim),
                                                 int(probe), int(probehbr),
-                                                int(subsume), int(vivify),
+                                                int(subsume), int(ternary),
+                                                int(transred), int(vivify),
                                                 freeze,
                                                 int(MainThread.check()))
 
@@ -2797,9 +2857,10 @@ class Cadical195(object):
         if self.cadical:
             pysolvers.cadical195_dbudget(self.cadical, budget)
 
-    def process(self, rounds=1, block=False, cover=False, condition=False,
+    def process(self, rounds=1, block=False, condition=False, cover=False,
                 decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True, freeze=[]):
+                subsume=True, ternary=True, transred=True, vivify=True,
+                freeze=[]):
         """
             Apply the preprocessor for the internal formula. See the
             documentation for the ``process`` module for details.
@@ -2811,7 +2872,8 @@ class Cadical195(object):
                                                 int(condition),
                                                 int(decompose), int(elim),
                                                 int(probe), int(probehbr),
-                                                int(subsume), int(vivify),
+                                                int(subsume), int(ternary),
+                                                int(transred), int(vivify),
                                                 freeze,
                                                 int(MainThread.check()))
 
@@ -3371,6 +3433,31 @@ class Cadical300(object):
 
             return self.status
 
+    def flip_bits(self, assumptions=[], preferences=None, budget=100000):
+        """
+            Run local search guided by weighted literal preferences.
+        """
+
+        if self.cadical:
+            self.sync_vars()
+
+            if self.use_timer:
+                start_time = process_time()
+
+            res = pysolvers.cadical300_flipbits(self.cadical, assumptions,
+                    preferences, budget, int(MainThread.check()))
+
+            if self.use_timer:
+                self.call_time = process_time() - start_time
+                self.accu_time += self.call_time
+
+            # the solver is in the inconclusive state now
+            self.status = None
+            self.prev_assumps = assumptions
+            self.sync_vpool()
+
+            return res
+
     def conf_budget(self, budget):
         """
             Set limit on the number of conflicts.
@@ -3387,9 +3474,10 @@ class Cadical300(object):
         if self.cadical:
             pysolvers.cadical300_dbudget(self.cadical, budget)
 
-    def process(self, rounds=1, block=False, cover=False, condition=False,
-                decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True, freeze=[]):
+    def process(self, rounds=1, backbone=True, block=False, condition=False,
+                congruence=True, cover=False, decompose=True, elim=True,
+                probe=True, probehbr=True, subsume=True, sweep=True,
+                ternary=True, transred=True, vivify=True, freeze=[]):
         """
             Apply the preprocessor for the internal formula. See the
             documentation for the ``process`` module for details.
@@ -3399,12 +3487,14 @@ class Cadical300(object):
             self.sync_vars()
 
             result = pysolvers.cadical300_process(self.cadical, rounds,
-                                                  int(block), int(cover),
-                                                  int(condition),
+                                                  int(backbone), int(block),
+                                                  int(cover), int(condition),
+                                                  int(congruence),
                                                   int(decompose), int(elim),
                                                   int(probe), int(probehbr),
-                                                  int(subsume), int(vivify),
-                                                  freeze,
+                                                  int(subsume), int(sweep),
+                                                  int(ternary), int(transred),
+                                                  int(vivify), freeze,
                                                   int(MainThread.check()))
 
             self.sync_vpool()

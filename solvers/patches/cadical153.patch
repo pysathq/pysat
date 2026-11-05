@@ -1873,20 +1873,20 @@ diff -Naur solvers/cadical153/solver.cpp solvers/cdc153/solver.cpp
 +
 +vector<bool> Solver::extend(vector<int>& solution)
 +{
-+  for (int i = 1; i <= solution.size(); i++) {
-+    if (internal->vals[i]) continue; //if already set
-+    int val = solution[i - 1];
-+    if (val > 0) {
-+      internal->vals[i] = 1;
-+      internal->vals[-i] = -1;
-+    }
-+    else {
-+      internal->vals[i] = -1;
-+      internal->vals[-i] = 1;
-+    }
++  vector<int> assigned; // values set here, to be undone after extension
++  for (int lit : solution) {
++    const int idx = abs(lit);
++    if (idx > external->max_var) continue; // unknown variable
++    const int ilit = external->e2i[idx];
++    if (!ilit || internal->vals[ilit]) continue; // unmapped or fixed
++    internal->vals[ilit] = lit > 0 ? 1 : -1;
++    internal->vals[-ilit] = -internal->vals[ilit];
++    assigned.push_back(ilit);
 +  }
 +  external->extend();
 +
++  for (int ilit : assigned)
++    internal->vals[ilit] = internal->vals[-ilit] = 0;
 +  return external->vals;
 +}
 +

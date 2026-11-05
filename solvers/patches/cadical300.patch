@@ -309,7 +309,7 @@ diff -Naur solvers/cadical300/block.hpp solvers/cdc300/block.hpp
 diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
 --- solvers/cadical300/cadical.hpp	2025-12-24 05:25:57
 +++ solvers/cdc300/cadical.hpp	2026-05-15 12:38:15
-@@ -1,10 +1,12 @@
+@@ -1,10 +1,13 @@
 -#ifndef _cadical_hpp_INCLUDED
 -#define _cadical_hpp_INCLUDED
 +#ifndef _cadical300_hpp_INCLUDED
@@ -318,13 +318,14 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  #include <cstdint>
  #include <cstdio>
  #include <vector>
++#include <utility>
  
 +using namespace std;
 +
  /*========================================================================*/
  
  // We support semantic versioning (https://semver.org/), which means that we
-@@ -15,7 +17,7 @@
+@@ -15,7 +18,7 @@
  #define CADICAL_MINOR 0 // Minor semantic version.
  #define CADICAL_PATCH 0 // Semantic patch version.
  
@@ -333,7 +334,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
  /*========================================================================*/
  
-@@ -47,7 +49,7 @@
+@@ -47,7 +50,7 @@
  //
  // Consider the following code (from 'test/api/example.cpp') of API usage:
  //
@@ -342,9 +343,26 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  //
  //   // ------------------------------------------------------------------
  //   // Encode Problem and check without assumptions.
-@@ -389,6 +391,9 @@
+@@ -388,7 +391,26 @@
+   void disconnect_learner ();
  
    // ====== END IPASIR =====================================================
++
++  // Local search minimizing the 'cost' of a model, i.e. the sum of the
++  // weights of its falsified preferred literals, under the given
++  // assumptions and within 'limit' ticks.  If 'prefs' is non-zero it
++  // replaces the preferences of the previous call.  The result tells
++  // whether a model was found, which is then stored in 'model' (over all
++  // variables) with its 'cost'.  Neither unsatisfiability nor optimality
++  // is concluded.  The search starts from the model of a preceding
++  // satisfiable call and its best model becomes the saved phases.
++  //
++  //   require (READY)
++  //   ensure (INCONCLUSIVE)
++  //
++  bool flip_bits (const std::vector<int> &assumptions,
++                  const std::vector<std::pair<int, uint64_t>> *prefs,
++                  int64_t limit, std::vector<int> &model, uint64_t &cost);
  
 +  bool prop_check (const vector<int> &assumps, vector<int> &prop,
 +                   int psaving);
@@ -352,7 +370,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
    // Add call-back which allows to observe when a variable is fixed.
    //
    //   require (VALID)
-@@ -411,6 +416,7 @@
+@@ -411,6 +433,7 @@
    //
    void connect_external_propagator (ExternalPropagator *propagator);
    void disconnect_external_propagator ();
@@ -360,7 +378,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
    // Mark as 'observed' those variables that are relevant to the external
    // propagator. External propagation, clause addition during search and
-@@ -771,6 +777,10 @@
+@@ -771,6 +794,10 @@
    int active () const;          // Number of active variables.
    int64_t redundant () const;   // Number of active redundant clauses.
    int64_t irredundant () const; // Number of active irredundant clauses.
@@ -371,7 +389,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
    //------------------------------------------------------------------------
    // This function executes the given number of preprocessing rounds. It is
-@@ -787,6 +797,8 @@
+@@ -787,6 +814,8 @@
    //   ensure (INCONCLUSIVE  | SATISFIED | UNSATISFIED)
    //
    int simplify (int rounds = 3);
@@ -380,7 +398,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
    //------------------------------------------------------------------------
    // Force termination of 'solve' asynchronously.
-@@ -1016,6 +1028,7 @@
+@@ -1016,6 +1045,7 @@
    //   ensure (VALID)
    //
    const char *write_dimacs (const char *path, int min_max_var = 0);
@@ -388,7 +406,16 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
    // The extension stack for reconstruction a solution can be written too.
    //
-@@ -1046,13 +1059,13 @@
+@@ -1027,6 +1057,8 @@
+   static void build (FILE *file, const char *prefix = "c ");
+ 
+ private:
++  std::vector<std::pair<int, uint64_t>> preferences; // of 'flip_bits'
++
+   //==== start of state ====================================================
+ 
+   // The solver is in the state ADDING if either the current clause or the
+@@ -1046,13 +1078,13 @@
    //
    // This approach has the benefit of decoupling this header file from all
    // internal data structures, which is particularly useful if the rest of
@@ -404,7 +431,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
    //
    //   Solver:       facade object providing the actual API of the solver
    //   External:     communication layer between 'Solver' and 'Internal'
-@@ -1141,10 +1154,15 @@
+@@ -1141,10 +1173,15 @@
    //
    // TODO: support for other compilers (beside 'gcc' and 'clang').
  
@@ -420,7 +447,7 @@ diff -Naur solvers/cadical300/cadical.hpp solvers/cdc300/cadical.hpp
  
    // Messages in a common style.
    //
-@@ -1414,6 +1432,6 @@
+@@ -1414,6 +1451,6 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -1651,7 +1678,17 @@ diff -Naur solvers/cadical300/internal.hpp solvers/cdc300/internal.hpp
  
  using namespace std;
  
-@@ -1936,6 +1936,6 @@
+@@ -1405,7 +1405,8 @@
+   int walk_pick_lit (Walker &, Clause *);
+   bool walk_flip_lit (Walker &, int lit);
+   int walk_pick_lit (Walker &walker, TaggedBinary c);
+-  int walk_round (int64_t limit, bool prev);
++  int walk_round (int64_t limit, bool prev, Preferences * = 0);
++  bool walk_preferences (int64_t limit, Preferences &);
+   void walk ();
+ 
+   int walk_full_occs_round (int64_t limit, bool prev);
+@@ -1936,6 +1937,6 @@
  
  /*------------------------------------------------------------------------*/
  
@@ -3320,21 +3357,21 @@ diff -Naur solvers/cadical300/solver.cpp solvers/cdc300/solver.cpp
 +void Solver::set_state (State s) { STATE (s); }
 +
 +vector<bool> Solver::extend (vector<int> &solution) {
-+  for (int i = 1; i <= (int) solution.size (); i++) {
-+    if (internal->vals[i])
-+      continue;
-+
-+    int val = solution[i - 1];
-+    if (val > 0) {
-+      internal->vals[i] = 1;
-+      internal->vals[-i] = -1;
-+    } else {
-+      internal->vals[i] = -1;
-+      internal->vals[-i] = 1;
-+    }
++  vector<int> assigned; // values set here, to be undone after extension
++  for (int lit : solution) {
++    const int idx = abs (lit);
++    if (idx > external->max_var)
++      continue; // unknown variable
++    const int ilit = external->e2i[idx];
++    if (!ilit || internal->vals[ilit])
++      continue; // unmapped or fixed
++    internal->vals[ilit] = lit > 0 ? 1 : -1;
++    internal->vals[-ilit] = -internal->vals[ilit];
++    assigned.push_back (ilit);
 +  }
-+
 +  external->extend ();
++  for (int ilit : assigned)
++    internal->vals[ilit] = internal->vals[-ilit] = 0;
 +  return external->vals;
 +}
 +
@@ -3447,11 +3484,93 @@ diff -Naur solvers/cadical300/solver.cpp solvers/cdc300/solver.cpp
  const char *Solver::write_dimacs (const char *path, int min_max_var) {
    LOG_API_CALL_BEGIN ("write_dimacs", path, min_max_var);
    REQUIRE_VALID_STATE ();
-@@ -1868,4 +1953,98 @@
+@@ -1868,4 +1953,180 @@
      return internal->stats.all.substituted;
    return -1;
  }
 -} // namespace CaDiCaL
++
++bool Solver::flip_bits (const vector<int> &assumptions,
++                        const vector<pair<int, uint64_t>> *prefs,
++                        int64_t limit, vector<int> &model, uint64_t &cost) {
++  REQUIRE_READY_STATE ();
++  REQUIRE (limit >= 0, "negative local search limit");
++  REQUIRE (!external->propagator,
++           "local search does not support external propagators");
++  if (prefs)
++    preferences = *prefs;
++  model.clear ();
++  cost = 0;
++
++  // Start from the previous model including its reconstructed part, which
++  // matters as all the eliminated clauses are restored below.
++  //
++  if (state () == SATISFIED) {
++    if (!external->extended)
++      external->extend ();
++    for (int eidx = 1; eidx <= external->max_var; eidx++) {
++      const int ilit = external->e2i[eidx];
++      if (ilit)
++        internal->phases.prev[abs (ilit)] =
++            (external->ival (eidx) > 0) == (ilit > 0) ? 1 : -1;
++    }
++  }
++  transition_to_steady_state ();
++  internal->backtrack ();
++  external->reset_assumptions ();
++  external->reset_extended ();
++  for (const auto &p : preferences)
++    external->internalize (p.first);
++  for (const auto &lit : assumptions)
++    external->assume (lit);
++
++  // Restoring all the clauses keeps reconstruction from changing the model
++  // found, and so the cost of the preferred literals.
++  //
++  const int restoreall = internal->opts.restoreall;
++  internal->opts.restoreall = 2;
++  internal->restore_clauses ();
++  internal->opts.restoreall = restoreall;
++
++  bool res = false;
++  if (!internal->unsat && !internal->propagate ())
++    internal->learn_empty_clause ();
++  else if (!internal->unsat) {
++    Preferences walk (internal->max_var);
++    for (const auto &p : preferences) {
++      const int ilit = external->internalize (p.first);
++      (ilit < 0 ? walk.neg : walk.pos)[abs (ilit)] += p.second;
++    }
++    res = internal->walk_preferences (limit, walk);
++    if (res) {
++      for (auto idx : internal->vars)
++        if (internal->active (idx))
++          internal->set_val (idx, walk.best[idx]);
++      external->extend ();
++      for (int eidx = 1; eidx <= external->max_var; eidx++)
++        model.push_back (external->ival (eidx));
++      cost = walk.cost;
++#ifndef NDEBUG
++      uint64_t check = 0;
++      for (const auto &p : preferences)
++        if (external->ival (p.first) != p.first)
++          check += p.second;
++      assert (check == cost);
++#endif
++      for (auto idx : internal->vars)
++        if (internal->active (idx)) {
++          internal->phases.saved[idx] = internal->phases.prev[idx] =
++              walk.best[idx];
++          internal->set_val (idx, 0);
++        }
++      external->reset_extended ();
++    }
++  }
++  external->reset_assumptions ();
++  internal->reset_solving ();
++  STATE (INCONCLUSIVE);
++  return res;
++}
 +
 +bool Solver::prop_check (const vector<int> &assump, vector<int> &prop,
 +                         int psaving) {
@@ -4080,7 +4199,35 @@ diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
  
  /*------------------------------------------------------------------------*/
  
-@@ -479,7 +479,9 @@
+@@ -47,6 +47,27 @@
+   void push_flipped (int flipped);
+   void save_walker_trail (bool);
+   void save_final_minimum (int64_t old_minimum);
++};
++
++// During a walk guided by preferences, we track the cost of the current
++// assignment and the variables which can be flipped to decrease it (the
++// 'targets').  The best model is saved incrementally through the variables
++// flipped since it was saved last time.
++
++struct PrefTracker {
++  Internal *internal;
++  Preferences &prefs;
++  uint64_t cost = 0;            // of the current assignment
++  vector<int> targets, pos;     // dense set of targets
++  vector<int> flipped;          // since the best model was saved
++  vector<int64_t> stamps;       // time of the last flip of a variable
++  int64_t time = 0, saved = -1; // and when the best model was saved
++  PrefTracker (Internal *, Preferences &);
++  uint64_t weight (int lit) const;
++  void update (int idx);
++  void flip (int lit);
++  void save ();
++  int pick (Walker &);
+ };
+ 
+ // These are in essence the CB values from Adrian Balint's thesis.  They
+@@ -479,7 +500,9 @@
    const Watches &ws = watches (-lit);
    if (!ws.empty ()) {
      const Watch &w = ws[0];
@@ -4090,7 +4237,164 @@ diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
    }
  
    // Then remove 'c' and all other now satisfied (made) clauses.
-@@ -1085,4 +1087,4 @@
+@@ -692,6 +715,99 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
++PrefTracker::PrefTracker (Internal *i, Preferences &p)
++    : internal (i), prefs (p), pos (i->max_var + 1, -1),
++      stamps (i->max_var + 1, 0) {
++  for (auto idx : internal->vars) {
++    const signed char tmp = internal->val (idx);
++    if (!tmp)
++      continue;
++    cost += weight (tmp < 0 ? idx : -idx);
++    update (idx);
++  }
++}
++
++// The weight of a preferred literal (paid if it is false).
++
++inline uint64_t PrefTracker::weight (int lit) const {
++  return lit < 0 ? prefs.neg[-lit] : prefs.pos[lit];
++}
++
++// Assumed (level one) and fixed (level zero) variables are not targets.
++
++void PrefTracker::update (int idx) {
++  const int lit = internal->val (idx) < 0 ? -idx : idx;
++  const bool target = internal->active (idx) &&
++                      internal->var (idx).level > 1 &&
++                      weight (lit) < weight (-lit);
++  int &p = pos[idx];
++  if (target && p < 0) {
++    p = targets.size ();
++    targets.push_back (idx);
++  } else if (!target && p >= 0) {
++    const int other = targets.back ();
++    targets[p] = other;
++    pos[other] = p;
++    targets.pop_back ();
++    p = -1;
++  }
++}
++
++// Update the cost after 'lit' was made true.
++
++void PrefTracker::flip (int lit) {
++  const int idx = abs (lit);
++  cost += weight (-lit);
++  cost -= weight (lit);
++  if (stamps[idx] <= saved)
++    flipped.push_back (idx);
++  stamps[idx] = ++time;
++  update (idx);
++}
++
++// Save the current assignment, assumed to be a model, if it is better.
++
++void PrefTracker::save () {
++  if (prefs.found && cost >= prefs.cost)
++    return;
++  if (prefs.found)
++    for (auto idx : flipped)
++      prefs.best[idx] = internal->val (idx);
++  else
++    for (auto idx : internal->vars)
++      prefs.best[idx] = internal->val (idx);
++  flipped.clear ();
++  saved = time;
++  prefs.cost = cost;
++  prefs.found = true;
++}
++
++// If all clauses are satisfied, we sample a few targets and pick the one
++// with the best weight gain scaled by its break value score, while older
++// flips win ties.
++
++int PrefTracker::pick (Walker &walker) {
++  assert (!targets.empty ());
++  double best = -1;
++  int res = 0;
++  for (int i = 0; i < 8; i++) {
++    const int size = targets.size ();
++    const int idx = targets[walker.random.pick_int (0, size - 1)];
++    const int lit = internal->val (idx) < 0 ? idx : -idx;
++    const unsigned breaks = internal->walk_break_value (-lit, walker.ticks);
++    const double gain = weight (lit) - weight (-lit);
++    const double score = gain * walker.score (breaks);
++    if (score > best ||
++        (score == best && stamps[idx] < stamps[abs (res)])) {
++      best = score;
++      res = lit;
++    }
++  }
++  return res;
++}
++
++/*------------------------------------------------------------------------*/
++
+ // Check whether to save the current phases as new global minimum.
+ 
+ inline void Internal::walk_save_minimum (Walker &walker) {
+@@ -753,7 +869,7 @@
+ 
+ /*------------------------------------------------------------------------*/
+ 
+-int Internal::walk_round (int64_t limit, bool prev) {
++int Internal::walk_round (int64_t limit, bool prev, Preferences *prefs) {
+ 
+   stats.walk.count++;
+ 
+@@ -931,7 +1047,30 @@
+ 
+   int res; // Tells caller to continue with local search.
+ 
+-  if (!failed) {
++  if (!failed && prefs) {
++
++    // Repair broken clauses as 'ProbSAT' and otherwise decrease the cost.
++    //
++    PrefTracker tracker (internal, *prefs);
++    if (walker.broken.empty ())
++      tracker.save ();
++    while (!terminated_asynchronously () && walker.ticks < walker.limit) {
++      int lit;
++      if (!walker.broken.empty ())
++        lit = walk_pick_lit (walker, walk_pick_clause (walker));
++      else if (!tracker.targets.empty () && tracker.cost)
++        lit = tracker.pick (walker);
++      else
++        break; // optimal
++      if (!walk_flip_lit (walker, lit))
++        break;
++      tracker.flip (lit);
++      if (walker.broken.empty ())
++        tracker.save ();
++    }
++    res = prefs->found ? 10 : 0;
++
++  } else if (!failed) {
+ 
+     int64_t broken = walker.broken.size ();
+     int64_t initial_minimum = broken;
+@@ -1045,6 +1184,15 @@
+   return res;
+ }
+ 
++// Local search for 'Solver::flip_bits' starting from the previous phases.
++
++bool Internal::walk_preferences (int64_t limit, Preferences &prefs) {
++  START_OUTER_WALK ();
++  const int res = walk_round (limit, true, &prefs);
++  STOP_OUTER_WALK ();
++  return res == 10;
++}
++
+ void Internal::walk () {
+   START_INNER_WALK ();
+ 
+@@ -1085,4 +1233,4 @@
    assert (!unsat);
  }
  
@@ -4099,24 +4403,39 @@ diff -Naur solvers/cadical300/walk.cpp solvers/cdc300/walk.cpp
 diff -Naur solvers/cadical300/walk.hpp solvers/cdc300/walk.hpp
 --- solvers/cadical300/walk.hpp	2025-12-24 05:25:57
 +++ solvers/cdc300/walk.hpp	2026-05-15 10:44:05
-@@ -1,9 +1,9 @@
+@@ -1,9 +1,11 @@
 -#ifndef _walk_hpp_INCLUDED
 -#define _walk_hpp_INCLUDED
 +#ifndef _walk300_hpp_INCLUDED
 +#define _walk300_hpp_INCLUDED
  
  #include "clause.hpp"
++#include <cstdint>
++#include <vector>
  
 -namespace CaDiCaL {
 +namespace CaDiCaL300 {
  struct TaggedBinary {
    int lit, other;
  #if defined(LOGGING) || !defined(NDEBUG)
-@@ -86,6 +86,6 @@
+@@ -86,6 +88,19 @@
      return tagged.b;
    }
  };
 -} // namespace CaDiCaL
++
++// Weighted literal preferences of 'Solver::flip_bits' over internal
++// variables and the best model found under them.
++
++struct Preferences {
++  std::vector<uint64_t> pos, neg; // weights of literals 'idx' and '-idx'
++  std::vector<signed char> best;  // values of the best model
++  uint64_t cost = 0;              // and its cost
++  bool found = false;
++  Preferences (int max_var)
++      : pos (max_var + 1), neg (max_var + 1), best (max_var + 1) {}
++};
++
 +} // namespace CaDiCaL300
  
  #endif

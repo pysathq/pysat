@@ -23,7 +23,8 @@
     ==================
 
     This module provides access to the preprocessor functionality of `CaDiCaL
-    1.5.3 <https://github.com/arminbiere/cadical>`__. It can be used to
+    <https://github.com/arminbiere/cadical>`__, version 1.5.3 by default
+    (versions 1.9.5 and 3.0.0 can be selected instead). It can be used to
     process [1]_ (also see references therein) a given CNF formula and output
     a another formula, which is guaranteed to be *equisatisfiable* with the
     original formula. The processor can be invoked for a user-provided number
@@ -85,19 +86,29 @@
 #
 #==============================================================================
 from pysat.formula import CNF
-from pysat.solvers import Cadical153
+from pysat.solvers import Cadical153, Cadical195, Cadical300, NoSuchSolverError, SolverNames
 
 
 #
 #==============================================================================
 class Processor(object):
     """
-        This class provides interface to CaDiCaL's preprocessor. The only
-        input parameter is ``bootstrap_with``, which is expected to be a
-        :class:`.CNF` formula or a list (or iterable) of clauses.
+        This class provides interface to CaDiCaL's preprocessor. The input
+        parameters are ``bootstrap_with``, which is expected to be a
+        :class:`.CNF` formula or a list (or iterable) of clauses, and
+        ``engine``, which is the name of a CaDiCaL version to use, i.e. one of
+        the names of :class:`.Cadical153` (default), :class:`.Cadical195`, and
+        :class:`.Cadical300`. Note that preprocessing in CaDiCaL 1.9.5 should
+        not differ from that of CaDiCaL 1.5.3, as the two versions apply the
+        same techniques. In contrast, CaDiCaL 3.0.0 additionally applies
+        congruence closure, SAT sweeping, and binary clause backbone
+        computation.
 
         :param bootstrap_with: a list of clauses for processor initialization.
         :type bootstrap_with: :class:`.CNF` or iterable(iterable(int))
+
+        :param engine: name of the CaDiCaL version to use
+        :type engine: str
 
         Once created and used, a processor must be deleted with the
         :meth:`delete` method. Alternatively, if created using the ``with``
@@ -119,7 +130,7 @@ class Processor(object):
             >>> from pysat.process import Processor
             >>> from pysat.solvers import Solver
             >>>
-            >>> processor = Processor(bootstrap_with=[[-1, 2], [1, -2]])
+            >>> processor = Processor(bootstrap_with=[[-1, 2], [1, -2]], engine='cd195')
             >>> processor.append_formula([[-2, 3], [1]])
             >>> processor.add_clause([-3, 4])
             >>>
@@ -140,13 +151,23 @@ class Processor(object):
             >>> processor.delete()
     """
 
-    def __init__(self, bootstrap_with=None):
+    def __init__(self, bootstrap_with=None, engine='cd15'):
         """
             Basic constructor.
         """
 
+        self.cadical = None
+
         # immediately creating a CaDiCaL object
-        self.cadical = Cadical153()
+        engine_ = engine.lower()
+        if engine_ in SolverNames.cadical153:
+            self.cadical = Cadical153()
+        elif engine_ in SolverNames.cadical195:
+            self.cadical = Cadical195()
+        elif engine_ in SolverNames.cadical300:
+            self.cadical = Cadical300()
+        else:
+            raise(NoSuchSolverError(engine))
 
         # status of processor is True by default meaning
         # that the input formula *is not* unsatisfiable
@@ -219,14 +240,18 @@ class Processor(object):
         if self.cadical:
             self.cadical.append_formula(formula)
 
-    def process(self, rounds=1, block=False, cover=False, condition=False,
-                decompose=True, elim=True, probe=True, probehbr=True,
-                subsume=True, vivify=True, freeze=[]):
+    def process(self, rounds=1, backbone=True, block=False, condition=False,
+                congruence=True, cover=False, decompose=True, elim=True,
+                probe=True, probehbr=True, subsume=True, sweep=True,
+                ternary=True, transred=True, vivify=True, freeze=[]):
         """
             Runs CaDiCaL's preprocessor for the internal formula for a given
             number of rounds and using the techniques specified in the
             arguments. Note that the default values of all the arguments used
-            are set as in the default configuration of CaDiCaL 1.5.3.
+            are set as in the default configuration of CaDiCaL 1.5.3 and
+            3.0.0. Arguments ``backbone``, ``congruence``, and ``sweep`` are
+            used by CaDiCaL 3.0.0 only, as the older versions do not support
+            these techniques.
 
             As the result, the method returns a :class:`.CNF` object
             containing the processed formula. Additionally to the clauses, the
@@ -241,7 +266,11 @@ class Processor(object):
             and covered clause elimination is invoked only if bounded variable
             elimination is active. Subsumption elimination in turn may trigger
             vivification and transitive reduction if the corresponding flags
-            are set.
+            are set. Also, in CaDiCaL 3.0.0, flag ``probe`` controls only
+            failed literal probing while the other techniques applied along
+            with probing are controlled by their own flags. Flag ``elim``
+            there controls both bounded variable elimination and its fast
+            variant applied at the beginning of preprocessing.
 
             Finally, note that the ``freeze`` argument can be used to keep
             some of the variables of the original formula unchanged during
@@ -251,14 +280,20 @@ class Processor(object):
             :param rounds: number of preprocessing rounds
             :type rounds: int
 
+            :param backbone: compute backbones of the binary clauses (CaDiCaL 3.0.0 only)
+            :type backbone: bool
+
             :param block: apply blocked clause elimination
             :type block: bool
 
-            :param cover: apply covered clause elimination
-            :type cover: bool
-
             :param condition: detect conditional autarkies and apply globally-blocked clause elimination
             :type condition: bool
+
+            :param congruence: detect AND, XOR, and ITE gates and merge equivalent gate outputs (CaDiCaL 3.0.0 only)
+            :type congruence: bool
+
+            :param cover: apply covered clause elimination
+            :type cover: bool
 
             :param decompose: detect strongly connected components (SCCs) in the binary implication graph (BIG) and apply equivalent literal substitution (ELS)
             :type decompose: bool
@@ -274,6 +309,15 @@ class Processor(object):
 
             :param subsume: apply global forward clause subsumption
             :type subsume: bool
+
+            :param sweep: apply SAT sweeping to detect equivalent literals and backbones (CaDiCaL 3.0.0 only)
+            :type sweep: bool
+
+            :param ternary: apply hyper ternary resolution
+            :type ternary: bool
+
+            :param transred: apply transitive reduction of the binary implication graph (BIG)
+            :type transred: bool
 
             :param vivify: apply clause vivification
             :type vivify: bool
@@ -304,11 +348,24 @@ class Processor(object):
         """
 
         if self.cadical:
-            self.status, result = self.cadical.process(rounds, block, cover,
-                                                       condition, decompose,
-                                                       elim, probe, probehbr,
-                                                       subsume, vivify,
-                                                       freeze)
+            # techniques unavailable in the older versions of CaDiCaL
+            extra = {}
+            if isinstance(self.cadical, Cadical300):
+                extra = dict(backbone=backbone, congruence=congruence,
+                             sweep=sweep)
+
+            self.status, result = self.cadical.process(rounds=rounds,
+                                                       block=block,
+                                                       condition=condition,
+                                                       cover=cover,
+                                                       decompose=decompose,
+                                                       elim=elim, probe=probe,
+                                                       probehbr=probehbr,
+                                                       subsume=subsume,
+                                                       ternary=ternary,
+                                                       transred=transred,
+                                                       vivify=vivify,
+                                                       freeze=freeze, **extra)
 
             # making the status Boolean
             self.status = False if self.status == 20 else True

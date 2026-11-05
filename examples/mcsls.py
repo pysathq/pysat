@@ -248,6 +248,10 @@ class MCSls(object):
             native cardinality constraints represented as a pair ``(lits,
             bound)``. Only hard cardinality constraints can be added.
 
+            Finally, note that clauses cannot be safely added if formula
+            processing is used (see parameter ``process``) as they may
+            refer to variables eliminated by the processor.
+
             :param clause: a clause to add
             :param soft: whether or not the clause is soft
 

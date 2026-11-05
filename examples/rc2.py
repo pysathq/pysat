@@ -362,6 +362,9 @@ class RC2(object):
         self.sels_set = set(self.sels)
         self.sall = self.sels[:]
 
+        # original weights (as opposed to those after splitting)
+        self.owgt = dict(self.wght)
+
         # we may end up having zero-weighed soft clauses
         self.garbage = set([l for l in self.sels if self.wght[l] == 0])
         if self.garbage:
@@ -402,6 +405,10 @@ class RC2(object):
             Also note that besides pure clauses, the method can also expect
             native cardinality constraints represented as a pair ``(lits,
             bound)``. Only hard cardinality constraints can be added.
+
+            Finally, note that clauses cannot be safely added if formula
+            processing is used (see parameter ``process``) as they may
+            refer to variables eliminated by the processor.
 
             :param clause: a clause to add
             :param weight: weight of the clause (if any)
@@ -475,6 +482,7 @@ class RC2(object):
                     # selector is not new; increment its weight
                     self.wght[selv] += weight
 
+                self.owgt[selv] = self.owgt.get(selv, 0) + weight
                 self.sall.append(selv)
                 self.sels_set.add(selv)
 
@@ -560,14 +568,14 @@ class RC2(object):
                 # so let's transform the None model returned to []
                 self.model = []
 
+            # if formula processing was used, we should restore the model
+            # for the original formula (before selectors are filtered out)
+            if self.processor:
+                self.model = self.processor.restore(self.model)
+
             self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
             self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
             self.model = sorted(self.model, key=lambda l: abs(l))
-
-            # if formula processing was used, we should
-            # restore the model for the original formula
-            if self.processor:
-                self.model = self.processor.restore(self.model)
 
             return self.model
 
@@ -583,7 +591,8 @@ class RC2(object):
             (MSSes) or minimal correction subsets (MCSes). To block MSSes, one
             should set the ``block`` parameter to ``1``. To block MCSes, set
             it to ``-1``. By the default (for blocking MaxSAT models),
-            ``block`` is set to ``0``.
+            ``block`` is set to ``0``. Note that if formula processing is
+            used (see parameter ``process``), only MCSes can be blocked.
 
             This MaxSAT enumeration call can be asynchronously interrupted, in
             which case the value of ``expect_interrupt`` must be set to
@@ -620,6 +629,9 @@ class RC2(object):
                 [-1, -2, -3] 3
                 >>> rc2.delete()
         """
+
+        assert not self.processor or block == -1, \
+                'Only MCSes can be blocked if formula processing is used'
 
         done = False
         while not done:
@@ -1471,6 +1483,9 @@ class RC2Stratified(RC2, object):
         # do clause hardening
         self.hard = nohard == False
 
+        # upper bound on the cost (trivial at first)
+        self.ubnd = sum(self.owgt.values())
+
         # backing up selectors
         self.bckp, self.bckp_set = self.sels, self.sels_set
         self.sels = []
@@ -1571,14 +1586,14 @@ class RC2Stratified(RC2, object):
             # so let's transform the None model returned to []
             self.model = []
 
+        # if formula processing was used, we should restore the model
+        # for the original formula (before selectors are filtered out)
+        if self.processor:
+            self.model = self.processor.restore(self.model)
+
         self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
         self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
         self.model = sorted(self.model, key=lambda l: abs(l))
-
-        # if formula processing was used, we should
-        # restore the model for the original formula
-        if self.processor:
-            self.model = self.processor.restore(self.model)
 
         return self.model
 
@@ -1648,14 +1663,17 @@ class RC2Stratified(RC2, object):
             to optimization levels up to the newly computed level. It
             also reactivates previously deactivated clauses (see
             :func:`process_sels` and :func:`process_sums` for
-            details).
+            details). Clauses whose weight exceeds the gap between
+            the upper and lower bounds are hardened instead.
         """
 
         end = min(self.levl + 1, len(self.blop))
 
         for l in range(beg, end):
             for sel in self.wstr[self.blop[l]]:
-                if sel in self.bckp_set:
+                if self.hard and self.blop[l] > self.ubnd - self.cost:
+                    self.oracle.add_clause([sel])
+                elif sel in self.bckp_set:
                     self.sels.append(sel)
                 else:
                     self.sums.append(sel)
@@ -1670,7 +1688,8 @@ class RC2Stratified(RC2, object):
             This method does postprocessing of the current
             optimization level after it is solved. This includes
             *hardening* some of the soft clauses (depending on their
-            remaining weights) and also garbage collection.
+            remaining weights) and also garbage collection. The
+            level's model is used to tighten the upper bound.
         """
 
         # assumptions to remove
@@ -1679,9 +1698,15 @@ class RC2Stratified(RC2, object):
         # sum of weights of the remaining levels
         sumw = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
 
+        # upper bound given by the current model;
+        # selectors unknown to the oracle are deemed to be falsified
+        model = self.oracle.get_model()
+        cost = sum([w for s, w in six.iteritems(self.owgt) if abs(s) > len(model) or model[abs(s) - 1] != s])
+        self.ubnd = min(self.ubnd, cost)
+
         # trying to harden selectors and sums
         for s in self.sels + self.sums:
-            if self.wght[s] > sumw:
+            if self.wght[s] > min(sumw, self.ubnd - self.cost):
                 self.oracle.add_clause([s])
                 self.garbage.add(s)
 
@@ -1982,6 +2007,12 @@ if __name__ == '__main__':
             MXS = RC2Stratified
         else:
             MXS = RC2
+
+        if process and to_enum != 1 and block != -1:
+            # no formula processing in case we enumerate multiple models or
+            # MSSes, as blocking them refers to variables it may eliminate
+            print('c formula processing is disabled for model enumeration')
+            process = 0
 
         # starting the solver
         with MXS(formula, solver=solver, adapt=adapt, exhaust=exhaust,

@@ -133,6 +133,8 @@ static char   process_docstring[] = "(Pre)process a given CNF formula using "
 static char   restore_docstring[] = "Reconstruct the model to a CNF formula "
                                     "from the model for its processed version";
 static char      prop_docstring[] = "Propagate a given set of literals.";
+static char     flipb_docstring[] = "Run local search guided by weighted literal "
+                                    "preferences (CaDiCaL 3.0.0 only).";
 static char    phases_docstring[] = "Set variable polarities.";
 static char   cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char   pbudget_docstring[] = "Set limit on the number of propagations.";
@@ -274,6 +276,7 @@ extern "C" {
 	static PyObject *py_cadical300_add_cl    (PyObject *, PyObject *);
 	static PyObject *py_cadical300_process   (PyObject *, PyObject *);
 	static PyObject *py_cadical300_restore   (PyObject *, PyObject *);
+	static PyObject *py_cadical300_flipbits  (PyObject *, PyObject *);
 	static PyObject *py_cadical300_solve     (PyObject *, PyObject *);
 	static PyObject *py_cadical300_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_cadical300_propagate (PyObject *, PyObject *);
@@ -719,6 +722,7 @@ static PyMethodDef module_methods[] = {
 	{ "cadical300_dbudget",   py_cadical300_dbudget,   METH_VARARGS,  dbudget_docstring },
 	{ "cadical300_process",   py_cadical300_process,   METH_VARARGS,  process_docstring },
 	{ "cadical300_restore",   py_cadical300_restore,   METH_VARARGS,  restore_docstring },
+	{ "cadical300_flipbits",  py_cadical300_flipbits,  METH_VARARGS,    flipb_docstring },
 	{ "cadical300_tracepr",   py_cadical300_tracepr,   METH_VARARGS,  tracepr_docstring },
 	{ "cadical300_core",      py_cadical300_core,      METH_VARARGS,     core_docstring },
 	{ "cadical300_model",     py_cadical300_model,     METH_VARARGS,    model_docstring },
@@ -1909,14 +1913,16 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 	int probe;
 	int probehbr;
 	int subsume;
+	int ternary;
+	int transred;
 	int vivify;
 	PyObject *f_obj;  // variables to freeze
 	int main_thread;
 
-        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiOi", &s_obj, &rounds, &block,
+        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiiiOi", &s_obj, &rounds, &block,
                               &cover, &condition, &decompose, &elim, &probe,
-                              &probehbr, &subsume, &vivify, &f_obj,
-                              &main_thread))
+                              &probehbr, &subsume, &ternary, &transred,
+                              &vivify, &f_obj, &main_thread))
           return NULL;
 
         // get pointer to solver
@@ -1933,6 +1939,8 @@ static PyObject *py_cadical153_process(PyObject *self, PyObject *args)
 	s->set("probe",     probe    );
 	s->set("probehbr",  probehbr );
 	s->set("subsume",   subsume  );
+	s->set("ternary",   ternary  );
+	s->set("transred",  transred );
 	s->set("vivify",    vivify   );
 	s->set_state(temp);
 
@@ -2605,14 +2613,16 @@ static PyObject *py_cadical195_process(PyObject *self, PyObject *args)
 	int probe;
 	int probehbr;
 	int subsume;
+	int ternary;
+	int transred;
 	int vivify;
 	PyObject *f_obj;  // variables to freeze
 	int main_thread;
 
-        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiOi", &s_obj, &rounds, &block,
+        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiiiOi", &s_obj, &rounds, &block,
                               &cover, &condition, &decompose, &elim, &probe,
-                              &probehbr, &subsume, &vivify, &f_obj,
-                              &main_thread))
+                              &probehbr, &subsume, &ternary, &transred,
+                              &vivify, &f_obj, &main_thread))
           return NULL;
 
         // get pointer to solver
@@ -2629,6 +2639,8 @@ static PyObject *py_cadical195_process(PyObject *self, PyObject *args)
 	s->set("probe",     probe    );
 	s->set("probehbr",  probehbr );
 	s->set("subsume",   subsume  );
+	s->set("ternary",   ternary  );
+	s->set("transred",  transred );
 	s->set("vivify",    vivify   );
 	s->set_state(temp);
 
@@ -4054,22 +4066,28 @@ static PyObject *py_cadical300_process(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
 	int rounds;
+	int backbone;
 	int block;
 	int cover;
 	int condition;
+	int congruence;
 	int decompose;
 	int elim;
 	int probe;
 	int probehbr;
 	int subsume;
+	int sweep;
+	int ternary;
+	int transred;
 	int vivify;
 	PyObject *f_obj;  // variables to freeze
 	int main_thread;
 
-        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiOi", &s_obj, &rounds, &block,
-                              &cover, &condition, &decompose, &elim, &probe,
-                              &probehbr, &subsume, &vivify, &f_obj,
-                              &main_thread))
+        if (!PyArg_ParseTuple(args, "OiiiiiiiiiiiiiiiOi", &s_obj, &rounds,
+                              &backbone, &block, &cover, &condition,
+                              &congruence, &decompose, &elim, &probe,
+                              &probehbr, &subsume, &sweep, &ternary,
+                              &transred, &vivify, &f_obj, &main_thread))
           return NULL;
 
         // get pointer to solver
@@ -4078,15 +4096,21 @@ static PyObject *py_cadical300_process(PyObject *self, PyObject *args)
 	// set the options
 	CaDiCaL300::State temp = s->state();
 	s->set_state(CaDiCaL300::State::CONFIGURING); // temporarily set state to configuring to enable option setting
-	s->set("block",     block    );
-	s->set("cover",     cover    );
-	s->set("condition", condition);
-	s->set("decompose", decompose);
-	s->set("elim",      elim     );
-	s->set("probe",     probe    );
-	s->set("probehbr",  probehbr );
-	s->set("subsume",   subsume  );
-	s->set("vivify",    vivify   );
+	s->set("backbone",   backbone  );
+	s->set("block",      block     );
+	s->set("cover",      cover     );
+	s->set("condition",  condition );
+	s->set("congruence", congruence);
+	s->set("decompose",  decompose );
+	s->set("elim",       elim      );
+	s->set("fastelim",   elim      ); // fast elimination is BVE too
+	s->set("probe",      probe     );
+	s->set("probehbr",   probehbr  );
+	s->set("subsume",    subsume   );
+	s->set("sweep",      sweep     );
+	s->set("ternary",    ternary   );
+	s->set("transred",   transred  );
+	s->set("vivify",     vivify    );
 	s->set_state(temp);
 
 	// iterator over the litarals to freeze
@@ -4182,6 +4206,120 @@ static PyObject *py_cadical300_restore(PyObject *self, PyObject *args)
 		PyList_SetItem(ret, i - 1, pyint_from_cint(omod[i] ? +i : -i));
 
 	return ret;
+}
+
+//
+//=============================================================================
+class Cadical300Terminator : public CaDiCaL300::Terminator {
+public:
+	// polling signals, as the walk is not interrupted by 'longjmp'
+	bool terminate() { return PyErr_CheckSignals() < 0; }
+};
+
+//
+//=============================================================================
+static PyObject *py_cadical300_flipbits(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // assumptions
+	PyObject *p_obj;  // preferences (a dict or None)
+	long long budget;
+	int main_thread;
+
+	if (!PyArg_ParseTuple(args, "OOOLi", &s_obj, &a_obj, &p_obj, &budget,
+				&main_thread))
+		return NULL;
+
+	// get pointer to solver
+	CaDiCaL300::Solver *s = (CaDiCaL300::Solver *)pyobj_to_void(s_obj);
+
+	if (s->get_external_propagator()) {
+		PyErr_SetString(PyExc_NotImplementedError,
+				"Local search does not support external propagators.");
+		return NULL;
+	}
+
+	if (budget < 0) {
+		PyErr_SetString(PyExc_ValueError, "non-negative budget expected");
+		return NULL;
+	}
+
+	std::vector<int> a;
+	int max_var = -1;
+
+	if (pyiter_to_vector(a_obj, a, max_var) == false)
+		return NULL;
+
+	// weighted preferences, unless the previous ones are kept
+	std::vector<std::pair<int, uint64_t> > p;
+	if (p_obj != Py_None) {
+		if (!PyDict_Check(p_obj)) {
+			PyErr_SetString(PyExc_TypeError, "dictionary expected");
+			return NULL;
+		}
+
+		PyObject *l_obj, *w_obj;
+		Py_ssize_t pos = 0;
+		uint64_t total = 0;
+
+		while (PyDict_Next(p_obj, &pos, &l_obj, &w_obj)) {
+			if (!pyint_check(l_obj) || !pyint_check(w_obj)) {
+				PyErr_SetString(PyExc_TypeError, "integer expected");
+				return NULL;
+			}
+
+			int l = pyint_to_cint(l_obj);
+			if (l == 0) {
+				PyErr_SetString(PyExc_ValueError, "non-zero integer expected");
+				return NULL;
+			}
+
+			uint64_t w = PyLong_AsUnsignedLongLong(w_obj);
+			if (PyErr_Occurred())
+				return NULL;
+
+			// costs are sums of weights
+			if (w > UINT64_MAX - total) {
+				PyErr_SetString(PyExc_OverflowError,
+						"sum of weights does not fit 64 bits");
+				return NULL;
+			}
+
+			total += w;
+			p.push_back(std::make_pair(l, w));
+
+			if (abs(l) > max_var)
+				max_var = abs(l);
+		}
+	}
+
+	if (s->vars() < max_var)
+		s->resize(max_var);
+
+	Cadical300Terminator terminator;
+	if (main_thread)
+		s->connect_terminator(&terminator);
+
+	std::vector<int> model;
+	uint64_t cost;
+
+	bool res = s->flip_bits(a, p_obj == Py_None ? NULL : &p, budget, model,
+			cost);
+
+	if (main_thread)
+		s->disconnect_terminator();
+
+	if (PyErr_Occurred())
+		return NULL;
+
+	if (!res)
+		return Py_BuildValue("OO", Py_None, Py_None);
+
+	PyObject *m_obj = vector_to_pylist(model);
+	if (m_obj == NULL)
+		return NULL;
+
+	return Py_BuildValue("NK", m_obj, (unsigned long long)cost);
 }
 
 //
