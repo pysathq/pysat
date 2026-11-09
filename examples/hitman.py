@@ -213,8 +213,8 @@ class Hitman(object):
         enumerator. If ``htype`` is set to ``'mcsls'``, the :class:`.MCSls`
         enumerator is used. Finally, value ``'sat'`` can be given, in which
         case minimal hitting set enumeration will performed by means of a SAT
-        solver (can be either MiniSat-GH, or Lingeling, or CaDiCaL 153) with
-        polarity setting.
+        solver (can be either MiniSat-GH, or Lingeling, or CaDiCaL 153, 195,
+        or 300) with polarity setting.
 
         In either case, unless pure SAT-based hitting set enumeration is
         selected, an underlying problem solver can use a SAT oracle specified
@@ -394,13 +394,14 @@ class Hitman(object):
         else:  # 'sat'
             assert self.solver in SolverNames.minisatgh + \
                     SolverNames.lingeling + SolverNames.cadical153 + \
-                    SolverNames.cadical195, 'Hard polarity setting is unsupported by {0}'.format(self.solver)
+                    SolverNames.cadical195 + SolverNames.cadical300, \
+                    'Hard polarity setting is unsupported by {0}'.format(self.solver)
 
             # setting up a SAT solver, so that it supports the same interface
             if formula.atms == []:
                 self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
                                     use_timer=True)
-            elif self.solver in SolverNames.cadical195:
+            elif self.solver in SolverNames.cadical195 + SolverNames.cadical300:
                 self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
                                     use_timer=True, native_card=True)
 
