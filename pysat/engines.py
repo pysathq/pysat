@@ -141,7 +141,7 @@ class LinearConstraint:
             Constraint initialiser.
         """
 
-        if not weights or type(weights) == dict:
+        if not weights or isinstance(weights, dict):
             # the same literal may appear multiple times in the list
             # so we need to calculate it's actual weight
             cntr = Counter(lits)
@@ -378,7 +378,7 @@ class ParityConstraint:
         for lit in lits:
             if lit < 0:
                 lit = -lit
-                value ^= value
+                value ^= 1
             self.lits.append(lit)
 
         # right-hand side, current value, and variable counter
@@ -1038,6 +1038,9 @@ class BooleanEngine(Propagator):
 
         # forward simplification
         for i, csi in enumerate(self.xors):
+            if not csi.lits:  # eliminated as redundant (0 = 0)
+                continue
+
             v = csi.lits[0]  # pivot variable
 
             # going over all the other constraints and eliminating the pivot
@@ -1091,6 +1094,13 @@ class BooleanEngine(Propagator):
             Update the propagator's state given a new assignment.
         """
 
+        if fixed:
+            self.fixed[abs(lit)] = True
+
+        # the solver may notify us again when an assigned literal gets fixed
+        if self.level[abs(lit)] is not None:
+            return
+
         self.level[abs(lit)] = self.decision_level
 
         if self.qhead is None:
@@ -1099,9 +1109,6 @@ class BooleanEngine(Propagator):
             self.qhead = len(self.trail)
 
         self.trail.append(lit)
-
-        if fixed:
-            self.fixed[abs(lit)] = True
 
     def on_new_level(self):
         """
@@ -1115,6 +1122,8 @@ class BooleanEngine(Propagator):
         """
             Cancel all the decisions up to a certain level.
         """
+
+        cursor = self.qhead
 
         # undoing the assignments
         while len(self.trlim) > to:
@@ -1142,8 +1151,8 @@ class BooleanEngine(Propagator):
         # updating decision level
         self.decision_level = to
 
-        # updating queue head
-        self.qhead = None
+        # updating queue head (some assignments have not been processed)
+        self.qhead = min(cursor if cursor is not None else 0, len(self.trail))
 
     def check_model(self, model):
         """
@@ -1204,8 +1213,9 @@ class BooleanEngine(Propagator):
                 lit = self.trail[self.qhead]
 
                 # if we have just propagated an opposite value,
-                # we stop and expect conflict analysis to be performed
+                # this is a conflict that needs proper treatment
                 if self.origin[-lit] is not None:
+                    result.append(-lit)
                     break
 
                 self.value[abs(lit)] = lit  # actually setting the value
@@ -1277,7 +1287,7 @@ class BooleanEngine(Propagator):
 
             if nid is not None:
                 # this one has a negative counterpart
-                if pid < len(self.wlst[lit]):
+                if pid < len(self.wlst[lit]) and isinstance(self.wlst[lit][pid], ParityConstraint):
                     # and it's affected
                     self.wlst[lit][pid].wopp[-lit] = pid
 
@@ -1288,7 +1298,7 @@ class BooleanEngine(Propagator):
             self.wlst[-lit][nid] = self.wlst[-lit][-1]
             self.wlst[-lit].pop()
 
-            if nid < len(self.wlst[-lit]):
+            if nid < len(self.wlst[-lit]) and isinstance(self.wlst[-lit][nid], ParityConstraint):
                 self.wlst[-lit][nid].wopp[lit] = nid
 
     def provide_reason(self, lit):
