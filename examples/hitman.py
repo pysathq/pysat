@@ -399,16 +399,20 @@ class Hitman(object):
 
             # setting up a SAT solver, so that it supports the same interface
             if formula.atms == []:
-                self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                                    use_timer=True)
+                self.oracle = Solver(name=self.solver, use_timer=True)
             elif self.solver in SolverNames.cadical195 + SolverNames.cadical300:
-                self.oracle = Solver(name=self.solver, bootstrap_with=formula.hard,
-                                    use_timer=True, native_card=True)
-
-                for atm in formula.atms:
-                    self.oracle.add_atmost(*atm)
+                self.oracle = Solver(name=self.solver, use_timer=True,
+                                     native_card=True)
             else:
                 assert 0, 'Native AtMostK constraints aren\'t supported by MinisatGH, Lingeling, or CaDiCaL 153'
+
+            # Elimination may create non-minimal hitting sets in Cadical
+            if self.solver in SolverNames.cadical153 + SolverNames.cadical195:
+                self.oracle.configure({'elim': 0})
+
+            self.oracle.append_formula(formula.hard)
+            for atm in formula.atms:
+                self.oracle.add_atmost(*atm)
 
             # MinisatGH supports warm start mode
             if self.solver in SolverNames.minisatgh:
