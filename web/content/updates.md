@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 11.11.2026 (*1.9.dev22*)
+
+-   Fixed a few soundness and performance issues in `BooleanEngine`.
+
 ## 5.11.2026 (*1.9.dev21*)
 
 -   Removed AppVeyor CI integration.
