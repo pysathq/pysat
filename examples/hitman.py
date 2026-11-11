@@ -406,7 +406,7 @@ class Hitman(object):
             else:
                 assert 0, 'Native AtMostK constraints aren\'t supported by MinisatGH, Lingeling, or CaDiCaL 153'
 
-            # Elimination may create non-minimal hitting sets in Cadical
+            # Elimination may create non-minimal hitting sets in Cadical 195 and 153
             if self.solver in SolverNames.cadical153 + SolverNames.cadical195:
                 self.oracle.configure({'elim': 0})
 
