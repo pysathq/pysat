@@ -201,6 +201,7 @@
 
 #
 #==============================================================================
+from operator import index
 from pysat._utils import MainThread
 from pysat.engines import BooleanEngine
 from pysat.formula import CNFPlus, IDPool
@@ -1591,7 +1592,7 @@ class Solver(object):
         if self.solver:
             return self.solver.nof_clauses()
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
             This method can be used to enumerate models of a CNF formula and
             it performs as a standard Python iterator. The method can be
@@ -1613,7 +1614,13 @@ class Solver(object):
                 clause until no more models of the formula exist.
 
             :param assumptions: a list of assumption literals.
+            :param projection: optional iterable of distinct positive variable IDs.
+                Yield their signed assignments in the given order and block all
+                extensions at once. IDs must occur in the solver's variable
+                range. An empty projection has one assignment if satisfiable.
+                Blocking clauses are permanent, including when assumptions are used.
             :type assumptions: iterable(int)
+            :type projection: iterable(int) or None
 
             :rtype: list(int).
 
@@ -1636,7 +1643,24 @@ class Solver(object):
         """
 
         if self.solver:
-            return self.solver.enum_models(assumptions)
+            if projection is None or isinstance(self.solver, Kissat404):
+                return self.solver.enum_models(assumptions)
+            return self._enum_projected(assumptions, projection)
+
+    def _enum_projected(self, assumptions, projection):
+        variables = [index(v) for v in projection]
+        if any(v <= 0 for v in variables) or len(set(variables)) != len(variables):
+            raise ValueError('Projection must contain distinct positive variable IDs.')
+
+        largest = max(variables) if variables else 0
+        assumptions = list(assumptions)
+        while self.solve(assumptions=assumptions):
+            model = self.get_model()
+            if largest > len(model):
+                raise ValueError('Projection contains a variable outside the model.')
+            projected = [model[v - 1] for v in variables]
+            self.add_clause([-lit for lit in projected])
+            yield projected
 
     def add_clause(self, clause, no_return=True):
         """
