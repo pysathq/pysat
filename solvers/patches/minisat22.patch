@@ -484,7 +484,7 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
  
      void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
      void    toDimacs     (const char *file, const vec<Lit>& assumps);
-@@ -73,9 +74,9 @@
+@@ -73,10 +74,12 @@
      void    toDimacs     (const char* file, Lit p);
      void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
@@ -494,21 +494,24 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
 -    // 
 +    //
      void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
++    void    setActivities  (const Var* vs, const double* as, int n); // Replace variable activities; unlisted variables drop to 0. Decision level 0 only.
++    void    getActivities  (const Var* vs, double* as, int n) const; // Report variable activities; unknown variables report 0.
      void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -91,6 +92,11 @@
+     // Read state:
+@@ -90,6 +93,11 @@
+     int     nLearnts   ()      const;       // The current number of learnt clauses.
      int     nVars      ()      const;       // The current number of variables.
      int     nFreeVars  ()      const;
- 
++
 +    // Warm start mode:
 +    void setStartMode(bool warm = false);
 +    bool addClauseWarm(vec<Lit>& ps);
 +    bool resolveConflicts(CRef confl);
-+
+ 
      // Resource contraints:
      //
-     void    setConfBudget(int64_t x);
-@@ -189,6 +195,7 @@
+@@ -189,6 +197,7 @@
      Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
      double              progress_estimate;// Set by 'search()'.
      bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -516,7 +519,7 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
  
      ClauseAllocator     ca;
  
-@@ -308,7 +315,7 @@
+@@ -308,7 +317,7 @@
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
  inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
@@ -525,27 +528,39 @@ diff -Naur solvers/minisat22/core/Solver.h solvers/m22/core/Solver.h
  inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
-@@ -328,8 +335,8 @@
+@@ -328,8 +337,19 @@
  inline int      Solver::nVars         ()      const   { return vardata.size(); }
  inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
  inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 -inline void     Solver::setDecisionVar(Var v, bool b) 
 -{ 
++inline void     Solver::setActivities (const Var* vs, const double* as, int n)
++{
++    for (Var v = 0; v < nVars(); v++) activity[v] = 0;
++    for (int i = 0; i < n; i++)       activity[vs[i]] = as[i];
++    var_inc = 1;
++    rebuildOrderHeap();
++}
++inline void     Solver::getActivities (const Var* vs, double* as, int n) const
++{
++    for (int i = 0; i < n; i++) as[i] = vs[i] < nVars() ? activity[vs[i]] : 0;
++}
 +inline void     Solver::setDecisionVar(Var v, bool b)
 +{
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -361,6 +368,9 @@
- inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
+@@ -362,7 +382,10 @@
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
-+
+ 
 +// Warm start mode:
 +inline void     Solver::setStartMode (bool warm) { warm_start = warm; cancelUntil(0); }
  
- 
++
  //=================================================================================================
+ // Debug etc:
+ 
 diff -Naur solvers/minisat22/core/SolverTypes.h solvers/m22/core/SolverTypes.h
 --- solvers/minisat22/core/SolverTypes.h	2010-07-11 02:07:36
 +++ solvers/m22/core/SolverTypes.h	2023-01-12 18:19:24

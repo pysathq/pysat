@@ -1443,7 +1443,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
  
      void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
      void    toDimacs     (const char *file, const vec<Lit>& assumps);
-@@ -85,9 +88,9 @@
+@@ -85,10 +88,12 @@
      void    toDimacs     (const char* file, Lit p);
      void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
@@ -1453,9 +1453,12 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
 -    // 
 +    //
      void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
++    void    setActivities  (const Var* vs, const double* as, int n); // Replace variable activities; unlisted variables drop to 0. Decision level 0 only.
++    void    getActivities  (const Var* vs, double* as, int n) const; // Report variable activities; unknown variables report 0.
      void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -103,6 +106,11 @@
+     // Read state:
+@@ -103,6 +108,11 @@
      int     nVars      ()      const;       // The current number of variables.
      int     nFreeVars  ()      const;
  
@@ -1467,7 +1470,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
      // Incremental mode
      void setIncrementalMode();
      void initNbInitialVars(int nb);
-@@ -161,12 +169,14 @@
+@@ -161,12 +171,14 @@
      bool      rnd_pol;            // Use random polarities for branching heuristics.
      bool      rnd_init_act;       // Initialize variable activities with a small random value.
      double    garbage_frac;       // The fraction of wasted memory allowed before a garbage collection is triggered.
@@ -1483,7 +1486,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
      // Statistics: (read-only member variable)
      //
      uint64_t nbRemovedClauses,nbReducedClauses,nbDL2,nbBin,nbUn,nbReduceDB,solves, starts, decisions, rnd_decisions, propagations, conflicts,conflictsRestarts,nbstopsrestarts,nbstopsrestartssame,lastblockatrestart;
-@@ -215,6 +225,8 @@
+@@ -215,6 +227,8 @@
      vec<CRef>           clauses;          // List of problem clauses.
      vec<CRef>           learnts;          // List of learnt clauses.
  
@@ -1492,7 +1495,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
      vec<lbool>          assigns;          // The current assignments.
      vec<char>           polarity;         // The preferred polarity of each variable.
      vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-@@ -229,17 +241,18 @@
+@@ -229,17 +243,18 @@
      Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
      double              progress_estimate;// Set by 'search()'.
      bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -1514,7 +1517,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
      bqueue<unsigned int> trailQueue,lbdQueue; // Bounded queues for restarts.
      float sumLBD; // used to compute the global average of LBD. Restarts...
      int sumAssumptions;
-@@ -322,7 +335,7 @@
+@@ -322,7 +337,7 @@
      int      level            (Var x) const;
      double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
      bool     withinBudget     ()      const;
@@ -1523,7 +1526,7 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
  
      // Static helpers:
      //
-@@ -376,19 +389,19 @@
+@@ -376,19 +391,19 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -1552,18 +1555,29 @@ diff -Naur solvers/glucose30/core/Solver.h solvers/g30/core/Solver.h
   }
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
-@@ -404,8 +417,8 @@
+@@ -404,8 +419,19 @@
  inline int      Solver::nVars         ()      const   { return vardata.size(); }
  inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
  inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 -inline void     Solver::setDecisionVar(Var v, bool b) 
 -{ 
++inline void     Solver::setActivities (const Var* vs, const double* as, int n)
++{
++    for (Var v = 0; v < nVars(); v++) activity[v] = 0;
++    for (int i = 0; i < n; i++)       activity[vs[i]] = as[i];
++    var_inc = 1;
++    rebuildOrderHeap();
++}
++inline void     Solver::getActivities (const Var* vs, double* as, int n) const
++{
++    for (int i = 0; i < n; i++) as[i] = vs[i] < nVars() ? activity[vs[i]] : 0;
++}
 +inline void     Solver::setDecisionVar(Var v, bool b)
 +{
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -425,27 +438,31 @@
+@@ -425,27 +451,31 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.

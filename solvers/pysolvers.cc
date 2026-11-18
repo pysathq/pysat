@@ -136,6 +136,8 @@ static char      prop_docstring[] = "Propagate a given set of literals.";
 static char     flipb_docstring[] = "Run local search guided by weighted literal "
                                     "preferences (CaDiCaL 3.0.0 only).";
 static char    phases_docstring[] = "Set variable polarities.";
+static char   setacts_docstring[] = "Set variable activities.";
+static char   getacts_docstring[] = "Get variable activities.";
 static char   cbudget_docstring[] = "Set limit on the number of conflicts.";
 static char   pbudget_docstring[] = "Set limit on the number of propagations.";
 static char   dbudget_docstring[] = "Set limit on the number of decisions "
@@ -150,19 +152,8 @@ static char      core_docstring[] = "Get an unsatisfiable core if formula is UNS
 static char     model_docstring[] = "Get a model if formula is SAT.";
 static char     nvars_docstring[] = "Get number of variables used by the solver.";
 static char     dvars_docstring[] = "Declare variables of the solver, protecting "
-                                    "them from internal use (CaDiCaL 3.0.0, Ergo).";
-static char  shxscope_docstring[] = "Move the mining scope from the variables of "
-                                    "one literal list to those of another (Ergo only).";
-static char    xpairs_docstring[] = "Get the literal pairs the extension-variable "
-                                    "miner is tracking (Ergo only).";
+                                    "them from internal use (CaDiCaL 3.0.0 only).";
 static char   applyjw_docstring[] = "Compute and apply Ergo JW scores now.";
-static char     xname_docstring[] = "Adopt a caller-owned variable as the name "
-                                    "of a literal pair (Ergo only).";
-static char    xblock_docstring[] = "Keep the miner off literal pairs the caller "
-                                    "encodes itself (Ergo only).";
-static char      xpin_docstring[] = "Pin extension variables, keeping them from "
-                                    "being retired (Ergo only).";
-static char    xunpin_docstring[] = "Release a pin taken by 'ergo_xpin' (Ergo only).";
 static char      ncls_docstring[] = "Get number of clauses used by the solver.";
 static char       del_docstring[] = "Delete a previously created solver object.";
 static char  acc_stat_docstring[] = "Get accumulated stats from the solver.";
@@ -316,7 +307,6 @@ extern "C" {
 	static PyObject *py_ergo_clearint  (PyObject *, PyObject *);
 	static PyObject *py_ergo_core      (PyObject *, PyObject *);
 	static PyObject *py_ergo_model     (PyObject *, PyObject *);
-	static PyObject *py_ergo_dec_vars  (PyObject *, PyObject *);
 	static PyObject *py_ergo_nof_vars  (PyObject *, PyObject *);
 	static PyObject *py_ergo_nof_cls   (PyObject *, PyObject *);
 	static PyObject *py_ergo_del       (PyObject *, PyObject *);
@@ -324,13 +314,7 @@ extern "C" {
 	static PyObject *py_ergo_acc_stats (PyObject *, PyObject *);
 	static PyObject *py_ergo_set       (PyObject *, PyObject *);
 	static PyObject *py_ergo_setacts   (PyObject *, PyObject *);
-	static PyObject *py_ergo_setxscope (PyObject *, PyObject *);
-	static PyObject *py_ergo_shxscope  (PyObject *, PyObject *);
-	static PyObject *py_ergo_xpairs    (PyObject *, PyObject *);
-	static PyObject *py_ergo_xname     (PyObject *, PyObject *);
-	static PyObject *py_ergo_xblock    (PyObject *, PyObject *);
-	static PyObject *py_ergo_xpin      (PyObject *, PyObject *);
-	static PyObject *py_ergo_xunpin    (PyObject *, PyObject *);
+	static PyObject *py_ergo_getacts   (PyObject *, PyObject *);
 	static PyObject *py_ergo_pconn     (PyObject *, PyObject *);
 	static PyObject *py_ergo_pdisconn  (PyObject *, PyObject *);
 	static PyObject *py_ergo_penable   (PyObject *, PyObject *);
@@ -350,6 +334,8 @@ extern "C" {
 	static PyObject *py_gluecard3_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_propagate (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_setphases (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_setacts   (PyObject *, PyObject *);
+	static PyObject *py_gluecard3_getacts   (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_gluecard3_interrupt (PyObject *, PyObject *);
@@ -372,6 +358,8 @@ extern "C" {
 	static PyObject *py_gluecard41_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_propagate (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_setphases (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_setacts   (PyObject *, PyObject *);
+	static PyObject *py_gluecard41_getacts   (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_gluecard41_interrupt (PyObject *, PyObject *);
@@ -393,6 +381,8 @@ extern "C" {
 	static PyObject *py_glucose3_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_glucose3_propagate (PyObject *, PyObject *);
 	static PyObject *py_glucose3_setphases (PyObject *, PyObject *);
+	static PyObject *py_glucose3_setacts   (PyObject *, PyObject *);
+	static PyObject *py_glucose3_getacts   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose3_interrupt (PyObject *, PyObject *);
@@ -414,6 +404,8 @@ extern "C" {
 	static PyObject *py_glucose41_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_glucose41_propagate (PyObject *, PyObject *);
 	static PyObject *py_glucose41_setphases (PyObject *, PyObject *);
+	static PyObject *py_glucose41_setacts   (PyObject *, PyObject *);
+	static PyObject *py_glucose41_getacts   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_glucose41_interrupt (PyObject *, PyObject *);
@@ -435,6 +427,8 @@ extern "C" {
 	static PyObject *py_glucose421_solve_lim             (PyObject *, PyObject *);
 	static PyObject *py_glucose421_propagate             (PyObject *, PyObject *);
 	static PyObject *py_glucose421_setphases             (PyObject *, PyObject *);
+	static PyObject *py_glucose421_setacts               (PyObject *, PyObject *);
+	static PyObject *py_glucose421_getacts               (PyObject *, PyObject *);
 	static PyObject *py_glucose421_cbudget               (PyObject *, PyObject *);
 	static PyObject *py_glucose421_pbudget               (PyObject *, PyObject *);
 	static PyObject *py_glucose421_interrupt             (PyObject *, PyObject *);
@@ -552,6 +546,8 @@ extern "C" {
 	static PyObject *py_minicard_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minicard_propagate (PyObject *, PyObject *);
 	static PyObject *py_minicard_setphases (PyObject *, PyObject *);
+	static PyObject *py_minicard_setacts   (PyObject *, PyObject *);
+	static PyObject *py_minicard_getacts   (PyObject *, PyObject *);
 	static PyObject *py_minicard_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minicard_interrupt (PyObject *, PyObject *);
@@ -571,6 +567,8 @@ extern "C" {
 	static PyObject *py_minisat22_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minisat22_propagate (PyObject *, PyObject *);
 	static PyObject *py_minisat22_setphases (PyObject *, PyObject *);
+	static PyObject *py_minisat22_setacts   (PyObject *, PyObject *);
+	static PyObject *py_minisat22_getacts   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisat22_interrupt (PyObject *, PyObject *);
@@ -590,6 +588,8 @@ extern "C" {
 	static PyObject *py_minisatgh_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_propagate (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_setphases (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_setacts   (PyObject *, PyObject *);
+	static PyObject *py_minisatgh_getacts   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatgh_interrupt (PyObject *, PyObject *);
@@ -609,6 +609,8 @@ extern "C" {
 	static PyObject *py_minisatep_solve_lim (PyObject *, PyObject *);
 	static PyObject *py_minisatep_propagate (PyObject *, PyObject *);
 	static PyObject *py_minisatep_setphases (PyObject *, PyObject *);
+	static PyObject *py_minisatep_setacts   (PyObject *, PyObject *);
+	static PyObject *py_minisatep_getacts   (PyObject *, PyObject *);
 	static PyObject *py_minisatep_cbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatep_pbudget   (PyObject *, PyObject *);
 	static PyObject *py_minisatep_interrupt (PyObject *, PyObject *);
@@ -756,21 +758,14 @@ static PyMethodDef module_methods[] = {
 	{ "ergo_clearint",    py_ergo_clearint,  METH_VARARGS,  clearint_docstring },
 	{ "ergo_core",        py_ergo_core,      METH_VARARGS,      core_docstring },
 	{ "ergo_model",       py_ergo_model,     METH_VARARGS,     model_docstring },
-	{ "ergo_dec_vars",    py_ergo_dec_vars,  METH_VARARGS,     dvars_docstring },
 	{ "ergo_nof_vars",    py_ergo_nof_vars,  METH_VARARGS,     nvars_docstring },
 	{ "ergo_nof_cls",     py_ergo_nof_cls,   METH_VARARGS,      ncls_docstring },
 	{ "ergo_del",         py_ergo_del,       METH_VARARGS,       del_docstring },
 	{ "ergo_tracepr",     py_ergo_tracepr,   METH_VARARGS,   tracepr_docstring },
 	{ "ergo_acc_stats",   py_ergo_acc_stats, METH_VARARGS,  acc_stat_docstring },
 	{ "ergo_set",         py_ergo_set,       METH_VARARGS,       set_docstring },
-	{ "ergo_setacts",     py_ergo_setacts,   METH_VARARGS,    phases_docstring },
-	{ "ergo_setxscope",   py_ergo_setxscope, METH_VARARGS,       set_docstring },
-	{ "ergo_shiftxscope", py_ergo_shxscope,  METH_VARARGS,  shxscope_docstring },
-	{ "ergo_xpairs",      py_ergo_xpairs,    METH_VARARGS,    xpairs_docstring },
-	{ "ergo_xname",       py_ergo_xname,     METH_VARARGS,     xname_docstring },
-	{ "ergo_xblock",      py_ergo_xblock,    METH_VARARGS,    xblock_docstring },
-	{ "ergo_xpin",        py_ergo_xpin,      METH_VARARGS,      xpin_docstring },
-	{ "ergo_xunpin",      py_ergo_xunpin,    METH_VARARGS,    xunpin_docstring },
+	{ "ergo_setacts",     py_ergo_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "ergo_getacts",     py_ergo_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "ergo_pconn",       py_ergo_pconn,     METH_VARARGS,     pconn_docstring },
 	{ "ergo_pdisconn",    py_ergo_pdisconn,  METH_VARARGS,  pdisconn_docstring },
 	{ "ergo_penable",     py_ergo_penable,   METH_VARARGS,   penable_docstring },
@@ -790,6 +785,8 @@ static PyMethodDef module_methods[] = {
 	{ "gluecard3_solve_lim", py_gluecard3_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "gluecard3_propagate", py_gluecard3_propagate, METH_VARARGS,      prop_docstring },
 	{ "gluecard3_setphases", py_gluecard3_setphases, METH_VARARGS,    phases_docstring },
+	{ "gluecard3_setacts",   py_gluecard3_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "gluecard3_getacts",   py_gluecard3_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "gluecard3_cbudget",   py_gluecard3_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "gluecard3_pbudget",   py_gluecard3_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "gluecard3_interrupt", py_gluecard3_interrupt, METH_VARARGS, interrupt_docstring },
@@ -812,6 +809,8 @@ static PyMethodDef module_methods[] = {
 	{ "gluecard41_solve_lim", py_gluecard41_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "gluecard41_propagate", py_gluecard41_propagate, METH_VARARGS,      prop_docstring },
 	{ "gluecard41_setphases", py_gluecard41_setphases, METH_VARARGS,    phases_docstring },
+	{ "gluecard41_setacts",   py_gluecard41_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "gluecard41_getacts",   py_gluecard41_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "gluecard41_cbudget",   py_gluecard41_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "gluecard41_pbudget",   py_gluecard41_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "gluecard41_interrupt", py_gluecard41_interrupt, METH_VARARGS, interrupt_docstring },
@@ -833,6 +832,8 @@ static PyMethodDef module_methods[] = {
 	{ "glucose3_solve_lim", py_glucose3_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "glucose3_propagate", py_glucose3_propagate, METH_VARARGS,      prop_docstring },
 	{ "glucose3_setphases", py_glucose3_setphases, METH_VARARGS,    phases_docstring },
+	{ "glucose3_setacts",   py_glucose3_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "glucose3_getacts",   py_glucose3_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "glucose3_cbudget",   py_glucose3_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "glucose3_pbudget",   py_glucose3_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "glucose3_interrupt", py_glucose3_interrupt, METH_VARARGS, interrupt_docstring },
@@ -854,6 +855,8 @@ static PyMethodDef module_methods[] = {
 	{ "glucose41_solve_lim", py_glucose41_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "glucose41_propagate", py_glucose41_propagate, METH_VARARGS,      prop_docstring },
 	{ "glucose41_setphases", py_glucose41_setphases, METH_VARARGS,    phases_docstring },
+	{ "glucose41_setacts",   py_glucose41_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "glucose41_getacts",   py_glucose41_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "glucose41_cbudget",   py_glucose41_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "glucose41_pbudget",   py_glucose41_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "glucose41_interrupt", py_glucose41_interrupt, METH_VARARGS, interrupt_docstring },
@@ -875,6 +878,8 @@ static PyMethodDef module_methods[] = {
 	{ "glucose421_solve_lim",             py_glucose421_solve_lim,             METH_VARARGS,                    lim_docstring },
 	{ "glucose421_propagate",             py_glucose421_propagate,             METH_VARARGS,                   prop_docstring },
 	{ "glucose421_setphases",             py_glucose421_setphases,             METH_VARARGS,                 phases_docstring },
+	{ "glucose421_setacts",               py_glucose421_setacts,               METH_VARARGS,                setacts_docstring },
+	{ "glucose421_getacts",               py_glucose421_getacts,               METH_VARARGS,                getacts_docstring },
 	{ "glucose421_cbudget",               py_glucose421_cbudget,               METH_VARARGS,                cbudget_docstring },
 	{ "glucose421_pbudget",               py_glucose421_pbudget,               METH_VARARGS,                pbudget_docstring },
 	{ "glucose421_interrupt",             py_glucose421_interrupt,             METH_VARARGS,              interrupt_docstring },
@@ -991,6 +996,8 @@ static PyMethodDef module_methods[] = {
 	{ "minicard_solve_lim", py_minicard_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "minicard_propagate", py_minicard_propagate, METH_VARARGS,      prop_docstring },
 	{ "minicard_setphases", py_minicard_setphases, METH_VARARGS,    phases_docstring },
+	{ "minicard_setacts",   py_minicard_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "minicard_getacts",   py_minicard_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "minicard_cbudget",   py_minicard_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "minicard_pbudget",   py_minicard_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "minicard_interrupt", py_minicard_interrupt, METH_VARARGS, interrupt_docstring },
@@ -1011,6 +1018,8 @@ static PyMethodDef module_methods[] = {
 	{ "minisat22_solve_lim", py_minisat22_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "minisat22_propagate", py_minisat22_propagate, METH_VARARGS,      prop_docstring },
 	{ "minisat22_setphases", py_minisat22_setphases, METH_VARARGS,    phases_docstring },
+	{ "minisat22_setacts",   py_minisat22_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "minisat22_getacts",   py_minisat22_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "minisat22_cbudget",   py_minisat22_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "minisat22_pbudget",   py_minisat22_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "minisat22_interrupt", py_minisat22_interrupt, METH_VARARGS, interrupt_docstring },
@@ -1030,6 +1039,8 @@ static PyMethodDef module_methods[] = {
 	{ "minisatgh_solve_lim", py_minisatgh_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "minisatgh_propagate", py_minisatgh_propagate, METH_VARARGS,      prop_docstring },
 	{ "minisatgh_setphases", py_minisatgh_setphases, METH_VARARGS,    phases_docstring },
+	{ "minisatgh_setacts",   py_minisatgh_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "minisatgh_getacts",   py_minisatgh_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "minisatgh_cbudget",   py_minisatgh_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "minisatgh_pbudget",   py_minisatgh_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "minisatgh_interrupt", py_minisatgh_interrupt, METH_VARARGS, interrupt_docstring },
@@ -1049,6 +1060,8 @@ static PyMethodDef module_methods[] = {
 	{ "minisatep_solve_lim", py_minisatep_solve_lim, METH_VARARGS,       lim_docstring },
 	{ "minisatep_propagate", py_minisatep_propagate, METH_VARARGS,      prop_docstring },
 	{ "minisatep_setphases", py_minisatep_setphases, METH_VARARGS,    phases_docstring },
+	{ "minisatep_setacts",   py_minisatep_setacts,   METH_VARARGS,   setacts_docstring },
+	{ "minisatep_getacts",   py_minisatep_getacts,   METH_VARARGS,   getacts_docstring },
 	{ "minisatep_cbudget",   py_minisatep_cbudget,   METH_VARARGS,   cbudget_docstring },
 	{ "minisatep_pbudget",   py_minisatep_pbudget,   METH_VARARGS,   pbudget_docstring },
 	{ "minisatep_interrupt", py_minisatep_interrupt, METH_VARARGS, interrupt_docstring },
@@ -1249,6 +1262,78 @@ static bool pyiter_to_vector(PyObject *obj, vector<int>& vect, int& max_var)
 
 	Py_DECREF(i_obj);
 	return true;
+}
+
+// auxiliary function for translating a dictionary var -> float to vectors
+//=============================================================================
+static bool pydict_to_acts(PyObject *obj, vector<int>& vars,
+		vector<double>& acts, int& max_var)
+{
+	if (!PyDict_Check(obj)) {
+		PyErr_SetString(SATError, "Activities must be given as a dictionary");
+		return false;
+	}
+
+	PyObject  *key, *val;
+	Py_ssize_t pos = 0;
+
+	while (PyDict_Next(obj, &pos, &key, &val)) {
+		long   v = PyLong_AsLong(key);
+		double a = PyFloat_AsDouble(val);
+
+		if (PyErr_Occurred())
+			return false;
+
+		if (v <= 0 || v > INT_MAX) {
+			PyErr_SetString(SATError, "Activities are set for variables, not literals");
+			return false;
+		}
+
+		// solvers rescale their own activities below this value;
+		// a value above it would break the heap's ordering
+		if (!(a <= 1e100)) {
+			PyErr_SetString(SATError, "Activity is NaN or above 1e100");
+			return false;
+		}
+
+		vars.push_back((int)v);
+		acts.push_back(a);
+
+		if (v > max_var)
+			max_var = (int)v;
+	}
+
+	return true;
+}
+
+// auxiliary function for translating an iterable of variables to a vector<int>
+//=============================================================================
+static bool pyiter_to_vars(PyObject *obj, vector<int>& vars)
+{
+	int max_var = 0;
+
+	if (!pyiter_to_vector(obj, vars, max_var))
+		return false;
+
+	for (int v : vars)
+		if (v <= 0) {
+			PyErr_SetString(SATError, "Expected variables, not literals");
+			return false;
+		}
+
+	return true;
+}
+
+// auxiliary function for translating activities to a Python list
+//=============================================================================
+static PyObject *acts_to_pylist(const vector<double>& acts)
+{
+	PyObject *ret = PyList_New(acts.size());
+
+	for (size_t i = 0; i < acts.size(); ++i)
+		PyList_SetItem(ret, i, PyFloat_FromDouble(acts[i]));
+
+	return ret;
 }
 // auxiliary function for translating an iterable to a vector<PyObject*>
 //=============================================================================
@@ -5559,6 +5644,8 @@ static inline bool ergo_iterate(PyObject *obj, vector<int>& v, int& max_var)
 	return true;
 }
 
+//
+//=============================================================================
 static PyObject *py_ergo_new(PyObject *self, PyObject *args)
 {
 	struct ergo *s = ergo_new();
@@ -5955,27 +6042,6 @@ static PyObject *py_ergo_model(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_ergo_dec_vars(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	int top;
-
-	if (!PyArg_ParseTuple(args, "Oi", &s_obj, &top))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-
-	// reserving a variable protects it from ever being minted as an
-	// extension variable, as ergo_extend() only ever takes a fresh ID
-	// from the top of the variable range
-	ergo_shim_declare(s, top);
-
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
 static PyObject *py_ergo_nof_vars(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -6108,9 +6174,7 @@ static ERGO_OPTS(double) ergo_opts_d[] = {
 	{ "cla-decay",       ergo_shim_set_cla_decay       },
 	{ "var-decay",       ergo_shim_set_var_decay       },
 	{ "restart-inc",     ergo_shim_set_restart_inc     },
-	{ "reduce-by",       ergo_shim_set_reduce_by       },
-	{ "ext-threshold",   ergo_setxthreshold            },
-	{ "ext-escalate",    ergo_setxescalate             }
+	{ "reduce-by",       ergo_shim_set_reduce_by       }
 };
 
 static ERGO_OPTS(int) ergo_opts_i[] = {
@@ -6123,15 +6187,11 @@ static ERGO_OPTS(int) ergo_opts_i[] = {
 static ERGO_OPTS(bool) ergo_opts_b[] = {
 	{ "keep-bin",        ergo_shim_set_keep_bin        },
 	{ "lcm",             ergo_shim_set_lcm             },
-	{ "glucose-bump",    ergo_shim_set_glucose_bump    },
-	{ "ext",             ergo_xenable                  },
-	{ "ext-rewrite",     ergo_setxrewrite              },
-	{ "ext-equiv",       ergo_setxequiv                }
+	{ "glucose-bump",    ergo_shim_set_glucose_bump    }
 };
 
 static ERGO_OPTS(int64_t) ergo_opts_l[] = {
-	{ "adapt-at",        ergo_shim_set_adapt_at        },
-	{ "ext-warmup",      ergo_setxwarmup               }
+	{ "adapt-at",        ergo_shim_set_adapt_at        }
 };
 
 static ERGO_OPTS(const char *) ergo_opts_s[] = {
@@ -6206,38 +6266,12 @@ static PyObject *py_ergo_setacts(PyObject *self, PyObject *args)
 	// get pointer to solver
 	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
 
-	if (!PyDict_Check(a_obj)) {
-		PyErr_SetString(SATError, "Activities must be given as a dictionary");
-		return NULL;
-	}
-
 	vector<int>    vars;
 	vector<double> acts;
-	PyObject      *key, *val;
-	Py_ssize_t     pos = 0;
+	int            max_var = 0;
 
-	while (PyDict_Next(a_obj, &pos, &key, &val)) {
-		long   v = PyLong_AsLong(key);
-		double a = PyFloat_AsDouble(val);
-
-		if (PyErr_Occurred())
-			return NULL;
-
-		if (v <= 0 || v > INT_MAX) {
-			PyErr_SetString(SATError, "Activities are set for variables, not literals");
-			return NULL;
-		}
-
-		// the solver rescales its own activities below this ceiling;
-		// a value above it would break the heap's ordering
-		if (!(a <= 1e100)) {
-			PyErr_SetString(SATError, "Activity is NaN or above 1e100");
-			return NULL;
-		}
-
-		vars.push_back((int)v);
-		acts.push_back(a);
-	}
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
 
 	ergo_shim_setacts(s, vars.empty() ? NULL : &vars[0],
 	                     acts.empty() ? NULL : &acts[0], (int)vars.size());
@@ -6247,218 +6281,26 @@ static PyObject *py_ergo_setacts(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
-static PyObject *py_ergo_setxscope(PyObject *self, PyObject *args)
+static PyObject *py_ergo_getacts(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
-	PyObject *a_obj;  // variables joining the scope
-	PyObject *r_obj;  // variables leaving it
-
-	if (!PyArg_ParseTuple(args, "OOO", &s_obj, &a_obj, &r_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> a, r;
-	int max_var = -1;
-
-	if (pyiter_to_vector(a_obj, a, max_var) == false)
-		return NULL;
-	if (pyiter_to_vector(r_obj, r, max_var) == false)
-		return NULL;
-
-	ergo_shim_setxscope(s, a.empty() ? NULL : &a[0], (int)a.size(),
-	                       r.empty() ? NULL : &r[0], (int)r.size());
-
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_shxscope(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *o_obj;  // literals whose variables are in scope now
-	PyObject *n_obj;  // literals whose variables should be instead
-
-	if (!PyArg_ParseTuple(args, "OOO", &s_obj, &o_obj, &n_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> o, n, add, rem;
-	int max_var = -1;
-
-	if (pyiter_to_vector(o_obj, o, max_var) == false)
-		return NULL;
-	if (pyiter_to_vector(n_obj, n, max_var) == false)
-		return NULL;
-
-	// bit 1: in the old scope, bit 2: in the new one
-	vector<unsigned char> mark((size_t)max_var + 1, 0);
-	for (int l : o) mark[abs(l)] |= 1;
-	for (int l : n) mark[abs(l)] |= 2;
-
-	for (int l : o) if (mark[abs(l)] == 1) { rem.push_back(abs(l)); mark[abs(l)] = 0; }
-	for (int l : n) if (mark[abs(l)] == 2) { add.push_back(abs(l)); mark[abs(l)] = 0; }
-
-	// both empty would reset the scope to every variable
-	if (!add.empty() || !rem.empty())
-		ergo_shim_setxscope(s, add.empty() ? NULL : &add[0], (int)add.size(),
-		                       rem.empty() ? NULL : &rem[0], (int)rem.size());
-
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_xpairs(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *l_obj;  // the literals to ask about, or None for all of them
-
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &l_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> of;
-	int max_var = -1;
-
-	if (l_obj != Py_None && pyiter_to_vector(l_obj, of, max_var) == false)
-		return NULL;
-
-	struct ergo_xpair *pairs = NULL;
-	int n = ergo_shim_xpairs(s, &pairs, of.empty() ? NULL : &of[0],
-			l_obj == Py_None ? -1 : (int)of.size());
-
-	PyObject *lst = PyList_New(n);
-
-	if (lst == NULL) {
-		free(pairs);
-		return NULL;
-	}
-
-	for (int i = 0; i < n; ++i) {
-		PyObject *tup = Py_BuildValue("iiid", pairs[i].la, pairs[i].lb,
-				pairs[i].z, pairs[i].count);
-
-		if (tup == NULL) {
-			Py_DECREF(lst);
-			free(pairs);
-			return NULL;
-		}
-
-		PyList_SET_ITEM(lst, i, tup);
-	}
-
-	free(pairs);
-
-	return lst;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_xname(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *t_obj;  // the (la, lb, z) triples to register
-
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &t_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> t;
-	int max_var = -1;
-
-	if (pyiter_to_vector(t_obj, t, max_var) == false)
-		return NULL;
-
-	if (t.size() % 3) {
-		PyErr_SetString(PyExc_ValueError, "xname expects flat (la, lb, z) triples");
-		return NULL;
-	}
-
-	if (max_var > 0)
-		ergo_shim_declare(s, max_var);
-
-	ergo_shim_xname(s, t.empty() ? NULL : &t[0], (int)t.size() / 3);
-
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_xblock(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *p_obj;  // the (la, lb) pairs to keep the miner off
-
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &p_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> p;
-	int max_var = -1;
-
-	if (pyiter_to_vector(p_obj, p, max_var) == false)
-		return NULL;
-
-	if (p.size() % 2) {
-		PyErr_SetString(PyExc_ValueError, "xblock expects flat (la, lb) pairs");
-		return NULL;
-	}
-
-	ergo_shim_xblock(s, p.empty() ? NULL : &p[0], (int)p.size() / 2);
-
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_xpin(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *v_obj;  // the variables to pin
+	PyObject *v_obj;  // variables to report
 
 	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
 		return NULL;
 
 	// get pointer to solver
 	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> v;
-	int max_var = -1;
 
-	if (pyiter_to_vector(v_obj, v, max_var) == false)
+	vector<int> vars;
+	if (!pyiter_to_vars(v_obj, vars))
 		return NULL;
 
-	ergo_shim_xpin(s, v.empty() ? NULL : &v[0], (int)v.size());
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		ergo_shim_getacts(s, &vars[0], &acts[0], (int)vars.size());
 
-	Py_RETURN_NONE;
-}
-
-//
-//=============================================================================
-static PyObject *py_ergo_xunpin(PyObject *self, PyObject *args)
-{
-	PyObject *s_obj;
-	PyObject *v_obj;  // the variables to unpin
-
-	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
-		return NULL;
-
-	// get pointer to solver
-	struct ergo *s = (struct ergo *)pyobj_to_void(s_obj);
-	vector<int> v;
-	int max_var = -1;
-
-	if (pyiter_to_vector(v_obj, v, max_var) == false)
-		return NULL;
-
-	ergo_shim_xunpin(s, v.empty() ? NULL : &v[0], (int)v.size());
-
-	Py_RETURN_NONE;
+	return acts_to_pylist(acts);
 }
 
 //
@@ -7218,6 +7060,60 @@ static PyObject *py_gluecard3_setphases(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_gluecard3_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			gluecard3_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Gluecard30)
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard3_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard30::Solver *s = (Gluecard30::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
+}
+
+//
+//=============================================================================
 static PyObject *py_gluecard3_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -7832,6 +7728,60 @@ static PyObject *py_gluecard41_setphases(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_gluecard41_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			gluecard41_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Gluecard41)
+}
+
+//
+//=============================================================================
+static PyObject *py_gluecard41_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Gluecard41::Solver *s = (Gluecard41::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
+}
+
+//
+//=============================================================================
 static PyObject *py_gluecard41_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -8412,6 +8362,60 @@ static PyObject *py_glucose3_setphases(PyObject *self, PyObject *args)
 
 		Py_RETURN_NONE;
 	} PYSAT_CATCH_OOM(Glucose30)
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			glucose3_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose30)
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose3_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose30::Solver *s = (Glucose30::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
 }
 
 //
@@ -9000,6 +9004,60 @@ static PyObject *py_glucose41_setphases(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_glucose41_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			glucose41_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose41)
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose41_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose41::Solver *s = (Glucose41::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
+}
+
+//
+//=============================================================================
 static PyObject *py_glucose41_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -9580,6 +9638,60 @@ static PyObject *py_glucose421_setphases(PyObject *self, PyObject *args)
 
 		Py_RETURN_NONE;
 	} PYSAT_CATCH_OOM(Glucose421)
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			glucose421_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Glucose421)
+}
+
+//
+//=============================================================================
+static PyObject *py_glucose421_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Glucose421::Solver *s = (Glucose421::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
 }
 
 //
@@ -12851,6 +12963,60 @@ static PyObject *py_minicard_setphases(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minicard_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			minicard_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Minicard)
+}
+
+//
+//=============================================================================
+static PyObject *py_minicard_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minicard::Solver *s = (Minicard::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
+}
+
+//
+//=============================================================================
 static PyObject *py_minicard_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -13366,6 +13532,60 @@ static PyObject *py_minisat22_setphases(PyObject *self, PyObject *args)
 
 //
 //=============================================================================
+static PyObject *py_minisat22_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			minisat22_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(Minisat22)
+}
+
+//
+//=============================================================================
+static PyObject *py_minisat22_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	Minisat22::Solver *s = (Minisat22::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
+}
+
+//
+//=============================================================================
 static PyObject *py_minisat22_cbudget(PyObject *self, PyObject *args)
 {
 	PyObject *s_obj;
@@ -13877,6 +14097,60 @@ static PyObject *py_minisatgh_setphases(PyObject *self, PyObject *args)
 
 		Py_RETURN_NONE;
 	} PYSAT_CATCH_OOM(MinisatGH)
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			minisatgh_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MinisatGH)
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatgh_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatGH::Solver *s = (MinisatGH::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
 }
 
 //
@@ -14968,6 +15242,60 @@ static PyObject *py_minisatep_setphases(PyObject *self, PyObject *args)
 
 		Py_RETURN_NONE;
 	} PYSAT_CATCH_OOM(MinisatEP)
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatep_setacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *a_obj;  // activities given as a dictionary var -> float
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &a_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatEP::Solver *s = (MinisatEP::Solver *)pyobj_to_void(s_obj);
+	vector<int>    vars;
+	vector<double> acts;
+	int            max_var = 0;
+
+	if (!pydict_to_acts(a_obj, vars, acts, max_var))
+		return NULL;
+
+	try {
+		if (max_var > 0)
+			minisatep_declare_vars(s, max_var);
+
+		s->setActivities(vars.empty() ? NULL : &vars[0],
+				acts.empty() ? NULL : &acts[0], (int)vars.size());
+
+		Py_RETURN_NONE;
+	} PYSAT_CATCH_OOM(MinisatEP)
+}
+
+//
+//=============================================================================
+static PyObject *py_minisatep_getacts(PyObject *self, PyObject *args)
+{
+	PyObject *s_obj;
+	PyObject *v_obj;  // variables to report
+
+	if (!PyArg_ParseTuple(args, "OO", &s_obj, &v_obj))
+		return NULL;
+
+	// get pointer to solver
+	MinisatEP::Solver *s = (MinisatEP::Solver *)pyobj_to_void(s_obj);
+	vector<int> vars;
+
+	if (!pyiter_to_vars(v_obj, vars))
+		return NULL;
+
+	vector<double> acts(vars.size());
+	if (!vars.empty())
+		s->getActivities(&vars[0], &acts[0], (int)vars.size());
+
+	return acts_to_pylist(acts);
 }
 
 //

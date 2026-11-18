@@ -123,8 +123,7 @@ def test_interruptible_solve_with_propagator(solver_class):
             solver.solve_limited(expect_interrupt=True)
 
 
-@pytest.mark.parametrize('solver_class', [Cadical300] +
-                         ([Ergo] if ergo_present else []))
+@pytest.mark.parametrize('solver_class', [Cadical300])
 def test_sync_with_idpool(solver_class):
     pool1 = IDPool()
     pool2 = IDPool()
@@ -149,7 +148,7 @@ def test_solver_kwargs_compatibility(name):
     with Solver(name=name, bootstrap_with=[[1]], sync_with=pool, native_card=True) as solver:
         assert solver.solve() is True
 
-        if name in ('cadical300', 'ergo'):
+        if name == 'cadical300':
             assert pool.top >= 1
         else:
             assert pool.top == 0

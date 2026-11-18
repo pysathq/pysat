@@ -795,7 +795,7 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  
      bool    implies      (const vec<Lit>& assumps, vec<Lit>& out);
  
-@@ -84,9 +85,9 @@
+@@ -84,10 +85,12 @@
      void    toDimacs     (const char* file, Lit p);
      void    toDimacs     (const char* file, Lit p, Lit q);
      void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
@@ -805,9 +805,12 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
 -    // 
 +    //
      void    setPolarity    (Var v, lbool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
++    void    setActivities  (const Var* vs, const double* as, int n); // Replace variable activities; unlisted variables drop to 0. Decision level 0 only.
++    void    getActivities  (const Var* vs, double* as, int n) const; // Report variable activities; unknown variables report 0.
      void    setDecisionVar (Var v, bool b);  // Declare if a variable should be eligible for selection in the decision heuristic.
  
-@@ -102,6 +103,11 @@
+     // Read state:
+@@ -102,6 +105,11 @@
      int     nVars      ()      const;       // The current number of variables.
      int     nFreeVars  ()      const;
      void    printStats ()      const;       // Print some current statistics to standard output.
@@ -819,7 +822,7 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  
      // Resource contraints:
      //
-@@ -212,6 +218,7 @@
+@@ -212,6 +220,7 @@
      int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
      double              progress_estimate;// Set by 'search()'.
      bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -827,7 +830,7 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
      Var                 next_var;         // Next variable to be created.
      ClauseAllocator     ca;
  
-@@ -333,8 +340,8 @@
+@@ -333,8 +342,8 @@
          garbageCollect(); }
  
  // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -838,7 +841,7 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
  inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
-@@ -342,7 +349,7 @@
+@@ -342,7 +351,7 @@
  inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s){ add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); add_tmp.push(s); return addClause_(add_tmp); }
  
  inline bool     Solver::isRemoved       (CRef cr)         const { return ca[cr].mark() == 1; }
@@ -847,18 +850,29 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
  inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
  
  inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
-@@ -358,8 +365,8 @@
+@@ -358,8 +367,19 @@
  // TODO: nFreeVars() is not quite correct, try to calculate right instead of adapting it like below:
  inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
  inline void     Solver::setPolarity   (Var v, lbool b){ user_pol[v] = b; }
 -inline void     Solver::setDecisionVar(Var v, bool b) 
 -{ 
++inline void     Solver::setActivities (const Var* vs, const double* as, int n)
++{
++    for (Var v = 0; v < nVars(); v++) activity[v] = 0;
++    for (int i = 0; i < n; i++)       activity[vs[i]] = as[i];
++    var_inc = 1;
++    rebuildOrderHeap();
++}
++inline void     Solver::getActivities (const Var* vs, double* as, int n) const
++{
++    for (int i = 0; i < n; i++) as[i] = vs[i] < nVars() ? activity[vs[i]] : 0;
++}
 +inline void     Solver::setDecisionVar(Var v, bool b)
 +{
      if      ( b && !decision[v]) dec_vars++;
      else if (!b &&  decision[v]) dec_vars--;
  
-@@ -379,24 +386,27 @@
+@@ -379,18 +399,18 @@
  // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
  // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
  // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
@@ -883,15 +897,17 @@ diff -Naur solvers/minisatgh/core/Solver.h solvers/mgh/core/Solver.h
      return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
  
  inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
- inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
+@@ -398,7 +418,10 @@
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
  inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
-+
+ 
 +// Warm start mode:
 +inline void     Solver::setStartMode (bool warm) { warm_start = warm; cancelUntil(0); }
  
- 
++
  //=================================================================================================
+ // Debug etc:
+ 
 diff -Naur solvers/minisatgh/core/SolverTypes.h solvers/mgh/core/SolverTypes.h
 --- solvers/minisatgh/core/SolverTypes.h	2023-01-13 19:24:17
 +++ solvers/mgh/core/SolverTypes.h	2021-08-12 09:10:25

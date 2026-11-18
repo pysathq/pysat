@@ -14,7 +14,7 @@
 +CPROF    := -O3 -g3 -fno-inline -fno-omit-frame-pointer -pg -DNDEBUG
 +INCLUDES := -I..
 +LIBS     := -L.
-+SOURCES  := ergo.c ext.c pysat_shim.c
++SOURCES  := ergo.c pysat_shim.c
 +OBJECTS  := $(SOURCES:.c=.o)
 +TRGT     := ergo
 +
@@ -42,7 +42,7 @@
 +#-------------------------------------------------------------------------------
 --- solvers/ergo_prepatch_ref/pysat_shim.c
 +++ solvers/ergo/pysat_shim.c
-@@ -0,0 +1,505 @@
+@@ -0,0 +1,408 @@
 +/*
 + * pysat_shim.c
 + *
@@ -51,7 +51,6 @@
 +#include <stdlib.h>
 +#include <string.h>
 +#include "ergo.h"
-+#include "ext.h"
 +
 +#define ERGO_SHIM_HAVE_TYPES
 +#include "pysat_shim.h"
@@ -181,93 +180,6 @@
 +	vect_destroy(&p);
 +
 +	return res;
-+}
-+
-+// copies Ergo's records into a malloc'd array; 'of' is the literals to ask
-+// about (DIMACS, no repeats), 'nof' < 0 asking about every pair tracked
-+//=============================================================================
-+int ergo_shim_xpairs(struct ergo *s, struct ergo_xpair **out,
-+		const int *of, int nof)
-+{
-+	struct xpair_vect pairs = vect_new(xpair_vect);
-+	struct int_vect lits  = vect_new(int_vect);
-+
-+	for (int i = 0; i < nof; ++i)
-+		vect_append(&lits, of[i]);
-+
-+	ergo_xpairs(s, &pairs, nof < 0 ? NULL : &lits);
-+	vect_destroy(&lits);
-+
-+	int                n = (int)vect_size(&pairs);
-+	struct ergo_xpair *o = malloc((size_t)n * sizeof(*o));
-+
-+	memcpy(o, vect_begin(&pairs), (size_t)n * sizeof(*o));
-+	vect_destroy(&pairs);
-+	*out = o;
-+
-+	return n;
-+}
-+
-+// 'triples' is a flat (la, lb, z) * n array, DIMACS
-+//=============================================================================
-+void ergo_shim_xname(struct ergo *s, const int *triples, int n)
-+{
-+	struct xpair_vect v = vect_new(xpair_vect);
-+
-+	for (int i = 0; i < n; ++i)
-+		vect_append(&v, ((struct ergo_xpair){ .la = triples[3 * i],
-+					.lb = triples[3 * i + 1],
-+					.z  = triples[3 * i + 2] }));
-+
-+	ergo_xname(s, &v);
-+	vect_destroy(&v);
-+}
-+
-+// 'pairs' is a flat (la, lb) * n array, DIMACS
-+//=============================================================================
-+void ergo_shim_xblock(struct ergo *s, const int *pairs, int n)
-+{
-+	struct xpair_vect v = vect_new(xpair_vect);
-+
-+	for (int i = 0; i < n; ++i)
-+		vect_append(&v, ((struct ergo_xpair){ .la = pairs[2 * i],
-+					.lb = pairs[2 * i + 1] }));
-+
-+	ergo_xblock(s, &v);
-+	vect_destroy(&v);
-+}
-+
-+// collects 'vars' as 0-based ids
-+//=============================================================================
-+static struct int_vect ergo_shim_xvars(struct ergo *s, const int *vars, int n)
-+{
-+	struct int_vect v = vect_new(int_vect);
-+
-+	for (int i = 0; i < n; ++i)
-+		if (vars[i] >= 1 && vars[i] <= ergo_nvars(s))
-+			vect_append(&v, vars[i] - 1);
-+
-+	return v;
-+}
-+
-+//
-+//=============================================================================
-+void ergo_shim_xpin(struct ergo *s, const int *vars, int n)
-+{
-+	struct int_vect v = ergo_shim_xvars(s, vars, n);
-+
-+	ergo_xpin(s, &v);
-+	vect_destroy(&v);
-+}
-+
-+//
-+//=============================================================================
-+void ergo_shim_xunpin(struct ergo *s, const int *vars, int n)
-+{
-+	struct int_vect v = ergo_shim_xvars(s, vars, n);
-+
-+	ergo_xunpin(s, &v);
-+	vect_destroy(&v);
 +}
 +
 +//
@@ -433,29 +345,20 @@
 +
 +//
 +//=============================================================================
-+void ergo_shim_setxscope(
-+	struct ergo *s,
-+	const int *add,
-+	int nadd,
-+	const int *rem,
-+	int nrem
-+)
++void ergo_shim_getacts(struct ergo *s, const int *vars, double *acts, int n)
 +{
-+	struct int_vect a = vect_new(int_vect), r = vect_new(int_vect);
++	struct int_vect v = vect_new(int_vect);
++	struct double_vect a = vect_new(double_vect);
++	vect_reserve(&v, n);
 +
-+	// every variable has to exist before ergo_setxscope() indexes it
-+	for (int i = 0; i < nadd; ++i) {
-+		ergo_shim_declare(s, add[i]);
-+		vect_append(&a, add[i] - 1);
-+	}
-+	for (int i = 0; i < nrem; ++i) {
-+		ergo_shim_declare(s, rem[i]);
-+		vect_append(&r, rem[i] - 1);
-+	}
++	for (int i = 0; i < n; ++i)
++		vect_append(&v, vars[i] - 1);
 +
-+	ergo_setxscope(s, &a, &r);
++	ergo_get_acts(s, &v, &a);
++	for (int i = 0; i < n; ++i)
++		acts[i] = vect_memb(&a, double, i);
++	vect_destroy(&v);
 +	vect_destroy(&a);
-+	vect_destroy(&r);
 +}
 +
 +//
@@ -550,7 +453,7 @@
 +}
 --- solvers/ergo_prepatch_ref/pysat_shim.h
 +++ solvers/ergo/pysat_shim.h
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,110 @@
 +/*
 + * pysat_shim.h
 + *
@@ -591,12 +494,6 @@
 +extern void         ergo_set_dvars_all   (struct ergo *);
 +
 +extern void         ergo_set_proof       (struct ergo *, FILE *);
-+extern void         ergo_xenable         (struct ergo *, bool);
-+extern void         ergo_setxthreshold   (struct ergo *, double);
-+extern void         ergo_setxwarmup      (struct ergo *, int64_t);
-+extern void         ergo_setxescalate    (struct ergo *, double);
-+extern void         ergo_setxrewrite     (struct ergo *, bool);
-+extern void         ergo_setxequiv       (struct ergo *, bool);
 +
 +// extra shim on top
 +extern int  ergo_shim_add_cl             (struct ergo *, const int *, int, int);
@@ -604,6 +501,7 @@
 +extern int  ergo_shim_solve_lim          (struct ergo *, const int *, int);
 +extern void ergo_shim_setphases          (struct ergo *, const int *, int, bool);
 +extern void ergo_shim_setacts            (struct ergo *, const int *, const double *, int);
++extern void ergo_shim_getacts            (struct ergo *, const int *, double *, int);
 +extern int  ergo_shim_prop_check         (struct ergo *, const int *, int, int, int **, int *);
 +extern int  ergo_shim_model_at           (struct ergo *, int);
 +extern int  ergo_shim_nconflict          (struct ergo *);
@@ -623,7 +521,6 @@
 +extern void ergo_shim_set_reduce_by      (struct ergo *, double);
 +extern void ergo_shim_set_glucose_bump   (struct ergo *, bool);
 +extern void ergo_shim_set_adapt_at       (struct ergo *, int64_t);
-+extern void ergo_shim_setxscope          (struct ergo *, const int *, int, const int *, int);
 +extern void ergo_shim_set_emulate        (struct ergo *, const char *);
 +
 +// declares variables and marks them decision variables
@@ -636,22 +533,6 @@
 +{
 +	return d > 0 ? lit_of(d - 1) : lit_neg(lit_of(-d - 1));
 +}
-+
-+// a copy of ergo's struct, for pysolvers.cc only
-+#ifndef ERGO_SHIM_HAVE_TYPES
-+struct ergo_xpair {
-+	int    la, lb;
-+	int    z;
-+	double count;
-+};
-+#endif
-+
-+extern int  ergo_shim_xpairs             (struct ergo *, struct ergo_xpair **,
-+                                          const int *, int);
-+extern void ergo_shim_xname              (struct ergo *, const int *, int);
-+extern void ergo_shim_xblock             (struct ergo *, const int *, int);
-+extern void ergo_shim_xpin               (struct ergo *, const int *, int);
-+extern void ergo_shim_xunpin             (struct ergo *, const int *, int);
 +
 +// IPASIR-UP; a copy of api.h's struct, for pysolvers.cc only
 +#ifndef ERGO_SHIM_HAVE_TYPES

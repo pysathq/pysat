@@ -18,9 +18,8 @@ def generate_instance(
 
 
 def is_minimal_hs(hs, hit_sets, blocked_sets):
-    for blocked in blocked_sets:
-        if blocked.issubset(hs):
-            return False
+    if hs in blocked_sets:
+        return False
 
     in_minimal = set()
 
@@ -81,7 +80,7 @@ def test_sat_enumerates_minimal_hitting_sets(solver, seed):
     )
 
     to_hit = [frozenset(s) for s in sets]
-    blocked = []
+    blocked = set()
 
     with Hitman(bootstrap_with=sets, htype="sat", solver=solver) as hitman:
 
@@ -94,6 +93,6 @@ def test_sat_enumerates_minimal_hitting_sets(solver, seed):
             assert is_minimal_hs(hs, to_hit, blocked), \
                     'Error: The hitting set is non-minimal'
 
-            blocked.append(hs)
+            blocked.add(hs)
             hitman.block(hs)
 

@@ -457,8 +457,7 @@ class Solver(object):
             name_ = name.lower()
             extra = dict(kwargs)
 
-            if name_ not in SolverNames.cadical300 and \
-               name_ not in SolverNames.ergo:
+            if name_ not in SolverNames.cadical300:
                 extra.pop('sync_with', None)
 
             if name_ not in SolverNames.cadical195 and \
@@ -607,7 +606,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical300, Ergo):
+            if type(self.solver) is Cadical300:
                 self.solver.attach_vpool(vpool=vpool)
             else:
                 raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
@@ -626,7 +625,7 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical300, Ergo):
+            if type(self.solver) is Cadical300:
                 self.solver.sync_vars()
             else:
                 raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
@@ -645,198 +644,117 @@ class Solver(object):
         """
 
         if self.solver:
-            if type(self.solver) in (Cadical300, Ergo):
+            if type(self.solver) is Cadical300:
                 self.solver.sync_vpool()
             else:
                 raise NotImplementedError('Variable synchronization is supported only by CaDiCaL 3.0.0')
 
     def set_activities(self, activities={}):
         """
-            Replace the solver's variable ordering with a user-given one: each
-            variable in ``activities`` takes the activity it maps to and every
-            other variable drops to ``0.0``. As variables are decided in
-            decreasing order of activity, this influences which decisions are
-            made, where :meth:`set_phases` influences how they are made.
+            Replace the solver's VSIDS variable ordering with a user-given
+            one: each variable in ``activities`` takes the activity it maps to
+            and every other variable's activity drops to ``0.0``. This
+            influences which decisions are made first. Note that
+            :meth:`set_phases` influences *how* they are made, so a user may
+            want to apply both methods together.
 
-            The call also resets the solver's activity bump increment, so the
-            given values are on the same scale as what the search adds next.
+            Importantly, the call also resets the solver's activity bump
+            increment, so the given values are on the same scale as what CDCL
+            search adds next.
 
+            This is supported by :class:`Gluecard3`, :class:`Gluecard4`,
+            :class:`Glucose3`, :class:`Glucose4`, :class:`Glucose42`,
+            :class:`Minicard`, :class:`Minisat22`, :class:`MinisatGH`, and
+            :class:`MinisatEP`.
 
             .. note::
 
-                The ordering is a starting point rather than a constraint. It
-                is reshaped by the solver's VSIDS heuristic as conflicts come
-                in.
+                The ordering defined by these activities is a starting point
+                rather than a constraint. It is reshaped by the solver's VSIDS
+                heuristic as conflicts come in.
 
             .. note::
 
-                An activity of ``0.0`` deprioritises a variable; it does not
+                An activity of ``0.0`` deprioritises a variable. It does not
                 stop the solver branching on it.
 
             :param activities: variables mapped to their activities
             :type activities: dict(int, float)
+
+            Usage example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Glucose3
+                >>>
+                >>> g = Glucose3(bootstrap_with=[[-1, 2], [-3, -2]])
+                >>> g.set_phases(literals=[1, 2, 3])
+                >>>
+                >>> # decide 1 first, then 3
+                >>> # note how 2 is missing -> it will get activity 0.0
+                >>> g.set_activities({1: 2.0, 3: 1.0})
+                >>> g.solve()
+                True
+                >>> g.get_model()
+                [1, 2, -3]
+                >>>
+                >>> # decide 3 first, then 1
+                >>> # (phase saving in the previous SAT call changed
+                >>> # the polarities, so we are setting them again)
+                >>> g.set_phases(literals=[1, 2, 3])
+                >>> g.set_activities({3: 2.0, 1: 1.0})
+                >>> g.solve()
+                True
+                >>> g.get_model()
+                [-1, -2, 3]
+                >>>
+                >>> g.delete()
         """
 
         if self.solver:
-            if type(self.solver) in (Ergo,):
+            if type(self.solver) in (Ergo, Gluecard3, Gluecard4, Glucose3,
+                                     Glucose4, Glucose42, Minicard, Minisat22,
+                                     MinisatGH, MinisatEP):
                 self.solver.set_activities(activities)
             else:
                 raise NotImplementedError('Setting variable activities is unsupported by this solver')
 
-    def set_xscope(self, add=[], remove=[]):
+    def get_activities(self, variables=[]):
         """
-            Adjust the scope of extension-variable mining: a pair of
-            literals is only ever mined if both their variables are in
-            scope. Variables in ``add`` join the scope, variables in
-            ``remove`` leave it, and the two must not overlap. Calling the
-            method with neither puts every variable back in scope.
+            Obtain the solver's current activities of ``variables`` as a
+            dictionary. Variables outside the parameter list are excluded.
+            Variables the solver does not know of report activity ``0.0``. The
+            returned values are the current variables' VSIDS activities.
 
-            .. note::
+            This is supported by the same MiniSat-derived solvers, as
+            :meth:`set_activities`.
 
-                A variable the solver introduces from two in-scope literals
-                joins the scope itself, so a scoped family can grow on its
-                own. The argument ``remove`` takes such a variable back out
-                once *both* of its defining literals have gone, recursively.
-
-            :param add: variables joining the mining scope
-            :param remove: variables leaving it
-            :type add: iterable(int)
-            :type remove: iterable(int)
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.set_xscope(add, remove)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def shift_xscope(self, old, new):
-        """
-            Move the scope of extension-variable mining from the variables
-            of the literals in ``old`` to those of the literals in ``new``,
-            e.g. from one call's assumptions to the next one's. Only the
-            difference is passed on, so a scope that stays put costs nothing.
-
-            :param old: literals whose variables are in scope now
-            :param new: literals whose variables should be in scope instead
-            :type old: iterable(int)
-            :type new: iterable(int)
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.shift_xscope(old, new)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def xpairs(self, lits=None):
-        """
-            Return the literal pairs the extension-variable miner is currently
-            tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
-            has already been "extended" carries the identifier of the
-            extension variable standing for ``la | lb`` in ``z``, and a
-            ``count`` of ``0``; a pair still under consideration has ``z ==
-            0`` and a ``count`` saying how reliably it has recurred so far.
-            Promoted pairs come first.
-
-            If parameter ``lits`` is given, only the pairs over those literals
-            are reported, which is normally what a caller wants: the literals
-            it is about to encode. The literals must be distinct.
-
-            The result is valid until the next call to :meth:`solve`,
-            :meth:`solve_limited` or :meth:`propagate`, like a model or an
-            unsatisfiable core. Adopting a ``z`` beyond that point requires
-            :meth:`xpin`.
-
-            :param lits: literals to ask about, or ``None`` for every pair
-            :type lits: iterable(int)
-
-            :rtype: list(tuple(int, int, int, float))
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                return self.solver.xpairs(lits)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def xname(self, pairs):
-        """
-            Tell the solver about the names of the literal pairs given
-            externally. The solver adds the definition clauses, stops its
-            miner from introducing other names for the same pairs, and
-            rewrites its learnt clauses accordingly. Pair names adopted this
-            way are never retired.
-
-            .. note::
-
-                A pair that already has a name, and a ``z`` that already
-                names another pair, are both ignored.
-
-            :param pairs: the pairs to name
-            :type pairs: iterable(tuple(int, int, int))
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.xname(pairs)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def xblock(self, pairs):
-        """
-            Tell the solver that the given literal pairs are encoded
-            externally, so its miner must never consider them again. Unlike
-            :meth:`xname`, nothing is defined, recorded or rewritten: the
-            caller's own names for the pairs stay ordinary variables.
-
-            :param pairs: the pairs to keep the miner off
-            :type pairs: iterable(tuple(int, int))
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.xblock(pairs)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def xpin(self, variables):
-        """
-            Instruct the solver to keep the given extension variables alive.
-            An extension variable is retired once nothing references it any
-            more and its identifier is recycled for a later potential pair of
-            literals. Pinning an extension variable prevents that from
-            happening, indicating the variable is now used externally.
-
-            .. note::
-
-                Identifiers that are not live extension variables are ignored.
-
-            :param variables: extension variables to pin
+            :param variables: variables to report
             :type variables: iterable(int)
+
+            :rtype: dict(int, float)
+
+            Usage example:
+
+            .. code-block:: python
+
+                >>> from pysat.solvers import Glucose3
+                >>>
+                >>> g = Glucose3(bootstrap_with=[[-1, 2], [-3, -2]])
+                >>> g.set_activities(activities={3: 2.0, 1: 1.0})
+                >>> g.get_activities(variables=[1, 2, 3])
+                {1: 1.0, 2: 0.0, 3: 2.0}
+                >>>
+                >>> g.delete()
         """
 
         if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.xpin(variables)
+            if type(self.solver) in (Ergo, Gluecard3, Gluecard4, Glucose3,
+                                     Glucose4, Glucose42, Minicard, Minisat22,
+                                     MinisatGH, MinisatEP):
+                return self.solver.get_activities(variables)
             else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
-
-    def xunpin(self, variables):
-        """
-            Releases a pin taken by :meth:`xpin`, handing the variable
-            back to the solver's retirement: if nothing else references
-            it, it is retired at once and its identifier becomes reusable.
-
-            :param variables: variables to unpin
-            :type variables: iterable(int)
-        """
-
-        if self.solver:
-            if type(self.solver) in (Ergo,):
-                self.solver.xunpin(variables)
-            else:
-                raise NotImplementedError('Extension-variable mining is unsupported by this solver')
+                raise NotImplementedError('Getting variable activities is unsupported by this solver')
 
     def activate_atmost(self):
         """
@@ -3818,8 +3736,7 @@ class Ergo(object):
     """
 
     def __init__(self, bootstrap_with=None, use_timer=False, incr=False,
-                 with_proof=False, warm_start=False, native_card=False,
-                 sync_with=None):
+                 with_proof=False, warm_start=False, native_card=False):
         """
             Basic constructor.
         """
@@ -3832,13 +3749,11 @@ class Ergo(object):
         self.status = None
         self.prfile = None
         self.prfp = None
-        self.sync_with = None
 
         # checked here, so that __del__ finds the attributes above in place
         assert ergo_present, 'Solver \'ergo\' is unavailable in this build of PySAT.'
 
-        self.new(bootstrap_with, use_timer, with_proof, warm_start, native_card,
-                 sync_with)
+        self.new(bootstrap_with, use_timer, with_proof, warm_start, native_card)
 
     def __del__(self):
         """
@@ -3862,7 +3777,7 @@ class Ergo(object):
         self.delete()
 
     def new(self, bootstrap_with=None, use_timer=False, with_proof=False,
-            warm_start=False, native_card=False, sync_with=None):
+            warm_start=False, native_card=False):
         """
             Actual constructor of the solver.
         """
@@ -3902,52 +3817,9 @@ class Ergo(object):
             if warm_start:
                 self.start_mode(warm=True)
 
-            # if the user wants extension variables to coexist with their
-            # own IDPool, the two have to be kept synchronized both ways
-            self.attach_vpool(sync_with)
-
             self.use_timer = use_timer
             self.call_time = 0.0  # time spent for the last call to oracle
             self.accu_time = 0.0  # time accumulated for all calls to oracle
-
-    def sync_vpool(self):
-        """
-            Synchronize a user-provided IDPool with the variables already
-            known to Ergo, i.e. occupy in the pool every identifier the
-            solver minted on its own (as an extension variable). This is the
-            solver to pool direction; see :meth:`.sync_vars` for the other
-            one.
-        """
-
-        if self.ergo and self.sync_with is not None:
-            top = pysolvers.ergo_nof_vars(self.ergo)
-
-            if top > self.sync_with.top:
-                self.sync_with.occupy(self.sync_with.top + 1, top)
-                self.sync_with.top = top
-
-    def sync_vars(self):
-        """
-            Synchronize the variables of Ergo with a user-provided IDPool,
-            i.e. declare in the solver every identifier the pool has already
-            handed out. This is the pool to solver direction of
-            :meth:`.sync_vpool`.
-        """
-
-        if self.ergo and self.sync_with is not None:
-            pysolvers.ergo_dec_vars(self.ergo, self.sync_with.top)
-
-    def attach_vpool(self, vpool=None):
-        """
-            Set a shared variable pool to keep synchronized with the solver.
-        """
-
-        if vpool is not None and not isinstance(vpool, IDPool):
-            raise TypeError('This solver expects \'sync_with\' to be an IDPool object or None')
-
-        self.sync_with = vpool
-        self.sync_vars()
-        self.sync_vpool()
 
     def activate_atmost(self):
         """
@@ -4003,8 +3875,6 @@ class Ergo(object):
         """
 
         if self.ergo:
-            self.sync_vars()
-
             if self.use_timer:
                  start_time = process_time()
 
@@ -4015,8 +3885,6 @@ class Ergo(object):
                 self.call_time = process_time() - start_time
                 self.accu_time += self.call_time
 
-            self.sync_vpool()
-
             return self.status
 
     def solve_limited(self, assumptions=[], expect_interrupt=False):
@@ -4026,8 +3894,6 @@ class Ergo(object):
         """
 
         if self.ergo:
-            self.sync_vars()
-
             if self.use_timer:
                  start_time = process_time()
 
@@ -4037,8 +3903,6 @@ class Ergo(object):
             if self.use_timer:
                 self.call_time = process_time() - start_time
                 self.accu_time += self.call_time
-
-            self.sync_vpool()
 
             return self.status
 
@@ -4118,43 +3982,22 @@ class Ergo(object):
 
     def set_activities(self, activities={}):
         """
-            Replaces Ergo's variable ordering with a user-given one: each
-            variable in ``activities`` takes the activity it maps to, and
-            every other variable's activity drops to ``0.0``. Variables are
-            decided in decreasing order of activity, so this says which
-            decisions the solver should make first, where :meth:`set_phases`
-            says which way it should decide them.
-
-            .. note::
-
-                An activity of ``0.0`` deprioritises a variable; it does not
-                stop the solver branching on it once the preferred ones are
-                exhausted.
-
-            :param activities: variables mapped to their activities
-            :type activities: dict(int, float)
-
-            Example:
-
-            .. code-block:: python
-
-                >>> from pysat.solvers import Ergo
-                >>> s = Ergo(bootstrap_with=[[-1, 2], [-3, -2]])
-                >>> s.set_phases([1, 2, 3])
-                >>> s.set_activities({1: 2.0, 3: 1.0})
-                >>> s.solve()
-                True
-                >>> s.get_model()
-                [1, 2, -3]
-                >>> s.set_activities({3: 2.0, 1: 1.0})
-                >>> s.solve()
-                True
-                >>> s.get_model()
-                [-1, -2, 3]
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
         """
 
         if self.ergo:
             pysolvers.ergo_setacts(self.ergo, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.ergo:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.ergo_getacts(self.ergo, variables)))
 
     def configure(self, parameters):
         """
@@ -4222,29 +4065,6 @@ class Ergo(object):
                 * ``adapt-at``: conflict count at which to (once) evaluate
                   switching solver strategies (int), or ``never``
 
-                * ``ext``: enable automatic extension-variable mining (bool)
-
-                * ``ext-threshold``: co-occurrences a mined pair needs
-                  before it is turned into a new variable (float)
-
-                * ``ext-warmup``: conflicts to let pass, unmined, before
-                  ``ext`` starts tracking candidate pairs (int)
-
-                * ``ext-escalate``: how quickly ``ext-threshold`` grows
-                  with the number of variables already introduced (float)
-
-                * ``ext-rewrite``: whether a promoted or named pair may
-                  be substituted into the clause database (default
-                  ``True``); switching it off also stops mining from
-                  promoting, since a variable nothing references retires
-                  the moment it is created
-
-                * ``ext-equiv``: whether an extension variable gets the
-                  ``la | lb -> z`` half of its definition (default
-                  ``True``); without it ``z`` is only the upper bound a
-                  totalizer would have encoded itself, which a rewrite
-                  cannot use, so it forces ``ext-rewrite`` off
-
             :param parameters: parameter names mapped to their values
             :type parameters: dict
         """
@@ -4261,138 +4081,6 @@ class Ergo(object):
             # setting JW mode if not 'none'
             if parameters.get('jw-mode', 'none') != 'none':
                 self.apply_jw()
-
-    def set_xscope(self, add=[], remove=[]):
-        """
-            Adjust the scope of extension-variable mining: a pair of
-            literals is only ever mined if both their variables are in
-            scope. Variables in ``add`` join the scope, variables in
-            ``remove`` leave it, and the two must not overlap. Calling the
-            method with neither puts every variable back in scope.
-
-            .. note::
-
-                A variable the solver introduces from two in-scope literals
-                joins the scope itself, so a scoped family can grow on its
-                own. The argument ``remove`` takes such a variable back out
-                once *both* of its defining literals have gone, recursively.
-
-            :param add: variables joining the mining scope
-            :param remove: variables leaving it
-            :type add: iterable(int)
-            :type remove: iterable(int)
-        """
-
-        if self.ergo:
-            pysolvers.ergo_setxscope(self.ergo, add, remove)
-
-    def shift_xscope(self, old, new):
-        """
-            Move the mining scope from the variables of ``old`` to those of
-            ``new``; only the difference reaches Ergo.
-
-            :param old: literals whose variables are in scope now
-            :param new: literals whose variables should be in scope instead
-            :type old: iterable(int)
-            :type new: iterable(int)
-        """
-
-        if self.ergo:
-            pysolvers.ergo_shiftxscope(self.ergo, old, new)
-
-    def xpairs(self, lits=None):
-        """
-            Return the literal pairs the extension-variable miner is currently
-            tracking, as a list of ``(la, lb, z, count)`` tuples. A pair that
-            has already been "extended" carries the identifier of the
-            extension variable standing for ``la | lb`` in ``z``, and a
-            ``count`` of ``0``; a pair still under consideration has ``z ==
-            0`` and a ``count`` saying how reliably it has recurred so far.
-            Promoted pairs come first.
-
-            If ``lits`` is given, only the pairs over those literals are
-            reported, which is normally what a caller wants: the literals it
-            is about to encode. Asking narrowly is also much cheaper than
-            taking the whole database home and sifting it there. The
-            literals must be distinct.
-
-            The result is valid until the next call to :meth:`solve`,
-            :meth:`solve_limited` or :meth:`propagate`, like a model or an
-            unsatisfiable core. Adopting a ``z`` beyond that point requires
-            :meth:`xpin`.
-
-            :param lits: literals to ask about, or ``None`` for every pair
-            :type lits: iterable(int)
-
-            :rtype: list(tuple(int, int, int, float))
-        """
-
-        if self.ergo:
-            return pysolvers.ergo_xpairs(self.ergo, lits)
-
-    def xname(self, pairs):
-        """
-            Adopt variables of the caller's own as names for literal pairs,
-            i.e. register ``z <-> la | lb`` for a pair the caller has encoded
-            itself. Ergo adds ``z``'s definition clauses, records the pair so
-            its miner never mints a second name for it, and rewrites its
-            learnt clauses onto ``z``. An adopted name is pinned on arrival
-            and never retires.
-
-            A pair that already has a name, and a ``z`` that already names
-            another pair, are both ignored.
-
-            :param pairs: the pairs to name
-            :type pairs: iterable(tuple(int, int, int))
-        """
-
-        if self.ergo:
-            pysolvers.ergo_xname(self.ergo, [l for p in pairs for l in p])
-
-    def xblock(self, pairs):
-        """
-            Keep the miner off literal pairs the caller encodes itself, for
-            good. Nothing is defined, recorded or rewritten, and the
-            caller's own variable for a pair is none of Ergo's business.
-
-            :param pairs: the pairs to keep the miner off
-            :type pairs: iterable(tuple(int, int))
-        """
-
-        if self.ergo:
-            pysolvers.ergo_xblock(self.ergo, [l for p in pairs for l in p[:2]])
-
-    def xpin(self, variables):
-        """
-            Keeps the given extension variables alive. Ergo retires an
-            extension variable once nothing references it any more and
-            recycles its identifier for a later pair, which would
-            silently change what an adopted ``z`` means; pinning holds a
-            reference of its own so that never happens.
-
-            Identifiers that are not live extension variables are
-            ignored. Each pin has to be matched by at most one
-            :meth:`xunpin`.
-
-            :param variables: variables to pin, as reported by :meth:`xpairs`
-            :type variables: iterable(int)
-        """
-
-        if self.ergo:
-            pysolvers.ergo_xpin(self.ergo, variables)
-
-    def xunpin(self, variables):
-        """
-            Releases a pin taken by :meth:`xpin`, handing the variable
-            back to Ergo's own retirement: if nothing else references it,
-            it is retired at once and its identifier becomes reusable.
-
-            :param variables: variables to unpin
-            :type variables: iterable(int)
-        """
-
-        if self.ergo:
-            pysolvers.ergo_xunpin(self.ergo, variables)
 
     def get_status(self):
         """
@@ -4853,6 +4541,25 @@ class Gluecard3(object):
         if self.gluecard:
             pysolvers.gluecard3_setphases(self.gluecard, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard3_setacts(self.gluecard, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.gluecard:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.gluecard3_getacts(self.gluecard, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -5213,6 +4920,25 @@ class Gluecard4(object):
         if self.gluecard:
             pysolvers.gluecard41_setphases(self.gluecard, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.gluecard:
+            pysolvers.gluecard41_setacts(self.gluecard, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.gluecard:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.gluecard41_getacts(self.gluecard, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -5571,6 +5297,25 @@ class Glucose3(object):
         if self.glucose:
             pysolvers.glucose3_setphases(self.glucose, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.glucose:
+            pysolvers.glucose3_setacts(self.glucose, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.glucose:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.glucose3_getacts(self.glucose, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -5917,6 +5662,25 @@ class Glucose4(object):
         if self.glucose:
             pysolvers.glucose41_setphases(self.glucose, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.glucose:
+            pysolvers.glucose41_setacts(self.glucose, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.glucose:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.glucose41_getacts(self.glucose, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -6262,6 +6026,25 @@ class Glucose42(object):
 
         if self.glucose:
             pysolvers.glucose421_setphases(self.glucose, literals)
+
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.glucose:
+            pysolvers.glucose421_setacts(self.glucose, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.glucose:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.glucose421_getacts(self.glucose, variables)))
 
     def configure(self, parameters):
         """
@@ -8347,6 +8130,25 @@ class Minicard(object):
         if self.minicard:
             pysolvers.minicard_setphases(self.minicard, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.minicard:
+            pysolvers.minicard_setacts(self.minicard, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.minicard:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.minicard_getacts(self.minicard, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -8693,6 +8495,25 @@ class Minisat22(object):
         if self.minisat:
             pysolvers.minisat22_setphases(self.minisat, literals)
 
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.minisat:
+            pysolvers.minisat22_setacts(self.minisat, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.minisat:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.minisat22_getacts(self.minisat, variables)))
+
     def get_status(self):
         """
             Returns solver's status.
@@ -9026,6 +8847,25 @@ class MinisatGH(object):
 
         if self.minisat:
             pysolvers.minisatgh_setphases(self.minisat, literals)
+
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.minisat:
+            pysolvers.minisatgh_setacts(self.minisat, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.minisat:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.minisatgh_getacts(self.minisat, variables)))
 
     def get_status(self):
         """
@@ -9405,6 +9245,25 @@ class MinisatEP(object):
 
         if self.minisat:
             pysolvers.minisatep_setphases(self.minisat, literals)
+
+    def set_activities(self, activities={}):
+        """
+            Replaces the solver's variable activities: each variable in
+            ``activities`` takes the activity it maps to, and every other
+            variable's activity drops to ``0.0``.
+        """
+
+        if self.minisat:
+            pysolvers.minisatep_setacts(self.minisat, dict(activities))
+
+    def get_activities(self, variables=[]):
+        """
+            Return the current activities of ``variables``, as a dictionary.
+        """
+
+        if self.minisat:
+            variables = list(variables)
+            return dict(zip(variables, pysolvers.minisatep_getacts(self.minisat, variables)))
 
     def get_status(self):
         """
