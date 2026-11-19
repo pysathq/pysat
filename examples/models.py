@@ -66,7 +66,7 @@ import sys
 
 #
 #==============================================================================
-def enumerate_models(formula, to_enum, solver, warm=False, projection=None):
+def enumerate_models(formula, to_enum, solver, warm=False, projection=[]):
     """
         Enumeration procedure. It represents a loop iterating over satisfying
         assignment for a given formula until either all or a given number of
@@ -82,7 +82,7 @@ def enumerate_models(formula, to_enum, solver, warm=False, projection=None):
         :type to_enum: int or 'all'
         :type solver: str
         :type warm: bool
-        :type projection: list(int) or None
+        :type projection: list(int)
     """
 
     with Solver(name=solver, bootstrap_with=formula.clauses,
@@ -139,7 +139,7 @@ def parse_options():
     to_enum = 1
     solver = 'g3'
     warm = False
-    projection = None
+    projection = []
 
     for opt, arg in opts:
         if opt in ('-e', '--enum'):
@@ -175,7 +175,7 @@ def usage():
     print('        -e, --enum=<int>         Compute at most this number of models')
     print('                                 Available values: [1 .. INT_MAX], all (default: 1)')
     print('        -h, --help               Show this message')
-    print('        -p, --project=<v1,v2,..> Enumerate assignments to these variables only')
+    print('        -p, --project=<csv>      Restrict models to these variables only (given as comma-separated integers)')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: cd, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -w, --warm               Use solver\'s warm start mode')

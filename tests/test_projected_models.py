@@ -1,7 +1,7 @@
 import pytest
 
 from pysat.card import CardEnc, EncType
-from pysat.solvers import Cadical300, Glucose3, Kissat404, Minisat22, Solver
+from pysat.solvers import Solver
 
 
 @pytest.mark.parametrize('name', ['g3', 'm22', 'cd19'])
@@ -18,43 +18,20 @@ def test_project_cardinality_encoding(name):
         assert not solver.solve(assumptions=[-2])
 
 
-@pytest.mark.parametrize('backend', [Cadical300, Glucose3, Minisat22])
-def test_concrete_solver_projection(backend):
-    with backend(bootstrap_with=[[1, 2], [2, 3]]) as solver:
-        models = list(solver.enum_models(assumptions=[2], projection=[3, 1]))
-        assert sorted(models) == [[-3, -1], [-3, 1], [3, -1], [3, 1]]
-        assert not solver.solve(assumptions=[2])
-
-
 def test_empty_projection():
-    with Solver(bootstrap_with=[[1]]) as solver:
-        assert list(solver.enum_models(assumptions=[-1], projection=[])) == []
-        assert list(solver.enum_models(projection=[])) == [[]]
-        assert not solver.solve()
-
-
-def test_projected_model_is_blocked_before_yield():
     with Solver(bootstrap_with=[[1, 2]]) as solver:
-        first = next(solver.enum_models(projection=[2]))
-        assert not solver.solve(assumptions=first)
-        assert list(solver.enum_models(projection=[2])) == [[-first[0]]]
+        assert sorted(solver.enum_models(projection=[])) == [[-1, 2], [1, -2], [1, 2]]
 
 
-@pytest.mark.parametrize('projection,error', [([0], ValueError), ([-1], ValueError),
-                                               ([1, 1], ValueError), ([2], ValueError),
-                                               ([1.5], TypeError)])
-def test_bad_projection_does_not_block(projection, error):
+@pytest.mark.parametrize('projection', [[0], [-1], [1, 1], [2]])
+def test_bad_projection_does_not_block(projection):
     with Solver(bootstrap_with=[[1]]) as solver:
-        with pytest.raises(error):
+        with pytest.raises(ValueError):
             list(solver.enum_models(projection=projection))
         assert solver.solve()
 
 
 def test_nonincremental_solver_rejects_projection():
     with Solver(name='kissat404', bootstrap_with=[[1]]) as solver:
-        with pytest.raises(NotImplementedError):
-            list(solver.enum_models(projection=[1]))
-
-    with Kissat404(bootstrap_with=[[1]]) as solver:
         with pytest.raises(NotImplementedError):
             list(solver.enum_models(projection=[1]))

@@ -201,7 +201,6 @@
 
 #
 #==============================================================================
-from operator import index
 from pysat._utils import MainThread
 from pysat.engines import BooleanEngine
 from pysat.formula import CNFPlus, IDPool
@@ -1592,7 +1591,7 @@ class Solver(object):
         if self.solver:
             return self.solver.nof_clauses()
 
-    def enum_models(self, assumptions=[], projection=None):
+    def enum_models(self, assumptions=[], projection=[]):
         """
             This method can be used to enumerate models of a CNF formula and
             it performs as a standard Python iterator. The method can be
@@ -1613,14 +1612,18 @@ class Solver(object):
                 *blocks* each previously computed model by adding a new
                 clause until no more models of the formula exist.
 
+            .. note::
+
+                If a non-empty ``projection`` is given, all computed models
+                will be projected on the given set of variables. Integers
+                included in the list ``projection`` are to be positive,
+                distinct, and no larger than the largest variable ID known to
+                the solver.
+
             :param assumptions: a list of assumption literals.
-            :param projection: optional iterable of distinct positive variable IDs.
-                Yield their signed assignments in the given order and block all
-                extensions at once. IDs must occur in the solver's variable
-                range. An empty projection has one assignment if satisfiable.
-                Blocking clauses are permanent, including when assumptions are used.
+            :param projection: optional iterable of distinct variable IDs.
             :type assumptions: iterable(int)
-            :type projection: iterable(int) or None
+            :type projection: iterable(int)
 
             :rtype: list(int).
 
@@ -1857,30 +1860,42 @@ class Solver(object):
 
 #
 #==============================================================================
-def _enum_models(solver, assumptions, projection):
-    """Enumerate assignments by blocking each model or its projection."""
-    if projection is not None:
-        projection = tuple(index(v) for v in projection)
-        if any(v <= 0 for v in projection) or len(set(projection)) != len(projection):
-            raise ValueError('Projection must contain distinct positive variable IDs.')
-        largest = max(projection) if projection else 0
-        assumptions = list(assumptions)
+class _SolverBackend(object):
+    """
+        Functionality shared by all the solver backends below.
+    """
 
-    while solver.solve(assumptions=assumptions):
-        model = solver.get_model()
-        if model is None:
-            return
-        if projection is not None:
-            if largest > len(model):
-                raise ValueError('Projection contains a variable outside the model.')
-            model = [model[v - 1] for v in projection]
-        solver.add_clause([-lit for lit in model])
-        yield model
+    def enum_models(self, assumptions=[], projection=[]):
+        """
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
+        """
+
+        assumptions = list(assumptions)
+        projection = list(projection)
+
+        if projection:
+            if any(v <= 0 for v in projection) or len(set(projection)) != len(projection):
+                raise ValueError('Projection must contain distinct positive variable IDs.')
+
+            largest = max(projection)
+
+        while self.solve(assumptions=assumptions):
+            model = self.get_model()
+
+            if projection:
+                if largest > len(model):
+                    raise ValueError('Projection contains a variable outside the model.')
+
+                model = [model[v - 1] for v in projection]
+
+            self.add_clause([-l for l in model])  # blocking model
+            yield model
 
 
 #
 #==============================================================================
-class Cadical103(object):
+class Cadical103(_SolverBackend):
     """
         CaDiCaL 1.0.3 SAT solver.
     """
@@ -2138,14 +2153,6 @@ class Cadical103(object):
         if self.cadical:
             return pysolvers.cadical103_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -2205,7 +2212,7 @@ class Cadical103(object):
 
 #
 #==============================================================================
-class Cadical153(object):
+class Cadical153(_SolverBackend):
     """
         CaDiCaL 1.5.3 SAT solver.
     """
@@ -2527,14 +2534,6 @@ class Cadical153(object):
         if self.cadical:
             return pysolvers.cadical153_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -2594,7 +2593,7 @@ class Cadical153(object):
 
 #
 #==============================================================================
-class Cadical195(object):
+class Cadical195(_SolverBackend):
     """
         CaDiCaL 1.9.5 SAT solver.
     """
@@ -2954,14 +2953,6 @@ class Cadical195(object):
         if self.cadical:
             return pysolvers.cadical195_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -3109,7 +3100,7 @@ class Cadical195(object):
 
 #
 #==============================================================================
-class Cadical300(object):
+class Cadical300(_SolverBackend):
     """
         CaDiCaL 3.0.0 SAT solver.
     """
@@ -3569,14 +3560,6 @@ class Cadical300(object):
         if self.cadical:
             return pysolvers.cadical300_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -3724,7 +3707,7 @@ class Cadical300(object):
 
 #
 #==============================================================================
-class Ergo(object):
+class Ergo(_SolverBackend):
     """
         Ergo SAT solver.
     """
@@ -4153,14 +4136,6 @@ class Ergo(object):
         if self.ergo:
             return pysolvers.ergo_acc_stats(self.ergo)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -4331,7 +4306,7 @@ class Ergo(object):
 
 #
 #==============================================================================
-class Gluecard3(object):
+class Gluecard3(_SolverBackend):
     """
         Gluecard 3 SAT solver.
     """
@@ -4622,14 +4597,6 @@ class Gluecard3(object):
         if self.gluecard:
             return pysolvers.gluecard3_acc_stats(self.gluecard)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -4701,7 +4668,7 @@ class Gluecard3(object):
 
 #
 #==============================================================================
-class Gluecard4(object):
+class Gluecard4(_SolverBackend):
     """
         Gluecard 4 SAT solver.
     """
@@ -4992,14 +4959,6 @@ class Gluecard4(object):
         if self.gluecard:
             return pysolvers.gluecard41_acc_stats(self.gluecard)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -5071,7 +5030,7 @@ class Gluecard4(object):
 
 #
 #==============================================================================
-class Glucose3(object):
+class Glucose3(_SolverBackend):
     """
         Glucose 3 SAT solver.
     """
@@ -5360,14 +5319,6 @@ class Glucose3(object):
         if self.glucose:
             return pysolvers.glucose3_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -5427,7 +5378,7 @@ class Glucose3(object):
 
 #
 #==============================================================================
-class Glucose4(object):
+class Glucose4(_SolverBackend):
     """
         Glucose 4.1 SAT solver.
     """
@@ -5716,14 +5667,6 @@ class Glucose4(object):
         if self.glucose:
             return pysolvers.glucose41_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -5783,7 +5726,7 @@ class Glucose4(object):
 
 #
 #==============================================================================
-class Glucose42(object):
+class Glucose42(_SolverBackend):
     """
         Glucose 4.2.1 SAT solver.
     """
@@ -6160,14 +6103,6 @@ class Glucose42(object):
         if self.glucose:
             return pysolvers.glucose421_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -6228,7 +6163,7 @@ class Glucose42(object):
 
 #
 #==============================================================================
-class Lingeling(object):
+class Lingeling(_SolverBackend):
     """
         Lingeling SAT solver.
     """
@@ -6469,14 +6404,6 @@ class Lingeling(object):
         if self.lingeling:
             return pysolvers.lingeling_acc_stats(self.lingeling)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -6522,7 +6449,7 @@ class Lingeling(object):
 
 #
 #==============================================================================
-class MapleChrono(object):
+class MapleChrono(_SolverBackend):
     """
         MapleLCMDistChronoBT SAT solver.
     """
@@ -6788,14 +6715,6 @@ class MapleChrono(object):
         if self.maplesat:
             return pysolvers.maplechrono_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -6855,7 +6774,7 @@ class MapleChrono(object):
 
 #
 #==============================================================================
-class MapleCM(object):
+class MapleCM(_SolverBackend):
     """
         MapleCM SAT solver.
     """
@@ -7123,14 +7042,6 @@ class MapleCM(object):
         if self.maplesat:
             return pysolvers.maplecm_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -7190,7 +7101,7 @@ class MapleCM(object):
 
 #
 #==============================================================================
-class Maplesat(object):
+class Maplesat(_SolverBackend):
     """
         MapleCOMSPS_LRB SAT solver.
     """
@@ -7458,14 +7369,6 @@ class Maplesat(object):
         if self.maplesat:
             return pysolvers.maplesat_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -7525,7 +7428,7 @@ class Maplesat(object):
 
 #
 #==============================================================================
-class Mergesat3(object):
+class Mergesat3(_SolverBackend):
     """
         MergeSat 3 SAT solver.
     """
@@ -7772,14 +7675,6 @@ class Mergesat3(object):
         if self.mergesat:
             return pysolvers.mergesat3_acc_stats(self.mergesat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -7839,7 +7734,7 @@ class Mergesat3(object):
 
 #
 #==============================================================================
-class Minicard(object):
+class Minicard(_SolverBackend):
     """
         Minicard SAT solver.
     """
@@ -8118,14 +8013,6 @@ class Minicard(object):
         if self.minicard:
             return pysolvers.minicard_acc_stats(self.minicard)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -8197,7 +8084,7 @@ class Minicard(object):
 
 #
 #==============================================================================
-class Minisat22(object):
+class Minisat22(_SolverBackend):
     """
         MiniSat 2.2 SAT solver.
     """
@@ -8474,14 +8361,6 @@ class Minisat22(object):
         if self.minisat:
             return pysolvers.minisat22_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -8541,7 +8420,7 @@ class Minisat22(object):
 
 #
 #==============================================================================
-class MinisatGH(object):
+class MinisatGH(_SolverBackend):
     """
         MiniSat SAT solver (version from github).
     """
@@ -8818,14 +8697,6 @@ class MinisatGH(object):
         if self.minisat:
             return pysolvers.minisatgh_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -8885,7 +8756,7 @@ class MinisatGH(object):
 
 #
 #==============================================================================
-class MinisatEP(object):
+class MinisatEP(_SolverBackend):
     """
         MiniSat SAT solver (with IPASIR-UP support). This class provides
         access to the MiniSat 2.2 solver with support for external
@@ -9207,14 +9078,6 @@ class MinisatEP(object):
         if self.minisat:
             return pysolvers.minisatep_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -9370,7 +9233,7 @@ class MinisatEP(object):
 
 #
 #==============================================================================
-class CryptoMinisat(object):
+class CryptoMinisat(_SolverBackend):
     """
         CryptoMinisat solver accessed through ``pycryptosat`` package.
     """
@@ -9618,14 +9481,6 @@ class CryptoMinisat(object):
 
         raise NotImplementedError('Accumulated statistics is not supported by CryptoMinisat.')
 
-    def enum_models(self, assumptions=[], projection=None):
-        """
-            Iterate over models of the internal formula, optionally projected
-            onto the given variables. See :meth:`Solver.enum_models`.
-        """
-
-        return _enum_models(self, assumptions, projection)
-
     def add_clause(self, clause, dummy_no_return=True):
         """
             Add a new clause to solver's internal formula.
@@ -9674,7 +9529,7 @@ class CryptoMinisat(object):
 
 #
 #==============================================================================
-class Kissat404(object):
+class Kissat404(_SolverBackend):
     """
         Kissat 4.0.4 SAT solver.
 
@@ -9964,7 +9819,7 @@ class Kissat404(object):
 
         raise NotImplementedError('Statistics are not exposed by Kissat in PySAT.')
 
-    def enum_models(self, assumptions=[], projection=None):
+    def enum_models(self, assumptions=[], projection=[]):
         """
             Iterate over models of the internal formula.
 
