@@ -66,7 +66,7 @@ import sys
 
 #
 #==============================================================================
-def enumerate_models(formula, to_enum, solver, warm=False):
+def enumerate_models(formula, to_enum, solver, warm=False, projection=None):
     """
         Enumeration procedure. It represents a loop iterating over satisfying
         assignment for a given formula until either all or a given number of
@@ -76,11 +76,13 @@ def enumerate_models(formula, to_enum, solver, warm=False):
         :param to_enum: number of models to compute
         :param solver: name of SAT solver
         :param warm: warm start flag
+        :param projection: optional variable IDs to enumerate
 
         :type formula: :class:`.CNFPlus`
         :type to_enum: int or 'all'
         :type solver: str
         :type warm: bool
+        :type projection: list(int) or None
     """
 
     with Solver(name=solver, bootstrap_with=formula.clauses,
@@ -99,7 +101,7 @@ def enumerate_models(formula, to_enum, solver, warm=False):
 
         # model enumeration and printing is done here
         computed = 0
-        for i, model in enumerate(s.enum_models(), 1):
+        for i, model in enumerate(s.enum_models(projection=projection), 1):
             print('v {0} 0'.format(' '.join(['{0}{1}'.format('+' if v > 0 else '', v) for v in model])))
 
             computed = i
@@ -123,9 +125,10 @@ def parse_options():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   'e:h:s:w',
+                                   'e:hp:s:w',
                                    ['enum=',
                                     'help',
+                                    'project=',
                                     'solver=',
                                     'warm'])
     except getopt.GetoptError as err:
@@ -136,6 +139,7 @@ def parse_options():
     to_enum = 1
     solver = 'g3'
     warm = False
+    projection = None
 
     for opt, arg in opts:
         if opt in ('-e', '--enum'):
@@ -147,6 +151,8 @@ def parse_options():
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(0)
+        elif opt in ('-p', '--project'):
+            projection = [int(v) for v in arg.split(',')] if arg else []
         elif opt in ('-s', '--solver'):
             solver = str(arg)
         elif opt in ('-w', '--warm'):
@@ -154,7 +160,7 @@ def parse_options():
         else:
             assert False, 'Unhandled option: {0} {1}'.format(opt, arg)
 
-    return to_enum, solver, warm, args
+    return to_enum, solver, warm, projection, args
 
 
 #
@@ -169,6 +175,7 @@ def usage():
     print('        -e, --enum=<int>         Compute at most this number of models')
     print('                                 Available values: [1 .. INT_MAX], all (default: 1)')
     print('        -h, --help               Show this message')
+    print('        -p, --project=<v1,v2,..> Enumerate assignments to these variables only')
     print('        -s, --solver=<string>    SAT solver to use')
     print('                                 Available values: cd, g3, g4, lgl, mcb, mcm, mpl, m22, mc, mgh (default = g3)')
     print('        -w, --warm               Use solver\'s warm start mode')
@@ -178,7 +185,7 @@ def usage():
 #==============================================================================
 if __name__ == '__main__':
     # parsing command-line options
-    to_enum, solver, warm, files = parse_options()
+    to_enum, solver, warm, projection, files = parse_options()
 
     # reading an input formula either from a file or from stdin
     if files:
@@ -186,4 +193,4 @@ if __name__ == '__main__':
     else:
         formula = CNFPlus(from_fp=sys.stdin)
 
-    enumerate_models(formula, to_enum, solver, warm)
+    enumerate_models(formula, to_enum, solver, warm, projection)

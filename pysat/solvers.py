@@ -201,6 +201,7 @@
 
 #
 #==============================================================================
+from operator import index
 from pysat._utils import MainThread
 from pysat.engines import BooleanEngine
 from pysat.formula import CNFPlus, IDPool
@@ -1591,7 +1592,7 @@ class Solver(object):
         if self.solver:
             return self.solver.nof_clauses()
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
             This method can be used to enumerate models of a CNF formula and
             it performs as a standard Python iterator. The method can be
@@ -1613,7 +1614,13 @@ class Solver(object):
                 clause until no more models of the formula exist.
 
             :param assumptions: a list of assumption literals.
+            :param projection: optional iterable of distinct positive variable IDs.
+                Yield their signed assignments in the given order and block all
+                extensions at once. IDs must occur in the solver's variable
+                range. An empty projection has one assignment if satisfiable.
+                Blocking clauses are permanent, including when assumptions are used.
             :type assumptions: iterable(int)
+            :type projection: iterable(int) or None
 
             :rtype: list(int).
 
@@ -1636,7 +1643,7 @@ class Solver(object):
         """
 
         if self.solver:
-            return self.solver.enum_models(assumptions)
+            return self.solver.enum_models(assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -1846,6 +1853,29 @@ class Solver(object):
             proof.append('0')
 
         return proof
+
+
+#
+#==============================================================================
+def _enum_models(solver, assumptions, projection):
+    """Enumerate assignments by blocking each model or its projection."""
+    if projection is not None:
+        projection = tuple(index(v) for v in projection)
+        if any(v <= 0 for v in projection) or len(set(projection)) != len(projection):
+            raise ValueError('Projection must contain distinct positive variable IDs.')
+        largest = max(projection) if projection else 0
+        assumptions = list(assumptions)
+
+    while solver.solve(assumptions=assumptions):
+        model = solver.get_model()
+        if model is None:
+            return
+        if projection is not None:
+            if largest > len(model):
+                raise ValueError('Projection contains a variable outside the model.')
+            model = [model[v - 1] for v in projection]
+        solver.add_clause([-lit for lit in model])
+        yield model
 
 
 #
@@ -2108,22 +2138,13 @@ class Cadical103(object):
         if self.cadical:
             return pysolvers.cadical103_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.cadical:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -2506,22 +2527,13 @@ class Cadical153(object):
         if self.cadical:
             return pysolvers.cadical153_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.cadical:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -2942,22 +2954,13 @@ class Cadical195(object):
         if self.cadical:
             return pysolvers.cadical195_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.cadical:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -3566,22 +3569,13 @@ class Cadical300(object):
         if self.cadical:
             return pysolvers.cadical300_acc_stats(self.cadical)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.cadical:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -4159,22 +4153,13 @@ class Ergo(object):
         if self.ergo:
             return pysolvers.ergo_acc_stats(self.ergo)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.ergo:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -4637,22 +4622,13 @@ class Gluecard3(object):
         if self.gluecard:
             return pysolvers.gluecard3_acc_stats(self.gluecard)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.gluecard:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -5016,22 +4992,13 @@ class Gluecard4(object):
         if self.gluecard:
             return pysolvers.gluecard41_acc_stats(self.gluecard)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.gluecard:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -5393,22 +5360,13 @@ class Glucose3(object):
         if self.glucose:
             return pysolvers.glucose3_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.glucose:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -5758,22 +5716,13 @@ class Glucose4(object):
         if self.glucose:
             return pysolvers.glucose41_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.glucose:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -6211,22 +6160,13 @@ class Glucose42(object):
         if self.glucose:
             return pysolvers.glucose421_acc_stats(self.glucose)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.glucose:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -6529,22 +6469,13 @@ class Lingeling(object):
         if self.lingeling:
             return pysolvers.lingeling_acc_stats(self.lingeling)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.lingeling:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -6857,22 +6788,13 @@ class MapleChrono(object):
         if self.maplesat:
             return pysolvers.maplechrono_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.maplesat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -7201,22 +7123,13 @@ class MapleCM(object):
         if self.maplesat:
             return pysolvers.maplecm_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.maplesat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -7545,22 +7458,13 @@ class Maplesat(object):
         if self.maplesat:
             return pysolvers.maplesat_acc_stats(self.maplesat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.maplesat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -7868,22 +7772,13 @@ class Mergesat3(object):
         if self.mergesat:
             return pysolvers.mergesat3_acc_stats(self.mergesat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.mergesat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -8223,22 +8118,13 @@ class Minicard(object):
         if self.minicard:
             return pysolvers.minicard_acc_stats(self.minicard)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.minicard:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -8588,22 +8474,13 @@ class Minisat22(object):
         if self.minisat:
             return pysolvers.minisat22_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.minisat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -8941,22 +8818,13 @@ class MinisatGH(object):
         if self.minisat:
             return pysolvers.minisatgh_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.minisat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -9339,22 +9207,13 @@ class MinisatEP(object):
         if self.minisat:
             return pysolvers.minisatep_acc_stats(self.minisat)
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.minisat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, no_return=True):
         """
@@ -9759,22 +9618,13 @@ class CryptoMinisat(object):
 
         raise NotImplementedError('Accumulated statistics is not supported by CryptoMinisat.')
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
-            Iterate over models of the internal formula.
+            Iterate over models of the internal formula, optionally projected
+            onto the given variables. See :meth:`Solver.enum_models`.
         """
 
-        if self.cryptosat:
-            done = False
-            while not done:
-                self.status = self.solve(assumptions=assumptions)
-                model = self.get_model()
-
-                if model is not None:
-                    self.add_clause([-l for l in model])  # blocking model
-                    yield model
-                else:
-                    done = True
+        return _enum_models(self, assumptions, projection)
 
     def add_clause(self, clause, dummy_no_return=True):
         """
@@ -10114,7 +9964,7 @@ class Kissat404(object):
 
         raise NotImplementedError('Statistics are not exposed by Kissat in PySAT.')
 
-    def enum_models(self, assumptions=[]):
+    def enum_models(self, assumptions=[], projection=None):
         """
             Iterate over models of the internal formula.
 
