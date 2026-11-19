@@ -10,6 +10,10 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 19.11.2026 (*1.9.dev24*)
+
+-   Projected model enumeration.
+
 ## 18.11.2026 (*1.9.dev23*)
 
 -   Fixed pure-SAT based `Hitman` with `Cadical153` and `Cadical195`. Added
