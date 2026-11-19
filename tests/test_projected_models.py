@@ -1,7 +1,7 @@
 import pytest
 
 from pysat.card import CardEnc, EncType
-from pysat.solvers import Solver
+from pysat.solvers import Cadical300, Glucose3, Kissat404, Minisat22, Solver
 
 
 @pytest.mark.parametrize('name', ['g3', 'm22', 'cd19'])
@@ -16,6 +16,14 @@ def test_project_cardinality_encoding(name):
         assert len(models) == len(expected)
         assert set(map(tuple, models)) == expected
         assert not solver.solve(assumptions=[-2])
+
+
+@pytest.mark.parametrize('backend', [Cadical300, Glucose3, Minisat22])
+def test_concrete_solver_projection(backend):
+    with backend(bootstrap_with=[[1, 2], [2, 3]]) as solver:
+        models = list(solver.enum_models(assumptions=[2], projection=[3, 1]))
+        assert sorted(models) == [[-3, -1], [-3, 1], [3, -1], [3, 1]]
+        assert not solver.solve(assumptions=[2])
 
 
 def test_empty_projection():
@@ -44,5 +52,9 @@ def test_bad_projection_does_not_block(projection, error):
 
 def test_nonincremental_solver_rejects_projection():
     with Solver(name='kissat404', bootstrap_with=[[1]]) as solver:
+        with pytest.raises(NotImplementedError):
+            list(solver.enum_models(projection=[1]))
+
+    with Kissat404(bootstrap_with=[[1]]) as solver:
         with pytest.raises(NotImplementedError):
             list(solver.enum_models(projection=[1]))
