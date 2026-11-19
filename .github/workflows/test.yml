@@ -1,5 +1,8 @@
 name: PySAT Tests
-on: [push]
+on:
+  push:
+    branches: [master]
+  pull_request:
 jobs:
   build:
     name: Python 3.15 on ${{ matrix.os }}
