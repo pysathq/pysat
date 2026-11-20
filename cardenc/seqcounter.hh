@@ -102,27 +102,27 @@ void seqcounter_encode_atmostN(
 	/* variant of the encoding, as suggested by Alex Healy */
 	for (size_t j = 0; j < vars.size() - tval; ++j) {
 		// k = 0, eq 19:
-		int s0j = mk_yvar(top_id, p2i_map, make_pair(0, j));
+		int s0j = mk_yvar(top_id, p2i_map, make_pair(1, j + 1));
 		clset.create_binary_clause(-vars[j], s0j);
 
 		// main part, i.e. when 0 <= k < tval - 1:
 		for (int k = 0; k < tval - 1; ++k) {
 			// eq 18:
-			int skj = mk_yvar(top_id, p2i_map, make_pair(k, j));
+			int skj = mk_yvar(top_id, p2i_map, make_pair(k + 1, j + 1));
 			if (j < vars.size() - tval - 1) {
-				int skj1 = mk_yvar(top_id, p2i_map, make_pair(k, j + 1));
+				int skj1 = mk_yvar(top_id, p2i_map, make_pair(k + 1, j + 2));
 				clset.create_binary_clause(-skj, skj1);
 			}
 
 			// eq 19:
-			int sk1j = mk_yvar(top_id, p2i_map, make_pair(k + 1, j));
+			int sk1j = mk_yvar(top_id, p2i_map, make_pair(k + 2, j + 1));
 			clset.create_ternary_clause(-vars[j + k + 1], -skj, sk1j);
 		}
 
 		// k = tval - 1, eq 18:
-		int stj = mk_yvar(top_id, p2i_map, make_pair(tval - 1, j));
+		int stj = mk_yvar(top_id, p2i_map, make_pair(tval, j + 1));
 		if (j < vars.size() - tval - 1) {
-			int stj1 = mk_yvar(top_id, p2i_map, make_pair(tval - 1, j + 1));
+			int stj1 = mk_yvar(top_id, p2i_map, make_pair(tval, j + 2));
 			clset.create_binary_clause(-stj, stj1);
 		}
 

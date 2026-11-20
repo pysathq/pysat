@@ -250,6 +250,9 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        # making sure we are dealing with a list of literals
+        lits = list(lits)
+
         # checking if the bound is meaningless for any encoding
         if bound < 0:
             raise ValueError('Wrong bound: {0}'.format(bound))
@@ -270,9 +273,6 @@ class CardEnc(object):
         # obtaining the top id from the variable pool
         if vpool:
             top_id = vpool.top
-
-        # making sure we are dealing with a list of literals
-        lits = list(lits)
 
         # choosing the maximum id among the current top and the list of literals
         top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
@@ -346,6 +346,9 @@ class CardEnc(object):
         if encoding < 0 or encoding > 9:
             raise(NoSuchEncodingError(encoding))
 
+        # making sure we are dealing with a list of literals
+        lits = list(lits)
+
         # checking if the bound is meaningless for any encoding
         if bound > len(lits):
             raise ValueError('Wrong bound: {0}'.format(bound))
@@ -366,9 +369,6 @@ class CardEnc(object):
         # obtaining the top id from the variable pool
         if vpool:
             top_id = vpool.top
-
-        # making sure we are dealing with a list of literals
-        lits = list(lits)
 
         # choosing the maximum id among the current top and the list of literals
         top_id = max(map(lambda x: abs(x), lits + [top_id if top_id != None else 0]))
@@ -400,6 +400,9 @@ class CardEnc(object):
             :meth:`CardEnc.atmost`. It shares the arguments and the return type
             with method :meth:`CardEnc.atleast`. Please, see it for details.
         """
+
+        # making sure we are dealing with a list of literals
+        lits = list(lits)
 
         if vpool:
             res1 = cls.atleast(lits, bound=bound, vpool=vpool, encoding=encoding)

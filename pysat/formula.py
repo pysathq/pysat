@@ -1082,15 +1082,6 @@ class Formula(object):
             operands = [_formula_key(operand) for operand in operands]
         return (formula_type, frozenset(collections.Counter(operands).items()), merge)
 
-    def __hash__(self):
-        """
-            This method provides us with a trivial way to make
-            :class:`Formula` objects hashable. Currently, the implementation
-            returns a hash of the string representation of the object.
-        """
-
-        return hash(repr(self))
-
     def _merge_suboperands(self):
         """
             Auxiliary method used when constructing a new formula to flatten
@@ -4243,13 +4234,13 @@ class WCNF(object):
                         self.topw = decimal.Decimal('+inf')
 
         # potentially expensive: calculating the largest variable identifier
-        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.hard, self.soft])))
+        self.nv = max(map(abs, itertools.chain([self.nv], *self.hard, *self.soft)))
 
         # if there is any soft clause with negative weight
         # normalize it, i.e. transform into a set of clauses
         # with a positive weight
         if negs:
-            self.nv = max(self.nv, max(map(lambda cl: max(map(abs, cl[0])), negs)))
+            self.nv = max(map(abs, itertools.chain([self.nv], *[cl[0] for cl in negs])))
             self.normalize_negatives(negs)
 
         # if topw was unspecified and assigned to +infinity,
@@ -4876,11 +4867,11 @@ class CNFPlus(CNF, object):
             line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    if line.endswith(' 0'):  # normal case
-                        self.clauses.append(list(map(int, line.split()[:-1])))
-                    else:  # atmost/atleast constraint
-                        items = line.split()
+                    items = line.split()
 
+                    if len(items) < 2 or items[-2] not in ('<=', '>='):  # normal case
+                        self.clauses.append(list(map(int, items[:-1])))
+                    else:  # atmost/atleast constraint
                         if items[0] == 'w':  # literals are weighted here
                             wght, lits = list(map(list, zip(*[map(int, pair.split('*')) for pair in items[1:-2]])))
                             sumw = sum(wght)
@@ -4900,7 +4891,7 @@ class CNFPlus(CNF, object):
                 elif not line.startswith('p cnf'):  # cnf is allowed here
                     self.comments.append(line)
 
-        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.clauses])))
+        self.nv = max(map(abs, itertools.chain([self.nv], *self.clauses)))
 
     def to_fp(self, file_pointer, comments=None):
         """
@@ -5451,22 +5442,22 @@ class WCNFPlus(WCNF, object):
             line = line.rstrip()
             if line:
                 if line[0] not in comment_lead:
-                    if line.endswith(' 0'):  # normal case
-                        w, items = line.split(sep=None, maxsplit=1)
-                        w = parse_wght(w)
+                    items = line.split()
+
+                    if items[-2] not in ('<=', '>='):  # normal case
+                        w = parse_wght(items[0])
+                        cl = list(map(int, items[1:-1]))
 
                         if w is None or w >= self.topw:
-                            self.hard.append(list(map(int, items.split()[:-1])))
+                            self.hard.append(cl)
                         elif w > 0:
-                            self.soft.append(list(map(int, items.split()[:-1])))
+                            self.soft.append(cl)
                             self.wght.append(w)
                         else:
                             # this clause has a negative weight
                             # it will be processed later
-                            negs.append(tuple([list(map(int, items.split()[:-1])), -w]))
+                            negs.append(tuple([cl, -w]))
                     else:  # atmost/atleast constraint
-                        items = line.split()
-
                         if items[1] == 'w':  # literals are weighted here
                             wght, lits = list(map(list, zip(*[map(int, pair.split('*')) for pair in items[2:-2]])))
                             sumw = sum(wght)
@@ -5495,13 +5486,13 @@ class WCNFPlus(WCNF, object):
                     else: # preamble should be "p wcnf nvars nclauses", with topw omitted
                         self.topw = decimal.Decimal('+inf')
 
-        self.nv = max(map(lambda cl: max(map(abs, cl)), itertools.chain.from_iterable([[[self.nv]], self.hard, self.soft])))
+        self.nv = max(map(abs, itertools.chain([self.nv], *self.hard, *self.soft)))
 
         # if there is any soft clause with negative weight
         # normalize it, i.e. transform into a set of clauses
         # with a positive weight
         if negs:
-            self.nv = max(self.nv, max(map(lambda cl: max(map(abs, cl[0])), negs)))
+            self.nv = max(map(abs, itertools.chain([self.nv], *[cl[0] for cl in negs])))
             self.normalize_negatives(negs)
 
         # if topw was unspecified and assigned to +infinity,

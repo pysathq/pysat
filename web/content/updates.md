@@ -10,6 +10,13 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
+## 21.11.2026 (*1.9.dev25*)
+
+-   Fixed zero-hashed pairs in `seqcounter.hh`.
+-   Fixed a list-losing bug in `card.py`.
+-   Fixed a bug in `engines.py`'s weighted propagation.
+-   Fixed a bug in `CNF` hash. It is now default identify-based.
+
 ## 19.11.2026 (*1.9.dev24*)
 
 -   Projected model enumeration.

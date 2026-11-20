@@ -262,16 +262,16 @@ class LinearConstraint:
             right-hand side of the constraint.
         """
 
-        if not self.done:
-            self.vcnt += self.wght[lit]
+        self.vcnt += self.wght[lit]
 
+        if not self.done:
             iter1, iter2, iter3 = itertools.tee(self.lits, 3)
             expl = list(-l for l in iter1 if self.lval[abs(l)] == l)
             to_entail = list(-l for l in iter2 if self.lval[abs(l)] is None and self.vcnt + self.wght[l] > self.rbnd and not self.expl[-l])
 
             # counting the number of unassigned literals to check
             # whether there is something left to do in the future
-            nunknown = functools.reduce(lambda x, y: x + 1 if self.lval[abs(y)] is not None else x, iter3, 0)
+            nunknown = functools.reduce(lambda x, y: x + 1 if self.lval[abs(y)] is None else x, iter3, 0)
 
             # are we done with constraint for now?
             if len(to_entail) == nunknown:
