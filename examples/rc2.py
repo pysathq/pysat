@@ -134,6 +134,7 @@ from __future__ import print_function
 import bisect
 import collections
 import getopt
+import heapq
 from math import copysign
 import os
 from pysat.formula import CNFPlus, WCNFPlus, IDPool
@@ -873,11 +874,11 @@ class RC2(object):
                 del neigh[j:]
 
         if confl:
-            # processing unit size cores
+            # processing unit size cores; each is immediately hardened
             for l in confl:
-                self.core, self.minw = [l], self.wght[l]
-                self.core_sels, self.core_sums = [l], []
-                self.process_core()
+                self.cost += self.wght[l]
+                self.oracle.add_clause([-l])
+                self.garbage.add(l)
 
             if self.verbose > 1:
                 print('c unit cores found: {0}; cost: {1}'.format(len(confl),
@@ -902,8 +903,17 @@ class RC2(object):
         nof_am1 = 0
         len_am1 = []
 
+        # literals ordered by their current degree; an entry is outdated
+        # (and skipped) if its literal is gone or its degree has changed
+        heap = [(degree[l], l) for l in lits]
+        heapq.heapify(heap)
+
         while lits:
-            am1 = [min(lits, key=lambda l: degree[l])]
+            d, l = heapq.heappop(heap)
+            if l not in lits or d != degree[l]:
+                continue
+
+            am1 = [l]
 
             for l in sorted(conns[am1[0]], key=lambda l: degree.get(l, 0)):
                 if l in lits:
@@ -924,12 +934,16 @@ class RC2(object):
                 for l2 in conns.get(l, []):
                     if l2 in lits:
                         degree[l2] -= 1
+                        heapq.heappush(heap, (degree[l2], l2))
 
             if len(am1) > 1:
                 # treat the new atmost1 relation
                 self.process_am1(am1)
                 nof_am1 += 1
                 len_am1.append(len(am1))
+
+        # removing unnecessary assumptions (once for all the AM1s)
+        self.filter_assumps()
 
         # updating the set of selectors
         self.sels_set = set(self.sels)
@@ -989,9 +1003,6 @@ class RC2(object):
             self.sels.append(selv)
             self.wght[selv] = self.minw
             self.smap[selv] = len(self.wght) - 1
-
-        # removing unnecessary assumptions
-        self.filter_assumps()
 
     def trim_core(self):
         """
@@ -1316,6 +1327,9 @@ class RC2(object):
             :func:`process_sels`, and :func:`process_sums`.
         """
 
+        if not self.garbage:
+            return
+
         # updating the list of selectors and sums
         self.sels = [l for l in self.sels if l not in self.garbage]
         self.sums = [l for l in self.sums if l not in self.garbage]
@@ -1621,15 +1635,19 @@ class RC2Stratified(RC2, object):
         # cluster of weights to build (if needed)
         cluster = [self.levl]
 
+        # number of selectors with weight less than current weight
+        numr = sum([len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+
+        # sum of their weights
+        sumr = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
+
+        # number of selectors in the cluster and the sum of their weights
+        numc = len(self.wstr[self.blop[self.levl]])
+        sumc = self.blop[self.levl] * numc
+
         while self.levl < len(self.blop) - 1:
             # current weight
             wght = self.blop[self.levl]
-
-            # number of selectors with weight less than current weight
-            numr = sum([len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
-
-            # sum of their weights
-            sumr = sum([w * len(self.wstr[w]) for w in self.blop[(self.levl + 1):]])
 
             # partial BLO
             if wght > sumr and sumr != 0:
@@ -1640,13 +1658,11 @@ class RC2Stratified(RC2, object):
                 break
 
             # last resort = cluster-based stratification
+            # note that the starting level is added to the cluster twice
             if clu_str:
                 # is the distance from current weight to the cluster
                 # being built larger than the distance to the mean of
                 # smaller weights?
-                numc = sum([len(self.wstr[self.blop[l]]) for l in cluster])
-                sumc = sum([self.blop[l] * len(self.wstr[self.blop[l]]) for l in cluster])
-
                 if abs(wght - sumc / numc) > abs(wght - sumr / numr):
                     # remaining weights are too far from the cluster; stop
                     # here and report the splitting to be last-added weight
@@ -1654,8 +1670,14 @@ class RC2Stratified(RC2, object):
                     break
 
                 cluster.append(self.levl)
+                numc += len(self.wstr[wght])
+                sumc += wght * len(self.wstr[wght])
 
             self.levl += 1
+
+            # the new level's selectors are no longer among the smaller ones
+            numr -= len(self.wstr[self.blop[self.levl]])
+            sumr -= self.blop[self.levl] * len(self.wstr[self.blop[self.levl]])
 
     def activate_clauses(self, beg):
         """
@@ -1726,9 +1748,6 @@ class RC2Stratified(RC2, object):
             this.
         """
 
-        # assumptions to remove
-        self.garbage = set()
-
         # clauses to deactivate
         to_deactivate = set([])
 
@@ -1773,10 +1792,8 @@ class RC2Stratified(RC2, object):
                 to_deactivate.add(l)
 
         # deactivating unnecessary selectors
-        self.sels = [l for l in self.sels if l not in to_deactivate]
-
-        # removing unnecessary assumptions
-        self.filter_assumps()
+        if to_deactivate:
+            self.sels = [l for l in self.sels if l not in to_deactivate]
 
     def process_sels(self):
         """
@@ -1813,7 +1830,8 @@ class RC2Stratified(RC2, object):
             self.rels.append(-l)
 
         # deactivating unnecessary selectors
-        self.sels = [l for l in self.sels if l not in to_deactivate]
+        if to_deactivate:
+            self.sels = [l for l in self.sels if l not in to_deactivate]
 
     def process_sums(self):
         """
@@ -1856,7 +1874,8 @@ class RC2Stratified(RC2, object):
             self.rels.append(-l)
 
         # deactivating unnecessary sums
-        self.sums = [l for l in self.sums if l not in to_deactivate]
+        if to_deactivate:
+            self.sums = [l for l in self.sums if l not in to_deactivate]
 
 
 #
