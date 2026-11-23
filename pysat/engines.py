@@ -188,6 +188,9 @@ class LinearConstraint:
             # weighted / pseudo-Boolean propagation
             self.propagate = self.propagate_weighted
 
+            # the largest weight, to quickly check if anything can propagate
+            self.wmax = max(self.wght.values())
+
             # constraint may propagate different literals
             # at different points in time, reasons may differ
             self.expl = defaultdict(lambda: [])
@@ -262,7 +265,7 @@ class LinearConstraint:
 
         self.vcnt += self.wght[lit]
 
-        if not self.done:
+        if not self.done and self.vcnt + self.wmax > self.rbnd:
             # collecting the reason, the literals to propagate, and the number
             # of unassigned literals, the latter is to check whether there is
             # something left to do in the future
@@ -323,7 +326,7 @@ class LinearConstraint:
             right-hand side. The assignment is expected as a set of literals.
         """
 
-        value = sum(self.wght[l] for l in self.lits if l in model)
+        value = sum([self.wght[l] for l in self.lits if l in model])
 
         if value > self.rbnd:
             self.fmod = model
@@ -518,7 +521,7 @@ class ParityConstraint:
             assignment is expected as a set of literals.
         """
 
-        value = sum(1 for l in self.lits if l in model) % 2
+        value = sum([1 for l in self.lits if l in model]) % 2
 
         if value != self.rval:
             self.fmod = model
