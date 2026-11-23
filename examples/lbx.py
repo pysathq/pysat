@@ -409,7 +409,7 @@ class LBX(object):
                     self.satc[i] = True
                     self.ss_assumps.append(self.sels[i])
                 else:
-                    setd = setd.union(set(cl))
+                    setd.update(cl)
 
         if update_setd:
             self.setd = sorted(setd)

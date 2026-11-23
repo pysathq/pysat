@@ -1754,12 +1754,15 @@ class And(Formula):
                 F  # False
         """
 
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
         oset = set()
         operands = []
 
         for sub in self.subformulas:
             # execute simplification recursively
-            sub = sub.simplified(assumptions=set(assumptions))
+            sub = sub.simplified(assumptions=assumptions)
 
             # simplify the current term
             if sub is PYSAT_FALSE or ~sub in oset:
@@ -2023,12 +2026,15 @@ class Or(Formula):
                 x | z
         """
 
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
         oset = set()
         operands = []
 
         for sub in self.subformulas:
             # execute simplification recursively
-            sub = sub.simplified(assumptions=set(assumptions))
+            sub = sub.simplified(assumptions=assumptions)
 
             # simplify the current term
             if sub is PYSAT_TRUE or ~sub in oset:
@@ -2222,7 +2228,10 @@ class Neg(Formula):
                 ~z
         """
 
-        subformula = self.subformula.simplified(assumptions=set(assumptions))
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
+        subformula = self.subformula.simplified(assumptions=assumptions)
 
         if subformula is PYSAT_FALSE:
             return PYSAT_TRUE
@@ -2395,8 +2404,11 @@ class Implies(Formula):
                 ~x
         """
 
-        left  = self.left.simplified (assumptions=set(assumptions))
-        right = self.right.simplified(assumptions=set(assumptions))
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
+        left  = self.left.simplified (assumptions=assumptions)
+        right = self.right.simplified(assumptions=assumptions)
 
         if left is PYSAT_FALSE or right is PYSAT_TRUE or left == right:
             return PYSAT_TRUE
@@ -2618,13 +2630,16 @@ class Equals(Formula):
                 ~x & ~z  # x and z must also be False
         """
 
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
         oset = set()
         operands = []
         t_present, f_present = False, False
 
         for sub in self.subformulas:
             # execute simplification recursively
-            sub = sub.simplified(assumptions=set(assumptions))
+            sub = sub.simplified(assumptions=assumptions)
 
             # record if the subterms degenerated to a True constant
             if sub is PYSAT_TRUE:
@@ -2878,12 +2893,15 @@ class XOr(Formula):
                 x ^ z
         """
 
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
         oset = {}
         nof_trues = 0
 
         for sub in self.subformulas:
             # execute simplification recursively
-            sub = sub.simplified(assumptions=set(assumptions))
+            sub = sub.simplified(assumptions=assumptions)
 
             # record if the subterms degenerated to a True constant
             if sub is PYSAT_TRUE:
@@ -3149,7 +3167,9 @@ class ITE(Formula):
                 ~x & z
         """
 
-        assumptions = set(assumptions)
+        if not isinstance(assumptions, set):
+            assumptions = set(assumptions)
+
         cond  = self.cond .simplified(assumptions)
         cons1 = self.cons1.simplified(assumptions)
         cons2 = self.cons2.simplified(assumptions)

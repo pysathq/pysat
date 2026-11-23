@@ -685,7 +685,7 @@ class ITotalizer(object):
         """
 
         # preparing a new list of distinct input literals
-        lits = sorted(set(lits).difference(set(self.lits)))
+        lits = sorted(set(lits).difference(self.lits))
 
         if not lits:
             # nothing to merge with -> just increase the bound
@@ -694,7 +694,7 @@ class ITotalizer(object):
 
             return
 
-        self.top_id = max(map(lambda x: abs(x), self.lits + [self.top_id, top_id if top_id != None else 0]))
+        self.top_id = max(map(abs, lits + [self.top_id, top_id if top_id != None else 0]))
         self.ubound = max(self.ubound, ubound if ubound != None else 0)
 
         # updating the object and adding more variables and clauses
