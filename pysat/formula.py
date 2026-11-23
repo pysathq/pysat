@@ -4913,7 +4913,7 @@ class CNFPlus(CNF, object):
 
         self.nv = max(map(abs, itertools.chain([self.nv], *self.clauses)))
 
-    def to_fp(self, file_pointer, comments=None):
+    def to_fp(self, file_pointer, comments=None, as_dnf=False):
         """
             The method can be used to save a CNF+ formula into a file pointer.
             The file pointer is expected as an argument. Additionally,
@@ -4922,9 +4922,11 @@ class CNFPlus(CNF, object):
 
             :param file_pointer: a file pointer where to store the formula.
             :param comments: additional comments to put in the file.
+            :param as_dnf: not supported for CNF+ formulas (must be ``False``).
 
             :type file_pointer: file pointer
             :type comments: list(str)
+            :type as_dnf: bool
 
             Example:
 
@@ -4937,6 +4939,8 @@ class CNFPlus(CNF, object):
                 >>> with open('some-file.cnf+', 'w') as fp:
                 ...     cnf.to_fp(fp)  # writing to the file pointer
         """
+
+        assert not as_dnf, 'CNF+ formulas cannot be written as DNF'
 
         # saving formula's internal comments
         for c in self.comments:

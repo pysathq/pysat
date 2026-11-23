@@ -320,13 +320,15 @@ class Integer:
         # deciding which IDPool to use
         self.vpool = vpool if vpool is not None else Formula.export_vpool()
 
-        # ensure IDs are registered upfront to keep vpool stable
+        # ensure IDs are registered upfront to keep vpool stable,
+        # also caching them as maps from values to Boolean variables
+        self.eqlits, self.gelits = {}, {}
         if encoding in ('direct', 'coupled'):
             for v in self.domain:
-                self.vpool.id((self, 'eq', v))
+                self.eqlits[v] = self.vpool.id((self, 'eq', v))
         if encoding in ('order', 'coupled'):
             for k in range(lb + 1, ub + 1):
-                self.vpool.id((self, 'ge', k))
+                self.gelits[k] = self.vpool.id((self, 'ge', k))
 
     def _coerce_number(self, value):
         """
@@ -368,7 +370,7 @@ class Integer:
 
         assert self.encoding in ('direct', 'coupled'), 'Direct encoding is disabled'
         assert self.lb <= value <= self.ub, 'Value is outside the domain'
-        return self.vpool.id((self, 'eq', value))
+        return self.eqlits[value]
 
     def ge(self, value):
         """
@@ -384,7 +386,7 @@ class Integer:
 
         assert self.encoding in ('order', 'coupled'), 'Order encoding is disabled'
         assert self.lb + 1 <= value <= self.ub, 'Value is outside the order domain'
-        return self.vpool.id((self, 'ge', value))
+        return self.gelits[value]
 
     def atleast(self, value):
         """
@@ -410,7 +412,7 @@ class Integer:
         assert self.lb <= value <= self.ub - 1, 'Value is outside the order domain'
 
         # X <= value  <=>  not (X >= value + 1)
-        return -self.vpool.id((self, 'ge', value + 1))
+        return -self.gelits[value + 1]
 
     def atmost(self, value):
         """
@@ -433,12 +435,8 @@ class Integer:
 
         return f'{self.name}'
 
-    def __hash__(self):
-        """
-            Hash by identity to keep :class:`.Integer` usable as dict keys.
-        """
-
-        return object.__hash__(self)
+    # hash by identity to keep Integer usable as dict keys
+    __hash__ = object.__hash__
 
     def as_expr(self):
         """
@@ -583,8 +581,8 @@ class Integer:
             return abs(lit) <= len(model) and model[abs(lit) - 1] == lit
 
         if self.encoding == 'direct':
-            for value in self.domain:
-                if is_satisfied(self.vpool.id((self, 'eq', value))):
+            for value, lit in self.eqlits.items():
+                if is_satisfied(lit):
                     return value
             return
 
@@ -595,7 +593,7 @@ class Integer:
 
         while lo <= hi:
             mid = (lo + hi) // 2
-            if is_satisfied(self.vpool.id((self, 'ge', mid))):
+            if is_satisfied(self.gelits[mid]):
                 value = mid
                 lo = mid + 1
             else:

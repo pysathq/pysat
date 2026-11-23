@@ -90,7 +90,6 @@
 #
 #==============================================================================
 from collections import Counter, defaultdict
-import functools
 import itertools
 from typing import List
 
@@ -229,9 +228,8 @@ class LinearConstraint:
             self.vcnt += self.wght[lit]
 
             if self.vcnt == self.rbnd:  # this is when we should propagate
-                iter1, iter2 = itertools.tee(self.lits)
-                self.expl = list(-l for l in iter1 if self.lval[abs(l)] == l)
-                to_entail = list(-l for l in iter2 if self.lval[abs(l)] is None)
+                self.expl = [-l for l in self.lits if self.lval[abs(l)] == l]
+                to_entail = [-l for l in self.lits if self.lval[abs(l)] is None]
 
                 return to_entail
 
@@ -265,13 +263,18 @@ class LinearConstraint:
         self.vcnt += self.wght[lit]
 
         if not self.done:
-            iter1, iter2, iter3 = itertools.tee(self.lits, 3)
-            expl = list(-l for l in iter1 if self.lval[abs(l)] == l)
-            to_entail = list(-l for l in iter2 if self.lval[abs(l)] is None and self.vcnt + self.wght[l] > self.rbnd and not self.expl[-l])
-
-            # counting the number of unassigned literals to check
-            # whether there is something left to do in the future
-            nunknown = functools.reduce(lambda x, y: x + 1 if self.lval[abs(y)] is None else x, iter3, 0)
+            # collecting the reason, the literals to propagate, and the number
+            # of unassigned literals, the latter is to check whether there is
+            # something left to do in the future
+            expl, to_entail, nunknown = [], [], 0
+            for l in self.lits:
+                val = self.lval[abs(l)]
+                if val == l:
+                    expl.append(-l)
+                elif val is None:
+                    nunknown += 1
+                    if self.vcnt + self.wght[l] > self.rbnd and not self.expl[-l]:
+                        to_entail.append(-l)
 
             # are we done with constraint for now?
             if len(to_entail) == nunknown:
@@ -317,10 +320,10 @@ class LinearConstraint:
             Check if the constraint is violated by a given assignment. Upon
             receiving such an input assignment, the method counts the sum of
             the weights of all satisfied literals and checks if it exceeds the
-            right-hand side.
+            right-hand side. The assignment is expected as a set of literals.
         """
 
-        value = functools.reduce(lambda x, y: x + self.wght[y] if y in self.lset else x, model, 0)
+        value = sum(self.wght[l] for l in self.lits if l in model)
 
         if value > self.rbnd:
             self.fmod = model
@@ -334,7 +337,8 @@ class LinearConstraint:
             the constraint. This will clause will be added to the solver.
         """
 
-        return [-l for l in self.fmod if l in self.lset]
+        # literals are ordered by variable, as in the model
+        return sorted([-l for l in self.lits if l in self.fmod], key=abs)
 
 
 #
@@ -510,10 +514,11 @@ class ParityConstraint:
         """
             Check if the constraint is violated by a given assignment, which
             is done by xor'ing up all the values on the left-hand side (given
-            a model) and comparing with the right-hand side value.
+            a model) and comparing with the right-hand side value. The
+            assignment is expected as a set of literals.
         """
 
-        value = functools.reduce(lambda x, y: x ^ 1 if y in self.lset else x, model, 0)
+        value = sum(1 for l in self.lits if l in model) % 2
 
         if value != self.rval:
             self.fmod = model
@@ -527,7 +532,7 @@ class ParityConstraint:
             the constraint. This will clause will be added to the solver.
         """
 
-        return [-l for l in self.fmod if l in self.lset or -l in self.lset]
+        return [-l if l in self.fmod else l for l in self.lits]
 
 
 #
@@ -1094,14 +1099,16 @@ class BooleanEngine(Propagator):
             Update the propagator's state given a new assignment.
         """
 
+        var = abs(lit)
+
         if fixed:
-            self.fixed[abs(lit)] = True
+            self.fixed[var] = True
 
         # the solver may notify us again when an assigned literal gets fixed
-        if self.level[abs(lit)] is not None:
+        if self.level[var] is not None:
             return
 
-        self.level[abs(lit)] = self.decision_level
+        self.level[var] = self.decision_level
 
         if self.qhead is None:
             # this is the first assignment we get after backtracking
@@ -1124,29 +1131,29 @@ class BooleanEngine(Propagator):
         """
 
         cursor = self.qhead
+        trail, trlim, value, origin = self.trail, self.trlim, self.value, self.origin
 
         # undoing the assignments
-        while len(self.trlim) > to:
-            while len(self.trail) > self.trlim[-1]:
-                lit = self.trail.pop()
+        while len(trlim) > to:
+            while len(trail) > trlim[-1]:
+                lit = trail.pop()
                 var = abs(lit)
 
-                if self.value[var] is not None and not self.fixed[var]:
+                if value[var] is not None and not self.fixed[var]:
                     # informing all the constraints
                     for cs in self.wlst[lit]:
                         cs.unassign(lit)
 
-                    self.value[var] = None
+                    value[var] = None
 
                 self.level[var] = None
 
                 # cleaning all the consequences
-                for l in self.props[lit]:
-                    self.origin[l].abandon(l)
-                    self.origin[l] = None
-                self.props[lit] = []
+                for l in self.props.pop(lit, []):
+                    origin[l].abandon(l)
+                    origin[l] = None
 
-            self.trlim.pop()
+            trlim.pop()
 
         # updating decision level
         self.decision_level = to
@@ -1160,6 +1167,9 @@ class BooleanEngine(Propagator):
         """
 
         st = True  # no falsified constraints by default
+
+        # constraints check literals for membership in the model
+        model = set(model)
 
         # checking all constraints one by one
         for cs in self.cons:
@@ -1220,8 +1230,8 @@ class BooleanEngine(Propagator):
 
                 self.value[abs(lit)] = lit  # actually setting the value
 
-                watched_holes = []
-                for csid, cs in enumerate(self.wlst[lit]):
+                watched, watched_holes = self.wlst[lit], []
+                for csid, cs in enumerate(watched):
                     # checking the constraint
                     propagated = cs.propagate(lit)
 
@@ -1238,10 +1248,10 @@ class BooleanEngine(Propagator):
                             self.props[lit].append(l)
 
                     # checking whether or not this cs is still watched
-                    if self.wlst[lit][csid] is None or type(self.wlst[lit][csid]) == int:
+                    if watched[csid] is None or type(watched[csid]) == int:
                         # instead of cs, we have None or an integer, i.e. we
                         # removed cs from the watched list for this literal
-                        watched_holes.append((csid, self.wlst[lit][csid]))
+                        watched_holes.append((csid, watched[csid]))
 
                 # cleaning up watches, should be more-or-less cheap,
                 # doing so for +lit but also for -lit if it is affected
