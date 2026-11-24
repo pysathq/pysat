@@ -277,26 +277,21 @@ class BBScan:
             Filter out rotatable literals.
         """
 
-        def get_unit(cl):
-            # this is supposed to be a faster alternative to the
-            # complete clause traversal with a conditional inside
+        # result of this procedure
+        units, clauses = set(), self.formula.clauses
+
+        # determining unit literals, i.e. the only literals of the model
+        # satisfying a clause; traversal stops at a second such literal
+        for i in self.focuscl:
             unit = None
-            for l in cl:
+            for l in clauses[i]:
                 if l in model:
                     if unit:
-                        return
-                    else:
-                        unit = l
-            return unit
-
-        # result of this procedure
-        units = set([])
-
-        # determining unit literals
-        for i in self.focuscl:
-            unit = get_unit(self.formula.clauses[i])
-            if unit:
-                units.add(unit)
+                        break
+                    unit = l
+            else:
+                if unit:
+                    units.add(unit)
 
         self.filtered += len(model) - len(units)
         return units
