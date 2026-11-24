@@ -4895,6 +4895,7 @@ private:
 	// cached methods of the propagator (NULL if missing)
 	PyObject *m_assign, *m_level, *m_backtrack, *m_check, *m_decide;
 	PyObject *m_propagate, *m_reason, *m_add, *m_has;
+	std::vector<char> observed; // variables observed by the propagator
 	std::vector<int> provide_reason_queue;
 	std::vector<int> add_clause_queue;
 	std::vector<int> propagations_queue;
@@ -5015,6 +5016,24 @@ public:
 	// the call of propagator callbacks and when a driving clause is leading
 	// to an assignment.
 	//
+	// keep track of the variables observed by the python propagator;
+	// CaDiCaL may notify a fixed literal of a variable that is not
+	// observed: when compacting, all fixed variables are merged into
+	// the first fixed one, which then represents the observed ones too
+	// (see 'compact.cpp' and 'notify_assignments()' in CaDiCaL)
+	void set_observed(int var, bool val) {
+		var = abs(var);
+		if (var >= (int)observed.size())
+			observed.resize(var + 1, 0);
+		observed[var] = val;
+	}
+	void reset_observed() {
+		observed.clear();
+	}
+	bool is_observed(int lit) {
+		int var = abs(lit);
+		return var < (int)observed.size() && observed[var];
+	}
 	void notify_assignment (const std::vector<int> &lits) {
 		if (PyErr_Occurred()) {
 			pycadical300_callback_failed = true;
@@ -5027,6 +5046,11 @@ public:
 		for (size_t i = 0; i < lits.size(); ++i) {
 			int lit = lits[i];
 			int is_fixed = zero_level ? 1 : 0;
+
+			// an unobserved (fixed) literal is a renamed duplicate of
+			// assignments notified earlier, so we skip it
+			if (!is_observed(lit))
+				continue;
 
 			PyObject *status = pyprop_call_int(m_assign, "on_assignment", lit, is_fixed);
 			if (status == NULL) {
@@ -5659,6 +5683,12 @@ static PyObject *py_cadical300_vobserve(PyObject *self, PyObject *args)
 	if (s->vars() < abs(var))
 		s->resize(abs(var));
 
+	// marking the variable first, as its fixed value
+	// may be notified from within add_observed_var()
+	PyExternalPropagator300 *cprop = (PyExternalPropagator300 *)(s->get_external_propagator());
+	if (cprop)
+		cprop->set_observed(var, true);
+
 	s->add_observed_var(var);
 
 	if (pycadical300_callback_failed || PyErr_Occurred())
@@ -5683,6 +5713,10 @@ static PyObject *py_cadical300_vignore(PyObject *self, PyObject *args)
 
 	s->remove_observed_var(var);
 
+	PyExternalPropagator300 *cprop = (PyExternalPropagator300 *)(s->get_external_propagator());
+	if (cprop)
+		cprop->set_observed(var, false);
+
 	if (pycadical300_callback_failed || PyErr_Occurred())
 		return NULL;
 
@@ -5703,6 +5737,10 @@ static PyObject *py_cadical300_vreset(PyObject *self, PyObject *args)
 	pycadical300_callback_failed = false;
 
 	s->reset_observed_vars();
+
+	PyExternalPropagator300 *cprop = (PyExternalPropagator300 *)(s->get_external_propagator());
+	if (cprop)
+		cprop->reset_observed();
 
 	if (pycadical300_callback_failed || PyErr_Occurred())
 		return NULL;
