@@ -3272,6 +3272,9 @@ static PyObject *py_cadical195_acc_stats(PyObject *self, PyObject *args)
 class PyExternalPropagator : public CaDiCaL195::ExternalPropagator {
 private:
 	PyObject *py_prop;
+	// cached methods of the propagator (NULL if missing)
+	PyObject *m_assign, *m_level, *m_backtrack, *m_check, *m_decide;
+	PyObject *m_propagate, *m_reason, *m_add, *m_has;
 	std::vector<int> provide_reason_queue;
 	std::vector<int> add_clause_queue;
 	std::vector<int> propagations_queue;
@@ -3296,6 +3299,67 @@ public:
 		multi_clause = false;
 		propagate_gives_reason = false;
 		pycadical195_callback_failed = false;
+		pyprop_cache();
+	}
+
+	// get a method of the python propagator; NULL if it is missing
+	PyObject *pyprop_method(const char *name) {
+		PyObject *meth = PyObject_GetAttrString(py_prop, name);
+		if (meth == NULL)
+			PyErr_Clear();
+		return meth;
+	}
+	// cache all the methods, so that they are not looked up by name in
+	// every single callback (which is expensive)
+	void pyprop_cache() {
+		m_assign    = pyprop_method("on_assignment");
+		m_level     = pyprop_method("on_new_level");
+		m_backtrack = pyprop_method("on_backtrack");
+		m_check     = pyprop_method("check_model");
+		m_decide    = pyprop_method("decide");
+		m_propagate = pyprop_method("propagate");
+		m_reason    = pyprop_method("provide_reason");
+		m_add       = pyprop_method("add_clause");
+		m_has       = pyprop_method("has_clause");
+	}
+	// release the cached methods
+	void pyprop_uncache() {
+		Py_CLEAR(m_assign); Py_CLEAR(m_level); Py_CLEAR(m_backtrack);
+		Py_CLEAR(m_check); Py_CLEAR(m_decide); Py_CLEAR(m_propagate);
+		Py_CLEAR(m_reason); Py_CLEAR(m_add); Py_CLEAR(m_has);
+	}
+	// call a cached method with up to two arguments; if the method is
+	// missing, it is called by name, which reports the error as before
+	PyObject *pyprop_call(PyObject *meth, const char *name,
+			PyObject *arg1 = NULL, PyObject *arg2 = NULL) {
+		if (meth != NULL)
+			return PyObject_CallFunctionObjArgs(meth, arg1, arg2, NULL);
+
+		PyObject *pyname = PyUnicode_FromString(name);
+		if (pyname == NULL)
+			return NULL;
+		PyObject *res = PyObject_CallMethodObjArgs(py_prop, pyname, arg1, arg2, NULL);
+		Py_DECREF(pyname);
+		return res;
+	}
+	// call a cached method with integer arguments
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1) {
+		PyObject *arg1 = PyLong_FromLong(a1);
+		if (arg1 == NULL)
+			return NULL;
+		PyObject *res = pyprop_call(meth, name, arg1);
+		Py_DECREF(arg1);
+		return res;
+	}
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1, int a2) {
+		PyObject *arg1 = PyLong_FromLong(a1), *arg2 = PyLong_FromLong(a2);
+		if (arg1 == NULL || arg2 == NULL) {
+			Py_XDECREF(arg1); Py_XDECREF(arg2);
+			return NULL;
+		}
+		PyObject *res = pyprop_call(meth, name, arg1, arg2);
+		Py_DECREF(arg1); Py_DECREF(arg2);
+		return res;
 	}
 
 	// dereference the python propagator
@@ -3303,6 +3367,7 @@ public:
 		if (py_prop == NULL) {
 			return false;
 		}
+		pyprop_uncache();
 		Py_DECREF(py_prop);
 		py_prop = NULL;
 		return true;
@@ -3320,7 +3385,9 @@ public:
 		if (py_prop == NULL) {
 			pyprop_delete();
 		}
+		pyprop_uncache();
 		py_prop = py_propagator;
+		pyprop_cache();
 		return true; // TODO add error checking
 	}
 	// Notify the propagator about assignments to observed variables.
@@ -3337,7 +3404,7 @@ public:
 		if (!zero_level && passive && !is_fixed)
 			return;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "on_assignment", "(ii)", lit, is_fixed, NULL);
+		PyObject *status = pyprop_call_int(m_assign, "on_assignment", lit, is_fixed);
 		if (status == NULL) {
 			pycadical195_callback_failed = true;
 			return;
@@ -3361,7 +3428,7 @@ public:
 		if (passive)
 			return;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "on_new_level", "()", NULL);
+		PyObject *status = pyprop_call(m_level, "on_new_level");
 		if (status == NULL) {
 			pycadical195_callback_failed = true;
 			return;
@@ -3378,7 +3445,7 @@ public:
 			propagations_queue.clear(); // we need to clear propagation
 						    // queue when backtracking!
 
-			PyObject *status = PyObject_CallMethod(py_prop, "on_backtrack", "(i)", (int)new_level, NULL);
+			PyObject *status = pyprop_call_int(m_backtrack, "on_backtrack", (int)new_level);
 			if (status == NULL) {
 				pycadical195_callback_failed = true;
 				return;
@@ -3412,7 +3479,7 @@ public:
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert from vector to python list.");
 			return false;
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "check_model", "(O)", pylist, NULL);
+		PyObject *status = pyprop_call(m_check, "check_model", pylist);
 		if (status == NULL) {
 			Py_DECREF(pylist);
 			pycadical195_callback_failed = true;
@@ -3442,7 +3509,7 @@ public:
 		if (passive)
 			return 0;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "decide", "()", NULL);
+		PyObject *status = pyprop_call(m_decide, "decide");
 		if (status == NULL) {
 			pycadical195_callback_failed = true;
 			return 0;
@@ -3478,7 +3545,7 @@ public:
 			// if queue is empty
 			if (reason_clauses.empty()) {
 				// call python method
-				PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+				PyObject *status = pyprop_call(m_propagate, "propagate");
 				if (status == NULL) {
 					pycadical195_callback_failed = true;
 					return 0;
@@ -3552,7 +3619,7 @@ public:
 		// if queue is empty
 		if (propagations_queue.empty()) {
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+			PyObject *status = pyprop_call(m_propagate, "propagate");
 			if (status == NULL) {
 				pycadical195_callback_failed = true;
 				return 0;
@@ -3614,7 +3681,7 @@ public:
 				return 0;
 			}
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
+			PyObject *status = pyprop_call_int(m_reason, "provide_reason", propagated_lit);
 			if (status == NULL) {
 				pycadical195_callback_failed = true;
 				return 0;
@@ -3674,7 +3741,7 @@ public:
 			return false;
 		}
 
-		PyObject *status = PyObject_CallMethod(py_prop, "add_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_add, "add_clause");
 		if (status == NULL) {
 			pycadical195_callback_failed = true;
 			return false;
@@ -3745,7 +3812,7 @@ public:
 			// if has clause, return true
 			return !(add_clause_queue.empty());
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "has_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_has, "has_clause");
 		if (status == NULL) {
 			pycadical195_callback_failed = true;
 			return false;
@@ -4825,6 +4892,9 @@ static PyObject *py_cadical300_acc_stats(PyObject *self, PyObject *args)
 class PyExternalPropagator300 : public CaDiCaL300::ExternalPropagator {
 private:
 	PyObject *py_prop;
+	// cached methods of the propagator (NULL if missing)
+	PyObject *m_assign, *m_level, *m_backtrack, *m_check, *m_decide;
+	PyObject *m_propagate, *m_reason, *m_add, *m_has;
 	std::vector<int> provide_reason_queue;
 	std::vector<int> add_clause_queue;
 	std::vector<int> propagations_queue;
@@ -4849,6 +4919,67 @@ public:
 		multi_clause = false;
 		propagate_gives_reason = false;
 		pycadical300_callback_failed = false;
+		pyprop_cache();
+	}
+
+	// get a method of the python propagator; NULL if it is missing
+	PyObject *pyprop_method(const char *name) {
+		PyObject *meth = PyObject_GetAttrString(py_prop, name);
+		if (meth == NULL)
+			PyErr_Clear();
+		return meth;
+	}
+	// cache all the methods, so that they are not looked up by name in
+	// every single callback (which is expensive)
+	void pyprop_cache() {
+		m_assign    = pyprop_method("on_assignment");
+		m_level     = pyprop_method("on_new_level");
+		m_backtrack = pyprop_method("on_backtrack");
+		m_check     = pyprop_method("check_model");
+		m_decide    = pyprop_method("decide");
+		m_propagate = pyprop_method("propagate");
+		m_reason    = pyprop_method("provide_reason");
+		m_add       = pyprop_method("add_clause");
+		m_has       = pyprop_method("has_clause");
+	}
+	// release the cached methods
+	void pyprop_uncache() {
+		Py_CLEAR(m_assign); Py_CLEAR(m_level); Py_CLEAR(m_backtrack);
+		Py_CLEAR(m_check); Py_CLEAR(m_decide); Py_CLEAR(m_propagate);
+		Py_CLEAR(m_reason); Py_CLEAR(m_add); Py_CLEAR(m_has);
+	}
+	// call a cached method with up to two arguments; if the method is
+	// missing, it is called by name, which reports the error as before
+	PyObject *pyprop_call(PyObject *meth, const char *name,
+			PyObject *arg1 = NULL, PyObject *arg2 = NULL) {
+		if (meth != NULL)
+			return PyObject_CallFunctionObjArgs(meth, arg1, arg2, NULL);
+
+		PyObject *pyname = PyUnicode_FromString(name);
+		if (pyname == NULL)
+			return NULL;
+		PyObject *res = PyObject_CallMethodObjArgs(py_prop, pyname, arg1, arg2, NULL);
+		Py_DECREF(pyname);
+		return res;
+	}
+	// call a cached method with integer arguments
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1) {
+		PyObject *arg1 = PyLong_FromLong(a1);
+		if (arg1 == NULL)
+			return NULL;
+		PyObject *res = pyprop_call(meth, name, arg1);
+		Py_DECREF(arg1);
+		return res;
+	}
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1, int a2) {
+		PyObject *arg1 = PyLong_FromLong(a1), *arg2 = PyLong_FromLong(a2);
+		if (arg1 == NULL || arg2 == NULL) {
+			Py_XDECREF(arg1); Py_XDECREF(arg2);
+			return NULL;
+		}
+		PyObject *res = pyprop_call(meth, name, arg1, arg2);
+		Py_DECREF(arg1); Py_DECREF(arg2);
+		return res;
 	}
 
 	// dereference the python propagator
@@ -4856,6 +4987,7 @@ public:
 		if (py_prop == NULL) {
 			return false;
 		}
+		pyprop_uncache();
 		Py_DECREF(py_prop);
 		py_prop = NULL;
 		return true;
@@ -4873,7 +5005,9 @@ public:
 		if (py_prop == NULL) {
 			pyprop_delete();
 		}
+		pyprop_uncache();
 		py_prop = py_propagator;
+		pyprop_cache();
 		return true; // TODO add error checking
 	}
 	// Notify the propagator about assignments to observed variables.
@@ -4894,7 +5028,7 @@ public:
 			int lit = lits[i];
 			int is_fixed = zero_level ? 1 : 0;
 
-			PyObject *status = PyObject_CallMethod(py_prop, "on_assignment", "(ii)", lit, is_fixed, NULL);
+			PyObject *status = pyprop_call_int(m_assign, "on_assignment", lit, is_fixed);
 			if (status == NULL) {
 				pycadical300_callback_failed = true;
 				return;
@@ -4919,7 +5053,7 @@ public:
 		if (passive)
 			return;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "on_new_level", "()", NULL);
+		PyObject *status = pyprop_call(m_level, "on_new_level");
 		if (status == NULL) {
 			pycadical300_callback_failed = true;
 			return;
@@ -4936,7 +5070,7 @@ public:
 			propagations_queue.clear(); // we need to clear propagation
 						    // queue when backtracking!
 
-			PyObject *status = PyObject_CallMethod(py_prop, "on_backtrack", "(i)", (int)new_level, NULL);
+			PyObject *status = pyprop_call_int(m_backtrack, "on_backtrack", (int)new_level);
 			if (status == NULL) {
 				pycadical300_callback_failed = true;
 				return;
@@ -4970,7 +5104,7 @@ public:
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert from vector to python list.");
 			return false;
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "check_model", "(O)", pylist, NULL);
+		PyObject *status = pyprop_call(m_check, "check_model", pylist);
 		if (status == NULL) {
 			Py_DECREF(pylist);
 			pycadical300_callback_failed = true;
@@ -5000,7 +5134,7 @@ public:
 		if (passive)
 			return 0;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "decide", "()", NULL);
+		PyObject *status = pyprop_call(m_decide, "decide");
 		if (status == NULL) {
 			pycadical300_callback_failed = true;
 			return 0;
@@ -5036,7 +5170,7 @@ public:
 			// if queue is empty
 			if (reason_clauses.empty()) {
 				// call python method
-				PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+				PyObject *status = pyprop_call(m_propagate, "propagate");
 				if (status == NULL) {
 					pycadical300_callback_failed = true;
 					return 0;
@@ -5110,7 +5244,7 @@ public:
 		// if queue is empty
 		if (propagations_queue.empty()) {
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+			PyObject *status = pyprop_call(m_propagate, "propagate");
 			if (status == NULL) {
 				pycadical300_callback_failed = true;
 				return 0;
@@ -5172,7 +5306,7 @@ public:
 				return 0;
 			}
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
+			PyObject *status = pyprop_call_int(m_reason, "provide_reason", propagated_lit);
 			if (status == NULL) {
 				pycadical300_callback_failed = true;
 				return 0;
@@ -5232,7 +5366,7 @@ public:
 			return false;
 		}
 
-		PyObject *status = PyObject_CallMethod(py_prop, "add_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_add, "add_clause");
 		if (status == NULL) {
 			pycadical300_callback_failed = true;
 			return false;
@@ -5305,7 +5439,7 @@ public:
 			// if has clause, return true
 			return !(add_clause_queue.empty());
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "has_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_has, "has_clause");
 		if (status == NULL) {
 			pycadical300_callback_failed = true;
 			return false;
@@ -6308,6 +6442,9 @@ static PyObject *py_ergo_getacts(PyObject *self, PyObject *args)
 class PyExternalPropagatorErgo {
 private:
 	PyObject *py_prop;
+	// cached methods of the propagator (NULL if missing)
+	PyObject *m_assign, *m_level, *m_backtrack, *m_check, *m_decide;
+	PyObject *m_propagate, *m_reason, *m_add, *m_has;
 	std::vector<int> propagate_queue; // reversed: pop_back() drains front-to-back
 	std::vector<int> reason_queue;
 	int  reason_lit_for;              // which propagated_lit reason_queue answers; 0 = stale
@@ -6322,10 +6459,73 @@ public:
 
 	PyExternalPropagatorErgo(PyObject *p) :
 			py_prop(p), reason_lit_for(0), passive(false), enable(false),
-			disable(false), zero_level(true), combined_has_clause(true) {}
+			disable(false), zero_level(true), combined_has_clause(true) {
+		pyprop_cache();
+	}
 
 	~PyExternalPropagatorErgo() {
+		pyprop_uncache();
 		Py_XDECREF(py_prop);
+	}
+
+	// get a method of the python propagator; NULL if it is missing
+	PyObject *pyprop_method(const char *name) {
+		PyObject *meth = PyObject_GetAttrString(py_prop, name);
+		if (meth == NULL)
+			PyErr_Clear();
+		return meth;
+	}
+	// cache all the methods, so that they are not looked up by name in
+	// every single callback (which is expensive)
+	void pyprop_cache() {
+		m_assign    = pyprop_method("on_assignment");
+		m_level     = pyprop_method("on_new_level");
+		m_backtrack = pyprop_method("on_backtrack");
+		m_check     = pyprop_method("check_model");
+		m_decide    = pyprop_method("decide");
+		m_propagate = pyprop_method("propagate");
+		m_reason    = pyprop_method("provide_reason");
+		m_add       = pyprop_method("add_clause");
+		m_has       = pyprop_method("has_clause");
+	}
+	// release the cached methods
+	void pyprop_uncache() {
+		Py_CLEAR(m_assign); Py_CLEAR(m_level); Py_CLEAR(m_backtrack);
+		Py_CLEAR(m_check); Py_CLEAR(m_decide); Py_CLEAR(m_propagate);
+		Py_CLEAR(m_reason); Py_CLEAR(m_add); Py_CLEAR(m_has);
+	}
+	// call a cached method with up to two arguments; if the method is
+	// missing, it is called by name, which reports the error as before
+	PyObject *pyprop_call(PyObject *meth, const char *name,
+			PyObject *arg1 = NULL, PyObject *arg2 = NULL) {
+		if (meth != NULL)
+			return PyObject_CallFunctionObjArgs(meth, arg1, arg2, NULL);
+
+		PyObject *pyname = PyUnicode_FromString(name);
+		if (pyname == NULL)
+			return NULL;
+		PyObject *res = PyObject_CallMethodObjArgs(py_prop, pyname, arg1, arg2, NULL);
+		Py_DECREF(pyname);
+		return res;
+	}
+	// call a cached method with integer arguments
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1) {
+		PyObject *arg1 = PyLong_FromLong(a1);
+		if (arg1 == NULL)
+			return NULL;
+		PyObject *res = pyprop_call(meth, name, arg1);
+		Py_DECREF(arg1);
+		return res;
+	}
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1, int a2) {
+		PyObject *arg1 = PyLong_FromLong(a1), *arg2 = PyLong_FromLong(a2);
+		if (arg1 == NULL || arg2 == NULL) {
+			Py_XDECREF(arg1); Py_XDECREF(arg2);
+			return NULL;
+		}
+		PyObject *res = pyprop_call(meth, name, arg1, arg2);
+		Py_DECREF(arg1); Py_DECREF(arg2);
+		return res;
 	}
 
 	static void notify_assignment(void *ctx, const int *lits, int n) {
@@ -6335,8 +6535,8 @@ public:
 		if (!p->zero_level && p->passive) return;
 
 		for (int i = 0; i < n; ++i) {
-			PyObject *status = PyObject_CallMethod(p->py_prop, "on_assignment",
-					"(ii)", lits[i], p->zero_level ? 1 : 0, NULL);
+			PyObject *status = p->pyprop_call_int(p->m_assign, "on_assignment",
+					lits[i], p->zero_level ? 1 : 0);
 			if (status == NULL) { pyergo_callback_failed = true; return; }
 			Py_DECREF(status);
 		}
@@ -6355,7 +6555,7 @@ public:
 		p->zero_level = false;
 		if (p->passive) return;
 
-		PyObject *status = PyObject_CallMethod(p->py_prop, "on_new_level", "()", NULL);
+		PyObject *status = p->pyprop_call(p->m_level, "on_new_level");
 		if (status == NULL) { pyergo_callback_failed = true; return; }
 		Py_DECREF(status);
 	}
@@ -6370,8 +6570,7 @@ public:
 		p->reason_lit_for = 0;
 
 		if (!p->passive) {
-			PyObject *status = PyObject_CallMethod(p->py_prop, "on_backtrack",
-					"(i)", new_level, NULL);
+			PyObject *status = p->pyprop_call_int(p->m_backtrack, "on_backtrack", new_level);
 			if (status == NULL) { pyergo_callback_failed = true; return; }
 			Py_DECREF(status);
 		}
@@ -6390,7 +6589,7 @@ public:
 		if (PyErr_Occurred()) { pyergo_callback_failed = true; return 0; }
 		if (p->passive) return 0;
 
-		PyObject *status = PyObject_CallMethod(p->py_prop, "decide", "()", NULL);
+		PyObject *status = p->pyprop_call(p->m_decide, "decide");
 		if (status == NULL) { pyergo_callback_failed = true; return 0; }
 		int res = pyint_to_cint(status);
 		Py_DECREF(status);
@@ -6405,7 +6604,7 @@ public:
 		if (!p->zero_level && p->passive) return 0;
 
 		if (p->propagate_queue.empty()) {
-			PyObject *status = PyObject_CallMethod(p->py_prop, "propagate", "()", NULL);
+			PyObject *status = p->pyprop_call(p->m_propagate, "propagate");
 			if (status == NULL) { pyergo_callback_failed = true; return 0; }
 
 			int max_var = 0;
@@ -6432,8 +6631,7 @@ public:
 			p->reason_lit_for = propagated_lit;
 			p->reason_queue.clear();
 
-			PyObject *status = PyObject_CallMethod(p->py_prop, "provide_reason",
-					"(i)", propagated_lit, NULL);
+			PyObject *status = p->pyprop_call_int(p->m_reason, "provide_reason", propagated_lit);
 			if (status == NULL) { pyergo_callback_failed = true; return 0; }
 
 			int max_var = 0;
@@ -6473,7 +6671,7 @@ public:
 			// no has_clause() method: add_clause() alone must serve
 			// double duty, per Propagator.add_clause()'s own doc --- []
 			// here means "nothing to add", not "the empty clause"
-			PyObject *status = PyObject_CallMethod(p->py_prop, "add_clause", "()", NULL);
+			PyObject *status = p->pyprop_call(p->m_add, "add_clause");
 			if (status == NULL) { pyergo_callback_failed = true; return false; }
 			bool ok = p->fill_clause_from(status);
 			Py_DECREF(status);
@@ -6481,7 +6679,7 @@ public:
 			return !p->clause_queue.empty();
 		}
 
-		PyObject *status = PyObject_CallMethod(p->py_prop, "has_clause", "()", NULL);
+		PyObject *status = p->pyprop_call(p->m_has, "has_clause");
 		if (status == NULL) { pyergo_callback_failed = true; return false; }
 		int has = PyObject_IsTrue(status);
 		Py_DECREF(status);
@@ -6491,7 +6689,7 @@ public:
 
 		// has_clause() said yes -- add_clause() now means the actual
 		// clause, [] included (the genuine empty clause, i.e. UNSAT)
-		PyObject *cl = PyObject_CallMethod(p->py_prop, "add_clause", "()", NULL);
+		PyObject *cl = p->pyprop_call(p->m_add, "add_clause");
 		if (cl == NULL) { pyergo_callback_failed = true; return false; }
 		bool ok = p->fill_clause_from(cl);
 		Py_DECREF(cl);
@@ -6518,7 +6716,7 @@ public:
 		PyObject *pylist = vector_to_pylist(v);
 		if (pylist == NULL) { pyergo_callback_failed = true; return true; }
 
-		PyObject *status = PyObject_CallMethod(p->py_prop, "check_model", "(O)", pylist, NULL);
+		PyObject *status = p->pyprop_call(p->m_check, "check_model", pylist);
 		Py_DECREF(pylist);
 		if (status == NULL) { pyergo_callback_failed = true; return true; }
 
@@ -14446,6 +14644,9 @@ static bool pyminisatep_callback_failed = false;
 class PyExternalPropagatorEP : public MinisatEP::ExternalPropagator {
 private:
 	PyObject *py_prop;
+	// cached methods of the propagator (NULL if missing)
+	PyObject *m_assign, *m_level, *m_backtrack, *m_check, *m_decide;
+	PyObject *m_propagate, *m_reason, *m_add, *m_has;
 	std::vector<int> provide_reason_queue;
 	std::vector<int> add_clause_queue;
 	std::vector<int> propagations_queue;
@@ -14470,6 +14671,67 @@ public:
 		multi_clause = false;
 		propagate_gives_reason = false;
 		pyminisatep_callback_failed = false;
+		pyprop_cache();
+	}
+
+	// get a method of the python propagator; NULL if it is missing
+	PyObject *pyprop_method(const char *name) {
+		PyObject *meth = PyObject_GetAttrString(py_prop, name);
+		if (meth == NULL)
+			PyErr_Clear();
+		return meth;
+	}
+	// cache all the methods, so that they are not looked up by name in
+	// every single callback (which is expensive)
+	void pyprop_cache() {
+		m_assign    = pyprop_method("on_assignment");
+		m_level     = pyprop_method("on_new_level");
+		m_backtrack = pyprop_method("on_backtrack");
+		m_check     = pyprop_method("check_model");
+		m_decide    = pyprop_method("decide");
+		m_propagate = pyprop_method("propagate");
+		m_reason    = pyprop_method("provide_reason");
+		m_add       = pyprop_method("add_clause");
+		m_has       = pyprop_method("has_clause");
+	}
+	// release the cached methods
+	void pyprop_uncache() {
+		Py_CLEAR(m_assign); Py_CLEAR(m_level); Py_CLEAR(m_backtrack);
+		Py_CLEAR(m_check); Py_CLEAR(m_decide); Py_CLEAR(m_propagate);
+		Py_CLEAR(m_reason); Py_CLEAR(m_add); Py_CLEAR(m_has);
+	}
+	// call a cached method with up to two arguments; if the method is
+	// missing, it is called by name, which reports the error as before
+	PyObject *pyprop_call(PyObject *meth, const char *name,
+			PyObject *arg1 = NULL, PyObject *arg2 = NULL) {
+		if (meth != NULL)
+			return PyObject_CallFunctionObjArgs(meth, arg1, arg2, NULL);
+
+		PyObject *pyname = PyUnicode_FromString(name);
+		if (pyname == NULL)
+			return NULL;
+		PyObject *res = PyObject_CallMethodObjArgs(py_prop, pyname, arg1, arg2, NULL);
+		Py_DECREF(pyname);
+		return res;
+	}
+	// call a cached method with integer arguments
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1) {
+		PyObject *arg1 = PyLong_FromLong(a1);
+		if (arg1 == NULL)
+			return NULL;
+		PyObject *res = pyprop_call(meth, name, arg1);
+		Py_DECREF(arg1);
+		return res;
+	}
+	PyObject *pyprop_call_int(PyObject *meth, const char *name, int a1, int a2) {
+		PyObject *arg1 = PyLong_FromLong(a1), *arg2 = PyLong_FromLong(a2);
+		if (arg1 == NULL || arg2 == NULL) {
+			Py_XDECREF(arg1); Py_XDECREF(arg2);
+			return NULL;
+		}
+		PyObject *res = pyprop_call(meth, name, arg1, arg2);
+		Py_DECREF(arg1); Py_DECREF(arg2);
+		return res;
 	}
 
 	// dereference the python propagator
@@ -14477,6 +14739,7 @@ public:
 		if (py_prop == NULL) {
 			return false;
 		}
+		pyprop_uncache();
 		Py_DECREF(py_prop);
 		py_prop = NULL;
 		return true;
@@ -14494,7 +14757,9 @@ public:
 		if (py_prop == NULL) {
 			pyprop_delete();
 		}
+		pyprop_uncache();
 		py_prop = py_propagator;
+		pyprop_cache();
 		return true; // TODO add error checking
 	}
 	// Notify the propagator about assignments to observed variables.
@@ -14515,7 +14780,7 @@ public:
 			int lit = lits[i];
 			int is_fixed = zero_level ? 1 : 0;
 
-			PyObject *status = PyObject_CallMethod(py_prop, "on_assignment", "(ii)", lit, is_fixed, NULL);
+			PyObject *status = pyprop_call_int(m_assign, "on_assignment", lit, is_fixed);
 			if (status == NULL) {
 				pyminisatep_callback_failed = true;
 				return;
@@ -14540,7 +14805,7 @@ public:
 		if (passive)
 			return;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "on_new_level", "()", NULL);
+		PyObject *status = pyprop_call(m_level, "on_new_level");
 		if (status == NULL) {
 			pyminisatep_callback_failed = true;
 			return;
@@ -14557,7 +14822,7 @@ public:
 			propagations_queue.clear(); // we need to clear propagation
 						    // queue when backtracking!
 
-			PyObject *status = PyObject_CallMethod(py_prop, "on_backtrack", "(i)", (int)new_level, NULL);
+			PyObject *status = pyprop_call_int(m_backtrack, "on_backtrack", (int)new_level);
 			if (status == NULL) {
 				pyminisatep_callback_failed = true;
 				return;
@@ -14591,7 +14856,7 @@ public:
 			PyErr_SetString(PyExc_RuntimeError, "Could not convert from vector to python list.");
 			return false;
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "check_model", "(O)", pylist, NULL);
+		PyObject *status = pyprop_call(m_check, "check_model", pylist);
 		if (status == NULL) {
 			Py_DECREF(pylist);
 			pyminisatep_callback_failed = true;
@@ -14621,7 +14886,7 @@ public:
 		if (passive)
 			return 0;
 
-		PyObject *status = PyObject_CallMethod(py_prop, "decide", "()", NULL);
+		PyObject *status = pyprop_call(m_decide, "decide");
 		if (status == NULL) {
 			pyminisatep_callback_failed = true;
 			return 0;
@@ -14657,7 +14922,7 @@ public:
 			// if queue is empty
 			if (reason_clauses.empty()) {
 				// call python method
-				PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+				PyObject *status = pyprop_call(m_propagate, "propagate");
 				if (status == NULL) {
 					pyminisatep_callback_failed = true;
 					return 0;
@@ -14731,7 +14996,7 @@ public:
 		// if queue is empty
 		if (propagations_queue.empty()) {
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "propagate", "()", NULL);
+			PyObject *status = pyprop_call(m_propagate, "propagate");
 			if (status == NULL) {
 				pyminisatep_callback_failed = true;
 				return 0;
@@ -14793,7 +15058,7 @@ public:
 				return 0;
 			}
 			// call python method
-			PyObject *status = PyObject_CallMethod(py_prop, "provide_reason", "(i)", propagated_lit, NULL);
+			PyObject *status = pyprop_call_int(m_reason, "provide_reason", propagated_lit);
 			if (status == NULL) {
 				pyminisatep_callback_failed = true;
 				return 0;
@@ -14853,7 +15118,7 @@ public:
 			return false;
 		}
 
-		PyObject *status = PyObject_CallMethod(py_prop, "add_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_add, "add_clause");
 		if (status == NULL) {
 			pyminisatep_callback_failed = true;
 			return false;
@@ -14926,7 +15191,7 @@ public:
 			// if has clause, return true
 			return !(add_clause_queue.empty());
 		}
-		PyObject *status = PyObject_CallMethod(py_prop, "has_clause", "()", NULL);
+		PyObject *status = pyprop_call(m_has, "has_clause");
 		if (status == NULL) {
 			pyminisatep_callback_failed = true;
 			return false;

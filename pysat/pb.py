@@ -318,7 +318,7 @@ class PBEnc(object):
         # choosing the maximum id among the current top and the list of literals
         if conditionals is None:
             conditionals = []
-        top_id = max(map(lambda x: abs(x), conditionals + lits + [top_id if top_id != None else 0]))
+        top_id = max(map(abs, conditionals + lits + [top_id if top_id != None else 0]))
 
         # native representation
         if encoding == 6:
