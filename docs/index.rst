@@ -9,12 +9,13 @@ basic information on what PySAT is, please, see `the main project website
 API documentation
 =================
 
-The PySAT toolkit has seven core modules: :mod:`.card`, :mod:`.engines`,
-:mod:`.formula`, :mod:`.integer`, :mod:`.pb`, :mod:`.process` and
-:mod:`.solvers`. The four of them (:mod:`.card`, :mod:`.pb`, :mod:`.process`
-and :mod:`.solvers`) are Python wrappers for the code originally implemented
-in the C/C++ languages while the :mod:`.engines`, :mod:`.formula` and
-:mod:`.integer` modules are *pure* Python modules. Version
+The PySAT toolkit has eight core modules: :mod:`.card`, :mod:`.engines`,
+:mod:`.formula`, :mod:`.integer`, :mod:`.pb`, :mod:`.process`,
+:mod:`.solvers` and :mod:`.vector`. The four of them (:mod:`.card`,
+:mod:`.pb`, :mod:`.process` and :mod:`.solvers`) are Python wrappers for the
+code originally implemented in the C/C++ languages while the
+:mod:`.engines`, :mod:`.formula`, :mod:`.integer` and :mod:`.vector` modules
+are *pure* Python modules. Version
 *0.1.4.dev0* of PySAT brings a new module called :mod:`.pb`, which is a wrapper
 for the pseudo-Boolean encodings of a third-party library `Pindakaas
 <https://pypi.org/project/pindakaas/>`__ (originally using `PyPBLib
@@ -43,6 +44,7 @@ Core PySAT modules
     api/pb
     api/process
     api/solvers
+    api/vector
 
 Supplementary :mod:`.examples` package
 --------------------------------------
