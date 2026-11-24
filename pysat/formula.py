@@ -265,7 +265,6 @@
 #==============================================================================
 from __future__ import print_function
 import collections
-from collections.abc import Iterable
 import copy
 import decimal
 from enum import Enum
@@ -909,10 +908,10 @@ class Formula(object):
 
             # first, assuming it is a flat unhashable collection
             if type(collection) in (tuple, list, set):
-                collection = tuple(filter(lambda x: x or x == False, collection))
+                collection = [x for x in collection if x or x == False]
 
                 for item in collection:
-                    if isinstance(item, Iterable):
+                    if type(item) in (tuple, list, set) or isinstance(item, dict):
                         items.extend(_flatten(item, prefix=prefix))
                     else:
                         items.append((prefix, item))
@@ -922,7 +921,7 @@ class Formula(object):
                 for key in collection.keys():
                     value = collection[key]
                     new_key = prefix + sep + key if prefix else key
-                    if isinstance(value, Iterable) and value:
+                    if (type(value) in (tuple, list, set) or isinstance(value, dict)) and value:
                         items.extend(_flatten(value, prefix=new_key, sep=sep))
                     else:
                         items.append((new_key, value))
@@ -1030,8 +1029,14 @@ class Formula(object):
         # Reconstruct a structural key depending on the Formula type.
         formula_type = ftype[1]
         if formula_type == FormulaType.ATOM:
-            assert len(subfs) == 1, 'A single object is required for an Atom formula'
-            return (formula_type, _object_key(subfs[0][1]))
+            if len(subfs) == 1:
+                # a single object, possibly wrapped into a collection of size 1
+                return (formula_type, _object_key(subfs[0][1]))
+
+            # otherwise, the object is a collection that got flattened
+            aargs, akwargs = args[0]
+            assert aargs or 'object' in akwargs, 'No object is given for this atom'
+            return (formula_type, _object_key(aargs[0] if aargs else akwargs['object']))
 
         if formula_type == FormulaType.NEG:
             assert len(subfs) == 1, 'A single subformula is required for a Neg formula'
@@ -1498,6 +1503,10 @@ class Atom(Formula):
             :type object: any
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(Atom, self).__init__(type=FormulaType.ATOM)
 
         if args:
@@ -1692,6 +1701,10 @@ class And(Formula):
             argument ``merge=True``, which will enable merging sub-operands.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(And, self).__init__(type=FormulaType.AND)
 
         self.subformulas = list(args)
@@ -1722,8 +1735,7 @@ class And(Formula):
             seen[self] = True
 
             for sub in self.subformulas:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -1964,6 +1976,10 @@ class Or(Formula):
             argument ``merge=True``, which will enable merging sub-operands.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(Or, self).__init__(type=FormulaType.OR)
 
         self.subformulas = list(args)
@@ -1994,8 +2010,7 @@ class Or(Formula):
             seen[self] = True
 
             for sub in self.subformulas:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -2167,6 +2182,10 @@ class Neg(Formula):
             argument ``subformula`` to specify the operand of the negation.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(Neg, self).__init__(type=FormulaType.NEG)
 
         if args:
@@ -2194,8 +2213,7 @@ class Neg(Formula):
         if not self in seen:
             seen[self] = True
 
-            for cl in self.subformula._iter(seen):
-                yield cl
+            yield from self.subformula._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -2328,6 +2346,10 @@ class Implies(Formula):
             arguments) with the input formulas: left and right.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(Implies, self).__init__(type=FormulaType.IMPL)
 
         # initially, there are no operands
@@ -2370,8 +2392,7 @@ class Implies(Formula):
             seen[self] = True
 
             for sub in [self.left, self.right]:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -2565,6 +2586,10 @@ class Equals(Formula):
             argument ``merge=True``, which will enable merging sub-operands.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(Equals, self).__init__(type=FormulaType.EQ)
 
         self.subformulas = list(args)
@@ -2598,8 +2623,7 @@ class Equals(Formula):
             seen[self] = True
 
             for sub in self.subformulas:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -2828,6 +2852,10 @@ class XOr(Formula):
             sub-operands.
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(XOr, self).__init__(type=FormulaType.XOR)
 
         self.subformulas = list(args)
@@ -2861,8 +2889,7 @@ class XOr(Formula):
             seen[self] = True
 
             for sub in self.subformulas:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -3087,6 +3114,10 @@ class ITE(Formula):
             ``cons1`` (consequence1) and ``cons2`` (consequence2).
         """
 
+        # an existing formula returned by __new__ is not re-initialised
+        if hasattr(self, 'type'):
+            return
+
         super(ITE, self).__init__(type=FormulaType.ITE)
 
         # initially, there are no operands
@@ -3135,8 +3166,7 @@ class ITE(Formula):
             seen[self] = True
 
             for sub in [self.cond, self.cons1, self.cons2]:
-                for cl in sub._iter(seen):
-                    yield cl
+                yield from sub._iter(seen)
 
             if outermost:
                 yield from self.clauses
@@ -3503,7 +3533,7 @@ class CNF(Formula, object):
                 5
         """
 
-        self.clauses = clauses if by_ref else copy.deepcopy(clauses)
+        self.clauses = clauses if by_ref else [cl[:] for cl in clauses]
 
         self._compute_nv()
 
@@ -3576,8 +3606,8 @@ class CNF(Formula, object):
     def copy(self):
         """
             This method can be used for creating a copy of a CNF object. It
-            creates another object of the :class:`CNF` class and makes use of
-            the *deepcopy* functionality to copy the clauses.
+            creates another object of the :class:`CNF` class and copies each
+            of the clauses.
 
             :return: an object of class :class:`CNF`.
 
@@ -3595,9 +3625,9 @@ class CNF(Formula, object):
 
         cnf = CNF()
         cnf.nv = self.nv
-        cnf.clauses = copy.deepcopy(self.clauses)
-        cnf.encoded = copy.deepcopy(self.encoded)
-        cnf.comments = copy.deepcopy(self.comments)
+        cnf.clauses = [cl[:] for cl in self.clauses]
+        cnf.encoded = [cl[:] for cl in self.encoded]
+        cnf.comments = self.comments[:]
 
         return cnf
 
@@ -3680,7 +3710,7 @@ class CNF(Formula, object):
         print('p cnf' if not as_dnf else 'p dnf', self.nv, len(self.clauses), file=file_pointer)
 
         for cl in self.clauses:
-            print(' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write(' '.join(map(str, cl)) + ' 0\n')
 
     def to_dimacs(self):
         """
@@ -3839,7 +3869,9 @@ class CNF(Formula, object):
                 [[-1, 2], [3], [-3, 4]]
         """
 
-        self.nv = max([abs(l) for l in clause] + [self.nv])
+        for l in clause:
+            if abs(l) > self.nv:
+                self.nv = abs(l)
         self.clauses.append(list(clause))
 
         if update_vpool:
@@ -3908,7 +3940,7 @@ class CNF(Formula, object):
 
         wcnf.nv = self.nv
         wcnf.hard = []
-        wcnf.soft = copy.deepcopy(self.clauses)
+        wcnf.soft = [cl[:] for cl in self.clauses]
         wcnf.wght = [1 for cl in wcnf.soft]
         wcnf.topw = len(wcnf.wght) + 1
         wcnf.comments = self.comments[:]
@@ -4345,8 +4377,8 @@ class WCNF(object):
     def copy(self):
         """
             This method can be used for creating a copy of a WCNF object. It
-            creates another object of the :class:`WCNF` class and makes use of
-            the *deepcopy* functionality to copy both hard and soft clauses.
+            creates another object of the :class:`WCNF` class and copies each
+            of the hard and soft clauses.
 
             :return: an object of class :class:`WCNF`.
 
@@ -4372,10 +4404,10 @@ class WCNF(object):
         wcnf = WCNF()
         wcnf.nv = self.nv
         wcnf.topw = self.topw
-        wcnf.hard = copy.deepcopy(self.hard)
-        wcnf.soft = copy.deepcopy(self.soft)
-        wcnf.wght = copy.deepcopy(self.wght)
-        wcnf.comments = copy.deepcopy(self.comments)
+        wcnf.hard = [cl[:] for cl in self.hard]
+        wcnf.soft = [cl[:] for cl in self.soft]
+        wcnf.wght = self.wght[:]
+        wcnf.comments = self.comments[:]
 
         return wcnf
 
@@ -4472,12 +4504,12 @@ class WCNF(object):
         # soft clauses are dumped first because
         # some tools (e.g. LBX) cannot count them properly
         for i, cl in enumerate(self.soft):
-            print(self.wght[i], ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write('{0} {1} 0\n'.format(self.wght[i], ' '.join(map(str, cl))))
 
         # hard clause either have a top weight or are marked as 'h'
         topw = self.topw if format == 'legacy' else 'h'
         for cl in self.hard:
-            print(topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write('{0} {1} 0\n'.format(topw, ' '.join(map(str, cl))))
 
     def to_dimacs(self, format='mse22'):
         """
@@ -4672,7 +4704,9 @@ class WCNF(object):
                 [10, 20]
         """
 
-        self.nv = max([abs(l) for l in clause] + [self.nv])
+        for l in clause:
+            if abs(l) > self.nv:
+                self.nv = abs(l)
 
         if weight:
             self.soft.append(list(clause))
@@ -4750,7 +4784,7 @@ class WCNF(object):
         cnf = CNF()
 
         cnf.nv = self.nv
-        cnf.clauses = copy.deepcopy(self.hard) + copy.deepcopy(self.soft)
+        cnf.clauses = [cl[:] for cl in self.hard + self.soft]
         cnf.comments = self.comments[:]
 
         return cnf
@@ -4900,7 +4934,9 @@ class CNFPlus(CNF, object):
                             sumw = len(lits)
 
                         rhs = int(items[-1])
-                        self.nv = max([abs(l) for l in lits] + [self.nv])
+                        for l in lits:
+                            if abs(l) > self.nv:
+                                self.nv = abs(l)
 
                         if items[-2][0] == '>':
                             lits = list(map(lambda l: -l, lits))
@@ -4956,14 +4992,14 @@ class CNFPlus(CNF, object):
                 file=file_pointer)
 
         for cl in self.clauses:
-            print(' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write(' '.join(map(str, cl)) + ' 0\n')
 
         for am in self.atmosts:
             if len(am) == 2:  # cardinality constraint
-                print(' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+                file_pointer.write('{0} <= {1}\n'.format(' '.join(map(str, am[0])), am[1]))
             else:  # len(am) == 3 => PB constraint
                 assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
-                print('w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
+                file_pointer.write('w {0} <= {1}\n'.format(' '.join('{0}*{1}'.format(w, l) for w, l in zip(am[2], am[0])), am[1]))
 
     def to_dimacs(self):
         """
@@ -5157,10 +5193,14 @@ class CNFPlus(CNF, object):
         """
 
         if not is_atmost:
-            self.nv = max([abs(l) for l in clause] + [self.nv])
+            for l in clause:
+                if abs(l) > self.nv:
+                    self.nv = abs(l)
             self.clauses.append(list(clause))
         else:
-            self.nv = max([abs(l) for l in clause[0]] + [self.nv])
+            for l in clause[0]:
+                if abs(l) > self.nv:
+                    self.nv = abs(l)
             self.atmosts.append(clause)
 
     def extend(self, formula):
@@ -5247,7 +5287,7 @@ class CNFPlus(CNF, object):
 
         wcnf.nv = self.nv
         wcnf.hard = []
-        wcnf.soft = copy.deepcopy(self.clauses)
+        wcnf.soft = [cl[:] for cl in self.clauses]
         wcnf.atms = copy.deepcopy(self.atmosts)
         wcnf.wght = [1 for cl in wcnf.soft]
         wcnf.topw = len(wcnf.wght) + 1
@@ -5490,7 +5530,9 @@ class WCNFPlus(WCNF, object):
                             sumw = len(lits)
 
                         rhs = int(items[-1])
-                        self.nv = max([abs(l) for l in lits] + [self.nv])
+                        for l in lits:
+                            if abs(l) > self.nv:
+                                self.nv = abs(l)
 
                         if items[-2][0] == '>':
                             lits = list(map(lambda l: -l, lits))
@@ -5573,20 +5615,20 @@ class WCNFPlus(WCNF, object):
         # soft clauses are dumped first because
         # some tools (e.g. LBX) cannot count them properly
         for i, cl in enumerate(self.soft):
-            print(self.wght[i], ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write('{0} {1} 0\n'.format(self.wght[i], ' '.join(map(str, cl))))
 
         # hard clause either have a top weight or are marked as 'h'
         topw = self.topw if format == 'legacy' else 'h'
         for cl in self.hard:
-            print(topw, ' '.join(str(l) for l in cl), '0', file=file_pointer)
+            file_pointer.write('{0} {1} 0\n'.format(topw, ' '.join(map(str, cl))))
 
         # atmost constraints are hard
         for am in self.atms:
             if len(am) == 2:  # cardinality constraint
-                print(topw, ' '.join(str(l) for l in am[0]), '<=', am[1], file=file_pointer)
+                file_pointer.write('{0} {1} <= {2}\n'.format(topw, ' '.join(map(str, am[0])), am[1]))
             else:  # len(am) == 3 => PB constraint
                 assert len(am[0]) == len(am[2]), 'Number of literals should be equal to the number of weights'
-                print(topw, 'w', ' '.join('{0}*{1}'.format(str(w), str(l)) for w, l in zip(am[2], am[0])), '<=', am[1], file=file_pointer)
+                file_pointer.write('{0} w {1} <= {2}\n'.format(topw, ' '.join('{0}*{1}'.format(w, l) for w, l in zip(am[2], am[0])), am[1]))
 
     def to_dimacs(self):
         """
@@ -5824,7 +5866,9 @@ class WCNFPlus(WCNF, object):
         """
 
         if not is_atmost:
-            self.nv = max([abs(l) for l in clause] + [self.nv])
+            for l in clause:
+                if abs(l) > self.nv:
+                    self.nv = abs(l)
 
             if weight:
                 self.soft.append(list(clause))
@@ -5834,7 +5878,9 @@ class WCNFPlus(WCNF, object):
             else:
                 self.hard.append(list(clause))
         else:
-            self.nv = max([abs(l) for l in clause[0]] + [self.nv])
+            for l in clause[0]:
+                if abs(l) > self.nv:
+                    self.nv = abs(l)
             self.atms.append(clause)
 
     def unweighted(self):
@@ -5870,7 +5916,7 @@ class WCNFPlus(WCNF, object):
         cnf = CNFPlus()
 
         cnf.nv = self.nv
-        cnf.clauses = copy.deepcopy(self.hard) + copy.deepcopy(self.soft)
+        cnf.clauses = [cl[:] for cl in self.hard + self.soft]
         cnf.atmosts = copy.deepcopy(self.atms)
         cnf.comments = self.comments[:]
 

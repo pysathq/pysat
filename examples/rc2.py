@@ -135,7 +135,6 @@ import bisect
 import collections
 import getopt
 import heapq
-from math import copysign
 import os
 from pysat.formula import CNFPlus, WCNFPlus, IDPool
 from pysat.card import ITotalizer
@@ -574,9 +573,8 @@ class RC2(object):
             if self.processor:
                 self.model = self.processor.restore(self.model)
 
-            self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
-            self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
-            self.model = sorted(self.model, key=lambda l: abs(l))
+            self.model = [self.vmap.i2e[l] if l > 0 else -self.vmap.i2e[-l] for l in self.model if abs(l) in self.vmap.i2e]
+            self.model.sort(key=abs)
 
             return self.model
 
@@ -1377,14 +1375,14 @@ class RC2(object):
         v = abs(l)
 
         if v in self.vmap.e2i:
-            return int(copysign(self.vmap.e2i[v], l))
+            return self.vmap.e2i[v] if l > 0 else -self.vmap.e2i[v]
         else:
             i = self.pool.id()
 
             self.vmap.e2i[v] = i
             self.vmap.i2e[i] = v
 
-            return int(copysign(i, l))
+            return i if l > 0 else -i
 
     def interrupt(self):
         """
@@ -1605,9 +1603,8 @@ class RC2Stratified(RC2, object):
         if self.processor:
             self.model = self.processor.restore(self.model)
 
-        self.model = filter(lambda l: abs(l) in self.vmap.i2e, self.model)
-        self.model = map(lambda l: int(copysign(self.vmap.i2e[abs(l)], l)), self.model)
-        self.model = sorted(self.model, key=lambda l: abs(l))
+        self.model = [self.vmap.i2e[l] if l > 0 else -self.vmap.i2e[-l] for l in self.model if abs(l) in self.vmap.i2e]
+        self.model.sort(key=abs)
 
         return self.model
 

@@ -1843,7 +1843,7 @@ class Solver(object):
 
                     if byte >> 7 == 0:
                         # MSB is zero => this is the last byte of the literal
-                        lits.append(str((1 if lit % 2 == 0 else -1) * (lit >> 1)))
+                        lits.append(str(-(lit >> 1) if lit & 1 else lit >> 1))
                         lit, shift = 0, 0
 
                 else:

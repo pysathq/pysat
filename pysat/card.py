@@ -95,7 +95,6 @@
 
 #
 #==============================================================================
-import math
 from pysat.formula import CNF, CNFPlus, IDPool
 from pysat._utils import MainThread
 import pycard
@@ -226,13 +225,16 @@ class CardEnc(object):
             vpool.top = max(vpool.top, cnf.nv)
             return
 
-        # mapping each auxiliary variable to a free id,
-        # taking into account variables marked as "occupied"
-        vmap = {var: vpool._next() for var in range(top + 1, cnf.nv + 1)}
+        # mapping each auxiliary variable to a free id, taking into
+        # account variables marked as "occupied"; both signs are mapped
+        vmap = {}
+        for var in range(top + 1, cnf.nv + 1):
+            vmap[var] = vpool._next()
+            vmap[-var] = -vmap[var]
 
         # updating the clauses
         for cl in cnf.clauses:
-            cl[:] = map(lambda l: int(math.copysign(vmap[abs(l)], l)) if abs(l) in vmap else l, cl)
+            cl[:] = [vmap.get(l, l) for l in cl]
 
         # updating the number of variables
         cnf.nv = vpool.top

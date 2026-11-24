@@ -531,13 +531,13 @@ class Hitman(object):
 
         if model is not None:
             if self.htype in ('rc2', 'sat'):
-                # extracting a hitting set; the use of map may look
+                # extracting a hitting set; the use of abs may look
                 # silly but this is to support negative phases too
-                self.hset = map(lambda v: abs(v), filter(lambda v: v * self.phase > 0, model))
+                self.hset = [abs(v) for v in model if v * self.phase > 0]
             else:
                 self.hset = model
 
-            return list(map(lambda vid: self.idpool.id2obj[vid], self.hset))
+            return [self.idpool.id2obj[vid] for vid in self.hset]
 
     def hit(self, to_hit, weights=None):
         """
