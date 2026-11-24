@@ -1906,16 +1906,16 @@ class Cadical103(_SolverBackend):
             Basic constructor.
         """
 
+        self.cadical = None
+        self.status = None
+        self.prfile = None
+        self.prfp = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
 
         if warm_start:
             raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
-
-        self.cadical = None
-        self.status = None
-        self.prfile = None
-        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -2223,16 +2223,16 @@ class Cadical153(_SolverBackend):
             Basic constructor.
         """
 
+        self.cadical = None
+        self.status = None
+        self.prfile = None
+        self.prfp = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
 
         if warm_start:
             raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
-
-        self.cadical = None
-        self.status = None
-        self.prfile = None
-        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -2604,17 +2604,17 @@ class Cadical195(_SolverBackend):
             Basic constructor.
         """
 
-        if incr:
-            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
-
-        if warm_start:
-            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
-
         self.cadical = None
         self.pengine = None
         self.status = None
         self.prfile = None
         self.prfp = None
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
 
         self.new(bootstrap_with, use_timer, with_proof, native_card)
 
@@ -3112,18 +3112,18 @@ class Cadical300(_SolverBackend):
             Basic constructor.
         """
 
-        if incr:
-            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
-
-        if warm_start:
-            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
-
         self.cadical = None
         self.pengine = None
         self.status = None
         self.prfile = None
         self.prfp = None
         self.sync_with = None
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by CaDiCaL.')
+
+        if warm_start:
+            raise NotImplementedError('Warm-start mode is not supported by CaDiCaL.')
 
         self.new(bootstrap_with, use_timer, with_proof, native_card, sync_with)
 
@@ -3718,14 +3718,14 @@ class Ergo(_SolverBackend):
             Basic constructor.
         """
 
-        if incr:
-            raise NotImplementedError('Incremental mode is not supported by this solver.')
-
         self.ergo = None
         self.pengine = None
         self.status = None
         self.prfile = None
         self.prfp = None
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by this solver.')
 
         # checked here, so that __del__ finds the attributes above in place
         assert ergo_present, 'Solver \'ergo\' is unavailable in this build of PySAT.'
@@ -6174,16 +6174,16 @@ class Lingeling(_SolverBackend):
             Basic constructor.
         """
 
+        self.lingeling = None
+        self.status = None
+        self.prfile = None
+        self.prfp = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by Lingeling.')
 
         if warm_start:
             raise NotImplementedError('Warm-start mode is not supported by Lingeling.')
-
-        self.lingeling = None
-        self.status = None
-        self.prfile = None
-        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -6460,16 +6460,16 @@ class MapleChrono(_SolverBackend):
             Basic constructor.
         """
 
+        self.maplesat = None
+        self.status = None
+        self.prfile = None
+        self.prfp = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by MapleChrono.')
 
         if warm_start:
             raise NotImplementedError('Warm-start mode is not supported by MapleChrono.')
-
-        self.maplesat = None
-        self.status = None
-        self.prfile = None
-        self.prfp = None
 
         self.new(bootstrap_with, use_timer, with_proof)
 
@@ -6785,13 +6785,13 @@ class MapleCM(_SolverBackend):
             Basic constructor.
         """
 
-        if incr:
-            raise NotImplementedError('Incremental mode is not supported by MapleCM.')
-
         self.maplesat = None
         self.status = None
         self.prfile = None
         self.prfp = None
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by MapleCM.')
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
@@ -7112,13 +7112,13 @@ class Maplesat(_SolverBackend):
             Basic constructor.
         """
 
-        if incr:
-            raise NotImplementedError('Incremental mode is not supported by Maplesat.')
-
         self.maplesat = None
         self.status = None
         self.prfile = None
         self.prfp = None
+
+        if incr:
+            raise NotImplementedError('Incremental mode is not supported by Maplesat.')
 
         self.new(bootstrap_with, use_timer, with_proof, warm_start)
 
@@ -7745,14 +7745,14 @@ class Minicard(_SolverBackend):
             Basic constructor.
         """
 
+        self.minicard = None
+        self.status = None
+
         if incr:
             raise NotImplementedError('Incremental model is not supported by Minicard.')
 
         if with_proof:
             raise NotImplementedError('Proof logging is not supported by Minicard.')
-
-        self.minicard = None
-        self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start)
 
@@ -8095,14 +8095,14 @@ class Minisat22(_SolverBackend):
             Basic constructor.
         """
 
+        self.minisat = None
+        self.status = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by Minisat22.')
 
         if with_proof:
             raise NotImplementedError('Proof logging is not supported by Minisat22.')
-
-        self.minisat = None
-        self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start)
 
@@ -8431,14 +8431,14 @@ class MinisatGH(_SolverBackend):
             Basic constructor.
         """
 
+        self.minisat = None
+        self.status = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by MinisatGH.')
 
         if with_proof:
             raise NotImplementedError('Proof logging is not supported by MinisatGH.')
-
-        self.minisat = None
-        self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start)
 
@@ -8770,15 +8770,15 @@ class MinisatEP(_SolverBackend):
             Basic constructor.
         """
 
+        self.minisat = None
+        self.pengine = None
+        self.status = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by MinisatEP.')
 
         if with_proof:
             raise NotImplementedError('Proof logging is not supported by MinisatEP.')
-
-        self.minisat = None
-        self.pengine = None
-        self.status = None
 
         self.new(bootstrap_with, use_timer, warm_start, native_card)
 
@@ -9244,6 +9244,8 @@ class CryptoMinisat(_SolverBackend):
             Basic constructor.
         """
 
+        self.cryptosat, self.status, self.model = None, None, None
+
         assert cms_present, 'Package \'pycryptosat\' is unavailable. Check your installation.'
 
         if incr:
@@ -9254,8 +9256,6 @@ class CryptoMinisat(_SolverBackend):
 
         if warm_start:
             raise NotImplementedError('Warm-start mode is not supported by CryptoMinisat.')
-
-        self.cryptosat, self.status, self.model = None, None, None
 
         self.new(bootstrap_with, use_timer)
 
@@ -9569,6 +9569,9 @@ class Kissat404(_SolverBackend):
             Basic constructor.
         """
 
+        self.kissat = None
+        self.status = None
+
         if incr:
             raise NotImplementedError('Incremental mode is not supported by Kissat.')
 
@@ -9577,9 +9580,6 @@ class Kissat404(_SolverBackend):
 
         if with_proof:
             raise NotImplementedError('Proof logging is not supported by Kissat in PySAT.')
-
-        self.kissat = None
-        self.status = None
 
         self.new(bootstrap_with, use_timer)
 

@@ -244,6 +244,9 @@ class OptUx(object):
             Constructor.
         """
 
+        # the oracles
+        self.hitman, self.oracle = None, None
+
         assert not puresat or unsorted, '\'unsorted\' needs to be True for pure SAT mode'
 
         # verbosity level
@@ -479,6 +482,10 @@ class OptUx(object):
                 # extracting the MCS corresponding to the model
                 falsified = [l for l in self.sels if model[abs(l) - 1] == -l]
 
+                if not falsified:
+                    # all soft clauses are satisfiable => no more MCSes
+                    break
+
                 # unit size or not?
                 if len(falsified) > 1:
                     to_hit.append(falsified)
@@ -516,12 +523,13 @@ class OptUx(object):
         while True:
             # computing a new optimal hitting set
             hs = self.hitman.get()
-            if self.verbose > 3:
-                self.cost = sum(map(lambda l: self.weights[l], hs)) + units_cost
 
             if hs is None:
                 # no more hitting sets exist
                 break
+
+            if self.verbose > 3:
+                self.cost = sum(map(lambda l: self.weights[l], hs)) + units_cost
 
             # setting all the selector polarities to true
             self.oracle.set_phases(self.sels)

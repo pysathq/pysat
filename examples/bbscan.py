@@ -253,7 +253,7 @@ class BBScan:
 
         if isinstance(chunk_size, float):
             assert 0 < chunk_size <= 1, f'Wrong chunk proportion {chunk_size}'
-            chunk_size = int(min(self.formula.nv, len(self.model)) * chunk_size)
+            chunk_size = max(1, int(min(self.formula.nv, len(self.model)) * chunk_size))
 
         if algorithm == 'enum':
             result = self._compute_enum()
@@ -270,7 +270,7 @@ class BBScan:
         else:
             assert 0, f'Unknown algorithm: {algorithm}'
 
-        return sorted(trivial + result, key=lambda l: abs(l))
+        return sorted(trivial + result, key=abs)
 
     def _filter_rotatable(self, model):
         """
@@ -320,8 +320,10 @@ class BBScan:
             if not self.oracle.solve():
                 break
 
-            # updating backbone estimate - intersection
-            bbone &= set(self.oracle.get_model())
+            # updating backbone estimate - intersection; checking the
+            # estimate's literals only, rather than the entire model
+            m = self.oracle.get_model()
+            bbone = {l for l in bbone if m[abs(l) - 1] == l}
 
             if self.rotate:
                 bbone = self._filter_rotatable(bbone)
@@ -356,7 +358,8 @@ class BBScan:
             else:
                 # it isn't and we've got a counterexample
                 # => using it to filter out more literals
-                model &= set(self.oracle.get_model())
+                m = self.oracle.get_model()
+                model = {l for l in model if m[abs(l) - 1] == l}
 
                 if self.rotate:
                     model = self._filter_rotatable(model)
@@ -385,7 +388,8 @@ class BBScan:
             if self.oracle.solve() == False:
                 break
             else:
-                bbone &= set(self.oracle.get_model())
+                m = self.oracle.get_model()
+                bbone = {l for l in bbone if m[abs(l) - 1] == l}
 
                 if self.rotate:
                     bbone = self._filter_rotatable(bbone)
@@ -425,8 +429,8 @@ class BBScan:
                     bbone.append(lit)
                     self.oracle.add_clause([lit])
             else:
-                coex = set(self.oracle.get_model())
-                model = [l for l in model if l in coex]
+                coex = self.oracle.get_model()
+                model = [l for l in model if coex[abs(l) - 1] == l]
 
                 if self.rotate:
                     model = list(self._filter_rotatable(set(model)))
@@ -455,7 +459,8 @@ class BBScan:
                 self.calls += 1
 
                 if self.oracle.solve(assumptions=assumps):
-                    model &= set(self.oracle.get_model())
+                    m = self.oracle.get_model()
+                    model = {l for l in model if m[abs(l) - 1] == l}
 
                     if self.rotate:
                         model  = self._filter_rotatable(model)
@@ -507,8 +512,8 @@ class BBScan:
                 self.calls += 1
 
                 if self.oracle.solve(assumptions=assumps):
-                    coex = set(self.oracle.get_model())
-                    model = [l for l in model if l in coex]
+                    coex = self.oracle.get_model()
+                    model = [l for l in model if coex[abs(l) - 1] == l]
 
                     if self.rotate:
                         model = list(self._filter_rotatable(set(model)))

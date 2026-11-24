@@ -228,6 +228,9 @@ class Primer:
         # number of SAT oracle calls
         self.calls = 0
 
+        # the oracles
+        self.hitman, self.checker, self.reducer = None, None, None
+
         # creating hitman
         if not unsorted:
             # MaxSAT-based hitting set enumerator
