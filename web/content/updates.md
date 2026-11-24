@@ -10,12 +10,21 @@ then to keep it up-to-date is good idea.
 
 <!-- # Changelog and more -->
 
-## 21.11.2026 (*1.9.dev25*)
+## 24.11.2026 (*1.9.dev25*)
 
 -   Fixed zero-hashed pairs in `seqcounter.hh`.
 -   Fixed a list-losing bug in `card.py`.
+-   Fixed a few cache-related bugs in `formula.py`.
 -   Fixed a bug in `engines.py`'s weighted propagation.
 -   Fixed a bug in `CNF` hash. It is now default identify-based.
+-   Fixed a bug in `CNFPlus.to_file()`.
+-   Fixed a bug the IPASIR-UP bridge for Cadical300.
+-   Minor improvements and cleanups in `engines.py` and `integer.py`.
+-   Minor improvements and cleanups in RC2 and Hitman.
+-   Minor improvements and cleanups in `card.py` and `formula.py`.
+-   Minor improvements and cleanups in `bbscan.py`, `optux.py`, and
+    `primer.py`.
+-   The start of a new module `vector.py`.
 
 ## 19.11.2026 (*1.9.dev24*)
 

@@ -57,13 +57,12 @@
 #
 #==============================================================================
 import numbers
-
 from pysat.formula import CNF
 
 
 #
 #==============================================================================
-class VecEnc:
+class VecEnc(object):
     """
         This abstract class is responsible for the creation of constraints
         over vectors of literals encoded to a CNF formula. The class has two
